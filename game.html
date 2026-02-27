@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NEON PLINKO VIP</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        :root { 
+            --pink: #ff0077; --blue: #00d4ff; --yellow: #fbff00; --bg: #070816; 
+            --pink-neon: 0 0 5px var(--pink), 0 0 10px var(--pink);
+            --blue-neon: 0 0 5px var(--blue), 0 0 10px var(--blue);
+            --yellow-neon: 0 0 5px var(--yellow), 0 0 10px var(--yellow);
+        }
+        
+        body { 
+            background: var(--bg); 
+            color: white; 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            margin: 0; 
+            overflow: hidden; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column;
+        }
+
+        .neon-p { color: var(--pink); text-shadow: var(--pink-neon); }
+        .neon-b { color: var(--blue); text-shadow: var(--blue-neon); }
+        .neon-y { color: var(--yellow); text-shadow: var(--yellow-neon); }
+        
+        .header { display: flex; justify-content: center; align-items: center; padding: 15px 10px; position: relative; z-index: 100; background: var(--bg); flex-shrink: 0; }
+        
+        .prof-container { position: absolute; left: 20px; display: flex; flex-direction: column; align-items: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        .prof-link { font-size: 28px; color: var(--pink); text-shadow: var(--pink-neon); }
+        .prof-text { font-size: 8px; font-weight: 900; margin-top: 2px; color: var(--blue); text-shadow: var(--blue-neon); }
+
+        .settings-container { position: absolute; right: 20px; display: flex; flex-direction: column; align-items: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        .settings-link { font-size: 26px; color: var(--blue); text-shadow: var(--blue-neon); }
+        .settings-text { font-size: 8px; font-weight: 900; margin-top: 2px; color: var(--pink); text-shadow: var(--pink-neon); }
+
+        .balance-box { background: #000; border: 2px solid var(--blue); border-radius: 20px; padding: 5px 20px; text-align: center; min-width: 140px; }
+        #display-saldo { font-size: 18px; font-weight: 900; }
+
+        #game-container { position: relative; width: 100%; height: 350px; flex-shrink: 0; margin-top: 5px; overflow: hidden; }
+        
+        .peg { position: absolute; width: 8px; height: 8px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 10px #fff, 0 0 20px var(--blue); z-index: 5; }
+
+        .ball { position: absolute; width: 14px; height: 14px; background: radial-gradient(circle at 30% 30%, var(--pink), #900); border-radius: 50%; box-shadow: 0 0 15px var(--pink); z-index: 10; transform: translate(-50%, -50%); pointer-events: none; will-change: left, top; }
+
+        .multipliers { display: flex; justify-content: center; gap: 4px; padding: 0 5px; margin-top: 5px; z-index: 80; flex-shrink: 0; }
+        .slot { flex: 1; max-width: 45px; height: 35px; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 11px; font-weight: 900; border: 1px solid rgba(255,255,255,0.2); transition: transform 0.1s, background 0.2s; }
+        .m-pink { background: var(--pink); box-shadow: var(--pink-neon); }
+        .m-yellow { background: var(--yellow); color: black; box-shadow: var(--yellow-neon); }
+        .m-blue { background: var(--blue); color: black; box-shadow: var(--blue-neon); }
+
+        .nav-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; padding: 0 20px; margin-top: 20px; flex-shrink: 0; }
+        .btn-nav { background: rgba(255,255,255,0.03); border: 1px solid #333; padding: 10px 5px; border-radius: 12px; text-align: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        .btn-nav i { font-size: 18px; margin-bottom: 5px; display: block; }
+        .btn-nav span { font-size: 8px; font-weight: 900; }
+
+        .play-area { text-align: center; padding: 10px 20px; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; gap: 15px; }
+        
+        .mode-toggles { display: flex; justify-content: center; gap: 12px; }
+        .toggle { flex: 1; max-width: 120px; padding: 10px 0; border-radius: 20px; font-size: 10px; font-weight: 900; cursor: pointer; border: 1px solid #333; background: #000; color: #555; -webkit-tap-highlight-color: transparent; }
+        .toggle.active { border-color: var(--pink); color: var(--yellow); text-shadow: var(--yellow-neon); box-shadow: inset 0 0 10px var(--pink); }
+        
+        .bet-selector { display: flex; align-items: center; justify-content: space-between; background: #000; border-radius: 50px; padding: 8px 25px; border: 1px solid #444; width: 100%; box-sizing: border-box; }
+        .btn-main { width: 100%; padding: 14px; border-radius: 50px; border: none; font-weight: 900; font-size: 16px; text-transform: uppercase; cursor: pointer; background: linear-gradient(90deg, var(--pink), var(--blue)); color: white; -webkit-tap-highlight-color: transparent; box-shadow: 0 0 15px var(--pink); }
+
+        #score-board { position: absolute; left: 10px; top: 120px; width: 90px; display: flex; flex-direction: column; gap: 6px; z-index: 50; pointer-events: none; }
+        .score-item { background: rgba(0,0,0,0.85); border: 1px solid var(--blue); font-size: 9px; padding: 6px; border-radius: 6px; text-align: center; font-weight: 900; color: var(--yellow); text-shadow: var(--yellow-neon); animation: popupIn 0.3s ease-out; overflow: hidden; white-space: nowrap; transition: opacity 0.5s ease; }
+        @keyframes popupIn { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        
+        .win-popup { position: absolute; font-weight: 900; color: var(--yellow); text-shadow: var(--yellow-neon); pointer-events: none; z-index: 1000; animation: floatUp 1s ease-out forwards; font-size: 24px; }
+        @keyframes floatUp { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(-80px); opacity: 0; } }
+
+        /* Pop-up modal (fallback jika tidak ada dari global.js) */
+        #neon-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 9999; }
+        .neon-modal { background: #0d0f26; border: 2px solid var(--pink); border-radius: 20px; padding: 25px; width: 80%; text-align: center; box-shadow: 0 0 30px var(--pink); }
+    </style>
+</head>
+<body>
+
+    <div id="score-board"></div>
+    <div id="neon-overlay">
+        <div class="neon-modal">
+            <h2 id="modal-title" class="neon-p">INFO</h2>
+            <p id="modal-msg" class="neon-b"></p>
+            <button class="neon-btn" style="background:var(--blue); border:none; padding:12px; width:100%; border-radius:50px; font-weight:900; margin-top:15px;" onclick="closeNeonModal()">OK</button>
+        </div>
+    </div>
+
+    <div class="header">
+        <div class="prof-container" onclick="location.href='profil.html'">
+            <i class="fa-solid fa-circle-user prof-link"></i>
+            <span class="prof-text">PROFIL</span>
+        </div>
+
+        <div class="balance-box">
+            <span id="tier-name" class="neon-y" style="font-size: 9px; font-weight: 900; display: block;">VIP PLAYER</span>
+            <span id="display-saldo" class="neon-b">IDR 0</span>
+        </div>
+
+        <div class="settings-container" onclick="location.href='settings.html'">
+            <i class="fa-solid fa-gear settings-link"></i>
+            <span class="settings-text">SETTING</span>
+        </div>
+    </div>
+
+    <div id="game-container"></div>
+
+    <div class="multipliers" id="multi-row">
+        <div class="slot m-pink">5x</div>
+        <div class="slot m-yellow">2x</div>
+        <div class="slot m-blue">1.2x</div>
+        <div class="slot m-blue" style="background:#fff; color:#000;">0.2x</div>
+        <div class="slot m-blue">1.2x</div>
+        <div class="slot m-yellow">2x</div>
+        <div class="slot m-pink">5x</div>
+    </div>
+
+    <div class="nav-grid">
+        <div class="btn-nav" onclick="location.href='withdraw.html'"><i class="fa-solid fa-wallet neon-p"></i><span class="neon-y">WITHDRAW</span></div>
+        <div class="btn-nav" onclick="location.href='deposit.html'"><i class="fa-solid fa-building-columns neon-b"></i><span class="neon-p">DEPOSIT</span></div>
+        <div class="btn-nav" onclick="location.href='reward.html'"><i class="fa-solid fa-gift neon-y"></i><span class="neon-b">REWARD</span></div>
+    </div>
+
+    <div class="play-area">
+        <div class="mode-toggles">
+            <div id="btn-normal" class="toggle active" onclick="setMode('normal')">NORMAL</div>
+            <div id="btn-auto" class="toggle" onclick="setMode('auto')">AUTO</div>
+        </div>
+        
+        <div class="bet-selector">
+            <button style="background:none; border:none; color:var(--pink); font-size: 28px; font-weight: 900; cursor: pointer;" onclick="changeBet(-1)">-</button>
+            <div id="current-bet" class="neon-y" style="font-size: 20px; font-weight: 900; color:var(--blue);">1,000</div>
+            <button style="background:none; border:none; color:var(--pink); font-size: 28px; font-weight: 900; cursor: pointer;" onclick="changeBet(1)">+</button>
+        </div>
+        
+        <button class="btn-main" id="play-btn" onclick="handlePlay()">MULAI MAIN</button>
+    </div>
+
+    <script src="global.js"></script>
+    <script>
+        // --- KONFIGURASI URL SCRIPT ---
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwqQWXIJuVnkIxLvdu3kYiiRDVh7eyrsy-KU6rG1qtQClgfAzmMoclv2ULFZ_hRdE_qUg/exec";
+
+        // --- UPDATE TAMPILAN SALDO ---
+        function updateSaldoDisplay() {
+            if (typeof updateSaldo === 'function') {
+                updateSaldo(0); // Fungsi dari global.js
+            } else {
+                const currentSaldo = Number(localStorage.getItem('saldo') || 0);
+                const saldoEl = document.getElementById('display-saldo');
+                if (saldoEl) {
+                    saldoEl.innerText = 'IDR ' + currentSaldo.toLocaleString('id-ID');
+                }
+            }
+        }
+
+        // --- SINKRONISASI SERVER ---
+        let isSyncing = false;
+        async function syncSaldoRealtime() {
+            if (isSyncing) return;
+            const username = localStorage.getItem('user_session');
+            if (!username) return;
+            isSyncing = true;
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ action: "getUserData", username: username })
+                });
+                const data = await response.json();
+                if (data && data.saldo !== undefined) {
+                    localStorage.setItem('saldo', data.saldo);
+                    updateSaldoDisplay();
+                    if(data.tier) document.getElementById('tier-name').innerText = data.tier + " PLAYER";
+                }
+            } catch (e) { console.error("Sync Error:", e); } 
+            finally { isSyncing = false; }
+        }
+
+        // Jalankan sinkronisasi secara reguler
+        setInterval(syncSaldoRealtime, 10000);
+
+        // --- GAME LOGIC & VARIABLES ---
+        let winChance = 0.35; 
+        const container = document.getElementById('game-container');
+        const bets = [400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 4000, 6000, 8000, 10000, 12000, 16000, 18000, 20000];
+        let betIdx = 3; 
+        let isAuto = false;
+        let autoInterval = null;
+        let pegLocations = [];
+        let activeBalls = []; // Menyimpan bola aktif untuk simulasi tabrakan
+        const slots = [5, 2, 1.2, 0.2, 1.2, 2, 5];
+
+        function initPegs() {
+            container.innerHTML = '';
+            pegLocations = [];
+            const rows = 9; 
+            const centerX = container.offsetWidth / 2;
+            for (let r = 2; r <= rows; r++) {
+                for (let i = 0; i < r; i++) {
+                    const peg = document.createElement('div');
+                    peg.className = 'peg';
+                    const xSpace = 46; 
+                    const ySpace = 32; 
+                    const x = centerX + (i - (r - 1) / 2) * xSpace; 
+                    const y = r * ySpace; 
+                    peg.style.left = x + 'px';
+                    peg.style.top = y + 'px';
+                    container.appendChild(peg);
+                    pegLocations.push({ x: x, y: y });
+                }
+            }
+        }
+
+        // TAMPILAN AWAL
+        window.addEventListener('load', () => {
+            initPegs();
+            updateSaldoDisplay();
+            syncSaldoRealtime();
+        });
+
+        // Tampilkan peringatan, panggil global.js jika tersedia
+        function showNeonModal(msg) { 
+            if(typeof showNeonAlert === 'function') {
+                showNeonAlert(msg, "VIP INFO");
+            } else {
+                document.getElementById('modal-msg').innerText = msg; 
+                document.getElementById('neon-overlay').style.display = 'flex'; 
+            }
+        }
+        function closeNeonModal() { document.getElementById('neon-overlay').style.display = 'none'; }
+        
+        function changeBet(d) { 
+            betIdx = Math.max(0, Math.min(bets.length-1, betIdx+d)); 
+            document.getElementById('current-bet').innerText = bets[betIdx].toLocaleString(); 
+        }
+
+        function setMode(m) {
+            isAuto = (m === 'auto');
+            clearInterval(autoInterval);
+            document.getElementById('btn-normal').classList.toggle('active', !isAuto);
+            document.getElementById('btn-auto').classList.toggle('active', isAuto);
+            document.getElementById('play-btn').innerText = isAuto ? "STOP AUTO" : "MULAI MAIN";
+            if(isAuto) startAuto();
+        }
+
+        function handlePlay() { if (isAuto) setMode('normal'); else dropBall(); }
+        
+        // Mode auto dipercepat agar jeda antar bola lebih rapat
+        function startAuto() { dropBall(); autoInterval = setInterval(() => { if(isAuto) dropBall(); }, 400); }
+
+        function addScoreBoard(amount) {
+            const board = document.getElementById('score-board');
+            const item = document.createElement('div');
+            item.className = 'score-item';
+            item.innerText = 'WIN ' + amount.toLocaleString();
+            board.prepend(item);
+            
+            // Batasi hanya 3 baris
+            if (board.children.length > 3) board.removeChild(board.lastChild);
+
+            // Hilangkan otomatis setelah 3 detik
+            setTimeout(() => {
+                if(board.contains(item)) {
+                    item.style.opacity = '0';
+                    setTimeout(() => { if(board.contains(item)) item.remove(); }, 500);
+                }
+            }, 3000);
+        }
+
+        async function processGameResult(multiplierValue) {
+            const user = localStorage.getItem('user_session');
+            const bet = bets[betIdx];
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'playGame', username: user, betAmount: bet, multiplier: multiplierValue })
+                });
+                const res = await response.json();
+                if (res.result === "SUCCESS") {
+                    localStorage.setItem('saldo', res.newSaldo);
+                    updateSaldoDisplay();
+                    return res.winAmount;
+                } else if (res.result === "INSUFFICIENT") {
+                    setMode('normal'); 
+                    showNeonModal("Saldo tidak cukup!");
+                }
+            } catch (e) { console.error("API Error"); }
+            return 0;
+        }
+
+        function dropBall() {
+            const currentSaldo = Number(localStorage.getItem('saldo') || 0);
+            const bet = Number(bets[betIdx]);
+            
+            if (currentSaldo < bet) { 
+                setMode('normal'); 
+                showNeonModal("Saldo Tidak Cukup!"); 
+                return; 
+            }
+
+            // Gunakan fungsi updateSaldo dari global.js untuk memotong saldo lokal
+            if (typeof updateSaldo === 'function') {
+                updateSaldo(-bet);
+            } else {
+                localStorage.setItem('saldo', currentSaldo - bet);
+                updateSaldoDisplay();
+            }
+
+            const ballEl = document.createElement('div');
+            ballEl.className = 'ball';
+            container.appendChild(ballEl);
+
+            let startOffset = (Math.random() - 0.5) * 10;
+            if (Math.random() < winChance) startOffset = Math.random() > 0.5 ? 25 : -25;
+
+            // Objek bola untuk menampung data posisi & kecepatan
+            let ball = { 
+                id: Date.now() + Math.random(), 
+                el: ballEl, 
+                x: container.offsetWidth / 2 + startOffset, 
+                y: 10, 
+                vx: (Math.random() - 0.5) * 2, 
+                vy: 0 
+            };
+            
+            // Atur posisi awal langsung agar tidak ada kedipan di pojok layar
+            ball.el.style.left = ball.x + 'px';
+            ball.el.style.top = ball.y + 'px';
+            
+            activeBalls.push(ball);
+
+            // Variabel fisika yang diperbarui
+            const gravity = 0.8; 
+            const friction = 0.99; 
+            const bounce = 0.5; 
+
+            const moveBall = setInterval(() => {
+                ball.vy += gravity; 
+                ball.vx *= friction; 
+                ball.x += ball.vx; 
+                ball.y += ball.vy;
+
+                // Memantul pada paku (pegs)
+                pegLocations.forEach(p => {
+                    const dx = ball.x - p.x; const dy = ball.y - p.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < 11) {
+                        const angle = Math.atan2(dy, dx);
+                        const speed = Math.sqrt(ball.vx*ball.vx + ball.vy*ball.vy);
+                        // Membuat pantulan lebih memencar natural
+                        ball.vx = Math.cos(angle) * speed * bounce + (Math.random()-0.5) * 3.5;
+                        ball.vy = Math.sin(angle) * speed * bounce;
+                        ball.x = p.x + Math.cos(angle) * 11.5; 
+                        ball.y = p.y + Math.sin(angle) * 11.5;
+                    }
+                });
+
+                // Tabrakan antar bola
+                activeBalls.forEach(otherBall => {
+                    if (otherBall.id !== ball.id) {
+                        let dx = ball.x - otherBall.x;
+                        let dy = ball.y - otherBall.y;
+                        let dist = Math.sqrt(dx*dx + dy*dy);
+                        if (dist < 14 && dist > 0) { // 14 adalah ukuran diameter bola (radius 7 * 2)
+                            let angle = Math.atan2(dy, dx);
+                            let overlap = 14 - dist;
+                            // Saling mendorong
+                            ball.x += Math.cos(angle) * overlap / 2;
+                            ball.y += Math.sin(angle) * overlap / 2;
+                            // Transfer momentum
+                            let tempVx = ball.vx; let tempVy = ball.vy;
+                            ball.vx = otherBall.vx * 0.8; ball.vy = otherBall.vy * 0.8;
+                            otherBall.vx = tempVx * 0.8; otherBall.vy = tempVy * 0.8;
+                        }
+                    }
+                });
+
+                // Batas dinding kiri & kanan
+                if (ball.x < 10) { ball.x = 10; ball.vx *= -0.6; }
+                if (ball.x > container.offsetWidth - 10) { ball.x = container.offsetWidth - 10; ball.vx *= -0.6; }
+                
+                ball.el.style.left = ball.x + 'px'; 
+                ball.el.style.top = ball.y + 'px';
+
+                // Kondisi bola masuk kotak pengali (y > 345)
+                if (ball.y > 345) {
+                    clearInterval(moveBall);
+                    // Langsung hapus bola secara visual & dari array agar tidak menumpuk
+                    ball.el.remove();
+                    activeBalls = activeBalls.filter(b => b.id !== ball.id);
+
+                    const containerRect = container.getBoundingClientRect();
+                    const slotsEls = document.querySelectorAll('.slot');
+                    let finalSlot = -1; 
+                    
+                    slotsEls.forEach((s, index) => {
+                        const sRect = s.getBoundingClientRect();
+                        const ballGlobalX = ball.x + containerRect.left;
+                        if (ballGlobalX >= sRect.left && ballGlobalX <= sRect.right) {
+                            finalSlot = index;
+                            s.style.transform = "scale(1.15)"; s.style.filter = "brightness(1.5)";
+                            setTimeout(() => { s.style.transform = "scale(1)"; s.style.filter = "brightness(1)"; }, 200);
+                        }
+                    });
+
+                    if (finalSlot !== -1) {
+                        // Jalankan proses ke server tanpa mem-block animasi menggunakan .then
+                        processGameResult(slots[finalSlot]).then(winAmount => {
+                            if (winAmount > 0) {
+                                addScoreBoard(winAmount);
+                                const p = document.createElement('div');
+                                p.className = 'win-popup';
+                                p.innerText = `+${winAmount.toLocaleString()}`;
+                                p.style.left = ball.x + 'px'; p.style.top = '280px';
+                                document.body.appendChild(p);
+                                setTimeout(() => p.remove(), 1000);
+                            }
+                        });
+                    }
+                }
+            }, 18);
+        }
+    </script>
+</body>
+</html>
