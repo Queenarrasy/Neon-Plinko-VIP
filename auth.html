@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NEON PLINKO VIP - AUTH</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        :root { --pink: #ff0077; --blue: #00d4ff; --yellow: #fbff00; --bg: #070816; }
+        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body { 
+            background: var(--bg); 
+            background-image: 
+                radial-gradient(circle at 0% 0%, rgba(255, 0, 119, 0.15) 0%, transparent 35%),
+                radial-gradient(circle at 100% 100%, rgba(0, 212, 255, 0.15) 0%, transparent 35%);
+            color: white; 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            margin: 0; 
+            padding: 20px; 
+            overflow-x: hidden;
+        }
+        
+        .auth-card { 
+            width: 100%; 
+            max-width: 420px; 
+            background: rgba(10, 11, 30, 0.8); 
+            border: 2px solid var(--blue); 
+            border-radius: 30px; 
+            padding: 40px 25px;
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.2), inset 0 0 15px rgba(0, 212, 255, 0.1);
+            text-align: center;
+            backdrop-filter: blur(15px);
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .title { font-size: 34px; font-weight: 900; text-transform: uppercase; line-height: 1; margin-bottom: 30px; letter-spacing: -1px; }
+        .t-pink { color: var(--pink); text-shadow: 0 0 10px var(--pink); }
+        .t-blue { color: var(--blue); text-shadow: 0 0 10px var(--blue); }
+        .t-yellow { color: var(--yellow); text-shadow: 0 0 10px var(--yellow); }
+
+        .form-group { margin-bottom: 18px; text-align: left; position: relative; }
+        label { font-size: 11px; font-weight: 900; color: var(--blue); letter-spacing: 1.5px; margin-left: 5px; text-transform: uppercase; display: block; margin-bottom: 5px; }
+        
+        input, select { 
+            width: 100%; padding: 14px 16px; background: rgba(0, 0, 0, 0.6); border: 1px solid #222; 
+            border-radius: 12px; color: white; outline: none; 
+            transition: 0.3s; font-size: 14px; font-weight: 600;
+        }
+        input:focus { border-color: var(--pink); box-shadow: 0 0 15px rgba(255, 0, 119, 0.3); background: rgba(0,0,0,0.8); }
+
+        .pass-wrapper { position: relative; }
+        .toggle-pass { 
+            position: absolute; right: 15px; top: 50%; transform: translateY(-50%); 
+            color: var(--blue); cursor: pointer; transition: 0.2s;
+        }
+        .toggle-pass:hover { color: var(--pink); }
+
+        .btn-submit { 
+            width: 100%; padding: 16px; background: linear-gradient(90deg, var(--pink), #aa0055); 
+            border: none; border-radius: 50px; color: white; font-weight: 900; 
+            cursor: pointer; text-transform: uppercase; margin-top: 25px; font-size: 16px;
+            box-shadow: 0 5px 20px rgba(255, 0, 119, 0.4); transition: 0.3s;
+            letter-spacing: 1px;
+        }
+        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(255, 0, 119, 0.6); }
+        .btn-submit:active { transform: scale(0.96); }
+
+        .switch-link { margin-top: 25px; font-size: 14px; color: #aaa; cursor: pointer; transition: 0.3s; }
+        .switch-link b { color: var(--yellow); text-decoration: none; border-bottom: 1px solid var(--yellow); padding-bottom: 2px; }
+        .switch-link:hover { color: #fff; }
+
+        #loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(7, 8, 22, 0.9); display: none; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 2000000;
+            backdrop-filter: blur(5px);
+        }
+        .spinner {
+            width: 60px; height: 60px; border: 4px solid rgba(0, 212, 255, 0.1);
+            border-top: 4px solid var(--blue); border-right: 4px solid var(--pink); border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <p style="margin-top: 20px; color: var(--blue); font-weight: 900; letter-spacing: 3px; font-size: 12px; text-transform: uppercase;">Mengakses Database...</p>
+    </div>
+
+    <div class="auth-card">
+        <div class="title">
+            <span class="t-pink">NEON</span> <span class="t-blue">PLINKO</span> <br> <span class="t-yellow">VIP</span>
+        </div>
+
+        <h3 id="form-label" style="color: var(--blue); margin-bottom: 25px; letter-spacing: 2px; font-weight: 900; text-transform: uppercase; font-size: 16px;">PENDAFTARAN VIP</h3>
+
+        <form id="auth-form">
+            <div class="form-group">
+                <label>USERNAME</label>
+                <input type="text" id="username" placeholder="Masukkan ID VIP Anda" autocomplete="username">
+            </div>
+
+            <div id="extra-fields">
+                <div class="form-group">
+                    <label>NOMOR HP (WHATSAPP)</label>
+                    <input type="number" id="phone" placeholder="Contoh: 08123456789">
+                </div>
+                <div class="form-group">
+                    <label>NAMA LENGKAP</label>
+                    <input type="text" id="fullname" placeholder="Sesuai Rekening / E-Wallet">
+                </div>
+                <div class="form-group">
+                    <label>METODE PEMBAYARAN</label>
+                    <select id="bank">
+                        <option value="DANA">DANA</option>
+                        <option value="OVO">OVO</option>
+                        <option value="GOPAY">GOPAY</option>
+                        <option value="BCA">BANK BCA</option>
+                        <option value="BRI">BANK BRI</option>
+                        <option value="MANDIRI">BANK MANDIRI</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>NOMOR REKENING / AKUN</label> 
+                    <input type="number" id="rekening" placeholder="Masukkan Nomor Akun Anda">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>PASSWORD</label>
+                <div class="pass-wrapper">
+                    <input type="password" id="password" placeholder="Minimal 6 karakter" autocomplete="current-password">
+                    <i class="fa-solid fa-eye toggle-pass" onclick="togglePassword()"></i>
+                </div>
+            </div>
+
+            <div class="form-group" id="ref-group">
+                <label>KODE REFERRAL (OPSIONAL)</label>
+                <input type="text" id="referral_code" placeholder="Kode VIP Pengajak">
+            </div>
+
+            <button type="button" class="btn-submit" onclick="processAuth()" id="btn-text">Daftar Sekarang</button>
+        </form>
+
+        <div class="switch-link" id="auth-switch" onclick="toggleMode()">Sudah punya akun? <b>Login di sini</b></div>
+    </div>
+
+    <script src="global.js"></script>
+    <script>
+        let isLogin = false;
+
+        function togglePassword() {
+            const passInput = document.getElementById('password');
+            const icon = document.querySelector('.toggle-pass');
+            if (passInput.type === "password") {
+                passInput.type = "text";
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                passInput.type = "password";
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+
+        function toggleMode() {
+            isLogin = !isLogin;
+            const extra = document.getElementById('extra-fields');
+            const ref = document.getElementById('ref-group'); 
+            const label = document.getElementById('form-label');
+            const btn = document.getElementById('btn-text');
+            const sw = document.getElementById('auth-switch');
+
+            if (isLogin) {
+                extra.classList.add('hidden');
+                ref.classList.add('hidden'); 
+                label.innerText = "LOGIN MEMBER VIP";
+                btn.innerText = "Masuk Sekarang";
+                sw.innerHTML = "Belum punya akun? <b>Daftar Akun VIP</b>";
+            } else {
+                extra.classList.remove('hidden');
+                ref.classList.remove('hidden'); 
+                label.innerText = "PENDAFTARAN VIP";
+                btn.innerText = "Daftar Sekarang";
+                sw.innerHTML = "Sudah punya akun? <b>Login di sini</b>";
+            }
+        }
+
+        async function processAuth() {
+            const user = document.getElementById('username').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            const loader = document.getElementById('loading-overlay');
+
+            if (user === "" || pass.length < 6) {
+                showNeonAlert("Username dan Password (min 6 karakter) wajib diisi!", "DATA TIDAK LENGKAP");
+                return;
+            }
+
+            loader.style.display = 'flex';
+
+            try {
+                if (isLogin) {
+                    await handleLogin(user, pass);
+                    loader.style.display = 'none';
+                } else {
+                    // --- MODE REGISTER (VERSI FIX) ---
+                    const phoneVal = document.getElementById('phone').value.trim();
+                    const fullVal = document.getElementById('fullname').value.trim();
+                    const bankVal = document.getElementById('bank').value;
+                    const rekVal = document.getElementById('rekening').value.trim();
+
+                    if (!phoneVal || !fullVal || !rekVal) {
+                        loader.style.display = 'none';
+                        showNeonAlert("Mohon lengkapi semua data pendaftaran!", "PERINGATAN");
+                        return;
+                    }
+
+                    // Pastikan payload ini sesuai dengan variabel di App Script
+                    const result = await callCloud({
+                        action: "register",
+                        username: user,    // Harus 'username'
+                        phone: phoneVal,   // Harus 'phone'
+                        fullname: fullVal, // Harus 'fullname'
+                        bank: bankVal,     // Harus 'bank'
+                        rekening: rekVal,  // Harus 'rekening'
+                        password: pass     // Harus 'password'
+                    });
+                    
+                    loader.style.display = 'none';
+                    
+                    if (result && result.result === "SUCCESS") {
+                        localStorage.setItem('user_session', user);
+                        localStorage.setItem('user_fullname', fullVal);
+                        localStorage.setItem('saldo', 0);
+                        
+                        showNeonAlert("Akun VIP Berhasil Dibuat!", "SUKSES");
+                        setTimeout(() => { window.location.href = "game.html"; }, 2000);
+                    } else if (result && result.result === "EXISTS") {
+                        showNeonAlert("Username sudah digunakan, coba yang lain.", "ID TIDAK TERSEDIA");
+                    } else {
+                        showNeonAlert("Gagal mendaftar ke server. Coba beberapa saat lagi.", "ERROR SYSTEM");
+                    }
+                }
+            } catch (error) {
+                loader.style.display = 'none';
+                console.error("Auth Error:", error);
+                showNeonAlert("Gagal terhubung ke database. Cek koneksi internet Anda.", "KONEKSI BERMASALAH");
+            }
+        }
+
+        window.onload = () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const refCode = urlParams.get('ref');
+            if(refCode) {
+                document.getElementById('referral_code').value = refCode;
+            }
+        };
+    </script>
+</body>
+</html>
