@@ -18,6 +18,7 @@
             font-family: 'Segoe UI', Roboto, sans-serif; 
             margin: 0; padding: 20px;
             display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh;
         }
 
         .container { width: 100%; max-width: 400px; }
@@ -68,6 +69,10 @@
             background: #0d0f26; border: 2px solid var(--pink); border-radius: 20px; 
             padding: 25px; width: 80%; max-width: 300px; text-align: center; box-shadow: 0 0 30px var(--pink); 
         }
+        .modal-btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        .modal-btn { padding: 12px; flex: 1; border: none; border-radius: 10px; font-weight: 900; cursor: pointer; text-transform: uppercase; }
+        .btn-cancel { background: #333; color: white; }
+        .btn-confirm { background: var(--pink); color: white; box-shadow: var(--neon-pink); }
     </style>
 </head>
 <body>
@@ -76,9 +81,9 @@
         <div class="neon-modal">
             <h2 style="color:var(--pink); text-shadow:var(--neon-pink);">LOGOUT</h2>
             <p style="color:white;">Yakin ingin keluar akun VIP?</p>
-            <div style="display:flex; gap:10px; margin-top:20px;">
-                <button style="padding:10px; flex:1; background:#333; color:white; border:none; border-radius:10px;" onclick="closeModal()">BATAL</button>
-                <button style="padding:10px; flex:1; background:var(--pink); color:white; border:none; border-radius:10px;" onclick="confirmLogout()">KELUAR</button>
+            <div class="modal-btn-group">
+                <button class="modal-btn btn-cancel" onclick="closeModal()">BATAL</button>
+                <button class="modal-btn btn-confirm" onclick="confirmLogout()">KELUAR</button>
             </div>
         </div>
     </div>
@@ -110,8 +115,8 @@
     </div>
 
     <script>
-        // PASTIKAN URL INI SESUAI DENGAN APPS SCRIPT KAMU
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
+        // GANTI URL INI DENGAN URL DEPLOYMENT GOOGLE APPS SCRIPT TERBARU KAMU
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwqQWXIJuVnkIxLvdu3kYiiRDVh7eyrsy-KU6rG1qtQClgfAzmMoclv2ULFZ_hRdE_qUg/exec";
 
         function showLogoutModal() { document.getElementById('neon-overlay').style.display = 'flex'; }
         function closeModal() { document.getElementById('neon-overlay').style.display = 'none'; }
@@ -119,35 +124,58 @@
 
         async function syncProfile() {
             const user = localStorage.getItem('user_session');
-            if (!user) { window.location.href = 'index.html'; return; }
+            
+            // 1. Cek Sesi (Jika tidak ada, lempar ke login)
+            if (!user) { 
+                window.location.href = 'index.html'; 
+                return; 
+            }
 
+            // 2. Tampilkan Username Lokal (Cepat)
             document.getElementById('profile-username').innerText = user.toUpperCase();
             
             try {
+                // 3. Tarik Data dari Google Sheets
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
-                    body: JSON.stringify({ action: 'getUserData', username: user })
+                    body: JSON.stringify({ 
+                        action: 'getUserData', 
+                        username: user 
+                    })
                 });
 
                 const data = await response.json();
+                console.log("Respon Server:", data); 
 
                 if (data && data.result === "SUCCESS") {
-                    // Update Tampilan dari Database
-                    document.getElementById('display-saldo').innerText = "IDR " + Number(data.saldo).toLocaleString('id-ID');
+                    // Update UI dengan data asli dari database
+                    document.getElementById('display-saldo').innerText = "IDR " + Number(data.saldo || 0).toLocaleString('id-ID');
                     document.getElementById('profile-tier').innerText = (data.tier || "BRONZE").toUpperCase() + " MEMBER";
-                    document.getElementById('profile-fullname').innerText = data.fullname.toUpperCase();
-                    document.getElementById('profile-bank').innerText = data.bank.toUpperCase();
-                    document.getElementById('profile-rek').innerText = data.rekening;
+                    document.getElementById('profile-fullname').innerText = (data.fullname || "DATA TIDAK ADA").toUpperCase();
+                    document.getElementById('profile-bank').innerText = (data.bank || "-").toUpperCase();
+                    document.getElementById('profile-rek').innerText = data.rekening || "-";
 
-                    // Simpan saldo terbaru ke lokal
+                    // Update Saldo lokal agar sinkron dengan game
                     localStorage.setItem('saldo', data.saldo);
+                } else {
+                    document.getElementById('profile-tier').innerText = "USER TIDAK DITEMUKAN";
                 }
+
             } catch (err) {
-                console.error("Gagal sinkron:", err);
-                document.getElementById('profile-tier').innerText = "KONEKSI BERMASALAH";
+                console.error("Koneksi Gagal:", err);
+                // Jika offline/gagal koneksi, gunakan data yang tersimpan di HP (Cache)
+                const localSaldo = localStorage.getItem('saldo') || 0;
+                document.getElementById('display-saldo').innerText = "IDR " + Number(localSaldo).toLocaleString('id-ID');
+                document.getElementById('profile-tier').innerText = "OFFLINE MODE";
+                
+                // Ubah status memuat menjadi pesan error
+                document.getElementById('profile-fullname').innerText = "KONEKSI BERMASALAH";
+                document.getElementById('profile-bank').innerText = "KONEKSI BERMASALAH";
+                document.getElementById('profile-rek').innerText = "KONEKSI BERMASALAH";
             }
         }
 
+        // Jalankan sinkronisasi saat halaman dimuat
         window.onload = syncProfile;
     </script>
 </body>
