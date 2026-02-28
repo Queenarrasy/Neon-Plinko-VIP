@@ -114,6 +114,19 @@
     <script>
         const API_SERVER = CLOUD_URL || SCRIPT_URL; 
 
+        // --- SISTEM SUARA ---
+        const sounds = {
+            bounce: new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3'),
+            win: new Audio('https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3'),
+            click: new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3')
+        };
+
+        function playSound(sfx) {
+            const s = sounds[sfx].cloneNode();
+            s.volume = 0.4;
+            s.play().catch(e => console.log("Interaction required for audio"));
+        }
+
         // Variabel Global
         const container = document.getElementById('game-container');
         const bets = [400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 4000, 6000, 8000, 10000, 12000, 16000, 18000, 20000];
@@ -152,22 +165,19 @@
 
         function closeNeonModal() { document.getElementById('neon-overlay').style.display = 'none'; }
 
-        // --- CORE PROCESS (BARU) ---
+        // --- CORE PROCESS ---
         async function processGameResult(multiplierValue, visualBallX) {
             const user = localStorage.getItem('user_session');
             const bet = bets[betIdx];
             
-            // 1. TAMPILKAN POP-UP & SCOREBOARD INSTAN
             const winAmountLokal = Math.floor(bet * multiplierValue);
             showInstantPopup(winAmountLokal, visualBallX);
             updateScoreBoard(winAmountLokal);
 
-            // Update saldo visual secara instan agar user tidak menunggu network
             const currentSaldo = Number(localStorage.getItem('saldo') || 0);
             updateSaldoLokal(currentSaldo + winAmountLokal);
 
             try {
-                // 2. KIRIM KE SERVER DI LATAR BELAKANG UNTUK VALIDASI
                 const res = await callCloud({ 
                     action: 'playGame', 
                     username: user, 
@@ -176,16 +186,13 @@
                 });
 
                 if (res.result === "SUCCESS") {
-                    // 3. SINKRONISASI SALDO ASLI DARI SERVER (Data Final)
                     updateSaldoLokal(res.newSaldo);
                 } else if (res.message === "SALDO HABIS") {
                     showNeonModal("Saldo Habis!");
                     setMode('normal');
                     syncSaldoRealtime(); 
                 }
-            } catch (e) { 
-                console.error("Sync Fail"); 
-            }
+            } catch (e) { console.error("Sync Fail"); }
         }
 
         function showInstantPopup(amount, x) {
@@ -196,7 +203,6 @@
             p.style.top = '280px';
             p.style.color = amount > 0 ? 'var(--yellow)' : '#888';
             container.appendChild(p);
-            // Hapus animasi lebih cepat agar sinkron
             setTimeout(() => p.remove(), 600);
         }
 
@@ -240,6 +246,7 @@
         }
 
         function changeBet(d) { 
+            playSound('click');
             betIdx = Math.max(0, Math.min(bets.length-1, betIdx+d)); 
             document.getElementById('current-bet').innerText = bets[betIdx].toLocaleString(); 
         }
@@ -253,7 +260,10 @@
             if(isAuto) startAuto();
         }
 
-        function handlePlay() { if (isAuto) setMode('normal'); else dropBall(); }
+        function handlePlay() { 
+            playSound('click');
+            if (isAuto) setMode('normal'); else dropBall(); 
+        }
 
         function startAuto() { dropBall(); autoInterval = setInterval(() => { if(isAuto) dropBall(); }, 700); }
 
@@ -267,7 +277,6 @@
                 return; 
             }
 
-            // Langsung kurangi saldo visual saat bola jatuh
             updateSaldoLokal(currentSaldo - bet);
 
             const ballEl = document.createElement('div');
@@ -296,6 +305,7 @@
                     const dx = ball.x - p.x; const dy = ball.y - p.y;
                     const dist = Math.sqrt(dx*dx + dy*dy);
                     if (dist < 11) {
+                        playSound('bounce');
                         const angle = Math.atan2(dy, dx);
                         const speed = Math.sqrt(ball.vx*ball.vx + ball.vy*ball.vy);
                         ball.vx = Math.cos(angle) * speed * bounce + (Math.random()-0.5)*3;
@@ -312,6 +322,7 @@
 
                 if (ball.y > 345) {
                     clearInterval(moveBall);
+                    playSound('win');
                     ball.el.remove();
                     activeBalls = activeBalls.filter(b => b.id !== ball.id);
 
@@ -328,7 +339,6 @@
                         setTimeout(() => s.style.transform = "scale(1)", 150);
                     }
 
-                    // Panggil proses utama
                     processGameResult(mult, ball.x);
                 }
             }, 20);
