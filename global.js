@@ -108,6 +108,50 @@ async function syncSaldo() {
 }
 
 /**
+ * SISTEM PERMAINAN: KIRIM HASIL KE SERVER (Sempurna & Aman)
+ * Fungsi ini menangani komunikasi hasil taruhan ke database Google Sheets
+ */
+async function processGameResult(multiplierValue) {
+    const user = localStorage.getItem('user_session');
+    const currentBetDisplay = document.getElementById('current-bet');
+    
+    // Pastikan elemen bet ditemukan
+    if (!currentBetDisplay) {
+        console.error("Elemen current-bet tidak ditemukan!");
+        return 0;
+    }
+
+    // Ambil bet dari teks UI (hilangkan koma/titik jika ada)
+    const bet = parseInt(currentBetDisplay.innerText.replace(/,/g, '').replace(/\./g, ''));
+
+    if (!user) return 0;
+
+    try {
+        // Kirim data ke Google Apps Script (Server)
+        const res = await callCloud({ 
+            action: 'playGame', 
+            username: user, 
+            betAmount: bet, 
+            multiplier: multiplierValue 
+        });
+
+        if (res.result === "SUCCESS") {
+            // Update saldo lokal berdasarkan balasan resmi dari database server
+            updateSaldoLokal(res.newSaldo);
+            
+            // Return winAmount agar game.html bisa menampilkan popup kemenangan
+            return res.winAmount; 
+        } else {
+            console.error("Server Response Error:", res.message);
+            return 0;
+        }
+    } catch (e) { 
+        console.error("Gagal memproses hasil game ke cloud."); 
+        return 0; 
+    }
+}
+
+/**
  * TRANSAKSI: MUAT RIWAYAT (DEPOSIT/WITHDRAW)
  * Desain menggunakan Kartu Modern (Sempurna)
  */
@@ -129,7 +173,6 @@ async function loadRiwayat(type) {
         if (res.result === "SUCCESS" && res.data && res.data.length > 0) {
             container.innerHTML = ''; 
             res.data.forEach(item => {
-                // Logika Warna Status Dinamis
                 const statusColor = item.status.toLowerCase() === 'success' || item.status.toLowerCase() === 'berhasil' ? '#00ff88' : 
                                    (item.status.toLowerCase() === 'pending' || item.status.toLowerCase() === 'proses' ? '#ffcc00' : '#ff0077');
                 
