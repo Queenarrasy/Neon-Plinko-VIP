@@ -1,5 +1,5 @@
 /**
- * GLOBAL JS - SISTEM PLINKO VIP V3.6.3 (Optimized & Integrated)
+ * GLOBAL JS - SISTEM PLINKO VIP V3.6.4 (Fixed Conflict)
  * Terintegrasi: Cloud Sync, Auth, Transaction History, & Anti-Lag Balance Update
  */
 
@@ -68,10 +68,9 @@ async function handleLogout() {
 }
 
 /**
- * SISTEM SALDO: UPDATE LOKAL (ANTI-MEMBAL & PROTEKSI NaN)
+ * SISTEM SALDO: UPDATE LOKAL (PROTEKSI NaN)
  */
 function updateSaldoLokal(newAmount) {
-    // Proteksi jika data tidak valid agar saldo tidak berubah jadi NaN atau hilang
     if (newAmount === undefined || newAmount === null || isNaN(newAmount)) return;
     
     localStorage.setItem('saldo', newAmount);
@@ -86,7 +85,7 @@ function updateSaldoLokal(newAmount) {
 }
 
 /**
- * SISTEM SALDO: SYNC DARI SERVER (PERIODIK)
+ * SISTEM SALDO: SYNC DARI SERVER
  */
 async function syncSaldo() {
     const user = localStorage.getItem('user_session');
@@ -109,45 +108,36 @@ async function syncSaldo() {
 }
 
 /**
- * SISTEM PERMAINAN: KIRIM HASIL KE SERVER (SINKRONISASI DATABASE)
- * Memastikan setiap kemenangan tercatat di Google Sheets
+ * SISTEM PERMAINAN: KIRIM HASIL KE SERVER
+ * Diubah namanya dari processGameResult menjadi sendGameResultToCloud
+ * agar tidak bentrok dengan fungsi di game.html
  */
-async function processGameResult(multiplierValue) {
+async function sendGameResultToCloud(multiplierValue, betAmount) {
     const user = localStorage.getItem('user_session');
-    const currentBetDisplay = document.getElementById('current-bet');
-    
-    if (!user || !currentBetDisplay) return 0;
-
-    // Ambil bet dari teks UI (hilangkan titik/koma)
-    const bet = parseInt(currentBetDisplay.innerText.replace(/,/g, '').replace(/\./g, ''));
+    if (!user) return null;
 
     try {
-        // Kirim data ke Cloud (Google Sheets)
         const res = await callCloud({ 
             action: 'playGame', 
             username: user, 
-            betAmount: bet, 
+            betAmount: betAmount, 
             multiplier: multiplierValue.toString() 
         });
 
         if (res.result === "SUCCESS") {
-            // Update saldo final berdasarkan balasan resmi database server
-            updateSaldoLokal(res.newSaldo);
-            return res.winAmount; 
+            return res; 
         } else {
-            console.error("Server Error:", res.message);
-            // Jika saldo habis di server, sinkronkan ulang UI
             if(res.message === "SALDO HABIS") syncSaldo();
-            return 0;
+            return null;
         }
     } catch (e) { 
         console.error("Gagal sinkronisasi cloud."); 
-        return 0; 
+        return null; 
     }
 }
 
 /**
- * TRANSAKSI: MUAT RIWAYAT (DEPOSIT/WITHDRAW)
+ * TRANSAKSI: MUAT RIWAYAT
  */
 async function loadRiwayat(type) {
     const user = localStorage.getItem('user_session');
