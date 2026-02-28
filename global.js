@@ -21,10 +21,46 @@ async function callCloud(payload) {
 }
 
 /**
+ * FUNGSI TAMBAHAN: UPDATE SALDO LOKAL (ANTI MEMBAL)
+ * Gunakan fungsi ini setiap kali pemain memasang taruhan atau menang
+ * @param {number} newAmount - Nilai saldo terbaru dari server
+ */
+function updateSaldoLokal(newAmount) {
+    // Simpan ke LocalStorage agar saat refresh tidak kembali ke awal
+    localStorage.setItem('saldo', newAmount);
+    
+    // Update tampilan di layar secara instan jika elemen saldo ada
+    const saldoDisplay = document.getElementById('display-saldo') || document.getElementById('user-balance');
+    if (saldoDisplay) {
+        saldoDisplay.innerText = "IDR " + Number(newAmount).toLocaleString();
+    }
+}
+
+/**
+ * FUNGSI TAMBAHAN: AMBIL DATA TERBARU DARI SERVER
+ * Memastikan saldo di layar selalu sama dengan di Google Sheets
+ */
+async function syncSaldo() {
+    const user = localStorage.getItem('user_session');
+    if (!user) return;
+
+    const result = await callCloud({
+        action: "getUserData",
+        username: user
+    });
+
+    if (result && result.result === "SUCCESS") {
+        updateSaldoLokal(result.saldo);
+        localStorage.setItem('winrate', result.winrate);
+    }
+}
+
+/**
  * Fungsi untuk Menangani Login
  */
 async function handleLogin(user, pass) {
     const loader = document.getElementById('loading-overlay');
+    if (loader) loader.style.display = 'flex'; // Menampilkan loader jika ada
     
     const result = await callCloud({
         action: "login",
@@ -33,11 +69,11 @@ async function handleLogin(user, pass) {
     });
 
     if (result && result.result === "SUCCESS") {
-        // Simpan data ke browser (LocalStorage) agar bisa dibaca di game.html
+        // Simpan data ke browser (LocalStorage)
         localStorage.setItem('user_session', result.username);
         localStorage.setItem('user_fullname', result.fullname);
         localStorage.setItem('saldo', result.saldo);
-        localStorage.setItem('tier', result.tier);
+        localStorage.setItem('tier', result.tier || "BRONZE");
         localStorage.setItem('winrate', result.winrate);
 
         showNeonAlert("Selamat Datang Kembali, " + result.fullname, "LOGIN BERHASIL");
@@ -47,7 +83,7 @@ async function handleLogin(user, pass) {
             window.location.href = "game.html";
         }, 1500);
     } else {
-        loader.style.display = 'none';
+        if (loader) loader.style.display = 'none';
         showNeonAlert("Username atau Password salah!", "AKSES DITOLAK");
     }
 }
@@ -56,8 +92,6 @@ async function handleLogin(user, pass) {
  * Fungsi Custom Alert bertema Neon
  */
 function showNeonAlert(message, title = "NOTIFIKASI") {
-    // Kamu bisa menggunakan alert bawaan browser dulu untuk memastikan fungsi jalan
-    // Atau membuat modal custom di sini nanti
     alert(`${title}\n\n${message}`);
 }
 
@@ -67,7 +101,6 @@ function showNeonAlert(message, title = "NOTIFIKASI") {
 async function handleLogout() {
     const user = localStorage.getItem('user_session');
     if (user) {
-        // Opsional: Kirim perintah ke sheet untuk set OFFLINE
         await callCloud({ action: "logout", username: user });
     }
     localStorage.clear();
