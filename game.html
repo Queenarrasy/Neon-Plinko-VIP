@@ -297,66 +297,76 @@
                 ball.el.style.left = ball.x + 'px'; 
                 ball.el.style.top = ball.y + 'px';
 
-                // --- BAGIAN PENYELESAIAN BOLA ---
+                // --- LOGIKA PENYELESAIAN BOLA ---
                 if (ball.y > 345) {
                     clearInterval(moveBall);
                     ball.el.remove();
                     activeBalls = activeBalls.filter(b => b.id !== ball.id);
 
-                    // LOGIKA BARU: Matematika akurat untuk menentukan slot
-                    const totalSlots = slots.length;
+                    // 1. Tentukan Slot Berdasarkan Posisi Horizontal (Akurasi Tinggi)
+                    const totalSlots = slots.length; // Ada 7 slot [5, 2, 1.2, 0.2, 1.2, 2, 5]
                     const slotWidth = container.offsetWidth / totalSlots;
+                    
+                    // Menghitung indeks slot: koordinat X bola dibagi lebar tiap slot
                     let finalSlot = Math.floor(ball.x / slotWidth);
                     
-                    if (finalSlot < 0) finalSlot = 0;
-                    if (finalSlot >= totalSlots) finalSlot = totalSlots - 1;
+                    // Safety check agar indeks tidak keluar dari range 0-6
+                    finalSlot = Math.max(0, Math.min(totalSlots - 1, finalSlot));
 
-                    if (finalSlot !== -1) {
-                        const mult = slots[finalSlot];
-                        const slotsEls = document.querySelectorAll('.slot');
-                        const s = slotsEls[finalSlot];
-                        
-                        if (s) {
-                            s.style.transform = "scale(1.2)";
-                            s.style.filter = "brightness(1.5)";
-                            setTimeout(() => {
-                                s.style.transform = "scale(1)";
-                                s.style.filter = "brightness(1)";
-                            }, 200);
-                        }
-
-                        processGameResult(mult).then(winAmount => {
-                            if (winAmount !== undefined && winAmount >= 0) { 
-                                // 1. UPDATE PAPAN SKOR KIRI
-                                const board = document.getElementById('score-board');
-                                const item = document.createElement('div');
-                                item.className = 'score-item';
-                                item.style.borderLeft = winAmount > 0 ? "4px solid var(--yellow)" : "4px solid #444";
-                                item.innerText = winAmount > 0 ? 'WIN +' + winAmount.toLocaleString() : 'LOSE 0';
-                                
-                                board.prepend(item);
-                                if (board.children.length > 5) board.lastChild.remove();
-                                
-                                setTimeout(() => { 
-                                    if(item) {
-                                        item.style.opacity = '0'; 
-                                        setTimeout(()=>item.remove(), 500); 
-                                    }
-                                }, 3000);
-
-                                // 2. POPUP MELAYANG
-                                if (winAmount > 0) {
-                                    const p = document.createElement('div');
-                                    p.className = 'win-popup';
-                                    p.innerText = `+${winAmount.toLocaleString()}`;
-                                    p.style.left = ball.x + 'px'; 
-                                    p.style.top = '280px';
-                                    container.appendChild(p);
-                                    setTimeout(() => p.remove(), 1000);
-                                }
-                            }
-                        });
+                    // 2. Ambil Nilai Multiplier dari Array slots
+                    const mult = slots[finalSlot]; 
+                    const slotsEls = document.querySelectorAll('.slot');
+                    const s = slotsEls[finalSlot];
+                    
+                    // Efek visual slot berkedip saat kena bola
+                    if (s) {
+                        s.style.transform = "scale(1.2)";
+                        s.style.filter = "brightness(1.8)";
+                        setTimeout(() => {
+                            s.style.transform = "scale(1)";
+                            s.style.filter = "brightness(1)";
+                        }, 200);
                     }
+
+                    // 3. Kirim ke Server dan Tampilkan Hasil
+                    processGameResult(mult).then(winAmount => {
+                        // Jika winAmount adalah angka (bisa 0 atau lebih)
+                        if (typeof winAmount === 'number' && winAmount >= 0) {
+                            
+                            const board = document.getElementById('score-board');
+                            const item = document.createElement('div');
+                            item.className = 'score-item';
+
+                            // LOGIKA: Jika multiplier > 1 atau winAmount > 0, tampilkan WIN
+                            // Jika multiplier < 1 (seperti 0.2x), itu dianggap kalah/rugi sebagian
+                            if (winAmount > 0) {
+                                item.style.borderLeft = "4px solid var(--yellow)";
+                                item.innerHTML = `<span class="neon-y">WIN +${winAmount.toLocaleString()}</span>`;
+                                
+                                // Popup melayang di tengah layar
+                                const p = document.createElement('div');
+                                p.className = 'win-popup';
+                                p.innerText = `+${winAmount.toLocaleString()}`;
+                                p.style.left = ball.x + 'px'; 
+                                p.style.top = '280px';
+                                container.appendChild(p);
+                                setTimeout(() => p.remove(), 1000);
+                            } else {
+                                item.style.borderLeft = "4px solid #444";
+                                item.innerHTML = `<span style="color:#888;">LOSE 0</span>`;
+                            }
+                            
+                            board.prepend(item);
+                            if (board.children.length > 5) board.lastChild.remove();
+                            
+                            setTimeout(() => { 
+                                if(item) {
+                                    item.style.opacity = '0'; 
+                                    setTimeout(()=>item.remove(), 500); 
+                                }
+                            }, 3000);
+                        }
+                    });
                 }
             }, 20);
         }
