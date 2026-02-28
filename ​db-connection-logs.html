@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PANEL KONTROL ADMIN</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        body { background: #070816; color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; }
+        .neon-title { color: #ff0077; text-shadow: 0 0 10px #ff0077; text-align: center; text-transform: uppercase; }
+        .user-card { 
+            background: rgba(255,255,255,0.05); 
+            border: 1px solid #00d4ff; 
+            border-radius: 15px; 
+            padding: 15px; 
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+        }
+        .info h4 { margin: 0; color: #fbff00; font-size: 18px; }
+        .info p { margin: 5px 0; font-size: 13px; color: #ccc; }
+        .control { text-align: right; }
+        .control label { font-size: 10px; color: #00d4ff; display: block; margin-bottom: 5px; font-weight: bold; }
+        select { 
+            background: #000; color: #fff; border: 1px solid #ff0077; 
+            padding: 8px; border-radius: 8px; font-weight: bold; cursor: pointer;
+        }
+        .btn-refresh { 
+            width: 100%; padding: 12px; background: linear-gradient(90deg, #ff0077, #00d4ff); 
+            border: none; border-radius: 10px; font-weight: bold; color: white;
+            margin-bottom: 20px; cursor: pointer; transition: 0.3s;
+        }
+        .btn-refresh:active { transform: scale(0.95); }
+    </style>
+</head>
+<body>
+
+    <h2 class="neon-title"><i class="fa-solid fa-shuttle-space"></i> Control Panel Winrate</h2>
+    <button class="btn-refresh" onclick="loadUsers()">SINKRONISASI DATA PEMAIN</button>
+
+    <div id="user-list">
+        <p style="text-align:center; color: #888;">Menunggu perintah...</p>
+    </div>
+
+    <script>
+        // MASUKKAN URL WEB APP (DEPLOY TERBARU) DI SINI
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
+
+        async function loadUsers() {
+            const listDiv = document.getElementById('user-list');
+            listDiv.innerHTML = '<p style="text-align:center;">Mengambil data dari Sheets...</p>';
+            
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: "getAllUsers" })
+                });
+                const users = await response.json();
+                
+                listDiv.innerHTML = '';
+                if (users.length === 0) {
+                    listDiv.innerHTML = '<p style="text-align:center;">Belum ada pemain terdaftar.</p>';
+                    return;
+                }
+
+                users.forEach(user => {
+                    const card = document.createElement('div');
+                    card.className = 'user-card';
+                    card.innerHTML = `
+                        <div class="info">
+                            <h4>${user.username}</h4>
+                            <p><i class="fa-solid fa-wallet"></i> IDR ${Number(user.saldo).toLocaleString('id-ID')}</p>
+                            <p><i class="fa-solid fa-chart-line"></i> Winrate: <span style="color:#ff0077; font-weight:bold;">${user.winrate}</span></p>
+                        </div>
+                        <div class="control">
+                            <label>UBAH WINRATE</label>
+                            <select onchange="updateRate('${user.username}', this.value)">
+                                <option value="">Pilih</option>
+                                <option value="100">100% (JP)</option>
+                                <option value="80">80% (Gacor)</option>
+                                <option value="50">50% (Normal)</option>
+                                <option value="20">20% (Kuras)</option>
+                                <option value="5">5% (Zonk)</option>
+                            </select>
+                        </div>
+                    `;
+                    listDiv.appendChild(card);
+                });
+            } catch (e) {
+                listDiv.innerHTML = '<p style="text-align:center; color:red;">Koneksi Gagal! Pastikan URL Script Benar.</p>';
+            }
+        }
+
+        async function updateRate(username, rate) {
+            if(!rate) return;
+            if(!confirm(`Yakin ubah winrate ${username} ke ${rate}%?`)) return;
+
+            try {
+                const res = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        action: "updateWinrate", 
+                        targetUser: username, 
+                        newRate: rate 
+                    })
+                });
+                const result = await res.json();
+                if(result.result === "SUCCESS") {
+                    alert("Winrate " + username + " berhasil di-set ke " + rate + "%");
+                    loadUsers();
+                }
+            } catch (e) {
+                alert("Gagal menghubungi server!");
+            }
+        }
+
+        window.onload = loadUsers;
+    </script>
+</body>
+</html>
