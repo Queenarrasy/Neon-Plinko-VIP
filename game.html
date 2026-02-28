@@ -137,36 +137,29 @@
 
     <script src="global.js"></script>
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwqQWXIJuVnkIxLvdu3kYiiRDVh7eyrsy-KU6rG1qtQClgfAzmMoclv2ULFZ_hRdE_qUg/exec";
+        // SCRIPT_URL menggunakan konstanta dari global.js jika sudah ada, atau manual di sini
+        const API_SERVER = CLOUD_URL || SCRIPT_URL; 
 
-        function updateSaldoDisplay() {
-            const currentSaldo = Number(localStorage.getItem('saldo') || 0);
+        // Fungsi Update Saldo (Lokal & UI) agar tidak membal
+        function updateSaldoLokal(newAmount) {
+            localStorage.setItem('saldo', newAmount);
             const saldoEl = document.getElementById('display-saldo');
-            if (saldoEl) saldoEl.innerText = 'IDR ' + currentSaldo.toLocaleString('id-ID');
+            if (saldoEl) saldoEl.innerText = 'IDR ' + Number(newAmount).toLocaleString('id-ID');
         }
 
         async function syncSaldoRealtime() {
             const username = localStorage.getItem('user_session');
             if (!username) return;
             try {
-                const response = await fetch(SCRIPT_URL, {
-                    method: "POST",
-                    body: JSON.stringify({ action: "getUserData", username: username })
-                });
-                const data = await response.json();
+                const data = await callCloud({ action: "getUserData", username: username });
                 if (data.result === "SUCCESS") {
-                    localStorage.setItem('saldo', data.saldo);
-                    // --- UPDATE WINRATE DARI ADMIN ---
+                    updateSaldoLokal(data.saldo);
                     const rate = parseInt(data.winrate) || 70;
                     localStorage.setItem('user_winrate', rate);
-                    
-                    updateSaldoDisplay();
                     if(data.tier) document.getElementById('tier-name').innerText = data.tier + " PLAYER";
                 }
             } catch (e) { console.error("Sync Error"); }
         }
-
-        setInterval(syncSaldoRealtime, 15000);
 
         // --- GAME LOGIC ---
         const container = document.getElementById('game-container');
@@ -225,32 +218,39 @@
         }
 
         function handlePlay() { if (isAuto) setMode('normal'); else dropBall(); }
-        function startAuto() { dropBall(); autoInterval = setInterval(() => { if(isAuto) dropBall(); }, 450); }
+        function startAuto() { dropBall(); autoInterval = setInterval(() => { if(isAuto) dropBall(); }, 500); }
 
+        // FUNGSI INI ADALAH KUNCI ANTI-MEMBAL
         async function processGameResult(multiplierValue) {
             const user = localStorage.getItem('user_session');
             const bet = bets[betIdx];
             try {
-                const response = await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'playGame', username: user, betAmount: bet, multiplier: multiplierValue })
+                const res = await callCloud({ 
+                    action: 'playGame', 
+                    username: user, 
+                    betAmount: bet, 
+                    multiplier: multiplierValue 
                 });
-                const res = await response.json();
+
                 if (res.result === "SUCCESS") {
-                    localStorage.setItem('saldo', res.newSaldo);
-                    updateSaldoDisplay();
+                    // Update saldo lokal langsung dari respon server terbaru
+                    updateSaldoLokal(res.newSaldo);
                     return res.winAmount;
                 }
-            } catch (e) { return 0; }
+            } catch (e) { console.error("Game Process Error"); return 0; }
         }
 
         function dropBall() {
             const currentSaldo = Number(localStorage.getItem('saldo') || 0);
             const bet = Number(bets[betIdx]);
-            if (currentSaldo < bet) { setMode('normal'); showNeonModal("Saldo Tidak Cukup!"); return; }
+            if (currentSaldo < bet) { 
+                setMode('normal'); 
+                showNeonModal("Saldo Tidak Cukup!"); 
+                return; 
+            }
 
-            localStorage.setItem('saldo', currentSaldo - bet);
-            updateSaldoDisplay();
+            // Kurangi saldo sementara di UI agar responsif
+            updateSaldoLokal(currentSaldo - bet);
 
             const ballEl = document.createElement('div');
             ballEl.className = 'ball';
@@ -275,14 +275,11 @@
                 ball.x += ball.vx; 
                 ball.y += ball.vy;
 
-                // --- LOGIKA WINRATE ADMIN ---
                 const adminWinrate = parseInt(localStorage.getItem('user_winrate')) || 70;
                 const luck = Math.random() * 100;
                 
-                // Jika bola berada di baris paku bawah dan luck > winrate (Mode Kalah)
                 if (ball.y > 250 && ball.y < 300 && luck > adminWinrate) {
                     const centerX = container.offsetWidth / 2;
-                    // Paksa bola mendekati pusat (Slot 0.2x)
                     if (ball.x < centerX) ball.vx += 0.5;
                     else ball.vx -= 0.5;
                 }
@@ -327,7 +324,7 @@
                         setTimeout(() => s.style.transform = "scale(1)", 200);
 
                         processGameResult(mult).then(winAmount => {
-                            if (winAmount > 0) {
+                            if (winAmount >= 0) { // Tetap proses meski win 0
                                 const board = document.getElementById('score-board');
                                 const item = document.createElement('div');
                                 item.className = 'score-item';
@@ -336,12 +333,14 @@
                                 if (board.children.length > 3) board.lastChild.remove();
                                 setTimeout(() => item.remove(), 3000);
 
-                                const p = document.createElement('div');
-                                p.className = 'win-popup';
-                                p.innerText = `+${winAmount.toLocaleString()}`;
-                                p.style.left = ball.x + 'px'; p.style.top = '280px';
-                                document.body.appendChild(p);
-                                setTimeout(() => p.remove(), 1000);
+                                if (winAmount > 0) {
+                                    const p = document.createElement('div');
+                                    p.className = 'win-popup';
+                                    p.innerText = `+${winAmount.toLocaleString()}`;
+                                    p.style.left = ball.x + 'px'; p.style.top = '280px';
+                                    document.body.appendChild(p);
+                                    setTimeout(() => p.remove(), 1000);
+                                }
                             }
                         });
                     }
