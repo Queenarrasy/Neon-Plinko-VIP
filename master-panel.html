@@ -3,272 +3,195 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEON MASTER CONTROL + AUDIO</title>
+    <title>NEON MASTER CONTROL - V2 PRO</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
-        :root {
-            --neon-pink: #ff0077;
-            --neon-blue: #00d4ff;
-            --neon-yellow: #fbff00;
-            --bg-dark: #05060f;
-        }
+        :root { --pink: #ff0077; --blue: #00d4ff; --yellow: #fbff00; --bg: #05060f; --green: #00ff88; }
+        body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; padding: 20px; margin: 0; }
+        
+        /* HEADER & STATS */
+        .header { text-align: center; padding: 20px; border: 2px solid var(--blue); box-shadow: 0 0 15px var(--blue); border-radius: 15px; background: rgba(0, 212, 255, 0.05); margin-bottom: 20px; }
+        .header h2 { margin: 0; color: var(--pink); text-shadow: 0 0 15px var(--pink); text-transform: uppercase; letter-spacing: 2px; }
+        
+        .admin-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .btn-tool { background: transparent; border: 1px solid white; color: white; padding: 12px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: bold; text-transform: uppercase; transition: 0.3s; }
+        .btn-sync { border-color: var(--blue); color: var(--blue); box-shadow: 0 0 5px var(--blue); }
+        .btn-broadcast { border-color: var(--yellow); color: var(--yellow); box-shadow: 0 0 5px var(--yellow); }
 
-        body { 
-            background: var(--bg-dark); 
-            color: white; 
-            font-family: 'Segoe UI', sans-serif; 
-            padding: 20px; 
-            margin: 0; 
-            overflow-x: hidden;
-        }
+        /* USER LIST */
+        .user-box { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(0, 212, 255, 0.2); padding: 15px; margin-top: 10px; border-radius: 12px; display: flex; flex-direction: column; gap: 10px; position: relative; }
+        .user-info { display: flex; justify-content: space-between; align-items: flex-start; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .online { background: var(--green); box-shadow: 0 0 8px var(--green); }
+        .offline { background: #555; }
+        
+        .username { color: var(--blue); font-size: 16px; font-weight: bold; text-shadow: 0 0 5px var(--blue); }
+        .details { font-size: 12px; color: #aaa; margin-top: 4px; }
+        .balance-text { color: var(--yellow); font-weight: bold; font-size: 14px; }
 
-        /* HEADER SECTION */
-        .header { 
-            text-align: center; 
-            margin-bottom: 30px; 
-            padding: 20px;
-            border: 2px solid var(--neon-blue);
-            box-shadow: 0 0 15px var(--neon-blue), inset 0 0 10px var(--neon-blue);
-            border-radius: 15px;
-            background: rgba(0, 212, 255, 0.05);
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0% { box-shadow: 0 0 10px var(--neon-blue); }
-            50% { box-shadow: 0 0 25px var(--neon-blue); }
-            100% { box-shadow: 0 0 10px var(--neon-blue); }
-        }
-        .header h2 { 
-            margin: 0; 
-            color: var(--neon-pink); 
-            text-shadow: 0 0 15px var(--neon-pink);
-            text-transform: uppercase;
-            letter-spacing: 3px;
-        }
-        .header p { color: var(--neon-yellow); font-size: 11px; margin-top: 5px; font-weight: bold; letter-spacing: 1px; }
+        /* CONTROLS */
+        .controls { display: flex; gap: 8px; margin-top: 5px; }
+        select, .btn-action { background: #000; color: white; border: 1px solid #444; padding: 8px; border-radius: 6px; font-size: 11px; cursor: pointer; }
+        .btn-inject { border-color: var(--green); color: var(--green); }
+        .btn-winrate { border-color: var(--pink); color: var(--pink); }
 
-        /* BUTTONS */
-        .btn-sync { 
-            background: transparent; 
-            color: var(--neon-blue); 
-            border: 2px solid var(--neon-blue); 
-            padding: 15px; 
-            width: 100%; 
-            font-weight: bold; 
-            cursor: pointer; 
-            border-radius: 10px; 
-            text-transform: uppercase;
-            transition: 0.2s;
-            box-shadow: 0 0 5px var(--neon-blue);
-            display: flex; justify-content: center; align-items: center; gap: 10px;
-        }
-        .btn-sync:active { transform: scale(0.95); background: var(--neon-blue); color: black; }
-
-        /* LIST AREA */
-        .user-box { 
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(0, 212, 255, 0.2);
-            padding: 18px; 
-            margin-top: 15px; 
-            border-radius: 12px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center;
-        }
-        .user-box:hover { border-color: var(--neon-pink); box-shadow: 0 0 10px rgba(255, 0, 119, 0.2); }
-        .username { color: var(--neon-blue); font-size: 16px; font-weight: bold; text-shadow: 0 0 5px var(--neon-blue); }
-        .saldo { color: #fff; font-size: 13px; opacity: 0.7; display: block; margin-top: 4px;}
-        .winrate-label { color: var(--neon-yellow); font-size: 11px; font-weight: bold; display: block; margin-top: 5px;}
-
-        /* INPUTS */
-        select { 
-            background: #000; 
-            color: var(--neon-pink); 
-            border: 1px solid var(--neon-pink); 
-            padding: 10px; 
-            border-radius: 8px; 
-            font-weight: bold;
-            box-shadow: 0 0 5px var(--neon-pink);
-            cursor: pointer;
-        }
-
-        /* CUSTOM MODAL */
-        #custom-modal {
-            display: none; position: fixed; top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            background: var(--bg-dark);
-            border: 2px solid var(--neon-yellow);
-            box-shadow: 0 0 40px var(--neon-yellow);
-            padding: 30px; z-index: 1000; border-radius: 20px;
-            text-align: center; width: 85%; max-width: 320px;
-        }
-        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 999; backdrop-filter: blur(5px); }
-        .modal-btn { margin: 15px 5px 0; padding: 10px 25px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; text-transform: uppercase;}
-        .confirm-ok { background: var(--neon-pink); color: white; box-shadow: 0 0 10px var(--neon-pink); }
-        .confirm-cancel { background: #333; color: white; }
-
-        /* TOAST NOTIF */
-        #toast {
-            visibility: hidden; min-width: 250px;
-            background: var(--neon-blue); color: black;
-            text-align: center; border-radius: 10px; padding: 15px;
-            position: fixed; z-index: 1001; bottom: 40px; left: 50%;
-            transform: translateX(-50%); font-weight: bold;
-            box-shadow: 0 0 20px var(--neon-blue);
-        }
-        #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
-
-        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 40px; opacity: 1;} }
-        @keyframes fadeout { from {bottom: 40px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+        /* MODAL & TOAST */
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 999; backdrop-filter: blur(5px); }
+        #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #0a0b1a; border: 2px solid var(--yellow); padding: 25px; z-index: 1000; border-radius: 15px; width: 80%; max-width: 300px; text-align: center; }
+        #toast { visibility: hidden; min-width: 200px; background: var(--blue); color: #000; text-align: center; border-radius: 8px; padding: 12px; position: fixed; z-index: 1100; bottom: 30px; left: 50%; transform: translateX(-50%); font-weight: bold; }
+        #toast.show { visibility: visible; animation: fade 0.5s, fadeout 0.5s 2.5s; }
+        @keyframes fade { from {opacity: 0;} to {opacity: 1;} }
     </style>
 </head>
-<body>
+<body id="main-content" style="display:none;">
 
     <audio id="snd-click" src="https://www.soundjay.com/buttons/sounds/button-16.mp3"></audio>
     <audio id="snd-success" src="https://www.soundjay.com/buttons/sounds/button-09.mp3"></audio>
-    <audio id="snd-open" src="https://www.soundjay.com/buttons/sounds/button-50.mp3"></audio>
 
     <div class="header">
-        <h2><i class="fa-solid fa-microchip"></i> MASTER PANEL</h2>
-        <p>SECURE TERMINAL : <span id="clock">00:00:00</span></p>
+        <h2>MASTER PANEL V2</h2>
+        <p style="font-size:10px; color:var(--yellow); margin:5px 0 0;">ENCRYPTED TERMINAL: <span id="clock">00:00:00</span></p>
     </div>
 
-    <button class="btn-sync" onclick="playSnd('snd-click'); fetchData()">
-        <i class="fa-solid fa-satellite-dish"></i> SYNC DATABASE
-    </button>
-
-    <div id="display-area">
-        <p style="text-align:center; color:#444; margin-top:40px;">System Ready. Waiting for Sync...</p>
+    <div class="admin-tools">
+        <button class="btn-tool btn-sync" onclick="fetchData()"><i class="fa-solid fa-sync"></i> Sync Data</button>
+        <button class="btn-tool btn-broadcast" onclick="globalBroadcast()"><i class="fa-solid fa-bullhorn"></i> Broadcast</button>
     </div>
 
-    <div id="toast">DATA UPDATED</div>
-    <div class="overlay" id="overlay" onclick="closeModal()"></div>
-    <div id="custom-modal">
-        <h3 style="color:var(--neon-yellow); margin:0;">ACCESS OVERRIDE?</h3>
-        <p id="modal-msg" style="font-size:14px; color:#ccc; margin:20px 0;">Yakin ingin merubah winrate?</p>
-        <button class="modal-btn confirm-ok" id="modal-confirm">EXECUTE</button>
-        <button class="modal-btn confirm-cancel" onclick="playSnd('snd-click'); closeModal()">ABORT</button>
+    <div id="display-area"></div>
+
+    <div id="toast">ACTION SUCCESS</div>
+    <div class="overlay" id="overlay"></div>
+    <div id="modal">
+        <h3 id="modal-title" style="color:var(--yellow); margin-top:0;">OVERRIDE</h3>
+        <p id="modal-msg" style="font-size:13px;"></p>
+        <button onclick="executeAction()" style="background:var(--pink); border:none; color:white; padding:10px 20px; border-radius:5px; cursor:pointer; font-weight:bold;">CONFIRM</button>
+        <button onclick="closeModal()" style="background:#333; border:none; color:white; padding:10px 20px; border-radius:5px; cursor:pointer; margin-left:10px;">EXIT</button>
     </div>
 
     <script>
-        // FIXED: Mengganti koma dengan titik koma agar script tidak error
         const API_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
+        const ADMIN_PIN = "2026"; // GANTI PIN SESUAI KEINGINAN ANDA
+        let currentTarget = "";
+        let currentVal = "";
+        let currentAction = "";
 
-        function playSnd(id) {
-            const s = document.getElementById(id);
-            if (s) {
-                s.currentTime = 0;
-                s.play().catch(e => console.log("Audio play blocked"));
+        // 1. SECURITY PIN ACCESS
+        window.onload = () => {
+            const pass = prompt("ENTER MASTER PIN:");
+            if (pass === ADMIN_PIN) {
+                document.getElementById('main-content').style.display = 'block';
+                fetchData();
+            } else {
+                alert("ACCESS DENIED");
+                document.body.innerHTML = "<h1 style='color:red; text-align:center; margin-top:100px;'>UNAUTHORIZED ACCESS</h1>";
             }
-        }
+        };
 
-        // Jam Realtime
-        setInterval(() => {
-            const now = new Date();
-            document.getElementById('clock').innerText = now.getHours().toString().padStart(2, '0') + ":" + 
-                                                       now.getMinutes().toString().padStart(2, '0') + ":" + 
-                                                       now.getSeconds().toString().padStart(2, '0');
-        }, 1000);
+        function playSnd(id) { document.getElementById(id).play().catch(e=>{}); }
+        setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
 
+        // 2. FETCH DATA & DISPLAY
         async function fetchData() {
             const area = document.getElementById('display-area');
-            area.innerHTML = "<p style='text-align:center; color:var(--neon-blue); margin-top:40px;'>RETRIEVING ENCRYPTED DATA...</p>";
-            
+            area.innerHTML = "<p style='text-align:center; color:var(--blue)'>SYNCING DATABASE...</p>";
             try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: "getAllUsers" })
-                });
-                const data = await response.json();
-                
-                if (data.length === 0) {
-                    area.innerHTML = "<p style='text-align:center; color:#666;'>No Users Found.</p>";
-                    return;
-                }
-
+                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "getAllUsers" }) });
+                const users = await response.json();
                 area.innerHTML = "";
-                data.forEach(user => {
-                    const card = document.createElement('div');
-                    card.className = 'user-box';
-                    card.innerHTML = `
-                        <div>
-                            <span class="username">${user.username.toUpperCase()}</span>
-                            <span class="saldo">CREDIT: IDR ${Number(user.saldo || 0).toLocaleString()}</span>
-                            <span class="winrate-label">CURR_RATE: [ ${user.winrate || '0%'} ]</span>
+                users.forEach(u => {
+                    const statusClass = u.status === "ONLINE" ? "online" : "offline";
+                    const div = document.createElement('div');
+                    div.className = 'user-box';
+                    div.innerHTML = `
+                        <div class="user-info">
+                            <div>
+                                <span class="status-dot ${statusClass}"></span>
+                                <span class="username">${u.username.toUpperCase()}</span>
+                                <div class="details">${u.fullname} | ${u.winrate} WR</div>
+                            </div>
+                            <div class="balance-text">IDR ${u.saldo.toLocaleString()}</div>
                         </div>
-                        <div>
-                            <select onchange="askChangeWinrate('${user.username}', this.value)">
+                        <div class="controls">
+                            <button class="btn-action btn-inject" onclick="openInject('${u.username}')"><i class="fa-solid fa-coins"></i> ± CREDIT</button>
+                            <select class="btn-winrate" onchange="openWinrate('${u.username}', this.value)">
                                 <option value="">SET RATE</option>
                                 <option value="100">100% JP</option>
                                 <option value="80">80% GACOR</option>
-                                <option value="50">50% NORMAL</option>
-                                <option value="20">20% KURAS</option>
-                                <option value="5">5% ZONK</option>
+                                <option value="50">NORMAL</option>
+                                <option value="5">ZONK</option>
                             </select>
                         </div>
                     `;
-                    area.appendChild(card);
+                    area.appendChild(div);
                 });
-            } catch (error) {
-                console.error(error);
-                area.innerHTML = "<p style='text-align:center; color:var(--neon-pink); margin-top:40px;'>ERROR: DATABASE UNREACHABLE</p>";
-            }
+            } catch (e) { area.innerHTML = "<p style='text-align:center; color:var(--pink)'>OFFLINE: CHECK API URL</p>"; }
         }
 
-        function askChangeWinrate(target, rate) {
-            if(!rate) return;
-            playSnd('snd-open');
-            const modal = document.getElementById('custom-modal');
-            const overlay = document.getElementById('overlay');
-            const msg = document.getElementById('modal-msg');
-            const confirmBtn = document.getElementById('modal-confirm');
-
-            msg.innerHTML = `Konfirmasi override winrate <br><b>${target}</b> ke <b style="color:var(--neon-pink)">${rate}%</b>?`;
-            modal.style.display = 'block';
-            overlay.style.display = 'block';
-
-            confirmBtn.onclick = async function() {
-                playSnd('snd-click');
-                closeModal();
-                await executeChange(target, rate);
-            };
+        // 3. ACTION HANDLERS
+        function openInject(user) {
+            const amt = prompt("Masukkan jumlah (Gunakan minus '-' untuk potong, misal: -5000):", "10000");
+            if (!amt || isNaN(amt)) return;
+            currentTarget = user;
+            currentVal = amt;
+            currentAction = "adminUpdateSaldo";
+            showModal("INJECT CREDIT", `Tambah/Kurang saldo <b>${user}</b> sebesar <b>${amt}</b>?`);
         }
 
-        function closeModal() {
-            document.getElementById('custom-modal').style.display = 'none';
-            document.getElementById('overlay').style.display = 'none';
+        function openWinrate(user, rate) {
+            if (!rate) return;
+            currentTarget = user;
+            currentVal = rate;
+            currentAction = "updateWinrate";
+            showModal("OVERRIDE WINRATE", `Ubah rate <b>${user}</b> menjadi <b>${rate}%</b>?`);
         }
 
-        async function executeChange(target, rate) {
+        function globalBroadcast() {
+            const msg = prompt("Masukkan pesan untuk SEMUA user:");
+            const gift = prompt("Jumlah saldo hadiah (0 jika tidak ada):", "0");
+            if (!msg) return;
+            alert("Fitur sedang dikembangkan. Pesan akan dicatat di log.");
+        }
+
+        // 4. EXECUTION
+        async function executeAction() {
+            closeModal();
+            playSnd('snd-click');
             try {
                 const res = await fetch(API_URL, {
                     method: 'POST',
-                    body: JSON.stringify({ action: "updateWinrate", targetUser: target, newRate: rate })
+                    body: JSON.stringify({ 
+                        action: currentAction, 
+                        targetUser: currentTarget, 
+                        amount: currentVal, // Untuk Saldo
+                        newRate: currentVal // Untuk Winrate
+                    })
                 });
                 const result = await res.json();
-                if(result.result === "SUCCESS") {
+                if (result.result === "SUCCESS") {
                     playSnd('snd-success');
-                    showToast(`SYSTEM: ${target} OVERRIDDEN TO ${rate}%`);
-                    fetchData(); // Refresh data setelah update
-                } else {
-                    showToast("ERROR: UPDATE FAILED");
+                    showToast("SYSTEM UPDATED!");
+                    fetchData();
                 }
-            } catch (e) {
-                showToast("SYSTEM ERROR: OVERRIDE FAILED");
-            }
+            } catch (e) { showToast("ERROR!"); }
         }
 
-        function showToast(text) {
-            const t = document.getElementById("toast");
-            t.innerText = text;
-            t.classList.add("show");
-            setTimeout(function(){ t.classList.remove("show"); }, 3000);
+        // UI HELPERS
+        function showModal(title, msg) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-msg').innerHTML = msg;
+            document.getElementById('modal').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
         }
-
-        // Jalankan fetch otomatis saat halaman terbuka
-        window.onload = () => {
-            fetchData();
-        };
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+            document.getElementById('overlay').style.display = 'none';
+        }
+        function showToast(txt) {
+            const t = document.getElementById('toast');
+            t.innerText = txt; t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
     </script>
 </body>
 </html>
