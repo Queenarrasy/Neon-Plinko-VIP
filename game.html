@@ -69,12 +69,11 @@
 
         #score-board { position: absolute; left: 10px; top: 120px; width: 90px; display: flex; flex-direction: column; gap: 6px; z-index: 50; pointer-events: none; }
         .score-item { background: rgba(0,0,0,0.85); border: 1px solid var(--blue); font-size: 9px; padding: 6px; border-radius: 6px; text-align: center; font-weight: 900; color: var(--yellow); text-shadow: var(--yellow-neon); animation: popupIn 0.3s ease-out; overflow: hidden; white-space: nowrap; transition: opacity 0.5s ease; }
-        @keyframes popupIn { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         
         .win-popup { position: absolute; font-weight: 900; color: var(--yellow); text-shadow: var(--yellow-neon); pointer-events: none; z-index: 1000; animation: floatUp 1s ease-out forwards; font-size: 24px; }
+        @keyframes popupIn { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         @keyframes floatUp { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(-80px); opacity: 0; } }
 
-        /* Pop-up modal (fallback jika tidak ada dari global.js) */
         #neon-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 9999; }
         .neon-modal { background: #0d0f26; border: 2px solid var(--pink); border-radius: 20px; padding: 25px; width: 80%; text-align: center; box-shadow: 0 0 30px var(--pink); }
     </style>
@@ -86,7 +85,7 @@
         <div class="neon-modal">
             <h2 id="modal-title" class="neon-p">INFO</h2>
             <p id="modal-msg" class="neon-b"></p>
-            <button class="neon-btn" style="background:var(--blue); border:none; padding:12px; width:100%; border-radius:50px; font-weight:900; margin-top:15px;" onclick="closeNeonModal()">OK</button>
+            <button style="background:var(--blue); border:none; padding:12px; width:100%; border-radius:50px; font-weight:900; margin-top:15px; cursor:pointer;" onclick="closeNeonModal()">OK</button>
         </div>
     </div>
 
@@ -95,12 +94,10 @@
             <i class="fa-solid fa-circle-user prof-link"></i>
             <span class="prof-text">PROFIL</span>
         </div>
-
         <div class="balance-box">
             <span id="tier-name" class="neon-y" style="font-size: 9px; font-weight: 900; display: block;">VIP PLAYER</span>
             <span id="display-saldo" class="neon-b">IDR 0</span>
         </div>
-
         <div class="settings-container" onclick="location.href='settings.html'">
             <i class="fa-solid fa-gear settings-link"></i>
             <span class="settings-text">SETTING</span>
@@ -130,68 +127,55 @@
             <div id="btn-normal" class="toggle active" onclick="setMode('normal')">NORMAL</div>
             <div id="btn-auto" class="toggle" onclick="setMode('auto')">AUTO</div>
         </div>
-        
         <div class="bet-selector">
             <button style="background:none; border:none; color:var(--pink); font-size: 28px; font-weight: 900; cursor: pointer;" onclick="changeBet(-1)">-</button>
             <div id="current-bet" class="neon-y" style="font-size: 20px; font-weight: 900; color:var(--blue);">1,000</div>
             <button style="background:none; border:none; color:var(--pink); font-size: 28px; font-weight: 900; cursor: pointer;" onclick="changeBet(1)">+</button>
         </div>
-        
         <button class="btn-main" id="play-btn" onclick="handlePlay()">MULAI MAIN</button>
     </div>
 
     <script src="global.js"></script>
     <script>
-        // --- KONFIGURASI URL SCRIPT ---
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwqQWXIJuVnkIxLvdu3kYiiRDVh7eyrsy-KU6rG1qtQClgfAzmMoclv2ULFZ_hRdE_qUg/exec";
 
-        // --- UPDATE TAMPILAN SALDO ---
         function updateSaldoDisplay() {
-            if (typeof updateSaldo === 'function') {
-                updateSaldo(0); // Fungsi dari global.js
-            } else {
-                const currentSaldo = Number(localStorage.getItem('saldo') || 0);
-                const saldoEl = document.getElementById('display-saldo');
-                if (saldoEl) {
-                    saldoEl.innerText = 'IDR ' + currentSaldo.toLocaleString('id-ID');
-                }
-            }
+            const currentSaldo = Number(localStorage.getItem('saldo') || 0);
+            const saldoEl = document.getElementById('display-saldo');
+            if (saldoEl) saldoEl.innerText = 'IDR ' + currentSaldo.toLocaleString('id-ID');
         }
 
-        // --- SINKRONISASI SERVER ---
-        let isSyncing = false;
         async function syncSaldoRealtime() {
-            if (isSyncing) return;
             const username = localStorage.getItem('user_session');
             if (!username) return;
-            isSyncing = true;
             try {
                 const response = await fetch(SCRIPT_URL, {
                     method: "POST",
                     body: JSON.stringify({ action: "getUserData", username: username })
                 });
                 const data = await response.json();
-                if (data && data.saldo !== undefined) {
+                if (data.result === "SUCCESS") {
                     localStorage.setItem('saldo', data.saldo);
+                    // --- UPDATE WINRATE DARI ADMIN ---
+                    const rate = parseInt(data.winrate) || 70;
+                    localStorage.setItem('user_winrate', rate);
+                    
                     updateSaldoDisplay();
                     if(data.tier) document.getElementById('tier-name').innerText = data.tier + " PLAYER";
                 }
-            } catch (e) { console.error("Sync Error:", e); } 
-            finally { isSyncing = false; }
+            } catch (e) { console.error("Sync Error"); }
         }
 
-        // Jalankan sinkronisasi secara reguler
-        setInterval(syncSaldoRealtime, 10000);
+        setInterval(syncSaldoRealtime, 15000);
 
-        // --- GAME LOGIC & VARIABLES ---
-        let winChance = 0.35; 
+        // --- GAME LOGIC ---
         const container = document.getElementById('game-container');
         const bets = [400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 4000, 6000, 8000, 10000, 12000, 16000, 18000, 20000];
         let betIdx = 3; 
         let isAuto = false;
         let autoInterval = null;
         let pegLocations = [];
-        let activeBalls = []; // Menyimpan bola aktif untuk simulasi tabrakan
+        let activeBalls = [];
         const slots = [5, 2, 1.2, 0.2, 1.2, 2, 5];
 
         function initPegs() {
@@ -215,21 +199,14 @@
             }
         }
 
-        // TAMPILAN AWAL
         window.addEventListener('load', () => {
             initPegs();
-            updateSaldoDisplay();
             syncSaldoRealtime();
         });
 
-        // Tampilkan peringatan, panggil global.js jika tersedia
         function showNeonModal(msg) { 
-            if(typeof showNeonAlert === 'function') {
-                showNeonAlert(msg, "VIP INFO");
-            } else {
-                document.getElementById('modal-msg').innerText = msg; 
-                document.getElementById('neon-overlay').style.display = 'flex'; 
-            }
+            document.getElementById('modal-msg').innerText = msg; 
+            document.getElementById('neon-overlay').style.display = 'flex'; 
         }
         function closeNeonModal() { document.getElementById('neon-overlay').style.display = 'none'; }
         
@@ -248,28 +225,7 @@
         }
 
         function handlePlay() { if (isAuto) setMode('normal'); else dropBall(); }
-        
-        // Mode auto dipercepat agar jeda antar bola lebih rapat
-        function startAuto() { dropBall(); autoInterval = setInterval(() => { if(isAuto) dropBall(); }, 400); }
-
-        function addScoreBoard(amount) {
-            const board = document.getElementById('score-board');
-            const item = document.createElement('div');
-            item.className = 'score-item';
-            item.innerText = 'WIN ' + amount.toLocaleString();
-            board.prepend(item);
-            
-            // Batasi hanya 3 baris
-            if (board.children.length > 3) board.removeChild(board.lastChild);
-
-            // Hilangkan otomatis setelah 3 detik
-            setTimeout(() => {
-                if(board.contains(item)) {
-                    item.style.opacity = '0';
-                    setTimeout(() => { if(board.contains(item)) item.remove(); }, 500);
-                }
-            }, 3000);
-        }
+        function startAuto() { dropBall(); autoInterval = setInterval(() => { if(isAuto) dropBall(); }, 450); }
 
         async function processGameResult(multiplierValue) {
             const user = localStorage.getItem('user_session');
@@ -284,134 +240,102 @@
                     localStorage.setItem('saldo', res.newSaldo);
                     updateSaldoDisplay();
                     return res.winAmount;
-                } else if (res.result === "INSUFFICIENT") {
-                    setMode('normal'); 
-                    showNeonModal("Saldo tidak cukup!");
                 }
-            } catch (e) { console.error("API Error"); }
-            return 0;
+            } catch (e) { return 0; }
         }
 
         function dropBall() {
             const currentSaldo = Number(localStorage.getItem('saldo') || 0);
             const bet = Number(bets[betIdx]);
-            
-            if (currentSaldo < bet) { 
-                setMode('normal'); 
-                showNeonModal("Saldo Tidak Cukup!"); 
-                return; 
-            }
+            if (currentSaldo < bet) { setMode('normal'); showNeonModal("Saldo Tidak Cukup!"); return; }
 
-            // Gunakan fungsi updateSaldo dari global.js untuk memotong saldo lokal
-            if (typeof updateSaldo === 'function') {
-                updateSaldo(-bet);
-            } else {
-                localStorage.setItem('saldo', currentSaldo - bet);
-                updateSaldoDisplay();
-            }
+            localStorage.setItem('saldo', currentSaldo - bet);
+            updateSaldoDisplay();
 
             const ballEl = document.createElement('div');
             ballEl.className = 'ball';
             container.appendChild(ballEl);
 
-            let startOffset = (Math.random() - 0.5) * 10;
-            if (Math.random() < winChance) startOffset = Math.random() > 0.5 ? 25 : -25;
-
-            // Objek bola untuk menampung data posisi & kecepatan
             let ball = { 
-                id: Date.now() + Math.random(), 
+                id: Math.random(), 
                 el: ballEl, 
-                x: container.offsetWidth / 2 + startOffset, 
+                x: container.offsetWidth / 2 + (Math.random()-0.5)*15, 
                 y: 10, 
-                vx: (Math.random() - 0.5) * 2, 
+                vx: (Math.random()-0.5)*2, 
                 vy: 0 
             };
-            
-            // Atur posisi awal langsung agar tidak ada kedipan di pojok layar
-            ball.el.style.left = ball.x + 'px';
-            ball.el.style.top = ball.y + 'px';
-            
             activeBalls.push(ball);
 
-            // Variabel fisika yang diperbarui
-            const gravity = 0.8; 
+            const gravity = 0.85; 
             const friction = 0.99; 
-            const bounce = 0.5; 
+            const bounce = 0.5;
 
             const moveBall = setInterval(() => {
                 ball.vy += gravity; 
-                ball.vx *= friction; 
                 ball.x += ball.vx; 
                 ball.y += ball.vy;
 
-                // Memantul pada paku (pegs)
+                // --- LOGIKA WINRATE ADMIN ---
+                const adminWinrate = parseInt(localStorage.getItem('user_winrate')) || 70;
+                const luck = Math.random() * 100;
+                
+                // Jika bola berada di baris paku bawah dan luck > winrate (Mode Kalah)
+                if (ball.y > 250 && ball.y < 300 && luck > adminWinrate) {
+                    const centerX = container.offsetWidth / 2;
+                    // Paksa bola mendekati pusat (Slot 0.2x)
+                    if (ball.x < centerX) ball.vx += 0.5;
+                    else ball.vx -= 0.5;
+                }
+
                 pegLocations.forEach(p => {
                     const dx = ball.x - p.x; const dy = ball.y - p.y;
                     const dist = Math.sqrt(dx*dx + dy*dy);
                     if (dist < 11) {
                         const angle = Math.atan2(dy, dx);
                         const speed = Math.sqrt(ball.vx*ball.vx + ball.vy*ball.vy);
-                        // Membuat pantulan lebih memencar natural
-                        ball.vx = Math.cos(angle) * speed * bounce + (Math.random()-0.5) * 3.5;
+                        ball.vx = Math.cos(angle) * speed * bounce + (Math.random()-0.5)*3;
                         ball.vy = Math.sin(angle) * speed * bounce;
                         ball.x = p.x + Math.cos(angle) * 11.5; 
                         ball.y = p.y + Math.sin(angle) * 11.5;
                     }
                 });
 
-                // Tabrakan antar bola
-                activeBalls.forEach(otherBall => {
-                    if (otherBall.id !== ball.id) {
-                        let dx = ball.x - otherBall.x;
-                        let dy = ball.y - otherBall.y;
-                        let dist = Math.sqrt(dx*dx + dy*dy);
-                        if (dist < 14 && dist > 0) { // 14 adalah ukuran diameter bola (radius 7 * 2)
-                            let angle = Math.atan2(dy, dx);
-                            let overlap = 14 - dist;
-                            // Saling mendorong
-                            ball.x += Math.cos(angle) * overlap / 2;
-                            ball.y += Math.sin(angle) * overlap / 2;
-                            // Transfer momentum
-                            let tempVx = ball.vx; let tempVy = ball.vy;
-                            ball.vx = otherBall.vx * 0.8; ball.vy = otherBall.vy * 0.8;
-                            otherBall.vx = tempVx * 0.8; otherBall.vy = tempVy * 0.8;
-                        }
-                    }
-                });
-
-                // Batas dinding kiri & kanan
-                if (ball.x < 10) { ball.x = 10; ball.vx *= -0.6; }
-                if (ball.x > container.offsetWidth - 10) { ball.x = container.offsetWidth - 10; ball.vx *= -0.6; }
+                if (ball.x < 10 || ball.x > container.offsetWidth - 10) ball.vx *= -0.6;
                 
                 ball.el.style.left = ball.x + 'px'; 
                 ball.el.style.top = ball.y + 'px';
 
-                // Kondisi bola masuk kotak pengali (y > 345)
                 if (ball.y > 345) {
                     clearInterval(moveBall);
-                    // Langsung hapus bola secara visual & dari array agar tidak menumpuk
                     ball.el.remove();
                     activeBalls = activeBalls.filter(b => b.id !== ball.id);
 
-                    const containerRect = container.getBoundingClientRect();
                     const slotsEls = document.querySelectorAll('.slot');
-                    let finalSlot = -1; 
-                    
+                    let finalSlot = -1;
+                    const containerRect = container.getBoundingClientRect();
+
                     slotsEls.forEach((s, index) => {
                         const sRect = s.getBoundingClientRect();
                         const ballGlobalX = ball.x + containerRect.left;
-                        if (ballGlobalX >= sRect.left && ballGlobalX <= sRect.right) {
-                            finalSlot = index;
-                            s.style.transform = "scale(1.15)"; s.style.filter = "brightness(1.5)";
-                            setTimeout(() => { s.style.transform = "scale(1)"; s.style.filter = "brightness(1)"; }, 200);
-                        }
+                        if (ballGlobalX >= sRect.left && ballGlobalX <= sRect.right) finalSlot = index;
                     });
 
                     if (finalSlot !== -1) {
-                        // Jalankan proses ke server tanpa mem-block animasi menggunakan .then
-                        processGameResult(slots[finalSlot]).then(winAmount => {
+                        const mult = slots[finalSlot];
+                        const s = slotsEls[finalSlot];
+                        s.style.transform = "scale(1.2)";
+                        setTimeout(() => s.style.transform = "scale(1)", 200);
+
+                        processGameResult(mult).then(winAmount => {
                             if (winAmount > 0) {
-                                addScoreBoard(winAmount);
+                                const board = document.getElementById('score-board');
+                                const item = document.createElement('div');
+                                item.className = 'score-item';
+                                item.innerText = 'WIN ' + winAmount.toLocaleString();
+                                board.prepend(item);
+                                if (board.children.length > 3) board.lastChild.remove();
+                                setTimeout(() => item.remove(), 3000);
+
                                 const p = document.createElement('div');
                                 p.className = 'win-popup';
                                 p.innerText = `+${winAmount.toLocaleString()}`;
@@ -422,7 +346,7 @@
                         });
                     }
                 }
-            }, 18);
+            }, 20);
         }
     </script>
 </body>
