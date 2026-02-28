@@ -1,6 +1,6 @@
 /**
- * GLOBAL JS - SISTEM PLINKO VIP V3.6.3
- * Terintegrasi: Cloud Sync, Auth, & Transaction History
+ * GLOBAL JS - SISTEM PLINKO VIP V3.6.3 (Optimized & Integrated)
+ * Terintegrasi: Cloud Sync, Auth, Transaction History, & Anti-Lag Balance Update
  */
 
 // 1. KONFIGURASI UTAMA
@@ -8,7 +8,7 @@ const CLOUD_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRL
 const SCRIPT_URL = CLOUD_URL;
 
 /**
- * Komunikasi Utama ke Google Apps Script
+ * Komunikasi Utama ke Google Apps Script (Server)
  */
 async function callCloud(payload) {
     try {
@@ -68,10 +68,11 @@ async function handleLogout() {
 }
 
 /**
- * SISTEM SALDO: UPDATE LOKAL (ANTI-MEMBAL)
+ * SISTEM SALDO: UPDATE LOKAL (ANTI-MEMBAL & PROTEKSI NaN)
  */
 function updateSaldoLokal(newAmount) {
-    if (newAmount === undefined || newAmount === null) return;
+    // Proteksi jika data tidak valid agar saldo tidak berubah jadi NaN atau hilang
+    if (newAmount === undefined || newAmount === null || isNaN(newAmount)) return;
     
     localStorage.setItem('saldo', newAmount);
     
@@ -85,7 +86,7 @@ function updateSaldoLokal(newAmount) {
 }
 
 /**
- * SISTEM SALDO: SYNC DARI SERVER
+ * SISTEM SALDO: SYNC DARI SERVER (PERIODIK)
  */
 async function syncSaldo() {
     const user = localStorage.getItem('user_session');
@@ -108,52 +109,45 @@ async function syncSaldo() {
 }
 
 /**
- * SISTEM PERMAINAN: KIRIM HASIL KE SERVER (Sempurna & Aman)
- * Fungsi ini menangani komunikasi hasil taruhan ke database Google Sheets
+ * SISTEM PERMAINAN: KIRIM HASIL KE SERVER (SINKRONISASI DATABASE)
+ * Memastikan setiap kemenangan tercatat di Google Sheets
  */
 async function processGameResult(multiplierValue) {
     const user = localStorage.getItem('user_session');
     const currentBetDisplay = document.getElementById('current-bet');
     
-    // Pastikan elemen bet ditemukan
-    if (!currentBetDisplay) {
-        console.error("Elemen current-bet tidak ditemukan!");
-        return 0;
-    }
+    if (!user || !currentBetDisplay) return 0;
 
-    // Ambil bet dari teks UI (hilangkan koma/titik jika ada)
+    // Ambil bet dari teks UI (hilangkan titik/koma)
     const bet = parseInt(currentBetDisplay.innerText.replace(/,/g, '').replace(/\./g, ''));
 
-    if (!user) return 0;
-
     try {
-        // Kirim data ke Google Apps Script (Server)
+        // Kirim data ke Cloud (Google Sheets)
         const res = await callCloud({ 
             action: 'playGame', 
             username: user, 
             betAmount: bet, 
-            multiplier: multiplierValue 
+            multiplier: multiplierValue.toString() 
         });
 
         if (res.result === "SUCCESS") {
-            // Update saldo lokal berdasarkan balasan resmi dari database server
+            // Update saldo final berdasarkan balasan resmi database server
             updateSaldoLokal(res.newSaldo);
-            
-            // Return winAmount agar game.html bisa menampilkan popup kemenangan
             return res.winAmount; 
         } else {
-            console.error("Server Response Error:", res.message);
+            console.error("Server Error:", res.message);
+            // Jika saldo habis di server, sinkronkan ulang UI
+            if(res.message === "SALDO HABIS") syncSaldo();
             return 0;
         }
     } catch (e) { 
-        console.error("Gagal memproses hasil game ke cloud."); 
+        console.error("Gagal sinkronisasi cloud."); 
         return 0; 
     }
 }
 
 /**
  * TRANSAKSI: MUAT RIWAYAT (DEPOSIT/WITHDRAW)
- * Desain menggunakan Kartu Modern (Sempurna)
  */
 async function loadRiwayat(type) {
     const user = localStorage.getItem('user_session');
@@ -161,7 +155,7 @@ async function loadRiwayat(type) {
 
     if (!user || !container) return;
 
-    container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--blue);">MEMUAT DATA...</div>';
+    container.innerHTML = '<div style="text-align:center; padding:20px; color:#00d4ff;">MEMUAT DATA...</div>';
 
     try {
         const res = await callCloud({
@@ -184,7 +178,7 @@ async function loadRiwayat(type) {
                         <div style="font-size:12px; font-weight:900; color:white;">${item.metode.toUpperCase()}</div>
                     </div>
                     <div style="text-align:right;">
-                        <div style="font-size:14px; font-weight:900; color:var(--yellow);">IDR ${Number(item.jumlah).toLocaleString('id-ID')}</div>
+                        <div style="font-size:14px; font-weight:900; color:#fbff00;">IDR ${Number(item.jumlah).toLocaleString('id-ID')}</div>
                         <div style="font-size:9px; font-weight:900; color:${statusColor}; text-transform:uppercase;">● ${item.status}</div>
                     </div>
                 `;
@@ -194,12 +188,12 @@ async function loadRiwayat(type) {
             container.innerHTML = '<div style="text-align:center; padding:40px; color:#555; font-size:12px;">BELUM ADA TRANSAKSI</div>';
         }
     } catch (e) {
-        container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--pink);">GAGAL MEMUAT RIWAYAT</div>';
+        container.innerHTML = '<div style="text-align:center; padding:20px; color:#ff0077;">GAGAL MEMUAT RIWAYAT</div>';
     }
 }
 
 /**
- * SECURITY: REDIRECT JIKA SUDAH LOGIN
+ * SECURITY: AUTO-REDIRECT
  */
 if (window.location.pathname.endsWith('index.html') || window.location.pathname === '/' || window.location.pathname.endsWith('login.html')) {
     if (localStorage.getItem('user_session')) {
