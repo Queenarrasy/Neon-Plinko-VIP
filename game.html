@@ -161,18 +161,27 @@
             const bet = bets[betIdx];
             const win = Math.floor(bet * multiplierValue);
             
-            // 1. Tampilan Instan (Optimistic)
+            // --- LOGIKA ANTI GAGAL ---
+            // 1. Ambil saldo saat ini dari localStorage (sudah dipotong bet di dropBall)
+            const currentSaldo = Number(localStorage.getItem('saldo') || 0);
+            
+            // 2. Tambahkan kemenangan secara instan ke UI
+            const finalLokal = currentSaldo + win;
+            updateSaldoLokal(finalLokal); 
+            
+            // 3. Efek Visual
             showWinPopup(win, visualX);
             addScoreLog(win);
-            
-            const currentSaldo = Number(localStorage.getItem('saldo') || 0);
-            updateSaldoLokal(currentSaldo + win); // Fungsi dari global.js
 
-            // 2. Sinkron ke Server (Background)
-            // Menggunakan sendGameResultToCloud yang sudah kita buat di global.js
-            const res = await sendGameResultToCloud(multiplierValue, bet);
-            if (res && res.newSaldo) {
-                updateSaldoLokal(res.newSaldo);
+            // 4. Sinkronisasi Server sebagai Backup Resmi
+            try {
+                const res = await sendGameResultToCloud(multiplierValue, bet);
+                if (res && res.newSaldo) {
+                    // Update ulang jika ada selisih dari server
+                    updateSaldoLokal(res.newSaldo);
+                }
+            } catch (e) {
+                console.error("Sinkronisasi server tertunda.");
             }
         }
 
@@ -193,7 +202,7 @@
             log.innerHTML = `<b>${win > 0 ? '+' : ''}${win.toLocaleString()}</b>`;
             board.prepend(log);
             if (board.children.length > 5) board.lastChild.remove();
-            setTimeout(() => log.remove(), 3000);
+            setTimeout(() => { if(log) log.remove(); }, 3000);
         }
 
         // --- ENGINE GAME ---
@@ -246,7 +255,7 @@
                 return;
             }
 
-            // Kurangi saldo saat bola jatuh
+            // Langsung kurangi saldo lokal saat bola dilepas
             updateSaldoLokal(currentSaldo - bet);
             playSound('click');
 
@@ -263,7 +272,6 @@
             };
 
             const gravity = 0.4;
-            const friction = 0.5;
 
             const anim = setInterval(() => {
                 ball.vy += gravity;
@@ -284,13 +292,11 @@
                     }
                 });
 
-                // Pantulan Dinding
                 if (ball.x < 15 || ball.x > container.offsetWidth - 15) ball.vx *= -0.8;
 
                 ball.el.style.left = ball.x + 'px';
                 ball.el.style.top = ball.y + 'px';
 
-                // Sampai di bawah
                 if (ball.y > 350) {
                     clearInterval(anim);
                     ball.el.remove();
@@ -302,7 +308,7 @@
                     const m = slotMults[idx];
                     const slotEl = document.querySelectorAll('.slot')[idx];
                     slotEl.style.filter = "brightness(2) scale(1.1)";
-                    setTimeout(() => slotEl.style.filter = "none", 200);
+                    setTimeout(() => { if(slotEl) slotEl.style.filter = "none"; }, 200);
                     
                     playSound('win');
                     updateSaldoFinal(m, ball.x);
@@ -312,7 +318,7 @@
 
         window.onload = () => {
             initPegs();
-            syncSaldo(); // Dari global.js
+            syncSaldo(); 
         };
     </script>
 </body>
