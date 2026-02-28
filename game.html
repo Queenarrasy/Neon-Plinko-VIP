@@ -25,12 +25,18 @@
         .balance-box { background: #000; border: 2px solid var(--blue); border-radius: 50px; padding: 5px 25px; text-align: center; box-shadow: inset 0 0 10px rgba(0,212,255,0.3), var(--blue-neon); }
         #display-saldo { font-size: 18px; font-weight: 900; text-shadow: 0 0 5px var(--blue); }
 
-        /* Game Core - Dioptimalkan untuk Piramida Standar */
+        /* Game Core & Peg Animation */
         #game-container { position: relative; width: 100%; height: 380px; margin-top: 5px; overflow: hidden; }
-        .peg { position: absolute; width: 6px; height: 6px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 8px #fff, 0 0 12px var(--blue); z-index: 5; opacity: 0.6; }
-        .ball { position: absolute; width: 12px; height: 12px; background: radial-gradient(circle at 30% 30%, #fff, var(--pink)); border-radius: 50%; box-shadow: var(--pink-neon); z-index: 10; transform: translate(-50%, -50%); pointer-events: none; }
+        .peg { 
+            position: absolute; width: 7px; height: 7px; background: #fff; border-radius: 50%; 
+            transform: translate(-50%, -50%); box-shadow: 0 0 10px #fff, var(--blue-neon); 
+            z-index: 5; opacity: 0.8; animation: glowPeg 2s infinite alternate;
+        }
+        @keyframes glowPeg { from { opacity: 0.5; transform: translate(-50%, -50%) scale(0.9); } to { opacity: 1; transform: translate(-50%, -50%) scale(1.1); } }
+
+        .ball { position: absolute; width: 13px; height: 13px; background: radial-gradient(circle at 30% 30%, #fff, var(--pink)); border-radius: 50%; box-shadow: var(--pink-neon); z-index: 10; transform: translate(-50%, -50%); pointer-events: none; }
         
-        /* Multiplier Row - Rapi & Simetris */
+        /* Multiplier Row */
         .multipliers { display: flex; justify-content: center; gap: 4px; padding: 0 10px; margin-top: 5px; height: 40px; }
         .slot { flex: 1; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 10px; font-weight: 900; border: 1px solid rgba(255,255,255,0.1); transition: 0.2s; }
         .m-pink { background: var(--pink); box-shadow: var(--pink-neon); color: white; }
@@ -66,8 +72,9 @@
         .score-item { background: rgba(0,0,0,0.85); border-left: 3px solid var(--blue); font-size: 10px; padding: 7px; border-radius: 4px; color: var(--yellow); animation: slideIn 0.3s forwards; }
         @keyframes slideIn { from { transform: translateX(-30px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         
-        .win-popup { position: absolute; font-weight: 900; color: var(--yellow); text-shadow: var(--yellow-neon); font-size: 28px; animation: floatUp 1s forwards; z-index: 100; pointer-events: none; }
-        @keyframes floatUp { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(-110px); opacity: 0; } }
+        /* Pop-up Lebih Cepat */
+        .win-popup { position: absolute; font-weight: 900; font-size: 24px; animation: quickFadeUp 0.7s ease-out forwards; z-index: 100; pointer-events: none; }
+        @keyframes quickFadeUp { 0% { transform: translateY(0) scale(0.5); opacity: 0; } 30% { opacity: 1; transform: translateY(-20px) scale(1.2); } 100% { transform: translateY(-60px) scale(1); opacity: 0; } }
 
         #neon-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.92); display: none; justify-content: center; align-items: center; z-index: 9999; backdrop-filter: blur(10px); }
         .neon-modal { background: #070816; border: 2px solid var(--pink); border-radius: 20px; padding: 30px; width: 75%; text-align: center; box-shadow: var(--pink-neon); }
@@ -133,7 +140,7 @@
 
         function playSound(name) {
             const sound = sfx[name].cloneNode();
-            sound.volume = 0.2;
+            sound.volume = 0.15;
             sound.play().catch(() => {});
         }
 
@@ -143,49 +150,41 @@
         }
         function closeNeonModal() { document.getElementById('neon-overlay').style.display = 'none'; }
 
-        // --- CORE LOGIC: MATEMATIKA SUPER PAKSA (OFFLINE FIRST) ---
         async function updateSaldoFinal(multiplierValue, visualX) {
             const bet = bets[betIdx];
             const win = Math.floor(bet * multiplierValue);
+            const profitBersih = win - bet; // HITUNG PROFIT BERSIH UNTUK VISUAL
             
-            // 1. Ambil saldo terakhir dari memori (setelah dipotong bet)
             let saldoSekarang = Number(localStorage.getItem('saldo') || 0);
-            
-            // 2. Tambahkan kemenangan secara MURNI di HP (Tanpa tunggu server)
             const saldoBaru = saldoSekarang + win;
             
-            // 3. Tampilkan secara instan agar user tidak bingung
             updateSaldoLokal(saldoBaru); 
             
-            // 4. Efek Visual
             playSound('win');
-            showWinPopup(win, visualX);
+            showWinPopup(profitBersih, visualX); // POPUP HANYA PROFIT
             addScoreLog(win);
 
-            // 5. Kirim laporan ke Cloud (Google Sheets) di latar belakang
-            try {
-                // Gunakan try-catch agar jika server error, saldo di HP tetap benar
-                await sendGameResultToCloud(multiplierValue, bet);
-            } catch (e) {
-                console.warn("Server sedang sibuk, data akan disinkronkan nanti.");
-            }
+            try { await sendGameResultToCloud(multiplierValue, bet); } catch (e) {}
         }
 
         function showWinPopup(amount, x) {
             const p = document.createElement('div');
             p.className = 'win-popup';
-            p.innerText = amount > 0 ? `+${amount.toLocaleString()}` : `0`;
+            const isProfit = amount >= 0;
+            p.innerText = isProfit ? `+${amount.toLocaleString()}` : `${amount.toLocaleString()}`;
+            p.style.color = isProfit ? 'var(--yellow)' : '#ff4444';
+            p.style.textShadow = isProfit ? 'var(--yellow-neon)' : '0 0 10px #ff4444';
             p.style.left = Math.min(Math.max(x, 40), container.offsetWidth - 40) + 'px'; 
             p.style.top = '320px';
             container.appendChild(p);
-            setTimeout(() => p.remove(), 1000);
+            setTimeout(() => p.remove(), 700); // CEPAT MENGHILANG
         }
 
         function addScoreLog(win) {
             const board = document.getElementById('score-board');
             const log = document.createElement('div');
             log.className = 'score-item';
-            log.innerHTML = `<b>${win > 0 ? '+' : ''}${win.toLocaleString()}</b>`;
+            log.innerHTML = `<b>+${win.toLocaleString()}</b>`;
             board.prepend(log);
             if (board.children.length > 4) board.lastChild.remove();
         }
@@ -193,12 +192,12 @@
         function initPegs() {
             container.innerHTML = '';
             pegLocs = [];
-            const rows = 9; // Standart Plinko Piramid
+            const rows = 9;
             const centerX = container.offsetWidth / 2;
             for (let r = 2; r <= rows; r++) {
                 for (let i = 0; i < r; i++) {
-                    const x = centerX + (i - (r - 1) / 2) * 42; // Jarak horizontal rapi
-                    const y = r * 35; // Jarak vertikal rapi
+                    const x = centerX + (i - (r - 1) / 2) * 42;
+                    const y = r * 35;
                     const peg = document.createElement('div');
                     peg.className = 'peg';
                     peg.style.left = x + 'px';
@@ -232,14 +231,8 @@
         function dropBall() {
             const bet = bets[betIdx];
             const currentSaldo = Number(localStorage.getItem('saldo') || 0);
+            if (currentSaldo < bet) { showNeonModal("SALDO TIDAK CUKUP!"); setMode('normal'); return; }
 
-            if (currentSaldo < bet) {
-                showNeonModal("SALDO TIDAK CUKUP!");
-                setMode('normal');
-                return;
-            }
-
-            // POTONG SALDO INSTAN SAAT KLIK
             updateSaldoLokal(currentSaldo - bet);
             playSound('click');
 
@@ -249,16 +242,19 @@
 
             let ball = {
                 el: ballEl,
-                x: container.offsetWidth / 2 + (Math.random() - 0.5) * 8,
+                x: container.offsetWidth / 2 + (Math.random() - 0.5) * 6,
                 y: 10,
-                vx: (Math.random() - 0.5) * 2,
+                vx: (Math.random() - 0.5) * 1.5,
                 vy: 0
             };
 
-            const gravity = 0.4;
+            const gravity = 0.55; // GRAVITASI DIPERKUAT AGAR TIDAK MELAYANG
+            const friction = 0.99; // GESEKAN UDARA SEDIKIT
+            const elasticity = 0.6; // REDAMAN PANTULAN
 
             const anim = setInterval(() => {
                 ball.vy += gravity;
+                ball.vx *= friction;
                 ball.x += ball.vx;
                 ball.y += ball.vy;
 
@@ -266,16 +262,20 @@
                     const dx = ball.x - p.x;
                     const dy = ball.y - p.y;
                     const dist = Math.sqrt(dx*dx + dy*dy);
-                    if (dist < 9) { // Collision radius
+                    if (dist < 10) { 
                         playSound('bounce');
                         const angle = Math.atan2(dy, dx);
-                        const force = 5.5;
-                        ball.vx = Math.cos(angle) * force + (Math.random() - 0.5);
-                        ball.vy = Math.sin(angle) * force;
+                        const speed = Math.sqrt(ball.vx**2 + ball.vy**2);
+                        // REFLEKSI FISIKA SEDERHANA
+                        ball.vx = Math.cos(angle) * (speed * elasticity + 1.5) + (Math.random() - 0.5);
+                        ball.vy = Math.sin(angle) * (speed * elasticity + 1.5);
                     }
                 });
 
-                if (ball.x < 15 || ball.x > container.offsetWidth - 15) ball.vx *= -0.6;
+                if (ball.x < 15 || ball.x > container.offsetWidth - 15) {
+                    ball.vx *= -elasticity;
+                    ball.x = ball.x < 15 ? 15 : container.offsetWidth - 15;
+                }
 
                 ball.el.style.left = ball.x + 'px';
                 ball.el.style.top = ball.y + 'px';
@@ -283,25 +283,19 @@
                 if (ball.y > 360) {
                     clearInterval(anim);
                     ball.el.remove();
-                    
                     const slotW = container.offsetWidth / slotMults.length;
                     let idx = Math.floor(ball.x / slotW);
                     idx = Math.max(0, Math.min(slotMults.length - 1, idx));
-                    
                     const m = slotMults[idx];
                     const slotEl = document.querySelectorAll('.slot')[idx];
                     slotEl.style.filter = "brightness(2) scale(1.1)";
                     setTimeout(() => { if(slotEl) slotEl.style.filter = "none"; }, 150);
-                    
                     updateSaldoFinal(m, ball.x);
                 }
-            }, 20);
+            }, 1000/60); // 60 FPS LEBIH HALUS
         }
 
-        window.onload = () => {
-            initPegs();
-            syncSaldo(); 
-        };
+        window.onload = () => { initPegs(); syncSaldo(); };
     </script>
 </body>
 </html>
