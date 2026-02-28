@@ -124,7 +124,7 @@
         function playSound(sfx) {
             const s = sounds[sfx].cloneNode();
             s.volume = 0.4;
-            s.play().catch(e => console.log("Interaction required for audio"));
+            s.play().catch(e => console.log("Audio play blocked"));
         }
 
         // Variabel Global
@@ -165,19 +165,25 @@
 
         function closeNeonModal() { document.getElementById('neon-overlay').style.display = 'none'; }
 
-        // --- CORE PROCESS ---
+        // --- CORE PROCESS (REPAIRED) ---
         async function processGameResult(multiplierValue, visualBallX) {
             const user = localStorage.getItem('user_session');
             const bet = bets[betIdx];
             
+            // 1. HITUNG KEMENANGAN SECARA LOKAL
             const winAmountLokal = Math.floor(bet * multiplierValue);
+            
+            // 2. TAMPILKAN VISUAL INSTAN
             showInstantPopup(winAmountLokal, visualBallX);
             updateScoreBoard(winAmountLokal);
 
-            const currentSaldo = Number(localStorage.getItem('saldo') || 0);
-            updateSaldoLokal(currentSaldo + winAmountLokal);
+            // 3. UPDATE SALDO DI LAYAR SEGERA (OPTIMISTIC UI)
+            const saldoSaatIni = Number(localStorage.getItem('saldo') || 0);
+            const saldoBaruInstan = saldoSaatIni + winAmountLokal;
+            updateSaldoLokal(saldoBaruInstan);
 
             try {
+                // 4. KIRIM KE SERVER UNTUK VALIDASI DI BACKGROUND
                 const res = await callCloud({ 
                     action: 'playGame', 
                     username: user, 
@@ -186,13 +192,15 @@
                 });
 
                 if (res.result === "SUCCESS") {
+                    // Sinkronisasi ulang dengan data resmi server
                     updateSaldoLokal(res.newSaldo);
                 } else if (res.message === "SALDO HABIS") {
-                    showNeonModal("Saldo Habis!");
-                    setMode('normal');
+                    showNeonModal("Saldo Tidak Sinkron!");
                     syncSaldoRealtime(); 
                 }
-            } catch (e) { console.error("Sync Fail"); }
+            } catch (e) { 
+                console.error("Server sync failed, using local calculation."); 
+            }
         }
 
         function showInstantPopup(amount, x) {
@@ -265,7 +273,10 @@
             if (isAuto) setMode('normal'); else dropBall(); 
         }
 
-        function startAuto() { dropBall(); autoInterval = setInterval(() => { if(isAuto) dropBall(); }, 700); }
+        function startAuto() { 
+            dropBall(); 
+            autoInterval = setInterval(() => { if(isAuto) dropBall(); }, 700); 
+        }
 
         function dropBall() {
             const currentSaldo = Number(localStorage.getItem('saldo') || 0);
@@ -277,6 +288,7 @@
                 return; 
             }
 
+            // Langsung kurangi saldo saat bola dilepaskan
             updateSaldoLokal(currentSaldo - bet);
 
             const ballEl = document.createElement('div');
