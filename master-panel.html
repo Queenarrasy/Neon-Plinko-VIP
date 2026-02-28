@@ -89,6 +89,7 @@
             border-radius: 8px; 
             font-weight: bold;
             box-shadow: 0 0 5px var(--neon-pink);
+            cursor: pointer;
         }
 
         /* CUSTOM MODAL */
@@ -141,7 +142,7 @@
     </div>
 
     <div id="toast">DATA UPDATED</div>
-    <div class="overlay" id="overlay"></div>
+    <div class="overlay" id="overlay" onclick="closeModal()"></div>
     <div id="custom-modal">
         <h3 style="color:var(--neon-yellow); margin:0;">ACCESS OVERRIDE?</h3>
         <p id="modal-msg" style="font-size:14px; color:#ccc; margin:20px 0;">Yakin ingin merubah winrate?</p>
@@ -150,17 +151,23 @@
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec",
+        // FIXED: Mengganti koma dengan titik koma agar script tidak error
+        const API_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
 
         function playSnd(id) {
             const s = document.getElementById(id);
-            s.currentTime = 0;
-            s.play().catch(e => console.log("Audio play blocked"));
+            if (s) {
+                s.currentTime = 0;
+                s.play().catch(e => console.log("Audio play blocked"));
+            }
         }
 
         // Jam Realtime
         setInterval(() => {
-            document.getElementById('clock').innerText = new Date().toLocaleTimeString();
+            const now = new Date();
+            document.getElementById('clock').innerText = now.getHours().toString().padStart(2, '0') + ":" + 
+                                                       now.getMinutes().toString().padStart(2, '0') + ":" + 
+                                                       now.getSeconds().toString().padStart(2, '0');
         }, 1000);
 
         async function fetchData() {
@@ -173,6 +180,12 @@
                     body: JSON.stringify({ action: "getAllUsers" })
                 });
                 const data = await response.json();
+                
+                if (data.length === 0) {
+                    area.innerHTML = "<p style='text-align:center; color:#666;'>No Users Found.</p>";
+                    return;
+                }
+
                 area.innerHTML = "";
                 data.forEach(user => {
                     const card = document.createElement('div');
@@ -180,8 +193,8 @@
                     card.innerHTML = `
                         <div>
                             <span class="username">${user.username.toUpperCase()}</span>
-                            <span class="saldo">CREDIT: IDR ${Number(user.saldo).toLocaleString()}</span>
-                            <span class="winrate-label">CURR_RATE: [ ${user.winrate} ]</span>
+                            <span class="saldo">CREDIT: IDR ${Number(user.saldo || 0).toLocaleString()}</span>
+                            <span class="winrate-label">CURR_RATE: [ ${user.winrate || '0%'} ]</span>
                         </div>
                         <div>
                             <select onchange="askChangeWinrate('${user.username}', this.value)">
@@ -197,7 +210,8 @@
                     area.appendChild(card);
                 });
             } catch (error) {
-                area.innerHTML = "<p style='text-align:center; color:var(--neon-pink);'>ERROR: DATABASE UNREACHABLE</p>";
+                console.error(error);
+                area.innerHTML = "<p style='text-align:center; color:var(--neon-pink); margin-top:40px;'>ERROR: DATABASE UNREACHABLE</p>";
             }
         }
 
@@ -235,7 +249,9 @@
                 if(result.result === "SUCCESS") {
                     playSnd('snd-success');
                     showToast(`SYSTEM: ${target} OVERRIDDEN TO ${rate}%`);
-                    fetchData();
+                    fetchData(); // Refresh data setelah update
+                } else {
+                    showToast("ERROR: UPDATE FAILED");
                 }
             } catch (e) {
                 showToast("SYSTEM ERROR: OVERRIDE FAILED");
@@ -245,10 +261,11 @@
         function showToast(text) {
             const t = document.getElementById("toast");
             t.innerText = text;
-            t.className = "show";
-            setTimeout(function(){ t.className = t.className.replace("show", ""); }, 3000);
+            t.classList.add("show");
+            setTimeout(function(){ t.classList.remove("show"); }, 3000);
         }
 
+        // Jalankan fetch otomatis saat halaman terbuka
         window.onload = () => {
             fetchData();
         };
