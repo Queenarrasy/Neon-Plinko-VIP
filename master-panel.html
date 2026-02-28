@@ -23,7 +23,6 @@
         }
         .header h2 { margin: 0; color: var(--pink); text-shadow: 0 0 15px var(--pink); text-transform: uppercase; letter-spacing: 2px; }
 
-        /* LIVE INDICATOR */
         .live-tag { font-size: 10px; color: var(--green); animation: blink 1s infinite; font-weight: bold; }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
         
@@ -35,20 +34,23 @@
         .btn-sync { border-color: var(--blue); color: var(--blue); }
         .btn-broadcast { border-color: var(--yellow); color: var(--yellow); }
 
-        /* USER BOXES */
         .user-box { 
             background: rgba(255,255,255,0.03); border: 1px solid rgba(0, 212, 255, 0.2); 
             padding: 15px; margin-top: 10px; border-radius: 12px; transition: 0.4s;
         }
         .user-info { display: flex; justify-content: space-between; align-items: center; }
         .username { color: var(--blue); font-size: 16px; font-weight: bold; text-shadow: 0 0 5px var(--blue); }
-        .status-badge { font-size: 9px; padding: 2px 6px; border-radius: 4px; background: #333; margin-left: 5px; }
+        .status-badge { font-size: 9px; padding: 2px 6px; border-radius: 4px; background: #333; margin-left: 5px; font-weight: bold; }
+        
+        /* State Status Online */
+        .status-online { color: var(--green); border: 1px solid var(--green); box-shadow: 0 0 5px var(--green); }
+        .status-offline { color: #888; border: 1px solid #444; }
 
-        /* LIVE BALANCE ANIMATION */
         .balance-val { font-weight: bold; font-size: 17px; transition: 0.3s; }
         .up { color: var(--green); text-shadow: 0 0 10px var(--green); }
         .down { color: var(--pink); text-shadow: 0 0 10px var(--pink); }
         .normal { color: var(--yellow); }
+        .error-balance { color: #ff0000; text-shadow: 0 0 10px #ff0000; animation: blink 0.5s infinite; }
 
         .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
         select, .btn-action { 
@@ -59,7 +61,6 @@
         .btn-maxwin { border-color: var(--pink); color: var(--pink); }
         .btn-freeze { border-color: var(--orange); color: var(--orange); }
 
-        /* MODALS */
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 999; backdrop-filter: blur(8px); }
         .neon-modal { 
             display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
@@ -104,7 +105,7 @@
         <h3 id="modal-title">TITLE</h3>
         <p id="modal-desc" style="font-size: 12px; color: #bbb;"></p>
         <input type="text" id="modal-input" style="display: none;">
-        <div class="btn-group" style="display:flex; gap:10px; justify-content:center;">
+        <div class="btn-group" style="display:flex; gap:10px; justify-content:center; margin-top:15px;">
             <button class="btn-confirm" id="modal-ok-btn">CONFIRM</button>
             <button class="btn-cancel" onclick="closeModal()">CANCEL</button>
         </div>
@@ -116,8 +117,13 @@
         const API_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
         const MASTER_PIN = "2026";
         let lastBalances = {}; 
+        let isUpdating = false; 
         
-        setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
+        // Clock
+        setInterval(() => { 
+            document.getElementById('clock').innerText = new Date().toLocaleString('id-ID'); 
+        }, 1000);
+
         function playSnd(id) { document.getElementById(id).play().catch(e=>{}); }
 
         function verifyPin() {
@@ -132,64 +138,99 @@
 
         function startLiveMonitoring() {
             fetchData();
-            setInterval(fetchData, 3000); // Live update setiap 3 detik
+            setInterval(fetchData, 3000); 
         }
 
         async function fetchData() {
+            if (isUpdating) return; 
             try {
                 const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "getAllUsers" }) });
                 const users = await res.json();
-                const area = document.getElementById('display-area');
-                
-                users.forEach(u => {
-                    let userDiv = document.getElementById(`user-${u.username}`);
-                    const currentSaldo = Number(u.saldo);
-                    const oldSaldo = lastBalances[u.username] || currentSaldo;
-                    
-                    // Deteksi Pergerakan Saldo
-                    let balanceClass = "normal";
-                    let trendIcon = "";
-                    if (currentSaldo > oldSaldo) { balanceClass = "up"; trendIcon = "↑ "; }
-                    else if (currentSaldo < oldSaldo) { balanceClass = "down"; trendIcon = "↓ "; }
-                    
-                    lastBalances[u.username] = currentSaldo;
-
-                    if (!userDiv) {
-                        userDiv = document.createElement('div');
-                        userDiv.id = `user-${u.username}`;
-                        userDiv.className = 'user-box';
-                        area.appendChild(userDiv);
-                    }
-
-                    // Render Konten User
-                    userDiv.innerHTML = `
-                        <div class="user-info">
-                            <div>
-                                <span class="username">${u.username.toUpperCase()}</span>
-                                <span class="status-badge" style="color:${u.status === 'active' ? 'var(--green)' : 'var(--pink)'}">${u.status}</span>
-                                <div style="font-size:9px; color:#888;">WR: ${u.winrate}% | MaxWin: ${u.maxwinlimit || '50k'}</div>
-                            </div>
-                            <div class="balance-val ${balanceClass}">${trendIcon}IDR ${currentSaldo.toLocaleString()}</div>
-                        </div>
-                        <div class="controls">
-                            <button class="btn-action btn-inject" onclick="prepareInject('${u.username}')">± CREDIT</button>
-                            <button class="btn-action btn-maxwin" onclick="prepareMaxwin('${u.username}')">MAXWIN LIMIT</button>
-                            <button class="btn-action btn-freeze" onclick="toggleFreeze('${u.username}', '${u.status}')">${u.status === 'active' ? 'FREEZE' : 'UNFREEZE'}</button>
-                            <select class="btn-winrate" onchange="updateWR('${u.username}', this.value)" style="border-color:${u.winrate <= 5 ? 'var(--pink)' : '#444'}">
-                                <option value="">SET RATE</option>
-                                <option value="100" ${u.winrate == 100 ? 'selected' : ''}>100% JP</option>
-                                <option value="50" ${u.winrate == 50 ? 'selected' : ''}>NORMAL</option>
-                                <option value="3" ${u.winrate <= 5 ? 'selected' : ''}>DRAIN (3%)</option>
-                            </select>
-                        </div>
-                    `;
-                });
+                renderUsers(users);
             } catch(e) { console.log("Sync error..."); }
         }
 
-        // Event Handlers
+        function renderUsers(users) {
+            const area = document.getElementById('display-area');
+            users.forEach(u => {
+                let userDiv = document.getElementById(`user-${u.username}`);
+                const currentSaldo = Number(u.saldo);
+                const oldSaldo = lastBalances[u.username] || currentSaldo;
+                
+                // Deteksi Pergerakan Saldo
+                let balanceClass = "normal";
+                let trendIcon = "";
+                if (currentSaldo > oldSaldo) { balanceClass = "up"; trendIcon = "↑ "; }
+                else if (currentSaldo < oldSaldo) { balanceClass = "down"; trendIcon = "↓ "; }
+                
+                lastBalances[u.username] = currentSaldo;
+
+                if (!userDiv) {
+                    userDiv = document.createElement('div');
+                    userDiv.id = `user-${u.username}`;
+                    userDiv.className = 'user-box';
+                    area.appendChild(userDiv);
+                }
+
+                // Logic Tampilan Saldo Minus & Status Online
+                const displaySaldo = currentSaldo < 0 
+                    ? `<span class="error-balance">ERR: ${currentSaldo.toLocaleString()}</span>` 
+                    : `IDR ${currentSaldo.toLocaleString()}`;
+                
+                const isOnline = u.status.toLowerCase() === 'online' || u.status.toLowerCase() === 'active';
+                const statusClass = isOnline ? 'status-online' : 'status-offline';
+
+                userDiv.innerHTML = `
+                    <div class="user-info">
+                        <div>
+                            <span class="username">${u.username.toUpperCase()}</span>
+                            <span class="status-badge ${statusClass}">${u.status.toUpperCase()}</span>
+                            <div style="font-size:9px; color:#888; margin-top:4px;">
+                                WR: ${u.winrate}% | Max: ${u.maxwinlimit || '50k'}
+                            </div>
+                        </div>
+                        <div class="balance-val ${balanceClass}">${trendIcon}${displaySaldo}</div>
+                    </div>
+                    <div class="controls">
+                        <button class="btn-action btn-inject" onclick="prepareInject('${u.username}')">± CREDIT</button>
+                        <button class="btn-action btn-maxwin" onclick="prepareMaxwin('${u.username}')">MAXWIN LIMIT</button>
+                        <button class="btn-action btn-freeze" onclick="toggleFreeze('${u.username}', '${u.status}')">
+                            ${isOnline ? 'FREEZE' : 'UNFREEZE'}
+                        </button>
+                        <select class="btn-winrate" onchange="updateWR('${u.username}', this.value)" ${isUpdating ? 'disabled' : ''}>
+                            <option value="">SET RATE</option>
+                            <option value="100" ${u.winrate == 100 ? 'selected' : ''}>100% JP</option>
+                            <option value="50" ${u.winrate == 50 ? 'selected' : ''}>NORMAL</option>
+                            <option value="3" ${u.winrate <= 5 ? 'selected' : ''}>DRAIN (3%)</option>
+                        </select>
+                    </div>
+                `;
+            });
+        }
+
+        // Action Handlers
+        async function executeAction(action, user, data) {
+            isUpdating = true; 
+            showToast("PROCESSING COMMAND...");
+            try {
+                const res = await fetch(API_URL, { 
+                    method: 'POST', 
+                    body: JSON.stringify({ action, targetUser: user, ...data })
+                });
+                const result = await res.json();
+                if(result.result === "SUCCESS") { 
+                    playSnd('snd-success'); 
+                    showToast("SYSTEM UPDATED!"); 
+                    setTimeout(() => { isUpdating = false; fetchData(); }, 1200);
+                }
+            } catch(e) { 
+                showToast("FAILED!"); 
+                isUpdating = false; 
+            }
+        }
+
         function prepareInject(user) {
-            showModal("INJECT CREDIT", `Jumlah saldo untuk ${user}:`, true, (val) => {
+            showModal("INJECT CREDIT", `Tambah/Kurang saldo ${user}:`, true, (val) => {
                 if(val) executeAction("adminUpdateSaldo", user, { amount: val });
             });
         }
@@ -201,7 +242,8 @@
         }
 
         function toggleFreeze(user, currentStatus) {
-            const nextStatus = currentStatus === 'active' ? 'frozen' : 'active';
+            const isOnline = currentStatus.toLowerCase() === 'online' || currentStatus.toLowerCase() === 'active';
+            const nextStatus = isOnline ? 'frozen' : 'active';
             showModal("STATUS CONTROL", `${nextStatus.toUpperCase()} akun ${user}?`, false, () => {
                 executeAction("updateStatus", user, { status: nextStatus });
             });
@@ -213,12 +255,12 @@
         }
 
         function openBroadcast() {
-            showModal("BROADCAST", "Kirim pesan ke semua user:", true, (msg) => {
+            showModal("BROADCAST", "Kirim pesan global ke semua user:", true, (msg) => {
                 if(msg) showToast("BROADCAST SENT!");
             });
         }
 
-        // Core Engine
+        // UI Helpers
         function showModal(title, desc, useInput, cb) {
             document.getElementById('modal-title').innerText = title;
             document.getElementById('modal-desc').innerText = desc;
@@ -235,17 +277,10 @@
             document.getElementById('common-modal').style.display = "none";
         }
 
-        async function executeAction(action, user, data) {
-            showToast("PROCESSING...");
-            try {
-                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action, targetUser: user, ...data })});
-                const result = await res.json();
-                if(result.result === "SUCCESS") { playSnd('snd-success'); showToast("UPDATED!"); fetchData(); }
-            } catch(e) { showToast("FAILED!"); }
-        }
-
         function showToast(msg) {
-            const t = document.getElementById('toast'); t.innerText = msg; t.classList.add('show');
+            const t = document.getElementById('toast'); 
+            t.innerText = msg; 
+            t.classList.add('show');
             setTimeout(() => t.classList.remove('show'), 2500);
         }
     </script>
