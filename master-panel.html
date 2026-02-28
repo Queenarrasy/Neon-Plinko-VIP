@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MASTER PANEL CONTROL</title>
+    <style>
+        body { background: #0a0a0a; color: #00ff44; font-family: 'Courier New', Courier, monospace; padding: 20px; margin: 0; }
+        .header { text-align: center; border-bottom: 2px solid #00ff44; padding-bottom: 10px; margin-bottom: 20px; }
+        .user-box { border: 1px solid #333; padding: 15px; margin-bottom: 10px; border-radius: 8px; background: #111; display: flex; justify-content: space-between; align-items: center; }
+        .user-box:hover { border-color: #00ff44; }
+        .status-online { color: #fbff00; font-size: 12px; }
+        select { background: #000; color: #00ff44; border: 1px solid #00ff44; padding: 5px; border-radius: 4px; }
+        button { background: #00ff44; color: #000; border: none; padding: 12px; width: 100%; font-weight: bold; cursor: pointer; border-radius: 5px; text-transform: uppercase; }
+        button:active { background: #008822; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2 style="margin:0;">SYSTEM CONTROLLER V1</h2>
+        <p style="font-size:10px;">CONNECTED TO APPS SCRIPT DATABASE</p>
+    </div>
+
+    <button onclick="fetchData()">RE-SYNC ALL USERS</button>
+
+    <div id="display-area" style="margin-top:20px;">
+        <p style="text-align:center; color:#555;">Silakan klik tombol di atas untuk memuat data...</p>
+    </div>
+
+    <script>
+        // MASUKKAN URL WEB APP GOOGLE SHEETS KAMU DI SINI
+        const API_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
+
+        async function fetchData() {
+            const area = document.getElementById('display-area');
+            area.innerHTML = "<p style='text-align:center;'>Sedang sinkronisasi...</p>";
+            
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: "getAllUsers" })
+                });
+                const data = await response.json();
+                
+                area.innerHTML = "";
+                data.forEach(user => {
+                    const card = document.createElement('div');
+                    card.className = 'user-box';
+                    card.innerHTML = `
+                        <div>
+                            <strong style="font-size:16px;">${user.username}</strong><br>
+                            <span style="color:#aaa;">Saldo: IDR ${Number(user.saldo).toLocaleString()}</span><br>
+                            <span class="status-online">Winrate Aktif: ${user.winrate}</span>
+                        </div>
+                        <div>
+                            <select onchange="changeWinrate('${user.username}', this.value)">
+                                <option value="">SET RATE</option>
+                                <option value="100">100% (JP)</option>
+                                <option value="80">80% (Gacor)</option>
+                                <option value="50">50% (Normal)</option>
+                                <option value="20">20% (Kuras)</option>
+                                <option value="5">5% (Zonk)</option>
+                            </select>
+                        </div>
+                    `;
+                    area.appendChild(card);
+                });
+            } catch (error) {
+                area.innerHTML = "<p style='text-align:center; color:red;'>Gagal menyambung ke server Apps Script!</p>";
+            }
+        }
+
+        async function changeWinrate(target, rate) {
+            if(!rate) return;
+            if(!confirm("Ubah winrate " + target + " menjadi " + rate + "%?")) return;
+
+            try {
+                const res = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        action: "updateWinrate", 
+                        targetUser: target, 
+                        newRate: rate 
+                    })
+                });
+                const result = await res.json();
+                if(result.result === "SUCCESS") {
+                    alert("Berhasil! Winrate " + target + " sekarang " + rate + "%");
+                    fetchData();
+                }
+            } catch (e) {
+                alert("Error saat update data.");
+            }
+        }
+    </script>
+</body>
+</html>
