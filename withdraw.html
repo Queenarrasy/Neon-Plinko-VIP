@@ -64,7 +64,6 @@
         
         .btn-wd { 
             width: 100%; 
-            padding: 166px; 
             padding: 16px; 
             background: linear-gradient(90deg, var(--pink), #ff4d94); 
             color: white; 
@@ -81,14 +80,11 @@
 
         .history-section { margin-top: 30px; background: rgba(0,0,0,0.4); border-radius: 15px; padding: 15px; border: 1px solid #222;}
         .history-title { font-size: 11px; color: var(--blue); font-weight: 900; margin-bottom: 15px; text-align: left; letter-spacing: 1px;}
-        .table-scroll { max-height: 200px; overflow-y: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 11px; }
-        th { color: #666; text-align: left; padding: 10px 5px; border-bottom: 1px solid #333; font-weight: 900; }
-        td { padding: 12px 5px; border-bottom: 1px solid #111; }
+        .table-scroll { max-height: 250px; overflow-y: auto; }
         
-        .status-proses { color: var(--yellow); font-weight: bold; }
-        .status-berhasil { color: #00ff88; font-weight: bold; text-shadow: 0 0 5px #00ff88; }
-        
+        /* Style Item Riwayat Modern agar konsisten dengan Deposit */
+        .history-item { background: rgba(255,255,255,0.05); border: 1px solid #333; border-radius: 10px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+
         .btn-back { display: block; margin-top: 20px; padding: 12px; text-decoration: none; color: #888; font-size: 11px; font-weight: 900; border: 1px solid #222; border-radius: 10px; text-transform: uppercase;}
 
         #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 2000000; }
@@ -107,7 +103,7 @@
 
     <div id="loading-overlay">
         <div class="spinner"></div>
-        <p style="margin-top: 15px; color: var(--blue); font-size: 10px; font-weight: bold; letter-spacing: 2px;">LOADING...</p>
+        <p style="margin-top: 15px; color: var(--blue); font-size: 10px; font-weight: bold; letter-spacing: 2px;">MENGHUBUNGI SERVER...</p>
     </div>
 
     <div id="neon-modal-overlay">
@@ -148,18 +144,8 @@
         
         <div class="history-section">
             <div class="history-title"><i class="fa-solid fa-clock-rotate-left"></i> RIWAYAT WD</div>
-            <div class="table-scroll">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>WAKTU</th>
-                            <th>JUMLAH</th>
-                            <th>STATUS</th>
-                        </tr>
-                    </thead>
-                    <tbody id="wd-history-list">
-                    </tbody>
-                </table>
+            <div id="history-list" class="table-scroll">
+                <div style="text-align:center; padding:20px; color:#444; font-size:10px;">MEMUAT RIWAYAT...</div>
             </div>
         </div>
 
@@ -169,58 +155,44 @@
     </div>
 
     <script>
-        // URL SCRIPT GOOGLE APPS
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
 
-        // FUNGSI UTAMA UNTUK MENYIAPKAN DATA HALAMAN
-        async function prepareWithdrawPage() {
-            const user = localStorage.getItem('user_session');
-            if (!user) {
-                window.location.href = 'index.html';
-                return;
-            }
-
-            // Tampilan Awal Loading
-            document.getElementById('wd-name').value = "Memuat data...";
-            document.getElementById('wd-rek').value = "Memuat data...";
-
+        // Fungsi bantu komunikasi server (sama seperti global.js)
+        async function callCloud(payload) {
             try {
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
-                    body: JSON.stringify({
-                        action: 'getUserData',
-                        username: user
-                    })
+                    body: JSON.stringify(payload)
                 });
+                return await response.json();
+            } catch (err) {
+                console.error("Fetch Error:", err);
+                return { result: "ERROR" };
+            }
+        }
 
-                const data = await response.json();
+        async function prepareWithdrawPage() {
+            const user = localStorage.getItem('user_session');
+            if (!user) { window.location.href = 'index.html'; return; }
+
+            try {
+                const data = await callCloud({ action: 'getUserData', username: user });
 
                 if (data.result === "SUCCESS") {
-                    // Update Local Storage & Tampilan Saldo
                     localStorage.setItem('saldo', data.saldo);
-                    localStorage.setItem('fullname', data.fullname);
+                    localStorage.setItem('user_fullname', data.fullname);
                     localStorage.setItem('rekening', data.rekening);
                     localStorage.setItem('bank', data.bank);
 
-                    document.getElementById('display-saldo').innerText = "IDR " + parseInt(data.saldo).toLocaleString('id-ID');
+                    document.getElementById('display-saldo').innerText = "IDR " + Number(data.saldo).toLocaleString('id-ID');
                     document.getElementById('wd-name').value = data.fullname.toUpperCase();
                     document.getElementById('wd-rek').value = data.bank ? `${data.bank.toUpperCase()} - ${data.rekening}` : data.rekening;
                 }
             } catch (err) {
-                console.error("Gagal koneksi data:", err);
-                // Fallback ke LocalStorage
                 const localSaldo = localStorage.getItem('saldo') || 0;
-                const localFull = localStorage.getItem('fullname') || "BELUM TERSET";
-                const localRek = localStorage.getItem('rekening') || "BELUM TERSET";
-                const localBank = localStorage.getItem('bank') || "";
-
-                document.getElementById('display-saldo').innerText = "IDR " + parseInt(localSaldo).toLocaleString('id-ID');
-                document.getElementById('wd-name').value = localFull.toUpperCase();
-                document.getElementById('wd-rek').value = localBank ? `${localBank.toUpperCase()} - ${localRek}` : localRek;
+                document.getElementById('display-saldo').innerText = "IDR " + Number(localSaldo).toLocaleString('id-ID');
             }
-            
-            // Render riwayat setelah data profil siap
-            renderHistory();
+            muatRiwayatCloud();
         }
 
         function showNeonModal(msg, title = "INFO", isConfirm = false, onConfirm = null) {
@@ -259,26 +231,22 @@
         async function kirimWDKeCloud() {
             const amt = parseInt(document.getElementById('wd-amount').value);
             const user = localStorage.getItem('user_session');
-            const full = localStorage.getItem('fullname');
+            const full = localStorage.getItem('user_fullname');
             const bank = localStorage.getItem('bank');
             const rek = localStorage.getItem('rekening');
 
             document.getElementById('loading-overlay').style.display = 'flex';
 
             try {
-                const response = await fetch(SCRIPT_URL, {
-                    method: "POST",
-                    body: JSON.stringify({
-                        action: "withdraw",
-                        username: user,
-                        fullname: full,
-                        bank: bank,
-                        rekening: rek,
-                        amount: amt
-                    })
+                const result = await callCloud({
+                    action: "withdraw",
+                    username: user,
+                    fullname: full,
+                    bank: bank,
+                    rekening: rek,
+                    amount: amt
                 });
                 
-                const result = await response.json();
                 document.getElementById('loading-overlay').style.display = 'none';
 
                 if (result.result === "SUCCESS") {
@@ -286,11 +254,9 @@
                     localStorage.setItem('saldo', currentSaldo - amt);
                     showNeonModal("Penarikan berhasil diajukan. Saldo Anda telah terpotong.", "SUKSES");
                     document.getElementById('wd-amount').value = "";
-                    prepareWithdrawPage(); // Refresh data
-                } else if (result.result === "INSUFFICIENT") {
-                    showNeonModal("Saldo di server tidak mencukupi.", "GAGAL");
+                    prepareWithdrawPage(); 
                 } else {
-                    showNeonModal("Gagal mengirim permintaan.", "ERROR");
+                    showNeonModal(result.message || "Gagal mengirim permintaan.", "GAGAL");
                 }
             } catch (e) {
                 document.getElementById('loading-overlay').style.display = 'none';
@@ -298,35 +264,47 @@
             }
         }
 
-        async function renderHistory() {
-            const list = document.getElementById('wd-history-list');
+        // FUNGSI MUAT RIWAYAT (Sinkron dengan global.js)
+        async function muatRiwayatCloud() {
             const user = localStorage.getItem('user_session');
-            if(!user) return;
+            const container = document.getElementById('history-list');
+            if(!user || !container) return;
+
             try {
-                const response = await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'getHistory', username: user, type: 'withdraw' })
+                const res = await callCloud({
+                    action: "getRiwayat",
+                    username: user,
+                    type: "withdraw"
                 });
-                const data = await response.json();
-                list.innerHTML = ""; 
-                if (!data || data.length === 0) {
-                    list.innerHTML = "<tr><td colspan='3' style='text-align:center; padding:10px;'>Belum ada riwayat.</td></tr>";
-                    return;
+
+                if (res.result === "SUCCESS" && res.data && res.data.length > 0) {
+                    container.innerHTML = ''; 
+                    res.data.forEach(item => {
+                        const sColor = (item.status.toLowerCase().includes('success') || item.status.toLowerCase().includes('berhasil')) ? '#00ff88' : 
+                                       (item.status.toLowerCase().includes('pending') || item.status.toLowerCase().includes('proses')) ? '#ffcc00' : '#ff0077';
+                        
+                        const card = document.createElement('div');
+                        card.className = 'history-item';
+                        card.innerHTML = `
+                            <div style="text-align:left;">
+                                <div style="font-size:10px; color:#888;">${item.tanggal}</div>
+                                <div style="font-size:11px; font-weight:900; color:white;">WD SALDO</div>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="font-size:13px; font-weight:900; color:var(--yellow);">IDR ${Number(item.jumlah).toLocaleString('id-ID')}</div>
+                                <div style="font-size:9px; font-weight:900; color:${sColor};">● ${item.status.toUpperCase()}</div>
+                            </div>
+                        `;
+                        container.appendChild(card);
+                    });
+                } else {
+                    container.innerHTML = '<div style="text-align:center; padding:20px; color:#444; font-size:10px;">BELUM ADA RIWAYAT</div>';
                 }
-                data.forEach(item => {
-                    let st = item.status === "BERHASIL" ? '<span class="status-berhasil">BERHASIL</span>' : '<span class="status-proses">PROSES</span>';
-                    list.innerHTML += `<tr>
-                        <td style="font-size:9px;">${item.tanggal}</td>
-                        <td style="color:var(--yellow);">IDR ${parseInt(item.amount).toLocaleString('id-ID')}</td>
-                        <td>${st}</td>
-                    </tr>`;
-                });
-            } catch (e) {
-                list.innerHTML = "<tr><td colspan='3'>Gagal memuat riwayat.</td></tr>";
+            } catch (e) { 
+                container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--pink);">GAGAL MEMUAT DATA</div>';
             }
         }
 
-        // Jalankan fungsi saat halaman dimuat
         window.onload = prepareWithdrawPage;
     </script>
 </body>
