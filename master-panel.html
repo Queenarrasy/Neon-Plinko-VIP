@@ -51,15 +51,16 @@
         .username { color: var(--blue); font-size: 16px; font-weight: bold; text-shadow: 0 0 5px var(--blue); }
         .balance-text { color: var(--yellow); font-weight: bold; }
 
-        .controls { display: flex; gap: 8px; margin-top: 12px; }
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
         select, .btn-action { 
             background: #000; color: white; border: 1px solid #444; 
-            padding: 10px; border-radius: 6px; font-size: 11px; cursor: pointer; flex: 1;
+            padding: 10px; border-radius: 6px; font-size: 11px; cursor: pointer; width: 100%;
         }
         .btn-inject { border-color: var(--green); color: var(--green); }
         .btn-winrate { border-color: var(--pink); color: var(--pink); }
+        .btn-limit { border-color: var(--yellow); color: var(--yellow); }
 
-        /* --- CUSTOM NEON MODAL (PENGGANTI PROMPT/ALERT) --- */
+        /* MODALS */
         .overlay { 
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(0,0,0,0.9); z-index: 999; backdrop-filter: blur(8px); 
@@ -74,10 +75,10 @@
         .neon-modal h3 { color: var(--pink); text-shadow: 0 0 10px var(--pink); margin-top: 0; }
         .neon-modal input { 
             width: 90%; background: #000; border: 1px solid var(--blue); 
-            padding: 12px; color: white; border-radius: 8px; margin: 15px 0;
-            box-shadow: 0 0 10px rgba(0, 212, 255, 0.2); outline: none; text-align: center;
+            padding: 12px; color: white; border-radius: 8px; margin: 10px 0;
+            text-align: center; outline: none;
         }
-        .neon-modal .btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
+        .btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
         .btn-confirm { background: var(--pink); border: none; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px var(--pink); }
         .btn-cancel { background: #333; border: none; color: white; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
 
@@ -122,8 +123,11 @@
     <div class="overlay" id="common-overlay"></div>
     <div class="neon-modal" id="common-modal">
         <h3 id="modal-title">TITLE</h3>
-        <p id="modal-desc">Description here...</p>
-        <input type="text" id="modal-input" style="display: none;">
+        <p id="modal-desc" style="font-size: 13px; line-height: 1.5;"></p>
+        <div id="modal-input-container">
+            <input type="text" id="modal-input-1" style="display: none;">
+            <input type="text" id="modal-input-2" style="display: none;">
+        </div>
         <div class="btn-group">
             <button class="btn-confirm" id="modal-ok-btn">EXECUTE</button>
             <button class="btn-cancel" onclick="closeModal()">ABORT</button>
@@ -136,15 +140,12 @@
         const API_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
         const MASTER_PIN = "2026";
         
-        let activeTarget = "";
-        let activeAction = "";
-
         // -- SYSTEM CLOCK --
         setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
 
         function playSnd(id) { document.getElementById(id).play().catch(e=>{}); }
 
-        // -- 1. CUSTOM LOGIN VERIFICATION --
+        // -- 1. AUTHENTICATION --
         function verifyPin() {
             const input = document.getElementById('pin-input').value;
             if(input === MASTER_PIN) {
@@ -158,11 +159,11 @@
             }
         }
 
-        // -- 2. FETCH DATA --
+        // -- 2. DATA SYNCHRONIZATION --
         async function fetchData() {
             playSnd('snd-click');
             const area = document.getElementById('display-area');
-            area.innerHTML = "<p style='text-align:center; color:var(--blue)'>CONNECTING...</p>";
+            area.innerHTML = "<p style='text-align:center; color:var(--blue)'>CONNECTING TO TERMINAL...</p>";
             try {
                 const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "getAllUsers" }) });
                 const users = await res.json();
@@ -179,35 +180,47 @@
                             <div class="balance-text">IDR ${u.saldo.toLocaleString()}</div>
                         </div>
                         <div class="controls">
-                            <button class="btn-action btn-inject" onclick="prepareInject('${u.username}')">± CREDIT</button>
+                            <button class="btn-action btn-inject" onclick="prepareInject('${u.username}')">
+                                <i class="fa-solid fa-wallet"></i> ± CREDIT
+                            </button>
+                            <button class="btn-action btn-limit" onclick="prepareLimit('${u.username}')">
+                                <i class="fa-solid fa-clock"></i> SET LIMIT
+                            </button>
                             <select class="btn-winrate" onchange="prepareWinrate('${u.username}', this.value)">
-                                <option value="">SET RATE</option>
+                                <option value="">SET WINRATE</option>
                                 <option value="100">100% JP</option>
                                 <option value="80">80% GACOR</option>
                                 <option value="50">NORMAL</option>
-                                <option value="5">ZONK</option>
+                                <option value="5">ZONK (3%)</option>
                             </select>
                         </div>
                     `;
                     area.appendChild(div);
                 });
-            } catch(e) { area.innerHTML = "ERROR CONNECTING"; }
+            } catch(e) { area.innerHTML = "<p style='color:red; text-align:center;'>CONNECTION FAILED</p>"; }
         }
 
-        // -- 3. CUSTOM MODAL LOGIC --
-        function showCustomModal(title, desc, useInput, callback) {
+        // -- 3. MODAL LOGIC --
+        function showCustomModal(title, desc, inputsCount, callback) {
             document.getElementById('modal-title').innerText = title;
             document.getElementById('modal-desc').innerHTML = desc;
-            const inputEl = document.getElementById('modal-input');
-            inputEl.style.display = useInput ? "block" : "none";
-            inputEl.value = "";
+            
+            const in1 = document.getElementById('modal-input-1');
+            const in2 = document.getElementById('modal-input-2');
+            
+            in1.style.display = inputsCount >= 1 ? "block" : "none";
+            in2.style.display = inputsCount >= 2 ? "block" : "none";
+            in1.value = ""; in2.value = "";
+
+            if(inputsCount === 1) in1.placeholder = "Masukkan nilai...";
+            if(inputsCount === 2) { in1.placeholder = "Batas Saldo (Contoh: 50000)"; in2.placeholder = "Menit Bermain (Contoh: 2)"; }
             
             document.getElementById('common-overlay').style.display = "block";
             document.getElementById('common-modal').style.display = "block";
             
             document.getElementById('modal-ok-btn').onclick = () => {
-                const val = useInput ? inputEl.value : true;
-                callback(val);
+                const results = { val1: in1.value, val2: in2.value };
+                callback(results);
                 closeModal();
             };
         }
@@ -217,43 +230,61 @@
             document.getElementById('common-modal').style.display = "none";
         }
 
-        // -- 4. ACTION PREPARERS --
+        // -- 4. ACTION HANDLERS --
         function prepareInject(user) {
-            showCustomModal("INJECT CREDIT", `Masukkan jumlah saldo untuk <b>${user}</b><br><small>(Gunakan '-' untuk potong)</small>`, true, (val) => {
-                if(!val || isNaN(val)) return;
-                executeServerAction("adminUpdateSaldo", user, val);
+            showCustomModal("INJECT CREDIT", `Sesuaikan saldo untuk <b>${user}</b>.<br><small>Gunakan tanda (-) untuk memotong saldo.</small>`, 1, (res) => {
+                if(!res.val1 || isNaN(res.val1)) return;
+                executeServerAction("adminUpdateSaldo", user, { amount: res.val1 });
+            });
+        }
+
+        function prepareLimit(user) {
+            showCustomModal("SET SESSION LIMIT", `Atur batas pengurasan otomatis untuk <b>${user}</b>:`, 2, (res) => {
+                if(!res.val1 || !res.val2) return;
+                executeServerAction("setSessionLimit", user, { maxWin: res.val1, limitMin: res.val2 });
             });
         }
 
         function prepareWinrate(user, rate) {
             if(!rate) return;
-            showCustomModal("WINRATE OVERRIDE", `Atur Winrate <b>${user}</b> ke <b>${rate}%</b>?`, false, () => {
-                executeServerAction("updateWinrate", user, rate);
+            showCustomModal("WINRATE OVERRIDE", `Paksa Winrate <b>${user}</b> ke <b>${rate}%</b>?`, 0, () => {
+                executeServerAction("updateWinrate", user, { newRate: rate });
             });
         }
 
         function openBroadcast() {
-            showCustomModal("GLOBAL BROADCAST", "Masukkan pesan untuk semua user:", true, (msg) => {
-                if(!msg) return;
+            showCustomModal("GLOBAL BROADCAST", "Pesan ini akan muncul di dashboard semua user:", 1, (res) => {
+                if(!res.val1) return;
                 showToast("BROADCAST SENT!");
             });
         }
 
-        // -- 5. SERVER EXECUTION --
-        async function executeServerAction(action, user, val) {
-            showToast("PROCESSING...");
+        // -- 5. SERVER EXECUTION ENGINE --
+        async function executeServerAction(action, user, extraParams = {}) {
+            showToast("EXECUTING COMMAND...");
             try {
+                const payload = { 
+                    action: action, 
+                    targetUser: user, 
+                    ...extraParams 
+                };
+                
                 const res = await fetch(API_URL, {
                     method: 'POST',
-                    body: JSON.stringify({ action: action, targetUser: user, amount: val, newRate: val })
+                    body: JSON.stringify(payload)
                 });
+                
                 const result = await res.json();
                 if(result.result === "SUCCESS") {
                     playSnd('snd-success');
                     showToast("SYSTEM UPDATED!");
                     fetchData();
+                } else {
+                    showToast("SERVER REJECTED!");
                 }
-            } catch(e) { showToast("FAILED!"); }
+            } catch(e) { 
+                showToast("CONNECTION ERROR!"); 
+            }
         }
 
         function showToast(msg) {
