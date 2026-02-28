@@ -137,10 +137,20 @@
 
     <script src="global.js"></script>
     <script>
-        // SCRIPT_URL menggunakan konstanta dari global.js jika sudah ada, atau manual di sini
         const API_SERVER = CLOUD_URL || SCRIPT_URL; 
 
-        // Fungsi Update Saldo (Lokal & UI) agar tidak membal
+        // Variabel Global
+        const container = document.getElementById('game-container');
+        const bets = [400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 4000, 6000, 8000, 10000, 12000, 16000, 18000, 20000];
+        let betIdx = 3; 
+        let isAuto = false;
+        let autoInterval = null;
+        let pegLocations = [];
+        let activeBalls = [];
+        const slots = [5, 2, 1.2, 0.2, 1.2, 2, 5];
+
+        // --- SISTEM UPDATE UI ---
+
         function updateSaldoLokal(newAmount) {
             localStorage.setItem('saldo', newAmount);
             const saldoEl = document.getElementById('display-saldo');
@@ -161,15 +171,14 @@
             } catch (e) { console.error("Sync Error"); }
         }
 
+        function showNeonModal(msg) { 
+            document.getElementById('modal-msg').innerText = msg; 
+            document.getElementById('neon-overlay').style.display = 'flex'; 
+        }
+
+        function closeNeonModal() { document.getElementById('neon-overlay').style.display = 'none'; }
+
         // --- GAME LOGIC ---
-        const container = document.getElementById('game-container');
-        const bets = [400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 4000, 6000, 8000, 10000, 12000, 16000, 18000, 20000];
-        let betIdx = 3; 
-        let isAuto = false;
-        let autoInterval = null;
-        let pegLocations = [];
-        let activeBalls = [];
-        const slots = [5, 2, 1.2, 0.2, 1.2, 2, 5];
 
         function initPegs() {
             container.innerHTML = '';
@@ -192,17 +201,6 @@
             }
         }
 
-        window.addEventListener('load', () => {
-            initPegs();
-            syncSaldoRealtime();
-        });
-
-        function showNeonModal(msg) { 
-            document.getElementById('modal-msg').innerText = msg; 
-            document.getElementById('neon-overlay').style.display = 'flex'; 
-        }
-        function closeNeonModal() { document.getElementById('neon-overlay').style.display = 'none'; }
-        
         function changeBet(d) { 
             betIdx = Math.max(0, Math.min(bets.length-1, betIdx+d)); 
             document.getElementById('current-bet').innerText = bets[betIdx].toLocaleString(); 
@@ -218,9 +216,10 @@
         }
 
         function handlePlay() { if (isAuto) setMode('normal'); else dropBall(); }
+
         function startAuto() { dropBall(); autoInterval = setInterval(() => { if(isAuto) dropBall(); }, 500); }
 
-        // FUNGSI INI ADALAH KUNCI ANTI-MEMBAL
+        // FUNGSI INI ADALAH KUNCI ANTI-MEMBAL & UPDATE SKOR DINAMIS
         async function processGameResult(multiplierValue) {
             const user = localStorage.getItem('user_session');
             const bet = bets[betIdx];
@@ -233,24 +232,30 @@
                 });
 
                 if (res.result === "SUCCESS") {
-                    // Update saldo lokal langsung dari respon server terbaru
-                    updateSaldoLokal(res.newSaldo);
-                    return res.winAmount;
+                    updateSaldoLokal(res.newSaldo); // Update saldo dari server (Anti-Membal)
+                    return res.winAmount; // Mengambil +200 atau +4000 sesuai server
+                } else if (res.message === "SALDO HABIS") {
+                    showNeonModal("Saldo Tidak Cukup!");
+                    setMode('normal');
+                    return -1;
                 }
-            } catch (e) { console.error("Game Process Error"); return 0; }
+            } catch (e) { 
+                console.error("Game Process Error"); 
+                return 0; 
+            }
         }
 
         function dropBall() {
             const currentSaldo = Number(localStorage.getItem('saldo') || 0);
             const bet = Number(bets[betIdx]);
+            
             if (currentSaldo < bet) { 
                 setMode('normal'); 
                 showNeonModal("Saldo Tidak Cukup!"); 
                 return; 
             }
 
-            // Kurangi saldo sementara di UI agar responsif
-            updateSaldoLokal(currentSaldo - bet);
+            updateSaldoLokal(currentSaldo - bet); // Kurangi saldo visual (Bet)
 
             const ballEl = document.createElement('div');
             ballEl.className = 'ball';
@@ -274,15 +279,6 @@
                 ball.vy += gravity; 
                 ball.x += ball.vx; 
                 ball.y += ball.vy;
-
-                const adminWinrate = parseInt(localStorage.getItem('user_winrate')) || 70;
-                const luck = Math.random() * 100;
-                
-                if (ball.y > 250 && ball.y < 300 && luck > adminWinrate) {
-                    const centerX = container.offsetWidth / 2;
-                    if (ball.x < centerX) ball.vx += 0.5;
-                    else ball.vx -= 0.5;
-                }
 
                 pegLocations.forEach(p => {
                     const dx = ball.x - p.x; const dy = ball.y - p.y;
@@ -320,33 +316,40 @@
                     if (finalSlot !== -1) {
                         const mult = slots[finalSlot];
                         const s = slotsEls[finalSlot];
+                        
                         s.style.transform = "scale(1.2)";
                         setTimeout(() => s.style.transform = "scale(1)", 200);
 
                         processGameResult(mult).then(winAmount => {
-                            if (winAmount >= 0) { // Tetap proses meski win 0
+                            if (winAmount !== undefined && winAmount >= 0) { 
+                                // 1. UPDATE PAPAN SKOR KIRI
                                 const board = document.getElementById('score-board');
                                 const item = document.createElement('div');
                                 item.className = 'score-item';
-                                item.innerText = 'WIN ' + winAmount.toLocaleString();
+                                item.innerText = 'WIN +' + winAmount.toLocaleString();
                                 board.prepend(item);
-                                if (board.children.length > 3) board.lastChild.remove();
-                                setTimeout(() => item.remove(), 3000);
+                                if (board.children.length > 4) board.lastChild.remove();
+                                setTimeout(() => { if(item) item.style.opacity = '0'; setTimeout(()=>item.remove(), 500); }, 4000);
 
-                                if (winAmount > 0) {
-                                    const p = document.createElement('div');
-                                    p.className = 'win-popup';
-                                    p.innerText = `+${winAmount.toLocaleString()}`;
-                                    p.style.left = ball.x + 'px'; p.style.top = '280px';
-                                    document.body.appendChild(p);
-                                    setTimeout(() => p.remove(), 1000);
-                                }
+                                // 2. POPUP MELAYANG
+                                const p = document.createElement('div');
+                                p.className = 'win-popup';
+                                p.innerText = `+${winAmount.toLocaleString()}`;
+                                p.style.left = ball.x + 'px'; 
+                                p.style.top = '280px';
+                                document.body.appendChild(p);
+                                setTimeout(() => p.remove(), 1000);
                             }
                         });
                     }
                 }
             }, 20);
         }
+
+        window.addEventListener('load', () => {
+            initPegs();
+            syncSaldoRealtime();
+        });
     </script>
 </body>
 </html>
