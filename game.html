@@ -219,7 +219,6 @@
 
         function startAuto() { dropBall(); autoInterval = setInterval(() => { if(isAuto) dropBall(); }, 500); }
 
-        // FUNGSI INI ADALAH KUNCI ANTI-MEMBAL & UPDATE SKOR DINAMIS
         async function processGameResult(multiplierValue) {
             const user = localStorage.getItem('user_session');
             const bet = bets[betIdx];
@@ -232,8 +231,8 @@
                 });
 
                 if (res.result === "SUCCESS") {
-                    updateSaldoLokal(res.newSaldo); // Update saldo dari server (Anti-Membal)
-                    return res.winAmount; // Mengambil +200 atau +4000 sesuai server
+                    updateSaldoLokal(res.newSaldo);
+                    return res.winAmount; 
                 } else if (res.message === "SALDO HABIS") {
                     showNeonModal("Saldo Tidak Cukup!");
                     setMode('normal');
@@ -255,7 +254,7 @@
                 return; 
             }
 
-            updateSaldoLokal(currentSaldo - bet); // Kurangi saldo visual (Bet)
+            updateSaldoLokal(currentSaldo - bet);
 
             const ballEl = document.createElement('div');
             ballEl.className = 'ball';
@@ -298,27 +297,33 @@
                 ball.el.style.left = ball.x + 'px'; 
                 ball.el.style.top = ball.y + 'px';
 
+                // --- BAGIAN PENYELESAIAN BOLA ---
                 if (ball.y > 345) {
                     clearInterval(moveBall);
                     ball.el.remove();
                     activeBalls = activeBalls.filter(b => b.id !== ball.id);
 
-                    const slotsEls = document.querySelectorAll('.slot');
-                    let finalSlot = -1;
-                    const containerRect = container.getBoundingClientRect();
-
-                    slotsEls.forEach((s, index) => {
-                        const sRect = s.getBoundingClientRect();
-                        const ballGlobalX = ball.x + containerRect.left;
-                        if (ballGlobalX >= sRect.left && ballGlobalX <= sRect.right) finalSlot = index;
-                    });
+                    // LOGIKA BARU: Matematika akurat untuk menentukan slot
+                    const totalSlots = slots.length;
+                    const slotWidth = container.offsetWidth / totalSlots;
+                    let finalSlot = Math.floor(ball.x / slotWidth);
+                    
+                    if (finalSlot < 0) finalSlot = 0;
+                    if (finalSlot >= totalSlots) finalSlot = totalSlots - 1;
 
                     if (finalSlot !== -1) {
                         const mult = slots[finalSlot];
+                        const slotsEls = document.querySelectorAll('.slot');
                         const s = slotsEls[finalSlot];
                         
-                        s.style.transform = "scale(1.2)";
-                        setTimeout(() => s.style.transform = "scale(1)", 200);
+                        if (s) {
+                            s.style.transform = "scale(1.2)";
+                            s.style.filter = "brightness(1.5)";
+                            setTimeout(() => {
+                                s.style.transform = "scale(1)";
+                                s.style.filter = "brightness(1)";
+                            }, 200);
+                        }
 
                         processGameResult(mult).then(winAmount => {
                             if (winAmount !== undefined && winAmount >= 0) { 
@@ -326,19 +331,29 @@
                                 const board = document.getElementById('score-board');
                                 const item = document.createElement('div');
                                 item.className = 'score-item';
-                                item.innerText = 'WIN +' + winAmount.toLocaleString();
+                                item.style.borderLeft = winAmount > 0 ? "4px solid var(--yellow)" : "4px solid #444";
+                                item.innerText = winAmount > 0 ? 'WIN +' + winAmount.toLocaleString() : 'LOSE 0';
+                                
                                 board.prepend(item);
-                                if (board.children.length > 4) board.lastChild.remove();
-                                setTimeout(() => { if(item) item.style.opacity = '0'; setTimeout(()=>item.remove(), 500); }, 4000);
+                                if (board.children.length > 5) board.lastChild.remove();
+                                
+                                setTimeout(() => { 
+                                    if(item) {
+                                        item.style.opacity = '0'; 
+                                        setTimeout(()=>item.remove(), 500); 
+                                    }
+                                }, 3000);
 
                                 // 2. POPUP MELAYANG
-                                const p = document.createElement('div');
-                                p.className = 'win-popup';
-                                p.innerText = `+${winAmount.toLocaleString()}`;
-                                p.style.left = ball.x + 'px'; 
-                                p.style.top = '280px';
-                                document.body.appendChild(p);
-                                setTimeout(() => p.remove(), 1000);
+                                if (winAmount > 0) {
+                                    const p = document.createElement('div');
+                                    p.className = 'win-popup';
+                                    p.innerText = `+${winAmount.toLocaleString()}`;
+                                    p.style.left = ball.x + 'px'; 
+                                    p.style.top = '280px';
+                                    container.appendChild(p);
+                                    setTimeout(() => p.remove(), 1000);
+                                }
                             }
                         });
                     }
