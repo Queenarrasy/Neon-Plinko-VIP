@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DEPOSIT VIP - NEON PLINKO</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --neon-pink: #ff0077; --neon-blue: #00d4ff; --neon-gold: #fbff00; --bg-dark: #070816; }
+        body, html { background: var(--bg-dark); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; min-height: 100vh; overflow-x: hidden; }
+        .container { padding: 20px; max-width: 400px; margin: auto; }
+        .glass-card { background: rgba(255, 255, 255, 0.03); border: 2px solid var(--neon-blue); border-radius: 25px; padding: 25px; box-shadow: 0 0 20px rgba(0, 212, 255, 0.2); backdrop-filter: blur(10px); }
+        .neon-title { color: var(--neon-blue); font-size: 18px; font-weight: 900; text-align: center; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px; text-shadow: 0 0 10px var(--neon-blue); }
+        label { font-size: 11px; color: #888; display: block; margin-bottom: 10px; font-weight: bold; text-align: left; }
+        input[type="number"] { width: 100%; padding: 15px; background: #000; border: 1px solid #333; border-radius: 12px; color: var(--neon-gold); font-size: 20px; font-weight: 900; outline: none; text-align: center; box-sizing: border-box; }
+        
+        .converter-badge { font-size: 10px; color: var(--neon-gold); margin-top: 8px; text-align: center; display: none; font-weight: bold; background: rgba(251, 255, 0, 0.1); padding: 8px; border-radius: 8px; border: 1px solid rgba(251, 255, 0, 0.2); line-height: 1.4; }
+        .fee-info { color: var(--neon-pink); font-size: 9px; display: block; margin-top: 4px; }
+
+        .method-tabs { display: flex; gap: 10px; margin: 20px 0; }
+        .btn-tab { flex: 1; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid #333; border-radius: 10px; color: white; cursor: pointer; font-size: 11px; font-weight: 900; transition: 0.3s; }
+        .btn-tab.active { border-color: var(--neon-blue); box-shadow: 0 0 10px var(--neon-blue); background: rgba(0, 212, 255, 0.1); }
+        
+        /* Instruksi Box Styling */
+        .instruksi-box { background: #000; border: 1px solid #222; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; min-height: 220px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .wallet-card { background: #111; border: 1px solid #333; border-radius: 12px; padding: 15px; width: 100%; box-sizing: border-box; margin-top: 10px; }
+        .network-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; margin-top: 10px; }
+        .net-tag { font-size: 8px; background: #222; color: var(--neon-blue); padding: 3px 6px; border-radius: 4px; border: 1px solid #444; font-weight: bold; }
+
+        .history-section { margin-top: 30px; background: rgba(0,0,0,0.4); border-radius: 15px; padding: 15px; border: 1px solid #222; }
+        .history-title { font-size: 12px; color: var(--neon-blue); font-weight: 900; margin-bottom: 15px; text-align: left; display: flex; align-items: center; gap: 8px; text-transform: uppercase; }
+        .table-scroll { max-height: 250px; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 10px; }
+        th { color: #666; text-align: left; padding: 10px 8px; border-bottom: 1px solid #333; font-weight: 900; }
+        td { padding: 12px 8px; border-bottom: 1px solid #111; vertical-align: middle; }
+        
+        .status-badge { font-size: 8px; font-weight: 900; padding: 4px 6px; border-radius: 4px; text-transform: uppercase; }
+        .status-proses { color: var(--neon-gold); border: 1px solid rgba(251, 255, 0, 0.3); }
+        .status-berhasil { color: #00ff88; border: 1px solid rgba(0, 255, 136, 0.3); }
+        
+        .btn-primary { width: 100%; padding: 16px; background: linear-gradient(90deg, var(--neon-pink), #ff4d94); border: none; border-radius: 12px; color: white; font-weight: 900; font-size: 14px; cursor: pointer; text-transform: uppercase; box-shadow: 0 0 15px var(--neon-pink); }
+        .btn-wa { display: inline-flex; align-items: center; gap: 8px; background: #25d366; color: white; text-decoration: none; padding: 10px 20px; border-radius: 10px; font-size: 11px; font-weight: bold; margin-top: 15px; transition: 0.3s; border: 1px solid rgba(255,255,255,0.2); }
+        .btn-wa:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(37, 211, 102, 0.4); }
+        .btn-back { display: block; margin-top: 25px; padding: 12px; text-decoration: none; color: #888; font-size: 12px; font-weight: 900; border: 1px solid #222; border-radius: 12px; text-align: center; text-transform: uppercase; }
+        
+        #neon-popup { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; max-width: 320px; background: #000; border: 2px solid var(--neon-blue); border-radius: 20px; padding: 25px; z-index: 10000; text-align: center; box-shadow: 0 0 50px var(--neon-blue); }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; }
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 2000000; }
+        .spinner { width: 40px; height: 40px; border: 4px solid rgba(0, 212, 255, 0.1); border-top: 4px solid var(--neon-blue); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div id="loading-overlay"><div class="spinner"></div><p style="margin-top:15px;color:var(--neon-blue);font-size:10px;font-weight:bold;">SENDING REQUEST...</p></div>
+    <div class="overlay" id="overlay"></div>
+    <div id="neon-popup">
+        <div id="popup-msg" style="font-weight:bold;margin-bottom:20px;font-size:14px;color:white;"></div>
+        <button onclick="closePopup()" style="background:var(--neon-blue);border:none;padding:10px 25px;border-radius:8px;font-weight:900;cursor:pointer;">OKE</button>
+    </div>
+
+    <div class="container">
+        <div class="glass-card">
+            <h2 class="neon-title">SETOR DANA</h2>
+            <p id="min-deposit-text" style="color:var(--neon-pink);font-size:10px;text-align:center;margin-bottom:20px;font-weight:bold;"></p>
+            
+            <label id="input-label">NOMINAL DEPOSIT (IDR)</label>
+            <input type="number" id="input-nominal" placeholder="0" oninput="hitungKurs()">
+            <div id="crypto-kurs" class="converter-badge">
+                <span id="kurs-text">Penerimaan Bersih: Rp 0</span><br>
+                <span class="fee-info">* Potongan Biaya Layanan: $2.00 (Network Fee)</span>
+            </div>
+
+            <div class="method-tabs">
+                <button id="tab-qris" onclick="pilihMetode('QRIS')" class="btn-tab active">QRIS RUPIAH</button>
+                <button id="tab-crypto" onclick="pilihMetode('CRYPTO')" class="btn-tab">USDT CRYPTO</button>
+            </div>
+
+            <div class="instruksi-box">
+                <div id="konten-qris">
+                    <h4 style="font-size:11px;margin-bottom:10px;">SCAN QRIS RUPIAH</h4>
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=ID1024357689073" style="width:150px;border-radius:10px;border:2px solid white;">
+                    <p style="font-size:9px;margin-top:10px;color:#aaa;">ARRASHY STORE / SAXOPONE</p>
+                </div>
+
+                <div id="konten-crypto" style="display:none; width: 100%;">
+                    <i class="fa-brands fa-bitcoin" style="font-size:30px;color:var(--neon-gold);margin-bottom:10px;"></i>
+                    <h4 style="color:var(--neon-gold);font-size:12px;margin:0;">KONFIRMASI WALLET ADDRESS</h4>
+                    
+                    <div class="wallet-card">
+                        <p style="font-size:9px; color:#888; margin-bottom:8px;">Silakan hubungi admin untuk mendapatkan alamat wallet terbaru sesuai jaringan pilihan Anda:</p>
+                        <div class="network-list">
+                            <span class="net-tag">USDT-TRC20</span>
+                            <span class="net-tag">USDT-BEP20</span>
+                            <span class="net-tag">ETH</span>
+                            <span class="net-tag">SOLANA</span>
+                            <span class="net-tag">TRONX</span>
+                            <span class="net-tag">POLYGON</span>
+                        </div>
+                    </div>
+
+                    <a href="https://wa.me/6289510249551" target="_blank" class="btn-wa">
+                        <i class="fa-brands fa-whatsapp"></i> HUBUNGI ADMIN
+                    </a>
+                </div>
+            </div>
+
+            <button onclick="prosesDeposit()" class="btn-primary">KONFIRMASI TRANSFER</button>
+
+            <div class="history-section">
+                <div class="history-title"><i class="fa-solid fa-clock-rotate-left"></i> RIWAYAT DEPOSIT</div>
+                <div class="table-scroll">
+                    <table>
+                        <thead><tr><th>WAKTU</th><th>NOMINAL</th><th style="text-align:right;">STATUS</th></tr></thead>
+                        <tbody id="list-riwayat"></tbody>
+                    </table>
+                </div>
+            </div>
+            <a href="game.html" class="btn-back"><i class="fa-solid fa-arrow-left"></i> KEMBALI KE GAME</a>
+        </div>
+    </div>
+
+    <script>
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwqQWXIJuVnkIxLvdu3kYiiRDVh7eyrsy-KU6rG1qtQClgfAzmMoclv2ULFZ_hRdE_qUg/exec";
+        let metodeTerpilih = "QRIS";
+        let hargaUSDT = 15800; 
+
+        async function updateKurs() {
+            try {
+                const r = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=USDTIDR');
+                const d = await r.json();
+                if(d.price) hargaUSDT = parseFloat(d.price);
+            } catch(e) { console.log("Kurs API Error, use fallback"); }
+        }
+
+        function hitungKurs() {
+            const nom = parseFloat(document.getElementById('input-nominal').value) || 0;
+            const badge = document.getElementById('crypto-kurs');
+            const kursText = document.getElementById('kurs-text');
+            
+            if(metodeTerpilih === 'CRYPTO' && nom > 0) {
+                const bersih = Math.max(0, nom - 2);
+                const totalIDR = bersih * hargaUSDT;
+                kursText.innerText = `Penerimaan Bersih: Rp ${totalIDR.toLocaleString('id-ID')}`;
+                badge.style.display = 'block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function showPopup(msg, isError = false) {
+            const popup = document.getElementById('neon-popup');
+            document.getElementById('popup-msg').innerText = msg;
+            popup.style.borderColor = isError ? 'var(--neon-pink)' : 'var(--neon-blue)';
+            popup.style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
+        }
+
+        function closePopup() { document.getElementById('neon-popup').style.display = 'none'; document.getElementById('overlay').style.display = 'none'; }
+
+        function pilihMetode(tipe) {
+            metodeTerpilih = tipe;
+            document.getElementById('tab-qris').classList.toggle('active', tipe === 'QRIS');
+            document.getElementById('tab-crypto').classList.toggle('active', tipe === 'CRYPTO');
+            document.getElementById('konten-qris').style.display = tipe === 'QRIS' ? 'block' : 'none';
+            document.getElementById('konten-crypto').style.display = tipe === 'CRYPTO' ? 'flex' : 'none';
+            document.getElementById('min-deposit-text').innerText = tipe === 'QRIS' ? "⚠️ MINIMAL DEPOSIT: IDR 20,000" : "⚠️ MINIMAL DEPOSIT: $10 (Net $8)";
+            document.getElementById('input-label').innerText = tipe === 'QRIS' ? "NOMINAL DEPOSIT (IDR)" : "NOMINAL DEPOSIT (USDT)";
+            document.getElementById('input-nominal').value = "";
+            hitungKurs();
+        }
+
+        async function prosesDeposit() {
+            const inputVal = parseFloat(document.getElementById('input-nominal').value);
+            const user = localStorage.getItem('user_session');
+            const full = localStorage.getItem('fullname') || "User VIP";
+
+            if (!user) return showPopup("Sesi habis, silakan login ulang", true);
+            if (metodeTerpilih === 'QRIS' && (!inputVal || inputVal < 20000)) return showPopup("Minimal 20000", true);
+            if (metodeTerpilih === 'CRYPTO' && (!inputVal || inputVal < 10)) return showPopup("Minimum $10", true);
+
+            document.getElementById('loading-overlay').style.display = 'flex';
+
+            let finalAmount;
+            if (metodeTerpilih === 'CRYPTO') {
+                const nominalSetelahFee = inputVal - 2;
+                finalAmount = nominalSetelahFee * hargaUSDT;
+            } else {
+                finalAmount = inputVal;
+            }
+
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        action: "deposit",
+                        username: user,
+                        fullname: full,
+                        amount: finalAmount,
+                        method: metodeTerpilih,
+                        cryptoNominal: inputVal
+                    })
+                });
+                
+                const res = await response.json();
+                if(res.result === "SUCCESS") {
+                    showPopup("Konfirmasi Terkirim!");
+                    document.getElementById('input-nominal').value = "";
+                    muatRiwayatCloud();
+                }
+            } catch (e) { 
+                showPopup("Berhasil Dikirim (Cek Riwayat)"); 
+                muatRiwayatCloud();
+            }
+            document.getElementById('loading-overlay').style.display = 'none';
+        }
+
+        async function muatRiwayatCloud() {
+            const container = document.getElementById('list-riwayat');
+            const user = localStorage.getItem('user_session');
+            if(!user) return;
+
+            try {
+                const resp = await fetch(SCRIPT_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ action: "getHistory", username: user, type: "deposit" })
+                });
+                const data = await resp.json();
+                
+                if(!data || data.length === 0) {
+                    container.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#444;">Belum ada riwayat.</td></tr>';
+                    return;
+                }
+
+                container.innerHTML = data.map(item => `
+                    <tr>
+                        <td><span style="font-size:10px;color:#777;">${item.tanggal}</span></td>
+                        <td><span style="color:var(--neon-gold);font-weight:bold;">Rp ${Number(item.amount).toLocaleString('id-ID')}</span></td>
+                        <td style="text-align:right;">
+                            <span class="status-badge ${item.status.toUpperCase() === 'BERHASIL' ? 'status-berhasil' : 'status-proses'}">
+                                ${item.status}
+                            </span>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (e) { 
+                container.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#444;">Riwayat Kosong</td></tr>';
+            }
+        }
+
+        window.onload = async () => { 
+            await updateKurs();
+            pilihMetode('QRIS'); 
+            muatRiwayatCloud(); 
+            setInterval(muatRiwayatCloud, 10000);
+        };
+    </script>
+</body>
+</html>
