@@ -6,7 +6,6 @@
     <title>NEON PLINKO VIP</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
-        /* CSS tetap sama sesuai desain Anda */
         :root { 
             --pink: #ff0077; --blue: #00d4ff; --yellow: #fbff00; --bg: #070816; 
             --pink-neon: 0 0 5px var(--pink), 0 0 10px var(--pink);
@@ -153,6 +152,71 @@
 
         function closeNeonModal() { document.getElementById('neon-overlay').style.display = 'none'; }
 
+        // --- CORE PROCESS (BARU) ---
+        async function processGameResult(multiplierValue, visualBallX) {
+            const user = localStorage.getItem('user_session');
+            const bet = bets[betIdx];
+            
+            // 1. TAMPILKAN POP-UP & SCOREBOARD INSTAN
+            const winAmountLokal = Math.floor(bet * multiplierValue);
+            showInstantPopup(winAmountLokal, visualBallX);
+            updateScoreBoard(winAmountLokal);
+
+            // Update saldo visual secara instan agar user tidak menunggu network
+            const currentSaldo = Number(localStorage.getItem('saldo') || 0);
+            updateSaldoLokal(currentSaldo + winAmountLokal);
+
+            try {
+                // 2. KIRIM KE SERVER DI LATAR BELAKANG UNTUK VALIDASI
+                const res = await callCloud({ 
+                    action: 'playGame', 
+                    username: user, 
+                    betAmount: bet, 
+                    multiplier: multiplierValue.toString() 
+                });
+
+                if (res.result === "SUCCESS") {
+                    // 3. SINKRONISASI SALDO ASLI DARI SERVER (Data Final)
+                    updateSaldoLokal(res.newSaldo);
+                } else if (res.message === "SALDO HABIS") {
+                    showNeonModal("Saldo Habis!");
+                    setMode('normal');
+                    syncSaldoRealtime(); 
+                }
+            } catch (e) { 
+                console.error("Sync Fail"); 
+            }
+        }
+
+        function showInstantPopup(amount, x) {
+            const p = document.createElement('div');
+            p.className = 'win-popup';
+            p.innerText = amount > 0 ? `+${amount.toLocaleString()}` : `0`;
+            p.style.left = x + 'px'; 
+            p.style.top = '280px';
+            p.style.color = amount > 0 ? 'var(--yellow)' : '#888';
+            container.appendChild(p);
+            // Hapus animasi lebih cepat agar sinkron
+            setTimeout(() => p.remove(), 600);
+        }
+
+        function updateScoreBoard(amount) {
+            const board = document.getElementById('score-board');
+            const item = document.createElement('div');
+            item.className = 'score-item';
+            item.style.borderLeft = amount > 0 ? "4px solid var(--yellow)" : "4px solid #444";
+            item.innerHTML = amount > 0 ? `<span class="neon-y">+${amount.toLocaleString()}</span>` : `<span style="color:#888;">0</span>`;
+            
+            board.prepend(item);
+            if (board.children.length > 5) board.lastChild.remove();
+            setTimeout(() => { 
+                if(item) {
+                    item.style.opacity = '0'; 
+                    setTimeout(() => item.remove(), 400); 
+                }
+            }, 2000);
+        }
+
         // --- GAME LOGIC ---
         function initPegs() {
             container.innerHTML = '';
@@ -193,48 +257,19 @@
 
         function startAuto() { dropBall(); autoInterval = setInterval(() => { if(isAuto) dropBall(); }, 700); }
 
-        // --- CORE GAME PROCESS ---
-        async function processGameResult(multiplierValue) {
-            const user = localStorage.getItem('user_session');
-            const bet = bets[betIdx];
-            try {
-                // KIRIM KE SERVER UNTUK PROSES TARUHAN (POTONG SALDO & CEK WINRATE)
-                const res = await callCloud({ 
-                    action: 'playGame', 
-                    username: user, 
-                    betAmount: bet, 
-                    multiplier: multiplierValue.toString() 
-                });
-
-                if (res.result === "SUCCESS") {
-                    // Update Saldo dari Server (Server sudah otomatis kurangi Bet dan tambah Win)
-                    updateSaldoLokal(res.newSaldo);
-                    return res.winAmount; 
-                } else {
-                    if (res.message === "SALDO HABIS") {
-                        showNeonModal("Saldo Tidak Cukup!");
-                        setMode('normal');
-                    }
-                    return -1; // Gagal
-                }
-            } catch (e) { 
-                console.error("Game Process Error", e); 
-                return -1; 
-            }
-        }
-
         function dropBall() {
             const currentSaldo = Number(localStorage.getItem('saldo') || 0);
             const bet = Number(bets[betIdx]);
             
-            // Cek saldo awal sebelum drop ball secara visual
             if (currentSaldo < bet) { 
                 setMode('normal'); 
                 showNeonModal("Saldo Tidak Cukup!"); 
                 return; 
             }
 
-            // Visual Drop Ball
+            // Langsung kurangi saldo visual saat bola jatuh
+            updateSaldoLokal(currentSaldo - bet);
+
             const ballEl = document.createElement('div');
             ballEl.className = 'ball';
             container.appendChild(ballEl);
@@ -250,7 +285,6 @@
             activeBalls.push(ball);
 
             const gravity = 0.85; 
-            const friction = 0.99; 
             const bounce = 0.5;
 
             const moveBall = setInterval(() => {
@@ -276,13 +310,11 @@
                 ball.el.style.left = ball.x + 'px'; 
                 ball.el.style.top = ball.y + 'px';
 
-                // BOLA MENCAPAI TARGET (SLOT)
                 if (ball.y > 345) {
                     clearInterval(moveBall);
                     ball.el.remove();
                     activeBalls = activeBalls.filter(b => b.id !== ball.id);
 
-                    // Tentukan Slot
                     const totalSlots = slots.length;
                     const slotWidth = container.offsetWidth / totalSlots;
                     let finalSlot = Math.floor(ball.x / slotWidth);
@@ -290,43 +322,14 @@
 
                     const mult = slots[finalSlot]; 
                     
-                    // Visual Animasi Slot
-                    const slotsEls = document.querySelectorAll('.slot');
-                    const s = slotsEls[finalSlot];
+                    const s = document.querySelectorAll('.slot')[finalSlot];
                     if (s) {
-                        s.style.transform = "scale(1.2)";
-                        s.style.filter = "brightness(1.8)";
-                        setTimeout(() => { s.style.transform = "scale(1)"; s.style.filter = "brightness(1)"; }, 200);
+                        s.style.transform = "scale(1.3)";
+                        setTimeout(() => s.style.transform = "scale(1)", 150);
                     }
 
-                    // PROSES KE SERVER (PEMOTONGAN SALDO ASLI TERJADI DISINI)
-                    processGameResult(mult).then(winAmount => {
-                        if (winAmount !== -1) { // Jika sukses (bisa 0 atau lebih)
-                            const board = document.getElementById('score-board');
-                            const item = document.createElement('div');
-                            item.className = 'score-item';
-
-                            if (winAmount > 0) {
-                                item.style.borderLeft = "4px solid var(--yellow)";
-                                item.innerHTML = `<span class="neon-y">WIN +${winAmount.toLocaleString()}</span>`;
-                                
-                                const p = document.createElement('div');
-                                p.className = 'win-popup';
-                                p.innerText = `+${winAmount.toLocaleString()}`;
-                                p.style.left = ball.x + 'px'; 
-                                p.style.top = '280px';
-                                container.appendChild(p);
-                                setTimeout(() => p.remove(), 1000);
-                            } else {
-                                item.style.borderLeft = "4px solid #444";
-                                item.innerHTML = `<span style="color:#888;">LOSE 0</span>`;
-                            }
-                            
-                            board.prepend(item);
-                            if (board.children.length > 5) board.lastChild.remove();
-                            setTimeout(() => { if(item) { item.style.opacity = '0'; setTimeout(()=>item.remove(), 500); } }, 3000);
-                        }
-                    });
+                    // Panggil proses utama
+                    processGameResult(mult, ball.x);
                 }
             }, 20);
         }
