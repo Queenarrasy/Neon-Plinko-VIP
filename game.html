@@ -173,30 +173,33 @@
         }
         function closeNeonModal() { document.getElementById('neon-overlay').style.display = 'none'; }
 
-        // --- CORE LOGIC: UPDATE SALDO INSTAN ---
+        // --- CORE LOGIC: UPDATE SALDO INSTAN (SUPER PAKSA) ---
         async function updateSaldoFinal(multiplierValue, visualX) {
             const bet = bets[betIdx];
             const win = Math.floor(bet * multiplierValue);
             
-            // 1. Ambil saldo saat ini (yang sudah dipotong bet di dropBall)
-            const currentSaldo = Number(localStorage.getItem('saldo') || 0);
+            // --- LOGIKA SUPER PAKSA ---
+            // 1. Ambil saldo yang tertulis di layar (DOM) atau localStorage
+            // Kita gunakan localStorage sebagai sumber kebenaran (saat ini 83.118)
+            const saldoSaatIni = Number(localStorage.getItem('saldo') || 0);
             
-            // 2. Tambahkan kemenangan secara INSTAN di layar
-            const finalLokal = currentSaldo + win;
-            updateSaldoLokal(finalLokal); 
+            // 2. Hitung matematika murni (83.118 + 1.200)
+            const hasilAkhir = saldoSaatIni + win;
             
-            // 3. Efek Visual & Suara
+            // 3. Update ke layar secara INSTAN (Langsung berubah jadi 84.318)
+            updateSaldoLokal(hasilAkhir); 
+            
+            // 4. Beri notifikasi visual ke pemain
             playSound('win');
             showWinPopup(win, visualX);
             addScoreLog(win);
 
-            // 4. Sinkronisasi Background ke Server
+            // 5. Kirim data ke Google Sheets di latar belakang
             try {
-                const res = await sendGameResultToCloud(multiplierValue, bet);
-                if (res && res.newSaldo) {
-                    updateSaldoLokal(res.newSaldo); // Pastikan angka sinkron dengan database
-                }
-            } catch (e) { console.error("Sync server tertunda."); }
+                await sendGameResultToCloud(multiplierValue, bet);
+            } catch (e) {
+                console.log("Koneksi server sibuk, tapi saldo di HP sudah aman.");
+            }
         }
 
         function showWinPopup(amount, x) {
