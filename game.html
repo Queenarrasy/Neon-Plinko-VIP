@@ -71,7 +71,6 @@
         .m-x1 { background: var(--blue); color: black; }
         .m-low { background: #222; color: #666; }
 
-        /* MODE BUTTONS */
         .mode-container { display: flex; justify-content: center; gap: 10px; margin: 10px 0; }
         .btn-mode {
             padding: 8px 15px; border-radius: 10px; border: 1px solid #333;
@@ -224,12 +223,7 @@
             const btn = document.getElementById('btn-auto');
             btn.innerText = isAuto ? "AUTO: ON" : "AUTO: OFF";
             btn.classList.toggle('active', isAuto);
-            
-            if(isAuto) {
-                runAutoPlay();
-            } else {
-                clearTimeout(autoTimer);
-            }
+            if(isAuto) { runAutoPlay(); } else { clearTimeout(autoTimer); }
         }
 
         function runAutoPlay() {
@@ -240,9 +234,8 @@
         }
 
         function initPegs() {
-            container.innerHTML = '';
-            pegLocs = [];
-            const rows = 9; // Ditambah 1 baris
+            container.innerHTML = ''; pegLocs = [];
+            const rows = 9; 
             const centerX = container.offsetWidth / 2;
             for (let r = 2; r <= rows; r++) {
                 for (let i = 0; i < r; i++) {
@@ -272,7 +265,6 @@
             saldo -= bet;
             localStorage.setItem('user_saldo', saldo);
             updateSaldoUI();
-
             dropBall(bet);
         }
 
@@ -290,7 +282,7 @@
             };
 
             const gravity = isTurbo ? 0.8 : 0.4;
-            const subSteps = isTurbo ? 2 : 1; // Sub-steps agar turbo tetap halus
+            const subSteps = isTurbo ? 2 : 1;
 
             const anim = setInterval(() => {
                 for(let s = 0; s < subSteps; s++) {
@@ -308,10 +300,8 @@
                             ball.y = p.y + 12;
                         }
                     });
-
                     if (ball.x < 10 || ball.x > container.offsetWidth - 10) ball.vx *= -0.8;
                 }
-
                 ball.el.style.left = ball.x + 'px';
                 ball.el.style.top = ball.y + 'px';
 
@@ -324,54 +314,63 @@
         }
 
         async function finishGame(finalX, bet) {
-            // Logika Deteksi Slot (Area 50px - [Width-50px])
-            const startArea = 50;
-            const playAreaWidth = container.offsetWidth - 100;
+            const containerW = container.offsetWidth;
+            const paddingSide = 50; 
+            const playAreaWidth = containerW - (paddingSide * 2);
             const slotW = playAreaWidth / slotMults.length;
-            
+
             let multiplier = 0;
             let winIdx = -1;
 
-            if (finalX >= startArea && finalX <= container.offsetWidth - startArea) {
-                winIdx = Math.floor((finalX - startArea) / slotW);
+            if (finalX >= paddingSide && finalX <= (containerW - paddingSide)) {
+                winIdx = Math.floor((finalX - paddingSide) / slotW);
                 winIdx = Math.max(0, Math.min(slotMults.length - 1, winIdx));
                 multiplier = slotMults[winIdx];
+            } else {
+                multiplier = 0;
             }
 
             if(winIdx !== -1) {
                 const slotEls = document.querySelectorAll('.slot');
-                slotEls[winIdx].style.transform = "scale(1.2)";
-                setTimeout(() => slotEls[winIdx].style.transform = "scale(1)", 200);
+                slotEls[winIdx].style.filter = "brightness(2.5)";
+                slotEls[winIdx].style.boxShadow = "0 0 15px white";
+                setTimeout(() => {
+                    slotEls[winIdx].style.filter = "none";
+                    slotEls[winIdx].style.boxShadow = "none";
+                }, 300);
             }
+            await syncWinToCloud(bet, multiplier, finalX);
+        }
 
+        async function syncWinToCloud(bet, mult, xPos) {
             try {
-                const username = localStorage.getItem('user_session');
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
                     body: JSON.stringify({
                         action: 'playGame',
-                        username: username,
+                        username: localStorage.getItem('user_session'),
                         betAmount: bet,
-                        multiplier: multiplier
+                        multiplier: mult
                     })
                 });
                 const res = await response.json();
                 if (res.result === "SUCCESS") {
                     localStorage.setItem('user_saldo', res.newSaldo);
                     updateSaldoUI();
-                    
-                    const win = bet * multiplier;
-                    const p = document.createElement('div');
-                    p.className = 'win-popup';
-                    p.innerText = multiplier > 0 ? "IDR " + win.toLocaleString() : "ZONK";
-                    p.style.color = multiplier >= 1 ? 'var(--yellow)' : '#ff4444';
-                    p.style.left = finalX + 'px'; p.style.top = '280px';
-                    container.appendChild(p);
-                    setTimeout(() => p.remove(), 800);
+                    showWinPopup(bet * mult, mult, xPos);
                 }
-            } catch (e) {
-                console.error("Sync Error:", e);
-            }
+            } catch (e) { console.error("Sync Gagal:", e); }
+        }
+
+        function showWinPopup(amount, mult, x) {
+            const p = document.createElement('div');
+            p.className = 'win-popup';
+            p.innerText = mult > 0 ? "IDR " + amount.toLocaleString() : "ZONK";
+            p.style.color = mult >= 1 ? 'var(--yellow)' : '#ff4444';
+            p.style.left = x + 'px'; 
+            p.style.top = '280px';
+            container.appendChild(p);
+            setTimeout(() => p.remove(), 800);
         }
 
         window.onload = () => {
