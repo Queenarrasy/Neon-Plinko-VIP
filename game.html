@@ -8,11 +8,11 @@
     <style>
         :root { 
             --pink: #ff0077; 
-            --blue-neon: #0077ff; /* Konsisten Biru Neon */
+            --cyan: #00ffff; 
             --yellow: #fbff00; 
             --bg: #03040a; 
             --pink-neon: 0 0 10px var(--pink), 0 0 20px var(--pink);
-            --blue-sharp: 0 0 10px var(--blue-neon), 0 0 25px var(--blue-neon);
+            --cyan-neon: 0 0 10px var(--cyan), 0 0 25px var(--cyan);
             --yellow-neon: 0 0 10px var(--yellow), 0 0 20px var(--yellow);
         }
         
@@ -21,53 +21,39 @@
             margin: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column; 
             background-image: 
                 radial-gradient(circle at 0% 0%, rgba(255, 0, 119, 0.1) 0%, transparent 40%),
-                radial-gradient(circle at 100% 100%, rgba(251, 255, 0, 0.08) 0%, transparent 40%),
-                radial-gradient(circle at 50% 50%, rgba(0, 119, 255, 0.1) 0%, transparent 70%);
+                radial-gradient(circle at 100% 100%, rgba(0, 255, 255, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(0, 255, 255, 0.05) 0%, transparent 70%);
         }
 
+        /* HEADER & SALDO */
         .header { 
             display: flex; justify-content: space-between; align-items: center; 
             padding: 15px 20px; background: rgba(5, 7, 20, 0.95); 
-            border-bottom: 2px solid var(--blue-neon); z-index: 1000;
-            box-shadow: 0 5px 25px rgba(0, 119, 255, 0.5); /* Shadow lebih biru neon */
+            border-bottom: 3px solid var(--cyan); z-index: 1000;
+            box-shadow: 0 5px 25px rgba(0, 255, 255, 0.4);
         }
-
-        .nav-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: 0.3s; }
-        .nav-item:active { transform: scale(0.9); }
-        .icon-p { color: var(--pink); text-shadow: var(--pink-neon); font-size: 24px; }
-        .icon-s { color: var(--blue-neon); text-shadow: var(--blue-sharp); font-size: 24px; }
-        .nav-text { font-size: 9px; font-weight: 900; margin-top: 4px; letter-spacing: 1px; }
 
         .balance-box { 
-            background: #000; border: 2px solid var(--yellow); border-radius: 50px; 
+            background: #000; border: 3px solid var(--yellow); border-radius: 50px; 
             padding: 5px 20px; text-align: center; box-shadow: var(--yellow-neon);
-            animation: pulse-yellow 2s infinite;
         }
-        @keyframes pulse-yellow { 0%, 100% { box-shadow: 0 0 10px var(--yellow); } 50% { box-shadow: 0 0 20px var(--yellow); } }
-        #display-saldo { font-size: 16px; font-weight: 900; color: var(--yellow); }
+        #display-saldo { font-size: 16px; font-weight: 900; color: var(--yellow); text-shadow: var(--yellow-neon); }
 
-        #game-container { 
-            position: relative; width: 100%; height: 350px; 
-            margin-top: 5px; overflow: hidden; 
-        }
-
+        /* GAME AREA */
+        #game-container { position: relative; width: 100%; height: 350px; margin-top: 5px; overflow: hidden; }
         .pyramid-bg {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 0; height: 0; 
             border-left: 180px solid transparent; border-right: 180px solid transparent;
-            border-bottom: 300px solid rgba(0, 119, 255, 0.1); /* Biru Neon Transparan */
+            border-bottom: 300px solid rgba(0, 255, 255, 0.1);
             filter: blur(20px); pointer-events: none; z-index: 1;
         }
 
         .peg { 
             position: absolute; width: 6px; height: 6px; background: #fff; border-radius: 50%; 
-            box-shadow: 0 0 5px #fff, 0 0 10px var(--blue-neon); z-index: 5; opacity: 0.7;
-            transition: all 0.1s;
+            box-shadow: 0 0 5px #fff, 0 0 10px var(--cyan); z-index: 5; opacity: 0.7;
         }
-        .peg.hit { 
-            transform: scale(1.8); background: var(--yellow); 
-            box-shadow: 0 0 20px var(--yellow); opacity: 1; 
-        }
+        .peg.hit { transform: scale(1.8); background: var(--yellow); box-shadow: var(--yellow-neon); opacity: 1; }
 
         .ball { 
             position: absolute; width: 14px; height: 14px; 
@@ -80,69 +66,54 @@
         .slot { 
             flex: 1; display: flex; align-items: center; justify-content: center; 
             border-radius: 5px; font-size: 10px; font-weight: 900; 
-            border: 1px solid var(--blue-neon); transition: 0.2s;
+            border: 2px solid var(--cyan); transition: 0.2s;
         }
-        .m-x5 { background: var(--pink); color: white; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
-        .m-x2 { background: var(--yellow); color: black; }
-        .m-x1 { background: var(--blue-neon); color: white; }
-        .m-low { background: #111; color: #444; }
+        .m-x5 { background: var(--pink); color: white; border-color: var(--yellow); }
+        .m-x2 { background: var(--yellow); color: black; border-color: var(--cyan); }
+        .m-x1 { background: var(--cyan); color: black; border-color: var(--pink); }
+        .m-low { background: #111; color: #444; border-color: #333; }
 
-        .mode-container { display: flex; justify-content: center; gap: 10px; margin: 10px 0; }
-        .btn-mode {
-            padding: 8px 15px; border-radius: 10px; border: 1px solid #222;
-            background: rgba(255,255,255,0.05); color: #666; font-size: 10px;
-            font-weight: 900; cursor: pointer; transition: 0.3s;
-        }
-        .btn-mode.active { border-color: var(--blue-neon); color: var(--blue-neon); box-shadow: var(--blue-sharp); }
-        .btn-mode.active-turbo { border-color: var(--pink); color: var(--pink); box-shadow: var(--pink-neon); }
-
+        /* NAV GRID TRIPLE NEON */
         .nav-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 10px 20px; }
         .btn-nav { 
-            background: rgba(5, 7, 20, 0.8); border: 1px solid #1a1a1a; 
+            background: #000; 
+            border: 3px solid var(--yellow); /* Bingkai Kuning */
             padding: 12px 5px; border-radius: 15px; text-align: center; 
             transition: 0.2s; cursor: pointer;
             display: flex; flex-direction: column; align-items: center; gap: 5px;
+            box-shadow: var(--yellow-neon);
         }
-        .btn-nav:active { transform: scale(0.95); }
-        .btn-nav span { font-size: 10px; font-weight: 900; letter-spacing: 0.5px; }
+        .btn-nav i { color: var(--pink); text-shadow: var(--pink-neon); font-size: 20px; } /* Logo Pink */
+        .btn-nav span { color: var(--cyan); text-shadow: var(--cyan-neon); font-size: 10px; font-weight: 900; } /* Tulisan Cyan */
+        .btn-nav:active { transform: scale(0.9); }
 
-        .nav-wd { border-color: rgba(255, 0, 119, 0.3); }
-        .nav-wd i { color: var(--pink); text-shadow: var(--pink-neon); }
-        .nav-wd span { color: var(--pink); text-shadow: 0 0 5px var(--pink); }
-
-        .nav-dp { border-color: var(--blue-neon); }
-        .nav-dp i { color: var(--blue-neon); text-shadow: var(--blue-sharp); }
-        .nav-dp span { color: var(--blue-neon); text-shadow: 0 0 5px var(--blue-neon); }
-
-        .nav-rw { border-color: rgba(251, 255, 0, 0.3); }
-        .nav-rw i { color: var(--yellow); text-shadow: var(--yellow-neon); }
-        .nav-rw span { color: var(--yellow); text-shadow: 0 0 5px var(--yellow); }
-
+        /* PLAY AREA */
         .play-area { padding: 10px 20px; gap: 10px; display: flex; flex-direction: column; }
         .bet-selector { 
             display: flex; align-items: center; justify-content: space-between; 
-            background: #000; border-radius: 15px; padding: 10px 25px; border: 2px solid var(--blue-neon); 
-            box-shadow: inset 0 0 15px rgba(0, 119, 255, 0.3);
+            background: #000; border-radius: 15px; padding: 10px 25px; 
+            border: 3px solid var(--cyan); box-shadow: var(--cyan-neon);
         }
         .btn-main { 
-            width: 100%; padding: 16px; border-radius: 50px; border: none; 
+            width: 100%; padding: 16px; border-radius: 50px; border: 3px solid var(--yellow); 
             font-weight: 900; font-size: 18px; color: white; cursor: pointer;
-            background: linear-gradient(90deg, var(--pink), #9900ff, var(--blue-neon));
-            box-shadow: 0 0 20px rgba(255, 0, 119, 0.4); text-transform: uppercase;
-            transition: 0.3s;
+            background: linear-gradient(90deg, var(--pink), #9900ff, var(--cyan));
+            box-shadow: 0 0 20px var(--pink); text-transform: uppercase;
         }
 
-        .win-popup { position: absolute; font-weight: 900; font-size: 24px; animation: quickFadeUp 0.8s forwards; z-index: 100; pointer-events: none; text-shadow: 0 0 10px black; }
+        .mode-container { display: flex; justify-content: center; gap: 10px; margin: 10px 0; }
+        .btn-mode {
+            padding: 8px 15px; border-radius: 10px; border: 2px solid var(--cyan);
+            background: #000; color: var(--cyan); font-size: 10px;
+            font-weight: 900; cursor: pointer; box-shadow: var(--cyan-neon);
+        }
+        .btn-mode.active-turbo { border-color: var(--pink); color: var(--pink); box-shadow: var(--pink-neon); }
+
+        .win-popup { position: absolute; font-weight: 900; font-size: 24px; animation: quickFadeUp 0.8s forwards; z-index: 100; text-shadow: 0 0 10px black; }
         @keyframes quickFadeUp { 0% { opacity: 0; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-30px) scale(1.2); } 100% { opacity: 0; transform: translateY(-60px); } }
 
-        #neon-modal { 
-            position: fixed; inset: 0; background: rgba(0,0,0,0.95); 
-            display: none; justify-content: center; align-items: center; z-index: 9999; 
-        }
-        .modal-box { 
-            background: #050714; border: 2px solid var(--pink); border-radius: 20px; 
-            padding: 30px; width: 80%; text-align: center; box-shadow: var(--pink-neon);
-        }
+        #neon-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 9999; }
+        .modal-box { background: #050714; border: 3px solid var(--pink); border-radius: 20px; padding: 30px; width: 80%; text-align: center; box-shadow: var(--pink-neon); }
     </style>
 </head>
 <body>
@@ -150,23 +121,23 @@
     <div id="neon-modal">
         <div class="modal-box">
             <h2 id="modal-title" style="color:var(--pink); text-shadow: var(--pink-neon);">NOTIFIKASI</h2>
-            <p id="modal-msg" style="margin: 20px 0; font-weight: bold;"></p>
+            <p id="modal-msg" style="margin: 20px 0; font-weight: bold; color: var(--cyan);"></p>
             <button class="btn-main" onclick="closeModal()">OKE</button>
         </div>
     </div>
 
     <div class="header">
-        <div class="nav-item" onclick="location.href='profil.html'">
-            <i class="fa-solid fa-user-ninja icon-p"></i>
-            <span class="nav-text" style="color:var(--pink)">PROFIL</span>
+        <div class="nav-item" onclick="location.href='profil.html'" style="display: flex; flex-direction: column; align-items: center; cursor: pointer;">
+            <i class="fa-solid fa-user-ninja" style="color: var(--pink); text-shadow: var(--pink-neon); font-size: 24px;"></i>
+            <span style="font-size: 9px; font-weight: 900; color: var(--cyan); text-shadow: var(--cyan-neon);">PROFIL</span>
         </div>
         <div class="balance-box">
-            <span style="font-size:8px; color:var(--blue-neon); font-weight: 900;">SALDO VIP</span>
+            <span style="font-size:8px; color:var(--cyan); font-weight: 900; text-shadow: var(--cyan-neon);">SALDO UTAMA</span>
             <div id="display-saldo">IDR 0</div>
         </div>
-        <div class="nav-item" onclick="location.href='settings.html'">
-            <i class="fa-solid fa-hand-holding-heart icon-s"></i>
-            <span class="nav-text" style="color:var(--blue-neon)">SAPA</span>
+        <div class="nav-item" onclick="location.href='settings.html'" style="display: flex; flex-direction: column; align-items: center; cursor: pointer;">
+            <i class="fa-solid fa-hand-holding-heart" style="color: var(--cyan); text-shadow: var(--cyan-neon); font-size: 24px;"></i>
+            <span style="font-size: 9px; font-weight: 900; color: var(--pink); text-shadow: var(--pink-neon);">SAPA</span>
         </div>
     </div>
 
@@ -190,15 +161,15 @@
     </div>
 
     <div class="nav-grid">
-        <div class="btn-nav nav-wd" onclick="location.href='withdraw.html'">
+        <div class="btn-nav" onclick="location.href='withdraw.html'">
             <i class="fa-solid fa-wallet"></i>
             <span>WITHDRAW</span>
         </div>
-        <div class="btn-nav nav-dp" onclick="location.href='deposit.html'">
+        <div class="btn-nav" onclick="location.href='deposit.html'">
             <i class="fa-solid fa-money-bill-trend-up"></i>
             <span>DEPOSIT</span>
         </div>
-        <div class="btn-nav nav-rw" onclick="location.href='reward.html'">
+        <div class="btn-nav" onclick="location.href='reward.html'">
             <i class="fa-solid fa-gift"></i>
             <span>REWARD</span>
         </div>
@@ -206,9 +177,9 @@
 
     <div class="play-area">
         <div class="bet-selector">
-            <i class="fa-solid fa-circle-minus" style="color:var(--pink); font-size: 28px;" onclick="changeBet(-1)"></i>
+            <i class="fa-solid fa-circle-minus" style="color:var(--pink); font-size: 28px; cursor: pointer;" onclick="changeBet(-1)"></i>
             <div id="current-bet" style="color:var(--yellow); font-size:24px; font-weight:900; text-shadow: var(--yellow-neon);">400</div>
-            <i class="fa-solid fa-circle-plus" style="color:var(--blue-neon); font-size: 28px;" onclick="changeBet(1)"></i>
+            <i class="fa-solid fa-circle-plus" style="color:var(--cyan); font-size: 28px; cursor: pointer;" onclick="changeBet(1)"></i>
         </div>
         <button class="btn-main" id="play-btn" onclick="handlePlay()">LEPASKAN BOLA</button>
     </div>
@@ -227,16 +198,16 @@
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playSound(freq, type, duration, vol = 0.1) {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = type;
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + duration);
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + duration);
+            } catch(e) {}
         }
 
         function showModal(msg, title = "INFO VIP") {
@@ -246,9 +217,27 @@
         }
         function closeModal() { document.getElementById('neon-modal').style.display = 'none'; }
 
+        // FUNGSI UPDATE UI SALDO
         function updateSaldoUI() {
             const saldo = localStorage.getItem('user_saldo') || 0;
             document.getElementById('display-saldo').innerText = "IDR " + Number(saldo).toLocaleString();
+        }
+
+        // FUNGSI FETCH SALDO DARI CLOUD (Mencegah saldo berubah-ubah)
+        async function fetchLatestSaldo() {
+            const user = localStorage.getItem('user_session');
+            if(!user) return;
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'getUserData', username: user })
+                });
+                const res = await response.json();
+                if(res.result === "SUCCESS") {
+                    localStorage.setItem('user_saldo', res.saldo);
+                    updateSaldoUI();
+                }
+            } catch (e) { console.error("Cloud Error"); }
         }
 
         function changeBet(dir) {
@@ -259,7 +248,6 @@
 
         function toggleTurbo() {
             isTurbo = !isTurbo;
-            playSound(isTurbo ? 400 : 200, 'square', 0.2);
             const btn = document.getElementById('btn-turbo');
             btn.innerText = isTurbo ? "TURBO: ON" : "TURBO: OFF";
             btn.classList.toggle('active-turbo', isTurbo);
@@ -267,24 +255,21 @@
 
         function toggleAuto() {
             isAuto = !isAuto;
-            playSound(isAuto ? 500 : 250, 'sawtooth', 0.2);
             const btn = document.getElementById('btn-auto');
             btn.innerText = isAuto ? "AUTO: ON" : "AUTO: OFF";
-            btn.classList.toggle('active', isAuto);
-            if(isAuto) { runAutoPlay(); } else { clearTimeout(autoTimer); }
+            btn.classList.toggle('active-turbo', isAuto);
+            if(isAuto) runAutoPlay(); else clearTimeout(autoTimer);
         }
 
         function runAutoPlay() {
             if(!isAuto) return;
             handlePlay();
-            const delay = isTurbo ? 600 : 1200;
-            autoTimer = setTimeout(runAutoPlay, delay);
+            autoTimer = setTimeout(runAutoPlay, isTurbo ? 600 : 1200);
         }
 
         function initPegs() {
             const bg = container.querySelector('.pyramid-bg');
-            container.innerHTML = ''; 
-            container.appendChild(bg);
+            container.innerHTML = ''; container.appendChild(bg);
             pegLocs = [];
             const rows = 9; 
             const centerX = container.offsetWidth / 2;
@@ -313,7 +298,6 @@
                 return; 
             }
 
-            playSound(100, 'sine', 0.5, 0.2); 
             saldo -= bet;
             localStorage.setItem('user_saldo', saldo);
             updateSaldoUI();
@@ -334,35 +318,26 @@
             };
 
             const gravity = isTurbo ? 0.8 : 0.4;
-            const subSteps = isTurbo ? 2 : 1;
-
             const anim = setInterval(() => {
-                for(let s = 0; s < subSteps; s++) {
-                    ball.vy += gravity;
-                    ball.x += ball.vx;
-                    ball.y += ball.vy;
+                ball.vy += gravity; ball.x += ball.vx; ball.y += ball.vy;
 
-                    pegLocs.forEach(p => {
-                        const dx = ball.x - p.x;
-                        const dy = ball.y - p.y;
-                        const dist = Math.sqrt(dx*dx + dy*dy);
-                        if (dist < 12) {
-                            ball.vy *= -0.5;
-                            ball.vx += (dx * 0.2) + (Math.random() - 0.5);
-                            ball.y = p.y + 12;
-                            p.el.classList.add('hit');
-                            setTimeout(() => p.el.classList.remove('hit'), 100);
-                            playSound(600 + (Math.random() * 400), 'sine', 0.05, 0.05);
-                        }
-                    });
-                    if (ball.x < 10 || ball.x > container.offsetWidth - 10) ball.vx *= -0.8;
-                }
-                ball.el.style.left = ball.x + 'px';
-                ball.el.style.top = ball.y + 'px';
+                pegLocs.forEach(p => {
+                    const dx = ball.x - p.x; const dy = ball.y - p.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < 12) {
+                        ball.vy *= -0.5; ball.vx += (dx * 0.2) + (Math.random() - 0.5);
+                        ball.y = p.y + 12;
+                        p.el.classList.add('hit');
+                        setTimeout(() => p.el.classList.remove('hit'), 100);
+                        playSound(600 + (Math.random() * 400), 'sine', 0.05, 0.05);
+                    }
+                });
+
+                if (ball.x < 10 || ball.x > container.offsetWidth - 10) ball.vx *= -0.8;
+                ball.el.style.left = ball.x + 'px'; ball.el.style.top = ball.y + 'px';
 
                 if (ball.y > 345) {
-                    clearInterval(anim);
-                    ball.el.remove();
+                    clearInterval(anim); ball.el.remove();
                     finishGame(ball.x, betAmount);
                 }
             }, 1000/60);
@@ -374,9 +349,8 @@
             const playAreaWidth = containerW - (paddingSide * 2);
             const slotW = playAreaWidth / slotMults.length;
 
-            // Perbaikan Logika: Cek apakah bola benar-benar jatuh di dalam area slot
             if (finalX < paddingSide || finalX > (containerW - paddingSide)) {
-                showWinPopup(0, 0, finalX); // Jatuh di bagian kosong/luar slot
+                showWinPopup(0, 0, finalX);
                 syncToCloud(bet, 0);
                 return;
             }
@@ -385,27 +359,11 @@
             winIdx = Math.max(0, Math.min(slotMults.length - 1, winIdx));
             const multiplier = slotMults[winIdx];
 
-            const slotEls = document.querySelectorAll('.slot');
-            slotEls[winIdx].style.filter = "brightness(3) contrast(1.5)";
-            slotEls[winIdx].style.boxShadow = "0 0 30px white";
-            setTimeout(() => { 
-                slotEls[winIdx].style.filter = "none"; 
-                slotEls[winIdx].style.boxShadow = "none";
-            }, 400);
-            
-            if(multiplier >= 1) {
-                playSound(800, 'sine', 0.1);
-                setTimeout(() => playSound(1200, 'sine', 0.3), 100);
-            } else {
-                playSound(150, 'sawtooth', 0.3);
-            }
-
             const winAmount = Math.floor(bet * multiplier);
             let currentSaldo = Number(localStorage.getItem('user_saldo') || 0);
             localStorage.setItem('user_saldo', currentSaldo + winAmount);
             updateSaldoUI();
             showWinPopup(winAmount, multiplier, finalX);
-
             syncToCloud(bet, multiplier);
         }
 
@@ -421,7 +379,7 @@
                         isClientHandled: true
                     })
                 });
-            } catch (e) { console.error("Sync"); }
+            } catch (e) {}
         }
 
         function showWinPopup(amount, mult, x) {
@@ -429,8 +387,7 @@
             p.className = 'win-popup';
             p.innerText = mult > 0.2 ? "IDR " + amount.toLocaleString() : "ZONK";
             p.style.color = mult >= 1 ? 'var(--yellow)' : '#ff4444';
-            p.style.left = x + 'px'; 
-            p.style.top = '280px';
+            p.style.left = x + 'px'; p.style.top = '280px';
             container.appendChild(p);
             setTimeout(() => p.remove(), 800);
         }
@@ -438,18 +395,7 @@
         window.onload = () => {
             initPegs();
             updateSaldoUI();
-            const user = localStorage.getItem('user_session');
-            if(user) {
-                fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'getUserData', username: user })
-                }).then(r => r.json()).then(res => {
-                    if(res.result === "SUCCESS") {
-                        localStorage.setItem('user_saldo', res.saldo);
-                        updateSaldoUI();
-                    }
-                });
-            }
+            fetchLatestSaldo(); // Ambil data saldo asli dari cloud saat load
         };
     </script>
 </body>
