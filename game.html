@@ -262,10 +262,10 @@
                 return; 
             }
 
-            // LANGKAH 1: Potong saldo saat bola dilepas
+            // [PERBAIKAN 1]: Potong bet dan simpan ke localStorage secara instan
             saldo -= bet;
             localStorage.setItem('user_saldo', saldo);
-            // Optional: updateSaldoUI() di sini jika ingin saldo langsung berkurang visualnya
+            updateSaldoUI(); // Visual saldo berkurang saat bola lepas
             
             dropBall(bet);
         }
@@ -340,19 +340,17 @@
                 }, 300);
             }
             
-            // LANGKAH 2: Hitung Hadiah dan Update UI secara Sinkron
+            // [PERBAIKAN 2]: Hitung penambahan kemenangan
             const winAmount = bet * multiplier;
             let currentSaldo = Number(localStorage.getItem('user_saldo') || 0);
             
-            // Tambahkan kemenangan ke saldo
             const newTotal = currentSaldo + winAmount;
             localStorage.setItem('user_saldo', newTotal);
             
-            // Tampilan diperbarui sekarang
             updateSaldoUI();
             showWinPopup(winAmount, multiplier, finalX);
 
-            // LANGKAH 3: Sinkronisasi ke Database (Cloud)
+            // [PERBAIKAN 3]: Kirim ke server tanpa memotong saldo lagi di sisi Cloud
             await syncWinToCloud(bet, multiplier);
         }
 
@@ -364,12 +362,12 @@
                         action: 'playGame',
                         username: localStorage.getItem('user_session'),
                         betAmount: bet,
-                        multiplier: mult
+                        multiplier: mult,
+                        isClientHandled: true // Penanda agar server tahu bet sudah dipotong di client
                     })
                 });
                 const res = await response.json();
                 if (res.result === "SUCCESS") {
-                    // Update final jika ada penyesuaian dari server
                     localStorage.setItem('user_saldo', res.newSaldo);
                     updateSaldoUI();
                 }
