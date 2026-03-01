@@ -287,7 +287,6 @@
                 ball.vy += gravity; ball.vx *= friction;
                 ball.x += ball.vx; ball.y += ball.vy;
 
-                // Tabrakan Paku
                 pegLocs.forEach(p => {
                     const dx = ball.x - p.x; const dy = ball.y - p.y;
                     const dist = Math.sqrt(dx*dx + dy*dy);
@@ -303,7 +302,6 @@
                     }
                 });
 
-                // Tabrakan Antar Bola
                 activeBalls.forEach(other => {
                     if (other === ball) return;
                     const dx = ball.x - other.x; const dy = ball.y - other.y;
@@ -327,13 +325,13 @@
             }, 1000/60);
         }
 
+        // PERBAIKAN FUNGSI FINISH GAME (STANDAR PLINKO)
         function finishGame(finalX, bet) {
             const containerW = container.offsetWidth;
             const paddingSide = 40; 
             const playAreaWidth = containerW - (paddingSide * 2);
             const slotW = playAreaWidth / slotMults.length;
             
-            // Deteksi Slot Presisi
             let relativeX = finalX - paddingSide;
             let winIdx = Math.floor(relativeX / slotW);
             winIdx = Math.max(0, Math.min(slotMults.length - 1, winIdx));
@@ -345,9 +343,11 @@
             slots[winIdx].classList.add('active-hit');
             setTimeout(() => slots[winIdx].classList.remove('active-hit'), 300);
 
-            // Update Saldo Instan
+            // LOGIKA PENAMBAHAN SALDO: Saldo Saat Ini + Kemenangan
             let currentSaldo = Number(localStorage.getItem('user_saldo') || 0);
-            localStorage.setItem('user_saldo', currentSaldo + winAmount);
+            const saldoBaru = currentSaldo + winAmount; 
+            
+            localStorage.setItem('user_saldo', saldoBaru);
             updateSaldoUI();
 
             if (multiplier >= 1) playSound('win');
