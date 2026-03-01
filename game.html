@@ -8,14 +8,16 @@
     <style>
         :root { 
             --pink: #ff0077; 
-            --cyan: #00ffff; 
+            /* 1. Deep Blue Neon */
+            --deep-blue: #0044ff; 
             --yellow: #fbff00; 
             --white: #ffffff;
             --bg: #03040a; 
-            --pink-neon: 0 0 10px var(--pink), 0 0 20px var(--pink);
-            --cyan-neon: 0 0 10px var(--cyan), 0 0 25px var(--cyan);
-            --yellow-neon: 0 0 10px var(--yellow), 0 0 20px var(--yellow);
-            --white-neon: 0 0 10px var(--white), 0 0 20px var(--white);
+            /* 3. Efek Neon Halus (Bias-bias saja) */
+            --pink-neon: 0 0 8px rgba(255, 0, 119, 0.4);
+            --blue-neon: 0 0 10px rgba(0, 68, 255, 0.5);
+            --yellow-neon: 0 0 8px rgba(251, 255, 0, 0.4);
+            --white-neon: 0 0 5px rgba(255, 255, 255, 0.3);
         }
         
         body { 
@@ -27,20 +29,20 @@
             height: 100vh; 
             display: flex; 
             flex-direction: column;
-            transition: background 0.5s ease;
+            background-image: radial-gradient(circle at 50% 50%, #0a0b1e 0%, var(--bg) 80%);
         }
 
         /* 1. HEADER & SALDO */
         .header { 
             display: flex; justify-content: space-between; align-items: center; 
             padding: 15px 20px; background: rgba(5, 7, 20, 0.95); 
-            border-bottom: 3px solid var(--cyan); z-index: 1000;
-            box-shadow: 0 5px 15px rgba(0, 255, 255, 0.2);
+            border-bottom: 2px solid var(--deep-blue); z-index: 1000;
+            box-shadow: 0 4px 10px rgba(0, 68, 255, 0.1);
         }
 
         .balance-box { 
             background: #000; 
-            border: 4px solid var(--pink); 
+            border: 2px solid var(--pink); 
             border-radius: 50px; 
             padding: 8px 25px; text-align: center; box-shadow: var(--pink-neon);
             transition: transform 0.2s ease;
@@ -49,10 +51,11 @@
         .balance-box:active { transform: scale(0.95); }
 
         .label-saldo { 
-            font-size: 11px; 
+            font-size: 10px; 
             color: var(--white); 
             font-weight: 900; 
             text-shadow: var(--white-neon); letter-spacing: 1px;
+            opacity: 0.8;
         }
         #display-saldo { 
             font-size: 17px; font-weight: 900; 
@@ -61,90 +64,93 @@
             margin-top: 2px;
         }
 
-        /* 2. KOTAK PERKALIAN (Tulisan Hitam) */
+        /* 2. KOTAK PERKALIAN */
         .multipliers { display: flex; justify-content: center; gap: 4px; padding: 0 40px; height: 35px; z-index: 10; position: relative;}
         .slot { 
             flex: 1; display: flex; align-items: center; justify-content: center; 
-            border-radius: 8px; font-size: 11px; font-weight: 900; border: 3px solid;
-            color: #000 !important; /* Semua tulisan hitam */
-            text-shadow: none !important;
+            border-radius: 8px; font-size: 11px; font-weight: 900; border: 2px solid;
+            color: #000 !important;
             transition: transform 0.1s;
         }
         
-        .m-x2 { background: var(--yellow); border-color: var(--cyan) !important; box-shadow: none !important; }
+        .m-x2 { background: var(--yellow); border-color: var(--deep-blue) !important; }
         .m-x5 { background: var(--pink); border-color: var(--yellow); }
-        .m-x1 { background: var(--cyan); border-color: var(--yellow); }
-        .m-low { background: var(--white); border-color: #222; }
+        .m-x1 { background: var(--deep-blue); border-color: var(--yellow); color: #fff !important; }
+        .m-low { background: var(--white); border-color: #333; }
 
-        /* 3. SETTING ICON (Kuning Neon) */
+        /* 3. SETTING ICON */
         .fa-gear {
             color: var(--yellow) !important;
             text-shadow: var(--yellow-neon) !important;
-            filter: drop-shadow(0 0 5px var(--yellow));
         }
 
         /* GAME AREA */
         #game-container { position: relative; width: 100%; height: 350px; margin-top: 5px; overflow: hidden; }
         .peg { 
-            position: absolute; width: 8px; height: 8px; background: var(--white); border-radius: 50%; 
+            position: absolute; width: 7px; height: 7px; background: var(--white); border-radius: 50%; 
             box-shadow: var(--white-neon); z-index: 5; transition: all 0.1s;
-            opacity: 0.8;
+            opacity: 0.5;
         }
-        .peg.hit { background: var(--yellow) !important; box-shadow: var(--yellow-neon) !important; transform: scale(1.6); opacity: 1; }
+        .peg.hit { background: var(--yellow) !important; box-shadow: var(--yellow-neon) !important; transform: scale(1.5); opacity: 1; }
 
         /* MODES */
         .mode-container { display: flex; justify-content: center; gap: 10px; margin: 10px 0; }
         .btn-mode { padding: 10px 20px; border-radius: 12px; font-size: 11px; font-weight: 900; cursor: pointer; background: #000; transition: 0.3s; }
-        #btn-turbo { border: 3px solid var(--yellow); color: var(--yellow); box-shadow: var(--yellow-neon); }
-        #btn-turbo.active-turbo { border-color: var(--pink); color: var(--pink); box-shadow: var(--pink-neon); background: rgba(255, 0, 119, 0.1); }
-        #btn-auto { border: 3px solid var(--pink); color: var(--pink); box-shadow: var(--pink-neon); }
-        #btn-auto.active-mode { border-color: var(--cyan); color: var(--cyan); box-shadow: var(--cyan-neon); background: rgba(0, 255, 255, 0.1); }
+        #btn-turbo { border: 2px solid var(--yellow); color: var(--yellow); box-shadow: var(--yellow-neon); }
+        #btn-turbo.active-turbo { border-color: var(--pink); color: var(--pink); box-shadow: var(--pink-neon); }
+        #btn-auto { border: 2px solid var(--pink); color: var(--pink); box-shadow: var(--pink-neon); }
+        #btn-auto.active-mode { border-color: var(--deep-blue); color: var(--deep-blue); box-shadow: var(--blue-neon); }
 
         /* NAV GRID */
         .nav-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 10px 20px; }
         .btn-nav { 
-            background: #000; padding: 12px 5px; border-radius: 15px; text-align: center; 
-            display: flex; flex-direction: column; align-items: center; gap: 8px; border: 3px solid;
+            background: rgba(0,0,0,0.6); padding: 12px 5px; border-radius: 15px; text-align: center; 
+            display: flex; flex-direction: column; align-items: center; gap: 8px; border: 2px solid;
             transition: all 0.3s ease;
         }
-        .btn-nav:hover { transform: translateY(-3px); }
-        .btn-nav i { font-size: 30px; stroke-width: 20px; }
+        .btn-nav i { font-size: 26px; }
         .btn-nav span { font-size: 8px; font-weight: 900; letter-spacing: 0.5px; }
         
-        .nav-dp { border-color: var(--cyan); box-shadow: var(--cyan-neon); }
+        .nav-dp { border-color: var(--deep-blue); box-shadow: var(--blue-neon); }
         .nav-dp i { color: var(--pink); text-shadow: var(--pink-neon); }
-        .nav-dp span { color: var(--yellow); text-shadow: var(--yellow-neon); }
+        .nav-dp span { color: var(--yellow); }
 
         .nav-wd { border-color: var(--yellow); box-shadow: var(--yellow-neon); }
-        .nav-wd i { color: var(--cyan); text-shadow: var(--cyan-neon); }
-        .nav-wd span { color: var(--pink); text-shadow: var(--pink-neon); }
+        .nav-wd i { color: var(--deep-blue); text-shadow: var(--blue-neon); }
+        .nav-wd span { color: var(--pink); }
 
         .nav-rw { border-color: var(--pink); box-shadow: var(--pink-neon); }
         .nav-rw i { color: var(--yellow); text-shadow: var(--yellow-neon); }
-        .nav-rw span { color: var(--cyan); text-shadow: var(--cyan-neon); }
+        .nav-rw span { color: var(--deep-blue); }
 
-        /* MODAL */
-        #neon-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 9999; backdrop-filter: blur(5px); }
-        .modal-box { background: #050714; border: 4px solid var(--pink); border-radius: 20px; padding: 30px; width: 80%; text-align: center; box-shadow: var(--pink-neon); transform: scale(0.8); transition: 0.3s; }
-        #neon-modal.show .modal-box { transform: scale(1); }
+        /* MODAL / ALERT */
+        #neon-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 9999; backdrop-filter: blur(4px); }
+        .modal-box { 
+            background: #050714; 
+            border: 2px solid var(--pink); 
+            border-radius: 20px; padding: 25px; width: 75%; text-align: center; 
+            box-shadow: var(--pink-neon); 
+            transform: scale(0.9); transition: 0.3s; 
+        }
+        #neon-modal.show .modal-box { transform: scale(1); border-color: var(--deep-blue); box-shadow: var(--blue-neon); }
 
         .play-area { padding: 10px 20px; gap: 10px; display: flex; flex-direction: column; }
         .bet-selector { 
             display: flex; align-items: center; justify-content: space-between; 
-            background: #000; border-radius: 15px; padding: 10px 25px; border: 3px solid var(--cyan); box-shadow: var(--cyan-neon);
+            background: #000; border-radius: 15px; padding: 10px 25px; border: 2px solid var(--deep-blue); box-shadow: var(--blue-neon);
         }
         .btn-main { 
-            width: 100%; padding: 16px; border-radius: 50px; border: 4px solid var(--yellow); 
-            font-weight: 900; font-size: 18px; color: white; cursor: pointer;
-            background: linear-gradient(90deg, var(--pink), #9900ff, var(--cyan)); box-shadow: 0 0 20px var(--pink); text-transform: uppercase;
+            width: 100%; padding: 16px; border-radius: 50px; border: 2px solid var(--yellow); 
+            font-weight: 900; font-size: 16px; color: white; cursor: pointer;
+            background: linear-gradient(90deg, #aa0055, #0022aa); box-shadow: 0 4px 15px rgba(0,0,0,0.5); text-transform: uppercase;
             transition: all 0.2s;
         }
-        .btn-main:active { transform: scale(0.98); filter: brightness(1.2); }
+        .btn-main:active { transform: scale(0.98); }
 
-        .ball { position: absolute; width: 14px; height: 14px; background: radial-gradient(circle at 30% 30%, #fff, var(--pink)); border-radius: 50%; box-shadow: var(--pink-neon); z-index: 10; transform: translate(-50%, -50%); }
-        .win-popup { position: absolute; font-weight: 900; font-size: 24px; animation: quickFadeUp 0.8s forwards; z-index: 100; text-shadow: 0 0 10px black; }
+        .ball { position: absolute; width: 12px; height: 12px; background: radial-gradient(circle at 30% 30%, #fff, var(--pink)); border-radius: 50%; box-shadow: var(--pink-neon); z-index: 10; transform: translate(-50%, -50%); }
+        .win-popup { position: absolute; font-weight: 900; font-size: 22px; animation: quickFadeUp 0.8s forwards; z-index: 100; text-shadow: 0 0 5px black; }
         
-        @keyframes quickFadeUp { 0% { opacity: 0; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-30px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px); } }
+        @keyframes quickFadeUp { 0% { opacity: 0; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-25px) scale(1.2); } 100% { opacity: 0; transform: translateY(-50px); } }
     </style>
 </head>
 <body>
@@ -157,24 +163,24 @@
 
     <div id="neon-modal">
         <div class="modal-box">
-            <h2 id="modal-title" style="color: var(--cyan); text-shadow: var(--cyan-neon);">NOTIFIKASI</h2>
-            <p id="modal-msg" style="color: var(--yellow); text-shadow: var(--yellow-neon); font-weight: 900;"></p>
-            <button class="btn-main" onclick="closeModal()" style="padding: 10px; font-size: 14px;">MENGERTI</button>
+            <h2 id="modal-title" style="color: var(--pink); text-shadow: var(--pink-neon); font-size: 18px;">PEMBERITAHUAN</h2>
+            <p id="modal-msg" style="color: var(--white); font-weight: bold; margin: 15px 0; font-size: 14px;"></p>
+            <button class="btn-main" onclick="closeModal()" style="padding: 10px; font-size: 12px; border-color: var(--deep-blue); background: var(--bg);">TUTUP</button>
         </div>
     </div>
 
     <div class="header">
         <div class="nav-item" onclick="playSound('click'); location.href='profil.html'" style="display: flex; flex-direction: column; align-items: center; cursor: pointer;">
-            <i class="fa-solid fa-user-ninja" style="color: var(--pink); text-shadow: var(--pink-neon); font-size: 24px;"></i>
-            <span style="font-size: 9px; font-weight: 900; color: var(--cyan); text-shadow: var(--cyan-neon);">PROFIL</span>
+            <i class="fa-solid fa-user-ninja" style="color: var(--pink); text-shadow: var(--pink-neon); font-size: 22px;"></i>
+            <span style="font-size: 9px; font-weight: 900; color: var(--yellow);">PROFIL</span>
         </div>
         <div class="balance-box">
             <div class="label-saldo">SALDO UTAMA</div>
             <div id="display-saldo">IDR 0</div>
         </div>
         <div class="nav-item" onclick="playSound('click'); location.href='settings.html'" style="display: flex; flex-direction: column; align-items: center; cursor: pointer;">
-            <i class="fa-solid fa-gear" style="font-size: 24px;"></i>
-            <span style="font-size: 9px; font-weight: 900; color: var(--pink); text-shadow: var(--pink-neon);">SETTING</span>
+            <i class="fa-solid fa-gear" style="font-size: 22px;"></i>
+            <span style="font-size: 9px; font-weight: 900; color: var(--pink);">SETTING</span>
         </div>
     </div>
 
@@ -214,7 +220,7 @@
         <div class="bet-selector">
             <i class="fa-solid fa-circle-minus" style="color:var(--pink); font-size: 28px; cursor: pointer;" onclick="changeBet(-1)"></i>
             <div id="current-bet" style="color:var(--yellow); font-size:24px; font-weight:900; text-shadow: var(--yellow-neon);">400</div>
-            <i class="fa-solid fa-circle-plus" style="color:var(--cyan); font-size: 28px; cursor: pointer;" onclick="changeBet(1)"></i>
+            <i class="fa-solid fa-circle-plus" style="color:var(--deep-blue); font-size: 28px; cursor: pointer;" onclick="changeBet(1)"></i>
         </div>
         <button class="btn-main" id="play-btn" onclick="handlePlay()">LEPASKAN BOLA</button>
     </div>
@@ -230,13 +236,9 @@
         let isAuto = false;
         let autoTimer = null;
 
-        // Sound System
         function playSound(type) {
             const sound = document.getElementById(`sfx-${type}`);
-            if (sound) {
-                sound.currentTime = 0;
-                sound.play().catch(e => console.log("Audio play blocked"));
-            }
+            if (sound) { sound.currentTime = 0; sound.play().catch(e => {}); }
         }
 
         function updateSaldoUI() {
@@ -260,7 +262,7 @@
                     sessionStorage.setItem('temp_saldo', res.saldo);
                     updateSaldoUI();
                 }
-            } catch (e) { console.log("Gagal sync saldo"); }
+            } catch (e) {}
         }
 
         function changeBet(dir) {
@@ -349,8 +351,7 @@
                 if (ball.x < 10 || ball.x > container.offsetWidth - 10) ball.vx *= -0.8;
                 ball.el.style.left = ball.x + 'px'; ball.el.style.top = ball.y + 'px';
                 if (ball.y > 345) { 
-                    clearInterval(anim); 
-                    ball.el.remove(); 
+                    clearInterval(anim); ball.el.remove(); 
                     finishGame(ball.x, betAmount); 
                 }
             }, 1000/60);
@@ -365,12 +366,9 @@
             winIdx = Math.max(0, Math.min(slotMults.length - 1, winIdx));
             const multiplier = slotMults[winIdx];
             const winAmount = Math.floor(bet * multiplier);
-            
             if (multiplier >= 1) playSound('win');
-            
             let currentSaldo = Number(localStorage.getItem('user_saldo') || 0);
             const total = currentSaldo + winAmount;
-            
             localStorage.setItem('user_saldo', total);
             sessionStorage.setItem('temp_saldo', total);
             updateSaldoUI();
@@ -385,9 +383,7 @@
                     body: JSON.stringify({ 
                         action: 'playGame', 
                         username: localStorage.getItem('user_session'), 
-                        betAmount: bet, 
-                        multiplier: mult, 
-                        isClientHandled: true 
+                        betAmount: bet, multiplier: mult, isClientHandled: true 
                     })
                 });
             } catch (e) {}
@@ -417,11 +413,7 @@
             setTimeout(() => modal.style.display = 'none', 300);
         }
 
-        window.onload = () => { 
-            initPegs(); 
-            updateSaldoUI(); 
-            fetchLatestSaldo(); 
-        };
+        window.onload = () => { initPegs(); updateSaldoUI(); fetchLatestSaldo(); };
     </script>
 </body>
 </html>
