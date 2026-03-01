@@ -8,62 +8,137 @@
     <style>
         :root { 
             --pink: #ff0077; --blue: #00d4ff; --yellow: #fbff00; --bg: #070816; 
-            --pink-neon: 0 0 10px var(--pink);
-            --blue-neon: 0 0 10px var(--blue);
-            --yellow-neon: 0 0 10px var(--yellow);
+            --pink-neon: 0 0 10px var(--pink), 0 0 20px var(--pink);
+            --blue-neon: 0 0 10px var(--blue), 0 0 20px var(--blue);
+            --yellow-neon: 0 0 10px var(--yellow), 0 0 20px var(--yellow);
         }
         
-        body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: rgba(10, 11, 30, 0.95); border-bottom: 2px solid var(--blue); z-index: 1000; }
-        .balance-box { background: #000; border: 2px solid var(--yellow); border-radius: 50px; padding: 3px 15px; text-align: center; box-shadow: var(--yellow-neon); }
-        #display-saldo { font-size: 14px; font-weight: 900; color: var(--yellow); }
+        body { 
+            background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; 
+            margin: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column; 
+        }
 
-        /* Game Board */
-        #game-container { position: relative; width: 100%; height: 350px; margin-top: 5px; background: rgba(0,0,0,0.2); overflow: hidden; }
-        .peg { position: absolute; width: 5px; height: 5px; background: #fff; border-radius: 50%; box-shadow: 0 0 5px #fff; z-index: 5; opacity: 0.6; }
-        .ball { position: absolute; width: 12px; height: 12px; background: radial-gradient(circle at 30% 30%, #fff, var(--pink)); border-radius: 50%; box-shadow: var(--pink-neon); z-index: 10; transform: translate(-50%, -50%); }
+        body::before {
+            content: ""; position: fixed; inset: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(0, 212, 255, 0.05), transparent);
+            pointer-events: none;
+        }
 
-        /* Multiplier Slots */
-        .multipliers { display: flex; justify-content: center; gap: 3px; padding: 5px 40px; height: 35px; }
-        .slot { flex: 1; display: flex; align-items: center; justify-content: center; border-radius: 5px; font-size: 9px; font-weight: 900; border: 1px solid rgba(255,255,255,0.1); }
+        .header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 15px 20px; background: rgba(10, 11, 30, 0.95); 
+            border-bottom: 2px solid var(--blue); z-index: 1000;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+        }
+        .nav-item { 
+            display: flex; flex-direction: column; align-items: center; 
+            cursor: pointer; transition: 0.3s;
+        }
+        .nav-item:active { transform: scale(0.9); }
+        .icon-p { color: var(--pink); text-shadow: var(--pink-neon); font-size: 24px; }
+        .icon-s { color: var(--blue); text-shadow: var(--blue-neon); font-size: 24px; }
+        .nav-text { font-size: 9px; font-weight: 900; margin-top: 4px; letter-spacing: 1px; }
+
+        .balance-box { 
+            background: #000; border: 2px solid var(--yellow); border-radius: 50px; 
+            padding: 5px 20px; text-align: center; box-shadow: var(--yellow-neon);
+        }
+        #display-saldo { font-size: 16px; font-weight: 900; color: var(--yellow); }
+
+        #game-container { 
+            position: relative; width: 100%; height: 350px; 
+            margin-top: 5px; overflow: hidden; background: rgba(0,0,0,0.3);
+        }
+        .peg { 
+            position: absolute; width: 6px; height: 6px; background: #fff; border-radius: 50%; 
+            box-shadow: 0 0 8px #fff, var(--blue-neon); z-index: 5; opacity: 0.6;
+        }
+        .ball { 
+            position: absolute; width: 14px; height: 14px; 
+            background: radial-gradient(circle at 30% 30%, #fff, var(--pink)); 
+            border-radius: 50%; box-shadow: var(--pink-neon); z-index: 10; 
+            transform: translate(-50%, -50%);
+        }
+
+        .multipliers { display: flex; justify-content: center; gap: 3px; padding: 0 50px; height: 35px; }
+        .slot { 
+            flex: 1; display: flex; align-items: center; justify-content: center; 
+            border-radius: 5px; font-size: 10px; font-weight: 900; 
+            border: 1px solid rgba(255,255,255,0.2); transition: 0.1s;
+        }
         .m-x5 { background: var(--pink); color: white; }
         .m-x2 { background: var(--yellow); color: black; }
-        .m-low { background: #222; color: #777; }
+        .m-x1 { background: var(--blue); color: black; }
+        .m-low { background: #222; color: #666; }
 
-        /* Mode Controls */
-        .mode-panel { display: flex; justify-content: center; gap: 10px; padding: 5px; }
-        .btn-mode { padding: 8px 15px; border-radius: 10px; border: 1px solid #444; background: #111; color: #666; font-size: 10px; font-weight: 900; cursor: pointer; transition: 0.3s; }
+        /* MODE BUTTONS */
+        .mode-container { display: flex; justify-content: center; gap: 10px; margin: 10px 0; }
+        .btn-mode {
+            padding: 8px 15px; border-radius: 10px; border: 1px solid #333;
+            background: rgba(255,255,255,0.05); color: #888; font-size: 10px;
+            font-weight: 900; cursor: pointer; transition: 0.3s;
+        }
         .btn-mode.active { border-color: var(--blue); color: var(--blue); box-shadow: var(--blue-neon); }
-        .btn-mode.active-pink { border-color: var(--pink); color: var(--pink); box-shadow: var(--pink-neon); }
+        .btn-mode.active-turbo { border-color: var(--pink); color: var(--pink); box-shadow: var(--pink-neon); }
 
-        .play-area { padding: 10px 20px; display: flex; flex-direction: column; gap: 8px; }
-        .bet-selector { display: flex; align-items: center; justify-content: space-between; background: #000; border-radius: 15px; padding: 8px 20px; border: 2px solid #333; }
-        .btn-main { width: 100%; padding: 14px; border-radius: 50px; border: none; font-weight: 900; font-size: 16px; color: white; cursor: pointer; background: linear-gradient(90deg, var(--pink), var(--blue)); box-shadow: var(--pink-neon); }
+        .nav-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 10px 20px; }
+        .btn-nav { 
+            background: rgba(255,255,255,0.05); border: 1px solid #333; 
+            padding: 12px 5px; border-radius: 15px; text-align: center; 
+            transition: 0.2s; cursor: pointer;
+        }
+        .btn-nav:active { border-color: var(--pink); box-shadow: var(--pink-neon); }
+        .btn-nav i { font-size: 20px; margin-bottom: 5px; display: block; }
+        .btn-nav span { font-size: 10px; font-weight: 900; color: #ccc; }
 
-        .win-popup { position: absolute; font-weight: 900; font-size: 20px; animation: quickFadeUp 0.6s forwards; z-index: 100; pointer-events: none; }
-        @keyframes quickFadeUp { 0% { opacity: 0; transform: translateY(0); } 50% { opacity: 1; } 100% { opacity: 0; transform: translateY(-40px); } }
-        
-        #neon-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 9999; }
-        .modal-box { background: #0a0b1e; border: 2px solid var(--pink); border-radius: 20px; padding: 25px; width: 80%; text-align: center; }
+        .play-area { padding: 10px 20px; gap: 10px; display: flex; flex-direction: column; }
+        .bet-selector { 
+            display: flex; align-items: center; justify-content: space-between; 
+            background: #000; border-radius: 15px; padding: 10px 25px; border: 2px solid #333; 
+        }
+        .btn-main { 
+            width: 100%; padding: 16px; border-radius: 50px; border: none; 
+            font-weight: 900; font-size: 18px; color: white; cursor: pointer;
+            background: linear-gradient(90deg, var(--pink), var(--blue));
+            box-shadow: var(--pink-neon); text-transform: uppercase;
+        }
+
+        .win-popup { position: absolute; font-weight: 900; font-size: 22px; animation: quickFadeUp 0.8s forwards; z-index: 100; pointer-events: none; }
+        @keyframes quickFadeUp { 0% { opacity: 0; transform: translateY(0); } 50% { opacity: 1; } 100% { opacity: 0; transform: translateY(-50px); } }
+
+        #neon-modal { 
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9); 
+            display: none; justify-content: center; align-items: center; z-index: 9999; 
+        }
+        .modal-box { 
+            background: #0a0b1e; border: 2px solid var(--pink); border-radius: 20px; 
+            padding: 30px; width: 80%; text-align: center; box-shadow: var(--pink-neon);
+        }
     </style>
 </head>
 <body>
 
     <div id="neon-modal">
         <div class="modal-box">
-            <h2 id="modal-title" style="color:var(--pink);">INFO</h2>
-            <p id="modal-msg" style="margin: 15px 0; font-weight: bold;"></p>
+            <h2 id="modal-title" style="color:var(--pink); text-shadow: var(--pink-neon);">NOTIFIKASI</h2>
+            <p id="modal-msg" style="margin: 20px 0; font-weight: bold;"></p>
             <button class="btn-main" onclick="closeModal()">OKE</button>
         </div>
     </div>
 
     <div class="header">
-        <div onclick="location.href='profil.html'"><i class="fa-solid fa-user icon-p" style="color:var(--pink)"></i></div>
+        <div class="nav-item" onclick="location.href='profil.html'">
+            <i class="fa-solid fa-user-ninja icon-p"></i>
+            <span class="nav-text" style="color:var(--pink)">PROFIL</span>
+        </div>
         <div class="balance-box">
-            <span style="font-size:7px; color:var(--blue);">SALDO VIP</span>
+            <span style="font-size:8px; color:var(--blue); font-weight: 900;">SALDO VIP</span>
             <div id="display-saldo">IDR 0</div>
         </div>
-        <div onclick="location.href='index.html'"><i class="fa-solid fa-right-from-bracket" style="color:var(--blue)"></i></div>
+        <div class="nav-item" onclick="location.href='settings.html'">
+            <i class="fa-solid fa-hand-holding-heart icon-s"></i>
+            <span class="nav-text" style="color:var(--blue)">SAPA</span>
+        </div>
     </div>
 
     <div id="game-container"></div>
@@ -71,25 +146,40 @@
     <div class="multipliers">
         <div class="slot m-x5">5x</div>
         <div class="slot m-x2">2x</div>
+        <div class="slot m-x1">1.2x</div>
         <div class="slot m-low">0.2x</div>
-        <div class="slot m-low">0.1x</div>
-        <div class="slot m-low">0.2x</div>
+        <div class="slot m-x1">1.2x</div>
         <div class="slot m-x2">2x</div>
         <div class="slot m-x5">5x</div>
     </div>
 
-    <div class="mode-panel">
-        <div id="mode-turbo" class="btn-mode" onclick="toggleTurbo()">TURBO: OFF</div>
-        <div id="mode-auto" class="btn-mode" onclick="toggleAuto()">AUTO: OFF</div>
+    <div class="mode-container">
+        <button id="btn-turbo" class="btn-mode" onclick="toggleTurbo()">TURBO: OFF</button>
+        <button id="btn-auto" class="btn-mode" onclick="toggleAuto()">AUTO: OFF</button>
+    </div>
+
+    <div class="nav-grid">
+        <div class="btn-nav" onclick="location.href='withdraw.html'">
+            <i class="fa-solid fa-wallet" style="color: var(--pink); text-shadow: var(--pink-neon);"></i>
+            <span>WITHDRAW</span>
+        </div>
+        <div class="btn-nav" onclick="location.href='deposit.html'">
+            <i class="fa-solid fa-money-bill-trend-up" style="color: var(--blue); text-shadow: var(--blue-neon);"></i>
+            <span>DEPOSIT</span>
+        </div>
+        <div class="btn-nav" onclick="location.href='reward.html'">
+            <i class="fa-solid fa-gift" style="color: var(--yellow); text-shadow: var(--yellow-neon);"></i>
+            <span>REWARD</span>
+        </div>
     </div>
 
     <div class="play-area">
         <div class="bet-selector">
-            <i class="fa-solid fa-minus" onclick="changeBet(-1)"></i>
-            <div id="current-bet" style="color:var(--yellow); font-size:20px; font-weight:900;">400</div>
-            <i class="fa-solid fa-plus" onclick="changeBet(1)"></i>
+            <i class="fa-solid fa-circle-minus" style="color:var(--pink); font-size: 24px;" onclick="changeBet(-1)"></i>
+            <div id="current-bet" style="color:var(--yellow); font-size:24px; font-weight:900; text-shadow: var(--yellow-neon);">400</div>
+            <i class="fa-solid fa-circle-plus" style="color:var(--blue); font-size: 24px;" onclick="changeBet(1)"></i>
         </div>
-        <button class="btn-main" id="play-btn" onclick="handlePlay()">MULAI GAME</button>
+        <button class="btn-main" id="play-btn" onclick="handlePlay()">LEPASKAN BOLA</button>
     </div>
 
     <script>
@@ -98,11 +188,19 @@
         const bets = [400, 800, 1000, 1200, 1400, 1600, 1800, 2000, 4000, 6000, 8000, 10000, 12000, 14000, 16000, 18000, 20000];
         let betIdx = 0;
         let pegLocs = [];
-        const slotMults = [5, 2, 0.2, 0.1, 0.2, 2, 5];
-        
+        const slotMults = [5, 2, 1.2, 0.2, 1.2, 2, 5];
+
         let isTurbo = false;
         let isAuto = false;
-        let autoInterval = null;
+        let autoTimer = null;
+
+        function showModal(msg, title = "INFO VIP") {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-msg').innerText = msg;
+            document.getElementById('neon-modal').style.display = 'flex';
+        }
+
+        function closeModal() { document.getElementById('neon-modal').style.display = 'none'; }
 
         function updateSaldoUI() {
             const saldo = localStorage.getItem('user_saldo') || 0;
@@ -116,33 +214,40 @@
 
         function toggleTurbo() {
             isTurbo = !isTurbo;
-            const btn = document.getElementById('mode-turbo');
+            const btn = document.getElementById('btn-turbo');
             btn.innerText = isTurbo ? "TURBO: ON" : "TURBO: OFF";
-            btn.classList.toggle('active-pink', isTurbo);
+            btn.classList.toggle('active-turbo', isTurbo);
         }
 
         function toggleAuto() {
             isAuto = !isAuto;
-            const btn = document.getElementById('mode-auto');
+            const btn = document.getElementById('btn-auto');
             btn.innerText = isAuto ? "AUTO: ON" : "AUTO: OFF";
             btn.classList.toggle('active', isAuto);
+            
             if(isAuto) {
-                handlePlay(); 
-                autoInterval = setInterval(() => { if(isAuto) handlePlay(); }, isTurbo ? 600 : 1200);
+                runAutoPlay();
             } else {
-                clearInterval(autoInterval);
+                clearTimeout(autoTimer);
             }
         }
 
+        function runAutoPlay() {
+            if(!isAuto) return;
+            handlePlay();
+            const delay = isTurbo ? 600 : 1200;
+            autoTimer = setTimeout(runAutoPlay, delay);
+        }
+
         function initPegs() {
-            container.innerHTML = ''; pegLocs = [];
-            const rows = 9; // Ditambah 1 baris paku
+            container.innerHTML = '';
+            pegLocs = [];
+            const rows = 9; // Ditambah 1 baris
             const centerX = container.offsetWidth / 2;
             for (let r = 2; r <= rows; r++) {
-                let count = r;
-                for (let i = 0; i < count; i++) {
-                    const x = centerX + (i - (count - 1) / 2) * 35;
-                    const y = r * 32;
+                for (let i = 0; i < r; i++) {
+                    const x = centerX + (i - (r - 1) / 2) * 40;
+                    const y = r * 35;
                     const peg = document.createElement('div');
                     peg.className = 'peg';
                     peg.style.left = x + 'px'; peg.style.top = y + 'px';
@@ -157,15 +262,17 @@
             const username = localStorage.getItem('user_session');
             let saldo = Number(localStorage.getItem('user_saldo') || 0);
 
+            if (!username) { window.location.href = 'index.html'; return; }
             if (saldo < bet) { 
+                showModal("Saldo Anda tidak mencukupi!", "SALDO HABIS"); 
                 if(isAuto) toggleAuto();
-                showModal("Saldo tidak cukup!", "INFO"); 
                 return; 
             }
 
             saldo -= bet;
             localStorage.setItem('user_saldo', saldo);
             updateSaldoUI();
+
             dropBall(bet);
         }
 
@@ -176,17 +283,17 @@
 
             let ball = {
                 el: ballEl,
-                x: container.offsetWidth / 2 + (Math.random() - 0.5) * 15,
+                x: container.offsetWidth / 2 + (Math.random() - 0.5) * 10,
                 y: 20,
                 vx: (Math.random() - 0.5) * 2,
                 vy: 0
             };
 
-            const gravity = isTurbo ? 0.8 : 0.45;
-            const speed = isTurbo ? 2 : 1;
+            const gravity = isTurbo ? 0.8 : 0.4;
+            const subSteps = isTurbo ? 2 : 1; // Sub-steps agar turbo tetap halus
 
             const anim = setInterval(() => {
-                for(let i=0; i<speed; i++) {
+                for(let s = 0; s < subSteps; s++) {
                     ball.vy += gravity;
                     ball.x += ball.vx;
                     ball.y += ball.vy;
@@ -195,20 +302,20 @@
                         const dx = ball.x - p.x;
                         const dy = ball.y - p.y;
                         const dist = Math.sqrt(dx*dx + dy*dy);
-                        if (dist < 10) {
-                            ball.vy *= -0.4;
-                            ball.vx += (dx * 0.25) + (Math.random() - 0.5);
-                            ball.y = p.y + 10;
+                        if (dist < 12) {
+                            ball.vy *= -0.5;
+                            ball.vx += (dx * 0.2) + (Math.random() - 0.5);
+                            ball.y = p.y + 12;
                         }
                     });
 
-                    if (ball.x < 5 || ball.x > container.offsetWidth - 5) ball.vx *= -0.6;
+                    if (ball.x < 10 || ball.x > container.offsetWidth - 10) ball.vx *= -0.8;
                 }
 
                 ball.el.style.left = ball.x + 'px';
                 ball.el.style.top = ball.y + 'px';
 
-                if (ball.y > 340) {
+                if (ball.y > 345) {
                     clearInterval(anim);
                     ball.el.remove();
                     finishGame(ball.x, betAmount);
@@ -217,31 +324,33 @@
         }
 
         async function finishGame(finalX, bet) {
-            const multAreaStart = 40; // Sesuaikan padding kiri .multipliers
-            const multAreaWidth = container.offsetWidth - 80;
-            const slotW = multAreaWidth / slotMults.length;
+            // Logika Deteksi Slot (Area 50px - [Width-50px])
+            const startArea = 50;
+            const playAreaWidth = container.offsetWidth - 100;
+            const slotW = playAreaWidth / slotMults.length;
             
             let multiplier = 0;
             let winIdx = -1;
 
-            if (finalX >= multAreaStart && finalX <= (multAreaStart + multAreaWidth)) {
-                winIdx = Math.floor((finalX - multAreaStart) / slotW);
+            if (finalX >= startArea && finalX <= container.offsetWidth - startArea) {
+                winIdx = Math.floor((finalX - startArea) / slotW);
                 winIdx = Math.max(0, Math.min(slotMults.length - 1, winIdx));
                 multiplier = slotMults[winIdx];
             }
 
             if(winIdx !== -1) {
                 const slotEls = document.querySelectorAll('.slot');
-                slotEls[winIdx].style.filter = "brightness(2)";
-                setTimeout(() => slotEls[winIdx].style.filter = "none", 300);
+                slotEls[winIdx].style.transform = "scale(1.2)";
+                setTimeout(() => slotEls[winIdx].style.transform = "scale(1)", 200);
             }
 
             try {
+                const username = localStorage.getItem('user_session');
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
                     body: JSON.stringify({
                         action: 'playGame',
-                        username: localStorage.getItem('user_session'),
+                        username: username,
                         betAmount: bet,
                         multiplier: multiplier
                     })
@@ -258,18 +367,29 @@
                     p.style.color = multiplier >= 1 ? 'var(--yellow)' : '#ff4444';
                     p.style.left = finalX + 'px'; p.style.top = '280px';
                     container.appendChild(p);
-                    setTimeout(() => p.remove(), 600);
+                    setTimeout(() => p.remove(), 800);
                 }
-            } catch (e) { console.error(e); }
+            } catch (e) {
+                console.error("Sync Error:", e);
+            }
         }
 
-        function showModal(msg) { 
-            document.getElementById('modal-msg').innerText = msg;
-            document.getElementById('neon-modal').style.display = 'flex'; 
-        }
-        function closeModal() { document.getElementById('neon-modal').style.display = 'none'; }
-
-        window.onload = () => { initPegs(); updateSaldoUI(); };
+        window.onload = () => {
+            initPegs();
+            updateSaldoUI();
+            const user = localStorage.getItem('user_session');
+            if(user) {
+                fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'getUserData', username: user })
+                }).then(r => r.json()).then(res => {
+                    if(res.result === "SUCCESS") {
+                        localStorage.setItem('user_saldo', res.saldo);
+                        updateSaldoUI();
+                    }
+                });
+            }
+        };
     </script>
 </body>
 </html>
