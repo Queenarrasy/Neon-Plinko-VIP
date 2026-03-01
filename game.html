@@ -6,353 +6,405 @@
     <title>NEON PLINKO VIP</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
-        :root { 
-            --pink: #ff0077; 
-            --deep-blue: #0044ff; 
-            --yellow: #fbff00; 
+        :root {
+            --pink: #ff0077;
+            --blue: #0044ff;
+            --yellow: #fbff00;
             --white: #ffffff;
-            --bg: #03040a; 
-            --pink-neon: 0 0 15px #ff0077, 0 0 25px #ff0077;
-            --blue-neon: 0 0 10px rgba(0, 68, 255, 0.5);
-            --yellow-neon: 0 0 15px #fbff00, 0 0 25px #fbff00;
-            --white-neon: 0 0 10px #ffffff, 0 0 18px rgba(255, 255, 255, 0.8);
-        }
-        
-        body { 
-            background: var(--bg); color: white; 
-            font-family: 'Segoe UI', Roboto, sans-serif; 
-            margin: 0; overflow: hidden; height: 100vh; 
-            display: flex; flex-direction: column;
-            background-image: radial-gradient(circle at 50% 50%, #0a0b1e 0%, var(--bg) 80%);
+            --bg: #03040a;
+            --neon-pink: 0 0 15px var(--pink), 0 0 30px var(--pink);
+            --neon-blue: 0 0 15px var(--blue);
+            --neon-white: 0 0 10px var(--white);
         }
 
-        .header { 
-            display: flex; justify-content: space-between; align-items: center; 
-            padding: 15px 20px; background: rgba(5, 7, 20, 0.95); 
-            border-bottom: 2px solid var(--deep-blue); z-index: 1000;
+        body {
+            background: var(--bg);
+            color: white;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
         }
 
-        .balance-box { 
-            background: #000; border: 2px solid var(--pink); 
-            border-radius: 50px; padding: 8px 25px; text-align: center; box-shadow: 0 0 10px rgba(255, 0, 119, 0.4);
+        /* HEADER & SALDO */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.8);
+            border-bottom: 2px solid var(--blue);
         }
 
-        .label-saldo { font-size: 10px; color: var(--white); font-weight: 900; letter-spacing: 1px; opacity: 0.8; }
-        #display-saldo { font-size: 17px; font-weight: 900; color: var(--white); text-shadow: 0 0 5px white; margin-top: 2px; }
-
-        /* KONTENER UTAMA GAME */
-        #game-container { 
-            position: relative; 
-            width: 100%; 
-            height: 380px; 
-            margin-top: 5px; 
-            overflow: visible; 
-            background: transparent;
+        .balance-container {
+            text-align: center;
+            background: #000;
+            padding: 5px 20px;
+            border: 2px solid var(--pink);
+            border-radius: 30px;
+            box-shadow: var(--neon-pink);
         }
 
-        /* PAKU - NEON PUTIH */
-        .peg { 
-            position: absolute; width: 6px; height: 6px; 
-            background: var(--white); border-radius: 50%; 
-            box-shadow: var(--white-neon); z-index: 5;
+        #display-saldo {
+            font-size: 18px;
+            font-weight: 900;
+            color: var(--white);
+            text-shadow: 0 0 5px var(--white);
+        }
+
+        /* GAME AREA */
+        #game-board {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            background: radial-gradient(circle at center, #0a0b1e 0%, #03040a 100%);
+            overflow: visible;
+        }
+
+        .peg {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: var(--white);
+            border-radius: 50%;
+            box-shadow: var(--neon-white);
+            transform: translate(-50%, -50%);
+            z-index: 5;
+            transition: all 0.1s;
+        }
+
+        .peg.hit {
+            background: var(--yellow);
+            box-shadow: 0 0 20px var(--yellow);
+            transform: translate(-50%, -50%) scale(1.5);
+        }
+
+        .ball {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: var(--pink);
+            border-radius: 50%;
+            box-shadow: var(--neon-pink);
+            z-index: 10;
             transform: translate(-50%, -50%);
         }
 
-        /* EFEK PANTULAN - KUNING */
-        .peg.hit { 
-            background: var(--yellow) !important; 
-            box-shadow: var(--yellow-neon) !important; 
-            transform: translate(-50%, -50%) scale(2);
-            transition: 0.05s;
+        /* MULTIPLIERS */
+        .multiplier-row {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            padding: 0 10px;
+            margin-bottom: 10px;
         }
 
-        /* BOLA - NEON PINK */
-        .ball { 
-            position: absolute; width: 14px; height: 14px; 
-            background: radial-gradient(circle at 30% 30%, #fff, var(--pink)); 
-            border-radius: 50%; box-shadow: var(--pink-neon); 
-            z-index: 10; transform: translate(-50%, -50%); pointer-events: none; 
+        .slot {
+            flex: 1;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 900;
+            border-radius: 5px;
+            color: #000;
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: transform 0.2s;
         }
 
-        .multipliers { display: flex; justify-content: center; gap: 4px; padding: 0 40px; height: 35px; z-index: 10; position: relative; }
-        .slot { flex: 1; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 11px; font-weight: 900; border: 2px solid; color: #000 !important; transition: transform 0.1s; }
-        .m-x5 { background: var(--pink); border-color: var(--yellow); }
-        .m-x2 { background: var(--yellow); border-color: var(--deep-blue); }
-        .m-x1 { background: var(--deep-blue); border-color: var(--yellow); color: #fff !important; }
-        .m-low { background: var(--white); border-color: #333; }
+        .slot.active { transform: scale(1.1); filter: brightness(1.5); }
+        .s-high { background: var(--pink); box-shadow: 0 0 10px var(--pink); }
+        .s-mid { background: var(--yellow); box-shadow: 0 0 10px var(--yellow); }
+        .s-low { background: var(--blue); color: white; }
 
-        .play-area { padding: 10px 20px; gap: 10px; display: flex; flex-direction: column; }
-        .bet-selector { display: flex; align-items: center; justify-content: space-between; background: #000; border-radius: 15px; padding: 10px 25px; border: 2px solid var(--deep-blue); }
-        .btn-main { width: 100%; padding: 16px; border-radius: 50px; border: 2px solid var(--yellow); font-weight: 900; font-size: 16px; color: white; cursor: pointer; background: linear-gradient(90deg, #aa0055, #0022aa); text-transform: uppercase; }
+        /* CONTROLS */
+        .controls {
+            padding: 10px;
+            background: #050714;
+            border-top: 2px solid var(--blue);
+        }
 
-        .win-popup { position: absolute; font-weight: 900; font-size: 20px; animation: quickFadeUp 0.8s forwards; z-index: 100; text-shadow: 0 0 5px black; pointer-events: none;}
-        @keyframes quickFadeUp { 0% { opacity: 0; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-30px); } 100% { opacity: 0; transform: translateY(-50px); } }
-        
-        #neon-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 9999; backdrop-filter: blur(4px); }
-        .modal-box { background: #050714; border: 2px solid var(--pink); border-radius: 20px; padding: 25px; width: 75%; text-align: center; box-shadow: 0 0 15px var(--pink); }
+        .speed-bar {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 10px;
+        }
+
+        .btn-speed {
+            background: transparent;
+            border: 1px solid var(--blue);
+            color: var(--blue);
+            padding: 5px 15px;
+            border-radius: 10px;
+            font-size: 10px;
+            cursor: pointer;
+        }
+
+        .btn-speed.active {
+            background: var(--blue);
+            color: white;
+            box-shadow: var(--neon-blue);
+        }
+
+        .bet-area {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .bet-btn {
+            background: linear-gradient(45deg, var(--blue), var(--pink));
+            border: none;
+            color: white;
+            width: 100%;
+            padding: 15px;
+            border-radius: 15px;
+            font-weight: 900;
+            font-size: 16px;
+            text-transform: uppercase;
+            box-shadow: 0 4px 15px rgba(255, 0, 119, 0.4);
+        }
+
+        /* NAV BOTTOM */
+        .nav-bottom {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            text-align: center;
+            padding: 10px 0;
+            background: #000;
+        }
+
+        .nav-item { color: var(--white); font-size: 10px; text-decoration: none; opacity: 0.7; }
+        .nav-item i { font-size: 18px; margin-bottom: 4px; display: block; }
+        .nav-item.active { opacity: 1; color: var(--yellow); }
     </style>
 </head>
 <body>
 
-    <audio id="sfx-drop" src="https://assets.mixkit.co/active_storage/sfx/2004/2004-preview.mp3"></audio>
-    <audio id="sfx-hit" src="https://assets.mixkit.co/active_storage/sfx/2577/2577-preview.mp3"></audio>
-    <audio id="sfx-win" src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3"></audio>
-
-    <div id="neon-modal">
-        <div class="modal-box">
-            <h2 style="color: var(--pink); font-size: 18px;">PEMBERITAHUAN</h2>
-            <p id="modal-msg" style="color: var(--white); font-weight: bold; margin: 15px 0;"></p>
-            <button class="btn-main" onclick="closeModal()" style="padding: 10px; font-size: 12px; background: var(--bg);">TUTUP</button>
-        </div>
-    </div>
-
     <div class="header">
-        <div onclick="location.href='profil.html'"><i class="fa-solid fa-user-ninja" style="color: var(--pink); font-size: 22px;"></i></div>
-        <div class="balance-box">
-            <div class="label-saldo">SALDO UTAMA</div>
+        <div onclick="location.href='profil.html'"><i class="fa-solid fa-circle-user" style="color: var(--yellow); font-size: 25px;"></i></div>
+        <div class="balance-container">
+            <div style="font-size: 8px; color: var(--pink);">TOTAL BALANCE</div>
             <div id="display-saldo">IDR 0</div>
         </div>
-        <div onclick="location.href='settings.html'"><i class="fa-solid fa-gear" style="color: var(--yellow); font-size: 22px;"></i></div>
+        <div onclick="location.href='settings.html'"><i class="fa-solid fa-bars-staggered" style="color: var(--pink); font-size: 22px;"></i></div>
     </div>
 
-    <div id="game-container"></div>
+    <div id="game-board"></div>
 
-    <div class="multipliers">
-        <div class="slot m-x5">5x</div><div class="slot m-x2">2x</div><div class="slot m-x1">1.2x</div>
-        <div class="slot m-low">0.2x</div>
-        <div class="slot m-x1">1.2x</div><div class="slot m-x2">2x</div><div class="slot m-x5">5x</div>
-    </div>
-
-    <div style="display: flex; justify-content: center; gap: 10px; margin: 10px 0;">
-        <button id="btn-auto" style="padding: 10px 20px; border-radius: 12px; font-size: 11px; font-weight: 900; background: #000; color: white; border: 2px solid var(--pink);" onclick="toggleAuto()">AUTO: OFF</button>
-    </div>
-
-    <div class="play-area">
-        <div class="bet-selector">
-            <i class="fa-solid fa-circle-minus" style="color:var(--pink); font-size: 28px;" onclick="changeBet(-1)"></i>
-            <div id="current-bet" style="color:var(--yellow); font-size:24px; font-weight:900;">400</div>
-            <i class="fa-solid fa-circle-plus" style="color:var(--deep-blue); font-size: 28px;" onclick="changeBet(1)"></i>
+    <div class="multiplier-row" id="slots">
         </div>
-        <button class="btn-main" id="play-btn" onclick="handlePlay()">LEPASKAN BOLA</button>
+
+    <div class="controls">
+        <div class="speed-bar">
+            <button class="btn-speed active" onclick="setSpeed('normal', this)">NORMAL</button>
+            <button class="btn-speed" onclick="setSpeed('turbo', this)">TURBO</button>
+            <button class="btn-speed" id="btn-auto" onclick="toggleAuto()">AUTO: OFF</button>
+        </div>
+
+        <div class="bet-area">
+            <i class="fa-solid fa-minus" onclick="changeBet(-1)" style="color: var(--pink)"></i>
+            <div style="text-align: center">
+                <span style="font-size: 10px; color: gray;">BET AMOUNT</span>
+                <div id="current-bet" style="font-size: 20px; font-weight: 900; color: var(--yellow);">400</div>
+            </div>
+            <i class="fa-solid fa-plus" onclick="changeBet(1)" style="color: var(--blue)"></i>
+        </div>
+
+        <button class="bet-btn" onclick="placeBet()">Play Ball</button>
     </div>
 
-    <script>
-        var activeBalls = 0;
-        var isSyncing = false;
-        var lastWinTime = 0;
-    </script>
-    
+    <div class="nav-bottom">
+        <a href="deposit.html" class="nav-item"><i class="fa-solid fa-wallet"></i>Deposit</a>
+        <a href="withdraw.html" class="nav-item"><i class="fa-solid fa-money-bill-transfer"></i>Withdraw</a>
+        <a href="reward.html" class="nav-item"><i class="fa-solid fa-gift"></i>Reward</a>
+        <a href="profil.html" class="nav-item"><i class="fa-solid fa-user"></i>Profile</a>
+    </div>
+
     <script src="global.js"></script>
-
     <script>
-        const container = document.getElementById('game-container');
-        const bets = [400, 800, 1000, 2000, 5000, 10000, 20000, 50000];
-        const slotMults = [5, 2, 1.2, 0.2, 1.2, 2, 5];
-        let betIdx = 0;
+        const board = document.getElementById('game-board');
+        const slotContainer = document.getElementById('slots');
+        const betList = [400, 800, 1200, 2000, 5000, 10000, 20000, 50000];
+        const multipliers = [10, 5, 2, 1.2, 0.5, 0.2, 0.5, 1.2, 2, 5, 10];
+        
+        let currentBetIdx = 0;
         let pegLocs = [];
+        let speed = 'normal';
         let isAuto = false;
-        let autoTimer = null;
+        let autoInterval;
+        let winrate = 0.5; // Bisa ditarik dari Sheet Admin
 
-        function playSound(id) {
-            const s = document.getElementById('sfx-' + id);
-            if(s) { s.currentTime = 0; s.play().catch(()=>{}); }
+        // Init Paku & Slot
+        function initBoard() {
+            board.innerHTML = '';
+            pegLocs = [];
+            const rows = 10;
+            const spacingX = 35;
+            const spacingY = 32;
+
+            for (let r = 2; r <= rows; r++) {
+                for (let i = 0; i < r; i++) {
+                    const x = board.offsetWidth / 2 + (i - (r - 1) / 2) * spacingX;
+                    const y = r * spacingY;
+                    const peg = document.createElement('div');
+                    peg.className = 'peg';
+                    peg.style.left = x + 'px';
+                    peg.style.top = y + 'px';
+                    board.appendChild(peg);
+                    pegLocs.push({ x, y, el: peg });
+                }
+            }
+
+            // Create Slots
+            slotContainer.innerHTML = '';
+            multipliers.forEach(m => {
+                const div = document.createElement('div');
+                div.className = `slot ${m >= 5 ? 's-high' : m >= 1 ? 's-mid' : 's-low'}`;
+                div.innerText = m + 'x';
+                slotContainer.appendChild(div);
+            });
+        }
+
+        function setSpeed(mode, btn) {
+            speed = mode;
+            document.querySelectorAll('.btn-speed').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
         }
 
         function changeBet(dir) {
-            betIdx = Math.max(0, Math.min(bets.length - 1, betIdx + dir));
-            document.getElementById('current-bet').innerText = bets[betIdx].toLocaleString();
+            currentBetIdx = Math.max(0, Math.min(betList.length - 1, currentBetIdx + dir));
+            document.getElementById('current-bet').innerText = betList[currentBetIdx].toLocaleString();
         }
 
         function toggleAuto() {
             isAuto = !isAuto;
             const btn = document.getElementById('btn-auto');
-            btn.innerText = isAuto ? "AUTO: ON" : "AUTO: OFF";
-            btn.style.borderColor = isAuto ? "var(--deep-blue)" : "var(--pink)";
-            if(isAuto) runAutoPlay(); else clearTimeout(autoTimer);
+            if(isAuto) {
+                btn.classList.add('active');
+                btn.innerText = "AUTO: ON";
+                autoInterval = setInterval(placeBet, speed === 'turbo' ? 400 : 1200);
+            } else {
+                btn.classList.remove('active');
+                btn.innerText = "AUTO: OFF";
+                clearInterval(autoInterval);
+            }
         }
 
-        function runAutoPlay() {
-            if(!isAuto) return;
-            handlePlay();
-            autoTimer = setTimeout(runAutoPlay, 1000);
-        }
-
-        function handlePlay() {
-            const bet = bets[betIdx];
+        async function placeBet() {
+            const bet = betList[currentBetIdx];
             let saldo = Number(localStorage.getItem('user_saldo') || 0);
-            
+
             if (saldo < bet) {
-                showModal("SALDO TIDAK CUKUP!");
-                isAuto = false;
-                document.getElementById('btn-auto').innerText = "AUTO: OFF";
+                alert("Saldo tidak cukup!");
+                if(isAuto) toggleAuto();
                 return;
             }
 
-            // LOGIKA 1: POTONG SALDO DI AWAL
-            localStorage.setItem('user_saldo', saldo - bet);
-            if(typeof updateSaldoUI === 'function') updateSaldoUI();
-            
-            activeBalls++;
-            playSound('drop');
-            dropBall(bet);
+            // Potong Saldo Langsung (Client Side)
+            saldo -= bet;
+            localStorage.setItem('user_saldo', saldo);
+            updateSaldoUI();
+
+            spawnBall(bet);
         }
 
-        function dropBall(bet) {
+        function spawnBall(bet) {
             const ball = document.createElement('div');
             ball.className = 'ball';
-            container.appendChild(ball);
+            board.appendChild(ball);
 
-            // Posisi awal di tengah atas dengan sedikit variasi acak
-            let x = container.offsetWidth / 2 + (Math.random() * 6 - 3);
-            let y = 10;
-            let vx = (Math.random() - 0.5) * 2;
+            let posX = board.offsetWidth / 2 + (Math.random() * 4 - 2);
+            let posY = 20;
+            let vx = (Math.random() - 0.5) * 1.5;
             let vy = 0;
+            const gravity = 0.6;
+            const friction = 0.98;
 
-            const gravity = 0.38;
-            const bounce = 0.5;
-
-            const anim = setInterval(() => {
+            const move = setInterval(() => {
                 vy += gravity;
-                x += vx;
-                y += vy;
+                vx *= friction;
+                posX += vx;
+                posY += vy;
 
-                // Cek tabrakan paku
-                pegLocs.forEach(p => {
-                    const dx = x - p.x;
-                    const dy = y - p.y;
+                // Logika Pantulan Paku
+                pegLocs.forEach(peg => {
+                    const dx = posX - peg.x;
+                    const dy = posY - peg.y;
                     const dist = Math.sqrt(dx*dx + dy*dy);
-                    if (dist < 12) {
-                        playSound('hit');
-                        const angle = Math.atan2(dy, dx);
-                        vx += Math.cos(angle) * 2.5;
-                        vy = Math.sin(angle) * 1.5;
+                    
+                    if (dist < 10) {
+                        // Rumus Winrate: Jika winrate rendah, paksa vx ke arah tengah
+                        const bias = (Math.random() > winrate) ? (board.offsetWidth/2 - posX) * 0.05 : 0;
                         
-                        p.el.classList.add('hit');
-                        setTimeout(() => p.el.classList.remove('hit'), 100);
+                        vx = (dx / dist) * 3 + bias;
+                        vy = (dy / dist) * 2;
+                        
+                        peg.el.classList.add('hit');
+                        setTimeout(() => peg.el.classList.remove('hit'), 100);
                     }
                 });
 
-                // Pantulan dinding samping
-                if (x < 15) { x = 15; vx *= -0.4; }
-                if (x > container.offsetWidth - 15) { x = container.offsetWidth - 15; vx *= -0.4; }
+                ball.style.left = posX + 'px';
+                ball.style.top = posY + 'px';
 
-                ball.style.left = x + 'px';
-                ball.style.top = y + 'px';
-
-                // Sampai di dasar (Multipliers)
-                if (y > 370) {
-                    clearInterval(anim);
+                // Cek jika masuk slot
+                if (posY > 390) {
+                    clearInterval(move);
                     ball.remove();
-                    activeBalls--;
-                    finishGame(x, bet);
+                    calcResult(posX, bet);
                 }
             }, 1000/60);
         }
 
-        function finishGame(finalX, bet) {
-            lastWinTime = Date.now();
-            const padding = 40;
-            const gameWidth = container.offsetWidth - (padding * 2);
+        function calcResult(finalX, bet) {
+            const slotWidth = board.offsetWidth / multipliers.length;
+            const idx = Math.floor(finalX / slotWidth);
+            const mult = multipliers[Math.max(0, Math.min(multipliers.length - 1, idx))];
             
-            // Hitung index slot berdasarkan posisi jatuh X
-            let winIdx = Math.floor(((finalX - padding) / gameWidth) * slotMults.length);
-            winIdx = Math.max(0, Math.min(slotMults.length - 1, winIdx));
-            const mult = slotMults[winIdx];
-            
-            // LOGIKA 2: TAMBAH SALDO BERDASARKAN MULTIPLIER
             const winAmount = Math.floor(bet * mult);
-            let current = Number(localStorage.getItem('user_saldo') || 0);
-            localStorage.setItem('user_saldo', current + winAmount);
             
-            if(typeof updateSaldoUI === 'function') updateSaldoUI();
-            
-            // Efek visual menang
-            if(winAmount > 0) {
-                if(mult >= 1) playSound('win');
-                showWinPopup(winAmount, finalX);
-            }
-            
-            // Sinkronisasi ke database melalui global.js
-            syncWinToServer(bet, mult);
+            // Efek Visual Slot
+            const slots = document.querySelectorAll('.slot');
+            const targetSlot = slots[Math.max(0, Math.min(slots.length - 1, idx))];
+            targetSlot.classList.add('active');
+            setTimeout(() => targetSlot.classList.remove('active'), 300);
+
+            // Update Saldo Server & Local
+            syncResult(bet, mult, winAmount);
         }
 
-        async function syncWinToServer(bet, mult) {
-            isSyncing = true;
+        async function syncResult(bet, mult, win) {
+            const user = localStorage.getItem('user_session');
             try {
-                const user = localStorage.getItem('user_session');
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
-                    body: JSON.stringify({ 
-                        action: 'playGame', 
-                        username: user, 
-                        betAmount: bet, 
-                        multiplier: mult, 
-                        isClientHandled: true 
+                    body: JSON.stringify({
+                        action: 'playGame',
+                        username: user,
+                        betAmount: bet,
+                        multiplier: mult,
+                        winAmount: win
                     })
                 });
                 const res = await response.json();
-                if(res.result === "SUCCESS" && res.newSaldo) {
+                if(res.result === "SUCCESS") {
                     localStorage.setItem('user_saldo', res.newSaldo);
-                    if(typeof updateSaldoUI === 'function') updateSaldoUI();
+                    updateSaldoUI();
                 }
-            } catch (e) {
-                console.log("Sync failed");
-            } finally {
-                isSyncing = false;
+            } catch(e) {
+                console.error("Sync Error");
             }
         }
 
-        function showWinPopup(amt, x) {
-            const p = document.createElement('div');
-            p.className = 'win-popup';
-            p.innerText = "+" + amt.toLocaleString();
-            p.style.left = x + 'px'; p.style.top = '300px';
-            container.appendChild(p);
-            setTimeout(() => p.remove(), 800);
-        }
-
-        function initPegs() {
-            container.innerHTML = '';
-            pegLocs = [];
-            const rows = 9;
-            const centerX = container.offsetWidth / 2;
-            
-            if(centerX === 0) {
-                setTimeout(initPegs, 200);
-                return;
-            }
-
-            for (let r = 2; r <= rows; r++) {
-                for (let i = 0; i < r; i++) {
-                    const x = centerX + (i - (r-1)/2) * 42;
-                    const y = r * 35;
-                    const peg = document.createElement('div');
-                    peg.className = 'peg';
-                    peg.style.left = x + 'px';
-                    peg.style.top = y + 'px';
-                    container.appendChild(peg);
-                    pegLocs.push({ x, y, el: peg });
-                }
-            }
-        }
-
-        function showModal(msg) {
-            document.getElementById('modal-msg').innerText = msg;
-            document.getElementById('neon-modal').style.display = 'flex';
-        }
-        function closeModal() { document.getElementById('neon-modal').style.display = 'none'; }
-
-        // Eksekusi saat halaman dimuat
         window.onload = () => {
-            initPegs();
-            if(typeof updateSaldoUI === 'function') updateSaldoUI();
-            // Sinkronisasi saldo periodik dari server (anti-mental)
-            setInterval(() => {
-                if(typeof fetchLatestSaldo === 'function') fetchLatestSaldo();
-            }, 8000);
+            initBoard();
+            updateSaldoUI();
         };
-        
-        window.onresize = initPegs;
     </script>
 </body>
 </html>
