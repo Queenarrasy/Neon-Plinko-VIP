@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEON PLINKO VIP</title>
+    <title>NEON PLINKO VIP - FIXED</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
         :root {
@@ -68,7 +68,7 @@
             z-index: 10; transform: translate(-50%, -50%); pointer-events: none;
         }
 
-        /* MULTIPLIERS */
+        /* MULTIPLIERS & EFEK KOTAK */
         .multiplier-row {
             display: flex; justify-content: center; gap: 4px;
             padding: 0 15px; margin-bottom: 10px;
@@ -77,13 +77,32 @@
         .slot {
             flex: 1; height: 32px; display: flex; align-items: center;
             justify-content: center; font-size: 10px; font-weight: 900;
-            border-radius: 6px; color: #000; transition: 0.2s;
+            border-radius: 6px; color: #000; transition: transform 0.2s, box-shadow 0.2s;
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
-        .slot.active { transform: translateY(-5px) scale(1.1); filter: brightness(1.3); }
-        .s-high { background: var(--pink); box-shadow: 0 0 10px var(--pink); }
-        .s-mid { background: var(--yellow); box-shadow: 0 0 10px var(--yellow); }
+        /* EFEK KOTAK MENYALA */
+        .slot.active {
+            transform: translateY(-8px) scale(1.15);
+            filter: brightness(1.5);
+            box-shadow: 0 0 20px var(--white);
+            z-index: 100;
+        }
+
+        .s-high { background: var(--pink); }
+        .s-mid { background: var(--yellow); }
         .s-low { background: var(--blue); color: white !important; }
+
+        /* PAPAN SCORE MELAYANG */
+        #floating-score {
+            position: fixed; top: 10px; right: 10px;
+            background: rgba(0,0,0,0.85); border: 2px solid var(--yellow);
+            border-radius: 10px; padding: 10px 15px;
+            box-shadow: var(--neon-yellow); z-index: 2000;
+            display: none; min-width: 100px; text-align: center;
+            animation: scoreIn 0.3s ease-out;
+        }
+        @keyframes scoreIn { from { transform: translateX(50px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
         /* CONTROLS */
         .controls { padding: 15px; background: #050714; border-top: 2px solid var(--blue); }
@@ -119,12 +138,20 @@
         .nav-item { color: white; font-size: 9px; text-align: center; text-decoration: none; opacity: 0.6; }
         .nav-item i { font-size: 18px; display: block; margin-bottom: 3px; }
         .nav-item.active { opacity: 1; color: var(--yellow); }
+
+        .win-popup { position: absolute; font-weight: 900; font-size: 20px; animation: quickFadeUp 0.8s forwards; z-index: 100; text-shadow: 0 0 5px black; pointer-events: none;}
+        @keyframes quickFadeUp { 0% { opacity: 0; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-30px); } 100% { opacity: 0; transform: translateY(-50px); } }
     </style>
 </head>
 <body>
 
     <audio id="sfx-hit" src="https://assets.mixkit.co/active_storage/sfx/2577/2577-preview.mp3"></audio>
     <audio id="sfx-win" src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3"></audio>
+
+    <div id="floating-score">
+        <div style="font-size: 9px; color: var(--white); opacity: 0.7;">LAST WIN</div>
+        <div id="score-amount" style="font-size: 16px; font-weight: 900; color: var(--yellow);">IDR 0</div>
+    </div>
 
     <div class="header">
         <div onclick="location.href='profil.html'"><i class="fa-solid fa-user-circle" style="color: var(--pink); font-size: 24px;"></i></div>
@@ -161,13 +188,14 @@
         <a href="profil.html" class="nav-item"><i class="fa-solid fa-user"></i>PROFIL</a>
     </div>
 
+    <script src="global.js"></script>
+
     <script>
-        // Inisialisasi variabel untuk global.js
+        // Inisialisasi variabel kunci untuk global.js
         var activeBalls = 0;
         var isSyncing = false;
         var lastWinTime = 0;
     </script>
-    <script src="global.js"></script>
 
     <script>
         const board = document.getElementById('game-board');
@@ -179,7 +207,14 @@
         let gameSpeed = 'normal';
         let isAutoMode = false;
         let autoInterval;
-        let adminWinrate = 0.5; // Bisa dikontrol via Sheet
+        let adminWinrate = 0.5;
+
+        // FUNGSI UPDATE UI (Helper)
+        function updateSaldoUI() {
+            let saldo = localStorage.getItem('user_saldo') || 0;
+            const saldoEl = document.getElementById('display-saldo');
+            if (saldoEl) saldoEl.innerText = "IDR " + Number(saldo).toLocaleString('id-ID');
+        }
 
         function initPegs() {
             board.innerHTML = '';
@@ -238,14 +273,15 @@
 
             if (saldo < bet) {
                 if(isAutoMode) toggleAuto();
-                alert("Saldo Tidak Cukup!");
+                alert("Saldo Tidak CUKUP!");
                 return;
             }
 
-            // POTONG SALDO DI AWAL
+            // POTONG SALDO DI AWAL (Instan Lokal)
             localStorage.setItem('user_saldo', saldo - bet);
             updateSaldoUI();
             activeBalls++;
+            playSound('drop');
             dropBall(bet);
         }
 
@@ -259,6 +295,7 @@
             let vx = (Math.random() - 0.5) * 2;
             let vy = 0;
             const gravity = 0.6;
+            const bounce = 0.5;
 
             const anim = setInterval(() => {
                 vy += gravity;
@@ -273,9 +310,7 @@
                         const sound = document.getElementById('sfx-hit');
                         sound.currentTime = 0; sound.play().catch(()=>{});
                         
-                        // Physics & Winrate Bias
-                        const bias = (Math.random() > adminWinrate) ? (board.offsetWidth/2 - px) * 0.04 : 0;
-                        vx = (dx / dist) * 2.5 + bias;
+                        vx = (dx / dist) * 2.5;
                         vy = (dy / dist) * 1.5;
 
                         peg.el.classList.add('hit');
@@ -298,31 +333,57 @@
         }
 
         function finishGame(x, bet) {
-    const slotWidth = board.offsetWidth / multipliers.length;
-    const idx = Math.floor(x / slotWidth);
-    const mult = multipliers[Math.max(0, Math.min(multipliers.length - 1, idx))];
-    
-    // RUMUS BENAR: Nilai Menang = Taruhan dikali Pengali
-    const winAmount = Math.floor(bet * mult); 
-    
-    // Update Local (Supaya Instan)
-    let currentSaldo = Number(localStorage.getItem('user_saldo') || 0);
-    let saldoBaru = currentSaldo + winAmount;
-    localStorage.setItem('user_saldo', saldoBaru);
-    
-    updateSaldoUI(); // Langsung tampilkan angka 92.120
-    
-    // Kirim ke Google Sheet untuk permanen
-    syncResult(bet, mult, winAmount);
-}
+            const slotWidth = board.offsetWidth / multipliers.length;
+            const idx = Math.floor(x / slotWidth);
+            const mult = multipliers[Math.max(0, Math.min(multipliers.length - 1, idx))];
+            
+            // LOGIKA MATEMATIKA BENAR: 0.5x tetap dikalikan modal
+            const winAmount = Math.floor(bet * mult);
+            
+            // 1. EFEK KOTAK MENYALA
+            const slots = document.querySelectorAll('.slot');
+            const s = slots[Math.max(0, Math.min(slots.length - 1, idx))];
+            s.classList.add('active');
+            setTimeout(() => s.classList.remove('active'), 400);
 
+            // 2. PAPAN SCORE MELAYANG
+            showFloatingScore(winAmount);
+
+            // 3. TAMBAH SALDO LOKAL (Instan Lokal)
+            let current = Number(localStorage.getItem('user_saldo') || 0);
+            localStorage.setItem('user_saldo', current + winAmount);
+            updateSaldoUI();
+
+            if(mult >= 1) {
+                const ws = document.getElementById('sfx-win');
+                ws.currentTime = 0; ws.play().catch(()=>{});
+            }
+
+            // Kirim ke Google Sheet (lastWinTime di-update di sini untuk kunci sinkronisasi)
+            syncResult(bet, mult, winAmount);
+        }
+
+        // Tampilkan Papan Skor di Pojok Kanan Atas
+        function showFloatingScore(amt) {
+            const fs = document.getElementById('floating-score');
+            const sa = document.getElementById('score-amount');
+            sa.innerText = "IDR " + amt.toLocaleString('id-ID');
+            fs.style.display = 'block';
+            
+            // Hilangkan setelah 3 detik
+            clearTimeout(window.scoreTimer);
+            window.scoreTimer = setTimeout(() => {
+                fs.style.display = 'none';
+            }, 3000);
+        }
 
         async function syncResult(bet, mult, win) {
             isSyncing = true;
-            lastWinTime = Date.now();
+            lastWinTime = Date.now(); // Kunci sinkronisasi dimulai
             const user = localStorage.getItem('user_session');
             
             try {
+                // Ganti dengan SCRIPT_URL yang benar di global.js Anda
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
                     body: JSON.stringify({
@@ -335,18 +396,28 @@
                 });
                 const res = await response.json();
                 if(res.result === "SUCCESS") {
+                    // Update saldo final berdasarkan server (Google Sheets)
                     localStorage.setItem('user_saldo', res.newSaldo);
                     updateSaldoUI();
                 }
             } catch(e) { console.log("Sync Error"); }
-            finally { isSyncing = false; }
+            finally {
+                // Beri jeda 1 detik setelah respon server untuk membuka kunci
+                setTimeout(() => { isSyncing = false; }, 1000);
+            }
         }
 
         window.onload = () => {
             initPegs();
             updateSaldoUI();
-            setInterval(() => { if(!isSyncing && activeBalls === 0) fetchLatestSaldo(); }, 8000);
+            
+            // Auto-refresh Saldo Periodik (Anti-Mental Logic)
+            setInterval(() => {
+                // Panggil fetchLatestSaldo dari global.js jika sudah ada
+                if(typeof fetchLatestSaldo === 'function') fetchLatestSaldo();
+            }, 8000);
         };
+        
         window.onresize = initPegs;
     </script>
 </body>
