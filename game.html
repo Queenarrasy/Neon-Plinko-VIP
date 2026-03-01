@@ -175,12 +175,12 @@
         const bets = [400, 800, 1000, 1200, 1400, 1600, 1800, 2000, 4000, 6000, 8000, 10000, 12000, 14000, 16000, 18000, 20000];
         let betIdx = 0;
         let pegLocs = [];
-        let activeBalls = [];
+        let activeBallsCount = 0; // Melacak jumlah bola di layar
         const slotMults = [5, 2, 1.2, 0.2, 1.2, 2, 5];
         let isTurbo = false;
         let isAuto = false;
         let autoTimer = null;
-        let isSyncing = false; // Kunci untuk mencegah tabrakan data
+        let isWaitingForSync = false; // Kunci utama pencegah timpa saldo
 
         function playSound(type) {
             const sound = document.getElementById(`sfx-${type}`);
@@ -193,7 +193,9 @@
         }
 
         async function fetchLatestSaldo() {
-            if(isSyncing) return; // Jangan ambil data jika sedang mengirim data kemenangan
+            // JANGAN update saldo dari server jika sedang ada bola atau menunggu sync
+            if(isWaitingForSync || activeBallsCount > 0) return;
+            
             const user = localStorage.getItem('user_session');
             if(!user) return;
             try {
@@ -202,7 +204,7 @@
                     body: JSON.stringify({ action: 'getUserData', username: user })
                 });
                 const res = await response.json();
-                if(res.result === "SUCCESS" && !isSyncing) {
+                if(res.result === "SUCCESS" && !isWaitingForSync) {
                     localStorage.setItem('user_saldo', res.saldo);
                     updateSaldoUI();
                 }
@@ -265,6 +267,7 @@
             saldo -= bet;
             localStorage.setItem('user_saldo', saldo);
             updateSaldoUI();
+            activeBallsCount++; // Bola bertambah
             dropBall(bet);
         }
 
@@ -280,7 +283,6 @@
                 vy: 0, 
                 bet: betAmount 
             };
-            activeBalls.push(ball);
 
             const gravity = isTurbo ? 0.40 : 0.24; 
             const friction = 0.99; const bounce = 0.55; 
@@ -304,24 +306,13 @@
                     }
                 });
 
-                activeBalls.forEach(other => {
-                    if (other === ball) return;
-                    const dx = ball.x - other.x; const dy = ball.y - other.y;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    if (dist < 12) {
-                        const angle = Math.atan2(dy, dx);
-                        ball.vx += Math.cos(angle) * 0.5;
-                        other.vx -= Math.cos(angle) * 0.5;
-                    }
-                });
-
                 if (ball.x < 10) { ball.x = 10; ball.vx *= -0.5; }
                 if (ball.x > container.offsetWidth - 10) { ball.x = container.offsetWidth - 10; ball.vx *= -0.5; }
                 ball.el.style.left = ball.x + 'px'; ball.el.style.top = ball.y + 'px';
 
                 if (ball.y > 345) { 
                     clearInterval(anim); ball.el.remove();
-                    activeBalls = activeBalls.filter(b => b !== ball);
+                    activeBallsCount--; // Bola berkurang
                     finishGame(ball.x, ball.bet); 
                 }
             }, 1000/60);
@@ -344,19 +335,21 @@
             slots[winIdx].classList.add('active-hit');
             setTimeout(() => slots[winIdx].classList.remove('active-hit'), 300);
 
+            // LOGIKA LOKAL: Update saldo di HP dulu
             let currentSaldo = Number(localStorage.getItem('user_saldo') || 0);
             const saldoBaru = currentSaldo + winAmount; 
-            
             localStorage.setItem('user_saldo', saldoBaru);
             updateSaldoUI();
 
             if (multiplier >= 1) playSound('win');
             showWinPopup(winAmount, multiplier, finalX);
+            
+            // Kirim ke cloud
             syncToCloud(bet, multiplier);
         }
 
         async function syncToCloud(bet, mult) {
-            isSyncing = true; // Mengunci agar fetch saldo tidak menimpa
+            isWaitingForSync = true; // Kunci aktif
             try {
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
@@ -366,14 +359,16 @@
                     })
                 });
                 const res = await response.json();
+                
+                // Jika server merespon sukses, ambil saldo final dari server
                 if(res.result === "SUCCESS" && res.newSaldo !== undefined) {
                     localStorage.setItem('user_saldo', res.newSaldo);
                     updateSaldoUI();
                 }
             } catch (e) {
             } finally {
-                // Beri jeda sedikit sebelum membuka kunci sync agar server benar-benar selesai
-                setTimeout(() => { isSyncing = false; }, 1000);
+                // Jeda sebentar sebelum melepas kunci agar tidak bentrok dengan fetch berkala
+                setTimeout(() => { isWaitingForSync = false; }, 1500);
             }
         }
 
@@ -402,6 +397,7 @@
             initPegs(); 
             updateSaldoUI(); 
             fetchLatestSaldo(); 
+            // Cek saldo server setiap 10 detik, tapi hanya jika IDLE
             setInterval(fetchLatestSaldo, 10000); 
         };
     </script>
