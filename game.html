@@ -192,6 +192,9 @@
         }
 
         async function fetchLatestSaldo() {
+            // Hindari fetching saat ada bola aktif agar saldo tidak melompat-lompat
+            if(activeBalls.length > 0) return;
+            
             const user = localStorage.getItem('user_session');
             if(!user) return;
             try {
@@ -325,7 +328,7 @@
             }, 1000/60);
         }
 
-        // PERBAIKAN FUNGSI FINISH GAME (STANDAR PLINKO)
+        // BAGIAN YANG DIPERBAIKI: Kalkulasi Kemenangan dan Sinkronisasi
         function finishGame(finalX, bet) {
             const containerW = container.offsetWidth;
             const paddingSide = 40; 
@@ -343,15 +346,22 @@
             slots[winIdx].classList.add('active-hit');
             setTimeout(() => slots[winIdx].classList.remove('active-hit'), 300);
 
-            // LOGIKA PENAMBAHAN SALDO: Saldo Saat Ini + Kemenangan
+            // LOGIKA SALDO YANG BENAR:
+            // 1. Ambil saldo terakhir (yang sudah dipotong bet)
             let currentSaldo = Number(localStorage.getItem('user_saldo') || 0);
+            
+            // 2. Tambahkan kemenangan ke variabel baru
             const saldoBaru = currentSaldo + winAmount; 
             
+            // 3. Simpan ke storage dan update tampilan UI SEGERA
             localStorage.setItem('user_saldo', saldoBaru);
             updateSaldoUI();
 
+            // 4. Baru jalankan suara dan popup
             if (multiplier >= 1) playSound('win');
             showWinPopup(winAmount, multiplier, finalX);
+            
+            // 5. Kirim ke cloud TANPA mengganggu saldo lokal yang sudah benar
             syncToCloud(bet, multiplier);
         }
 
@@ -365,7 +375,9 @@
                     })
                 });
                 const res = await response.json();
-                if(res.result === "SUCCESS" && res.newSaldo !== undefined) {
+                
+                // Hanya update saldo dari server jika bola sudah tidak ada yang jalan
+                if(res.result === "SUCCESS" && res.newSaldo !== undefined && activeBalls.length === 0) {
                     localStorage.setItem('user_saldo', res.newSaldo);
                     updateSaldoUI();
                 }
@@ -397,7 +409,10 @@
             initPegs(); 
             updateSaldoUI(); 
             fetchLatestSaldo(); 
-            setInterval(fetchLatestSaldo, 10000); 
+            // Cek saldo berkala hanya jika tidak sedang bermain
+            setInterval(() => {
+                if(activeBalls.length === 0) fetchLatestSaldo();
+            }, 15000); 
         };
     </script>
 </body>
