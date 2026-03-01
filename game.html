@@ -298,26 +298,24 @@
         }
 
         function finishGame(x, bet) {
-            const slotWidth = board.offsetWidth / multipliers.length;
-            const idx = Math.floor(x / slotWidth);
-            const mult = multipliers[Math.max(0, Math.min(multipliers.length - 1, idx))];
-            
-            // LOGIKA MATEMATIKA: 0.5x tetap dikalikan
-            const winAmount = Math.floor(bet * mult);
-            
-            // Visual feedback
-            const slots = document.querySelectorAll('.slot');
-            const s = slots[Math.max(0, Math.min(slots.length - 1, idx))];
-            s.classList.add('active');
-            setTimeout(() => s.classList.remove('active'), 400);
+    const slotWidth = board.offsetWidth / multipliers.length;
+    const idx = Math.floor(x / slotWidth);
+    const mult = multipliers[Math.max(0, Math.min(multipliers.length - 1, idx))];
+    
+    // RUMUS BENAR: Nilai Menang = Taruhan dikali Pengali
+    const winAmount = Math.floor(bet * mult); 
+    
+    // Update Local (Supaya Instan)
+    let currentSaldo = Number(localStorage.getItem('user_saldo') || 0);
+    let saldoBaru = currentSaldo + winAmount;
+    localStorage.setItem('user_saldo', saldoBaru);
+    
+    updateSaldoUI(); // Langsung tampilkan angka 92.120
+    
+    // Kirim ke Google Sheet untuk permanen
+    syncResult(bet, mult, winAmount);
+}
 
-            if(mult >= 1) {
-                const ws = document.getElementById('sfx-win');
-                ws.currentTime = 0; ws.play().catch(()=>{});
-            }
-
-            syncResult(bet, mult, winAmount);
-        }
 
         async function syncResult(bet, mult, win) {
             isSyncing = true;
