@@ -81,13 +81,13 @@
         <div class="modal-content">
             <h3 id="m-title" style="color: var(--yellow); margin-bottom: 15px;">NOTIFIKASI</h3>
             <p id="m-text" style="color: white; line-height: 1.5; margin-bottom: 20px;"></p>
-            <button class="btn-submit" style="margin: 0; padding: 10px 30px;" onclick="closeNeonAlert()">OKE</button>
+            <button id="modal-btn-ok" class="btn-submit" style="margin: 0; padding: 10px 30px;" onclick="closeNeonAlert()">OKE</button>
         </div>
     </div>
 
     <div id="loading-overlay">
         <div class="spinner"></div>
-        <p style="margin-top: 20px; color: var(--blue); font-weight: 900; letter-spacing: 2px;">MENGHUBUNGI SERVER...</p>
+        <p style="margin-top: 20px; color: var(--blue); font-weight: 900; letter-spacing: 2px;">MEMPROSES DATA...</p>
     </div>
 
     <div class="auth-card">
@@ -149,9 +149,10 @@
         // Ganti dengan URL Script Deployment Anda
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
 
-        function showNeonAlert(msg, title = "NOTIFIKASI") {
+        function showNeonAlert(msg, title = "NOTIFIKASI", hideBtn = false) {
             document.getElementById('m-title').innerText = title;
             document.getElementById('m-text').innerText = msg;
+            document.getElementById('modal-btn-ok').style.display = hideBtn ? 'none' : 'inline-block';
             document.getElementById('neon-modal').style.display = 'flex';
         }
 
@@ -204,30 +205,31 @@
                     }
                 }
 
-                // FETCH TUNGGAL (Tanpa no-cors agar bisa membaca hasil)
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
                     body: JSON.stringify(payload)
                 });
 
                 const result = await response.json();
-                
                 loader.style.display = 'none';
-                btn.disabled = false;
 
                 if (result.result === "SUCCESS") {
-                    // SINKRONISASI KUNCI DENGAN GLOBAL.JS
+                    // SIMPAN SESI (Sangat Penting agar tidak mental)
                     localStorage.setItem('user_session', user);
                     localStorage.setItem('user_saldo', result.saldo || 0);
 
-                    showNeonAlert(isLogin ? "Akses diterima! Membuka Game..." : "Pendaftaran Berhasil! Silakan Login.", "BERHASIL");
-                    
+                    // TAMPILKAN POPUP SUKSES
+                    const successMsg = isLogin ? "LOGIN BERHASIL! Selamat Datang." : "BERHASIL TERDAFTAR! Memasuki Game...";
+                    showNeonAlert(successMsg, "BERHASIL", true);
+
+                    // Pindah Halaman Otomatis setelah 1.5 detik
                     setTimeout(() => { 
-                        if(isLogin) window.location.href = "game.html"; 
-                        else toggleMode();
-                    }, 2000);
+                        window.location.href = "game.html"; 
+                    }, 1500);
+
                 } else {
-                    let errMsg = "Terjadi kesalahan database.";
+                    btn.disabled = false;
+                    let errMsg = "Terjadi kesalahan.";
                     if(result.result === "EXISTS") errMsg = "Username sudah digunakan!";
                     if(result.result === "WRONG") errMsg = "Password salah!";
                     showNeonAlert(errMsg, "GAGAL");
@@ -237,7 +239,7 @@
                 loader.style.display = 'none';
                 btn.disabled = false;
                 console.error("Auth Error:", error);
-                showNeonAlert("Gagal terhubung ke server. Pastikan kuota Apps Script masih tersedia.", "KONEKSI ERROR");
+                showNeonAlert("Koneksi Error. Pastikan URL Script benar.");
             }
         }
     </script>
