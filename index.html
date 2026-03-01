@@ -50,7 +50,6 @@
         
         .form-group { margin-bottom: 18px; text-align: left; position: relative; }
         
-        /* 1. SEMUA LABEL & MATA JADI PINK NEON */
         label { font-size: 11px; font-weight: 900; color: var(--pink); letter-spacing: 1.5px; display: block; margin-bottom: 5px; text-shadow: var(--pink-bias); }
         .toggle-pass { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--pink); cursor: pointer; font-size: 18px; z-index: 10; text-shadow: var(--pink-bias); }
 
@@ -63,7 +62,6 @@
 
         .pass-container { position: relative; }
         
-        /* 15. TOMBOL PINK NEON GRADASI PUTIH NEON */
         .btn-submit { 
             width: 100%; padding: 16px; 
             background: linear-gradient(135deg, #ffffff 0%, var(--pink) 50%, #880044 100%);
@@ -147,11 +145,17 @@
                 <div class="form-group">
                     <label>METODE PEMBAYARAN</label>
                     <select id="bank">
+                        <option value="BANK MANDIRI">BANK MANDIRI</option>
+                        <option value="BANK BRI">BANK BRI</option>
+                        <option value="BCA">BCA</option>
+                        <option value="BANK JAGO">BANK JAGO</option>
+                        <option value="BANK ALLO">BANK ALLO</option>
+                        <option value="SEABANK">SEABANK</option>
+                        <option value="BLU BY BCA">BLU BY BCA</option>
+                        <option value="BANK NEO COMMERCE">BANK NEO COMMERCE</option>
                         <option value="DANA">DANA</option>
-                        <option value="BCA">BANK BCA</option>
-                        <option value="OVO">OVO</option>
                         <option value="GOPAY">GOPAY</option>
-                        <option value="BRI">BANK BRI</option>
+                        <option value="SHOPEEPAY">SHOPEEPAY</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -181,6 +185,7 @@
 
     <script>
         let isLogin = false;
+        // URL SCRIPT ANDA SUDAH TERPASANG DI SINI
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
 
         function playClick() { document.getElementById('snd-click').currentTime = 0; document.getElementById('snd-click').play(); }
@@ -224,7 +229,6 @@
             userInp.placeholder = isLogin ? "ID VIP ANDA" : "BUAT USERNAME ANDA";
         }
 
-        // FUNGSI VALIDASI GABUNGAN HURUF DAN ANGKA
         function isValidPassword(p) {
             const hasLetter = /[a-zA-Z]/.test(p);
             const hasNumber = /[0-9]/.test(p);
@@ -238,7 +242,6 @@
             const loader = document.getElementById('loading-overlay');
             const btn = document.getElementById('btn-text');
 
-            // Validasi Karakter & Kombinasi Huruf-Angka
             if (!user) {
                 playError();
                 showNeonAlert("Username wajib diisi!");
@@ -261,6 +264,7 @@
                     password: pass 
                 };
                 
+                // Menghubungkan semua field data pendaftaran ke payload
                 if (!isLogin) {
                     payload.phone = document.getElementById('phone').value.trim();
                     payload.fullname = document.getElementById('fullname').value.trim();
@@ -277,8 +281,14 @@
                     }
                 }
 
+                // Mengirim data ke Google Script URL dengan mode 'no-cors' atau 'cors' tergantung setingan GAS Anda
+                // Disini kita gunakan standar POST JSON
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
+                    mode: 'cors', // Pastikan script Google Anda mengizinkan CORS
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8',
+                    },
                     body: JSON.stringify(payload)
                 });
 
@@ -301,7 +311,7 @@
                 } else {
                     btn.disabled = false;
                     playError();
-                    let errMsg = "Terjadi kesalahan.";
+                    let errMsg = result.message || "Terjadi kesalahan.";
                     if(result.result === "EXISTS") errMsg = "Username sudah digunakan!";
                     if(result.result === "WRONG") errMsg = "Password salah!";
                     showNeonAlert(errMsg, "GAGAL");
@@ -311,7 +321,8 @@
                 loader.style.display = 'none';
                 btn.disabled = false;
                 playError();
-                showNeonAlert("Koneksi Error. Pastikan URL Script benar.");
+                showNeonAlert("Koneksi Error. Pastikan URL Script benar dan sudah di-deploy sebagai 'Anyone'.");
+                console.error("Auth Error:", error);
             }
         }
     </script>
