@@ -6,70 +6,98 @@
     <title>NEON PLINKO VIP - AUTH</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
-        :root { --pink: #ff0077; --blue: #00d4ff; --yellow: #fbff00; --bg: #070816; }
+        :root { 
+            --pink: #ff0077; 
+            --blue: #0044ff; /* DEEP BLUE NEON */
+            --yellow: #fbff00; 
+            --bg: #070816; 
+            --pink-bias: 0 0 8px rgba(255, 0, 119, 0.3);
+            --blue-bias: 0 0 8px rgba(0, 68, 255, 0.3);
+            --yellow-bias: 0 0 8px rgba(251, 255, 0, 0.3);
+        }
+        
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { 
             background: var(--bg); 
             background-image: 
-                radial-gradient(circle at 0% 0%, rgba(255, 0, 119, 0.15) 0%, transparent 35%),
-                radial-gradient(circle at 100% 100%, rgba(0, 212, 255, 0.15) 0%, transparent 35%);
+                radial-gradient(circle at 0% 0%, rgba(255, 0, 119, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 100% 100%, rgba(0, 68, 255, 0.1) 0%, transparent 40%);
             color: white; font-family: 'Segoe UI', Roboto, sans-serif; 
             display: flex; justify-content: center; align-items: center; 
             min-height: 100vh; margin: 0; padding: 20px; overflow-x: hidden;
         }
 
+        /* 2. JUDUL GRADASI ANIMASI */
+        .title { font-size: 38px; font-weight: 900; text-transform: uppercase; margin-bottom: 30px; letter-spacing: -1px; line-height: 1.1; }
+        .neon-text {
+            background: linear-gradient(to right, var(--pink), var(--blue), var(--yellow), var(--pink));
+            background-size: 300% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: moveGradient 4s linear infinite;
+            filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
+        }
+        @keyframes moveGradient { to { background-position: 300% center; } }
+
         .auth-card { 
             width: 100%; max-width: 420px; background: rgba(10, 11, 30, 0.85); 
             border: 2px solid var(--blue); border-radius: 30px; padding: 40px 25px;
-            box-shadow: 0 0 30px rgba(0, 212, 255, 0.3); text-align: center;
+            box-shadow: var(--blue-bias); text-align: center;
             backdrop-filter: blur(15px); animation: fadeIn 0.6s ease-out;
         }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         
-        .title { font-size: 34px; font-weight: 900; text-transform: uppercase; margin-bottom: 30px; letter-spacing: -1px; }
-        .t-pink { color: var(--pink); text-shadow: 0 0 10px var(--pink); }
-        .t-blue { color: var(--blue); text-shadow: 0 0 10px var(--blue); }
-        .t-yellow { color: var(--yellow); text-shadow: 0 0 10px var(--yellow); }
+        /* 3. TULISAN PENDAFTARAN KUNING */
+        #form-label { color: var(--yellow); text-shadow: var(--yellow-bias); margin-bottom: 25px; font-size: 18px; font-weight: 900; text-transform: uppercase; }
         
-        .form-group { margin-bottom: 18px; text-align: left; }
-        label { font-size: 11px; font-weight: 900; color: var(--blue); letter-spacing: 1.5px; display: block; margin-bottom: 5px; }
+        .form-group { margin-bottom: 18px; text-align: left; position: relative; }
+        label { font-size: 11px; font-weight: 900; color: var(--blue); letter-spacing: 1.5px; display: block; margin-bottom: 5px; text-shadow: var(--blue-bias); }
         
+        /* 4. BINGKAI KOTAK KUNING */
         input, select { 
-            width: 100%; padding: 14px; background: rgba(0, 0, 0, 0.6); border: 1px solid #333; 
+            width: 100%; padding: 14px; background: rgba(0, 0, 0, 0.8); border: 2px solid var(--yellow); 
             border-radius: 12px; color: white; outline: none; transition: 0.3s; font-size: 14px;
+            box-shadow: var(--yellow-bias);
         }
-        input:focus { border-color: var(--pink); box-shadow: 0 0 15px rgba(255, 0, 119, 0.3); }
+        input:focus { border-color: var(--pink); box-shadow: var(--pink-bias); }
+
+        /* 8. MATA PASSWORD */
+        .pass-container { position: relative; }
+        .toggle-pass { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--blue); cursor: pointer; font-size: 18px; z-index: 10; }
         
         .btn-submit { 
-            width: 100%; padding: 16px; background: linear-gradient(90deg, var(--pink), #aa0055); 
+            width: 100%; padding: 16px; background: linear-gradient(90deg, var(--blue), #001166); 
             border: none; border-radius: 50px; color: white; font-weight: 900; 
             cursor: pointer; text-transform: uppercase; margin-top: 20px; font-size: 16px;
-            box-shadow: 0 5px 20px rgba(255, 0, 119, 0.4);
+            box-shadow: var(--blue-bias); transition: 0.3s;
         }
+        .btn-submit:active { transform: scale(0.95); }
         .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .switch-link { margin-top: 25px; font-size: 14px; color: #aaa; cursor: pointer; }
-        .switch-link b { color: var(--yellow); border-bottom: 1px solid var(--yellow); }
+        .switch-link b { color: var(--yellow); border-bottom: 1px solid var(--yellow); text-shadow: var(--yellow-bias); }
         
-        /* MODAL */
+        /* 11. POP UP ALERT BINGKAI PINK ELEMENT THEME */
         #neon-modal {
             position: fixed; inset: 0; background: rgba(0, 0, 0, 0.9);
             display: none; justify-content: center; align-items: center; z-index: 9999;
         }
         .modal-content {
-            width: 85%; max-width: 350px; background: #0a0b1e;
-            border: 2px solid var(--pink); border-radius: 20px;
-            padding: 30px 20px; text-align: center; box-shadow: 0 0 30px var(--pink);
+            width: 85%; max-width: 350px; background: #070816;
+            border: 3px solid var(--pink); border-radius: 20px;
+            padding: 30px 20px; text-align: center; box-shadow: var(--pink-bias);
         }
+        .modal-element { height: 4px; width: 60px; background: var(--blue); margin: 0 auto 15px; border-radius: 10px; box-shadow: var(--blue-bias); }
         
+        /* 14. LOADING ANIMASI 3 WARNA */
         #loading-overlay {
-            position: fixed; inset: 0; background: rgba(7, 8, 22, 0.95);
+            position: fixed; inset: 0; background: rgba(7, 8, 22, 0.98);
             display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 10000;
         }
         .spinner {
-            width: 50px; height: 50px; border: 4px solid rgba(0, 212, 255, 0.1);
-            border-top: 4px solid var(--blue); border-right: 4px solid var(--pink); border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+            width: 60px; height: 60px; border: 5px solid var(--blue);
+            border-top: 5px solid var(--pink); border-right: 5px solid var(--yellow); border-radius: 50%;
+            animation: spin 0.8s linear infinite; box-shadow: 0 0 15px rgba(255,255,255,0.1);
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         .hidden { display: none; }
@@ -77,30 +105,35 @@
 </head>
 <body>
 
+    <audio id="snd-click" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
+    <audio id="snd-success" src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3"></audio>
+    <audio id="snd-error" src="https://assets.mixkit.co/active_storage/sfx/253/253-preview.mp3"></audio>
+
     <div id="neon-modal">
         <div class="modal-content">
-            <h3 id="m-title" style="color: var(--yellow); margin-bottom: 15px;">NOTIFIKASI</h3>
-            <p id="m-text" style="color: white; line-height: 1.5; margin-bottom: 20px;"></p>
-            <button id="modal-btn-ok" class="btn-submit" style="margin: 0; padding: 10px 30px;" onclick="closeNeonAlert()">OKE</button>
+            <div class="modal-element"></div>
+            <h3 id="m-title" style="color: var(--yellow); margin-bottom: 10px; text-transform: uppercase;">NOTIFIKASI</h3>
+            <p id="m-text" style="color: white; line-height: 1.5; margin-bottom: 20px; font-weight: 500;"></p>
+            <button id="modal-btn-ok" class="btn-submit" style="margin: 0; padding: 12px 30px; background: var(--pink);" onclick="playClick(); closeNeonAlert()">OKE</button>
         </div>
     </div>
 
     <div id="loading-overlay">
         <div class="spinner"></div>
-        <p style="margin-top: 20px; color: var(--blue); font-weight: 900; letter-spacing: 2px;">MEMPROSES DATA...</p>
+        <p style="margin-top: 25px; color: #fff; font-weight: 900; letter-spacing: 5px; text-shadow: var(--blue-bias);">LOADING</p>
     </div>
 
     <div class="auth-card">
         <div class="title">
-            <span class="t-pink">NEON</span> <span class="t-blue">PLINKO</span> <br> <span class="t-yellow">VIP</span>
+            <span class="neon-text">NEON PLINKO VIP</span>
         </div>
 
-        <h3 id="form-label" style="color: var(--blue); margin-bottom: 25px; font-size: 16px;">PENDAFTARAN VIP</h3>
+        <h3 id="form-label">PENDAFTARAN VIP</h3>
 
         <form id="auth-form">
             <div class="form-group">
                 <label>USERNAME</label>
-                <input type="text" id="username" placeholder="ID VIP Anda" required>
+                <input type="text" id="username" placeholder="BUAT USERNAME ANDA" required>
             </div>
 
             <div id="extra-fields">
@@ -123,19 +156,22 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>NOMOR REKENING / AKUN</label> 
-                    <input type="number" id="rekening" placeholder="Masukkan Nomor Akun">
+                    <label>NOMOR REKENING/EWALLET</label> 
+                    <input type="number" id="rekening" placeholder="MASUKKAN NOMOR REKENING/EWALLET ANDA">
                 </div>
             </div>
 
             <div class="form-group">
                 <label>PASSWORD</label>
-                <input type="password" id="password" placeholder="Minimal 6 karakter" required>
+                <div class="pass-container">
+                    <input type="password" id="password" placeholder="Minimal 6 karakter" required>
+                    <i class="fa-solid fa-eye toggle-pass" onclick="togglePassView()"></i>
+                </div>
             </div>
 
             <div class="form-group" id="ref-group">
                 <label>KODE REFERRAL (OPSIONAL)</label>
-                <input type="text" id="referral_code" placeholder="Kode Ref">
+                <input type="text" id="referral_code" placeholder="MASUKKAN KODE REFFERAL">
             </div>
 
             <button type="button" class="btn-submit" onclick="processAuth()" id="btn-text">Daftar Sekarang</button>
@@ -146,8 +182,12 @@
 
     <script>
         let isLogin = false;
-        // Ganti dengan URL Script Deployment Anda
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
+
+        // Audio Helper
+        function playClick() { document.getElementById('snd-click').currentTime = 0; document.getElementById('snd-click').play(); }
+        function playSuccess() { document.getElementById('snd-success').play(); }
+        function playError() { document.getElementById('snd-error').play(); }
 
         function showNeonAlert(msg, title = "NOTIFIKASI", hideBtn = false) {
             document.getElementById('m-title').innerText = title;
@@ -160,22 +200,43 @@
             document.getElementById('neon-modal').style.display = 'none';
         }
 
+        // 8. FUNGSI LIHAT PASSWORD
+        function togglePassView() {
+            playClick();
+            const passInput = document.getElementById('password');
+            const icon = document.querySelector('.toggle-pass');
+            if (passInput.type === "password") {
+                passInput.type = "text";
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                passInput.type = "password";
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+
         function toggleMode() {
+            playClick();
             isLogin = !isLogin;
             document.getElementById('extra-fields').classList.toggle('hidden', isLogin);
             document.getElementById('ref-group').classList.toggle('hidden', isLogin);
             document.getElementById('form-label').innerText = isLogin ? "LOGIN MEMBER VIP" : "PENDAFTARAN VIP";
             document.getElementById('btn-text').innerText = isLogin ? "Masuk Sekarang" : "Daftar Sekarang";
             document.getElementById('auth-switch').innerHTML = isLogin ? "Belum punya akun? <b>Daftar Akun VIP</b>" : "Sudah punya akun? <b>Login di sini</b>";
+            
+            // Perubahan placeholder dinamis untuk Login
+            const userInp = document.getElementById('username');
+            userInp.placeholder = isLogin ? "ID VIP Anda" : "BUAT USERNAME ANDA";
         }
 
         async function processAuth() {
+            playClick();
             const user = document.getElementById('username').value.trim();
             const pass = document.getElementById('password').value.trim();
             const loader = document.getElementById('loading-overlay');
             const btn = document.getElementById('btn-text');
 
             if (!user || pass.length < 6) {
+                playError();
                 showNeonAlert("Username & Password (min 6 karakter) wajib diisi!");
                 return;
             }
@@ -200,6 +261,7 @@
                     if (!payload.phone || !payload.fullname || !payload.rekening) {
                         loader.style.display = 'none';
                         btn.disabled = false;
+                        playError();
                         showNeonAlert("Lengkapi semua data pendaftaran!");
                         return;
                     }
@@ -214,21 +276,21 @@
                 loader.style.display = 'none';
 
                 if (result.result === "SUCCESS") {
-                    // SIMPAN SESI (Sangat Penting agar tidak mental)
+                    playSuccess();
                     localStorage.setItem('user_session', user);
+                    localStorage.setItem('user_fullname', result.fullname || user);
                     localStorage.setItem('user_saldo', result.saldo || 0);
 
-                    // TAMPILKAN POPUP SUKSES
                     const successMsg = isLogin ? "LOGIN BERHASIL! Selamat Datang." : "BERHASIL TERDAFTAR! Memasuki Game...";
                     showNeonAlert(successMsg, "BERHASIL", true);
 
-                    // Pindah Halaman Otomatis setelah 1.5 detik
                     setTimeout(() => { 
                         window.location.href = "game.html"; 
                     }, 1500);
 
                 } else {
                     btn.disabled = false;
+                    playError();
                     let errMsg = "Terjadi kesalahan.";
                     if(result.result === "EXISTS") errMsg = "Username sudah digunakan!";
                     if(result.result === "WRONG") errMsg = "Password salah!";
@@ -238,7 +300,7 @@
             } catch (error) {
                 loader.style.display = 'none';
                 btn.disabled = false;
-                console.error("Auth Error:", error);
+                playError();
                 showNeonAlert("Koneksi Error. Pastikan URL Script benar.");
             }
         }
