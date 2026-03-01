@@ -262,9 +262,10 @@
                 return; 
             }
 
-            // Potong saldo di latar belakang tapi JANGAN panggil updateSaldoUI() di sini
+            // LANGKAH 1: Potong saldo saat bola dilepas
             saldo -= bet;
             localStorage.setItem('user_saldo', saldo);
+            // Optional: updateSaldoUI() di sini jika ingin saldo langsung berkurang visualnya
             
             dropBall(bet);
         }
@@ -327,8 +328,6 @@
                 winIdx = Math.floor((finalX - paddingSide) / slotW);
                 winIdx = Math.max(0, Math.min(slotMults.length - 1, winIdx));
                 multiplier = slotMults[winIdx];
-            } else {
-                multiplier = 0;
             }
 
             if(winIdx !== -1) {
@@ -341,22 +340,23 @@
                 }, 300);
             }
             
-            // Panggil sinkronisasi - UI akan update DI DALAM fungsi ini setelah proses selesai
-            await syncWinToCloud(bet, multiplier, finalX);
+            // LANGKAH 2: Hitung Hadiah dan Update UI secara Sinkron
+            const winAmount = bet * multiplier;
+            let currentSaldo = Number(localStorage.getItem('user_saldo') || 0);
+            
+            // Tambahkan kemenangan ke saldo
+            const newTotal = currentSaldo + winAmount;
+            localStorage.setItem('user_saldo', newTotal);
+            
+            // Tampilan diperbarui sekarang
+            updateSaldoUI();
+            showWinPopup(winAmount, multiplier, finalX);
+
+            // LANGKAH 3: Sinkronisasi ke Database (Cloud)
+            await syncWinToCloud(bet, multiplier);
         }
 
-        async function syncWinToCloud(bet, mult, xPos) {
-            const winAmount = bet * mult;
-            let localSaldo = Number(localStorage.getItem('user_saldo') || 0);
-
-            // OPTIMISTIC UPDATE: Tambahkan kemenangan ke storage
-            localSaldo += winAmount;
-            localStorage.setItem('user_saldo', localSaldo);
-            
-            // UPDATE PAPAN SKOR SEKARANG (Bola sudah masuk)
-            updateSaldoUI(); 
-            showWinPopup(winAmount, mult, xPos);
-
+        async function syncWinToCloud(bet, mult) {
             try {
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
@@ -369,10 +369,11 @@
                 });
                 const res = await response.json();
                 if (res.result === "SUCCESS") {
+                    // Update final jika ada penyesuaian dari server
                     localStorage.setItem('user_saldo', res.newSaldo);
                     updateSaldoUI();
                 }
-            } catch (e) { console.error("Sync Gagal:", e); }
+            } catch (e) { console.error("Cloud Sync Error:", e); }
         }
 
         function showWinPopup(amount, mult, x) {
