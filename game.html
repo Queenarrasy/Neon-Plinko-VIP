@@ -44,7 +44,6 @@
         .label-saldo { font-size: 10px; color: var(--white); font-weight: 900; text-shadow: var(--white-neon); letter-spacing: 1px; opacity: 0.8; }
         #display-saldo { font-size: 17px; font-weight: 900; color: var(--white); text-shadow: var(--white-neon); margin-top: 2px; }
 
-        /* 1. EFEK KOTAK PERKALIAN */
         .multipliers { display: flex; justify-content: center; gap: 4px; padding: 0 40px; height: 35px; z-index: 10; position: relative; }
         .slot { 
             flex: 1; display: flex; align-items: center; justify-content: center; 
@@ -249,8 +248,7 @@
         function runAutoPlay() {
             if(!isAuto) return;
             handlePlay();
-            // Jarak gulir disesuaikan dengan mode
-            let delay = isTurbo ? 450 : 850; 
+            let delay = isTurbo ? 300 : 700; 
             autoTimer = setTimeout(runAutoPlay, delay);
         }
 
@@ -261,7 +259,7 @@
             const centerX = container.offsetWidth / 2;
             for (let r = 2; r <= rows; r++) {
                 for (let i = 0; i < r; i++) {
-                    const x = centerX + (i - (r - 1) / 2) * 40;
+                    const x = centerX + (i - (r - 1) / 2) * 42; // Jarak horizontal diperlebar sedikit
                     const y = r * 35;
                     const peg = document.createElement('div');
                     peg.className = 'peg';
@@ -293,70 +291,81 @@
             ballEl.className = 'ball';
             container.appendChild(ballEl);
 
-            // Inisialisasi Fisika Realistis
+            // Fisika yang ditingkatkan agar realistis
             let ball = { 
                 el: ballEl, 
-                x: container.offsetWidth / 2 + (Math.random() * 4 - 2), 
-                y: 15, 
-                vx: (Math.random() - 0.5) * 1.5, 
+                x: container.offsetWidth / 2 + (Math.random() * 6 - 3), 
+                y: 10, 
+                vx: (Math.random() - 0.5) * 2, 
                 vy: 0,
                 radius: 6,
                 bet: betAmount 
             };
             activeBalls.push(ball);
 
-            // Pengaturan Kecepatan Berdasarkan Mode
-            const gravity = isTurbo ? 0.35 : 0.18; 
-            const friction = 0.98;
-            const bounce = 0.5;
+            // Pengaturan kecepatan & gravitasi (Normal vs Turbo)
+            const gravity = isTurbo ? 0.38 : 0.22; 
+            const friction = 0.99;
+            const bounce = 0.55; 
 
             const anim = setInterval(() => {
                 ball.vy += gravity;
+                ball.vx *= friction;
                 ball.x += ball.vx;
                 ball.y += ball.vy;
 
-                // 6. Pantulan HANYA pada paku
+                // Cek Tabrakan Paku (Peg)
                 pegLocs.forEach(p => {
                     const dx = ball.x - p.x;
                     const dy = ball.y - p.y;
                     const dist = Math.sqrt(dx*dx + dy*dy);
+                    
                     if (dist < 12) { 
                         playSound('hit');
-                        // Hitung arah pantulan normal
+                        // Hitung Normal Vector untuk pantulan sempurna
                         const angle = Math.atan2(dy, dx);
-                        const speed = Math.sqrt(ball.vx**2 + ball.vy**2);
-                        ball.vx = Math.cos(angle) * speed * bounce + (Math.random() - 0.5);
-                        ball.vy = Math.sin(angle) * speed * bounce;
-                        ball.y = p.y + Math.sin(angle) * 12;
+                        const overlap = 12 - dist;
                         
+                        // Dorong bola keluar dari paku (mencegah nyangkut)
+                        ball.x += Math.cos(angle) * overlap;
+                        ball.y += Math.sin(angle) * overlap;
+
+                        // Pantulan berdasarkan kecepatan saat ini + sedikit random inersia
+                        const speed = Math.sqrt(ball.vx**2 + ball.vy**2);
+                        ball.vx = Math.cos(angle) * speed * bounce + (Math.random() - 0.5) * 0.5;
+                        ball.vy = Math.sin(angle) * speed * bounce;
+
+                        // Tambahkan kecepatan horizontal kecil jika bola jatuh tepat lurus (mencegah tumpukan)
+                        if(Math.abs(ball.vx) < 0.1) ball.vx = (Math.random() - 0.5) * 1.5;
+
                         p.el.classList.add('hit');
                         setTimeout(() => p.el.classList.remove('hit'), 100);
                     }
                 });
 
-                // 5. Tabrakan Antar Bola (Realistis)
+                // Tabrakan Antar Bola (Realistis)
                 activeBalls.forEach(other => {
                     if (other === ball) return;
                     const dx = ball.x - other.x;
                     const dy = ball.y - other.y;
                     const dist = Math.sqrt(dx*dx + dy*dy);
                     if (dist < 12) {
-                        const tempVx = ball.vx;
-                        const tempVy = ball.vy;
-                        ball.vx = other.vx * 0.7;
-                        ball.vy = other.vy * 0.7;
-                        other.vx = tempVx * 0.7;
-                        other.vy = tempVy * 0.7;
+                        // Respon impuls sederhana agar bola tidak menumpuk
+                        const angle = Math.atan2(dy, dx);
+                        ball.vx += Math.cos(angle) * 0.5;
+                        ball.vy += Math.sin(angle) * 0.2;
+                        other.vx -= Math.cos(angle) * 0.5;
                     }
                 });
 
-                // Dinding
-                if (ball.x < 10 || ball.x > container.offsetWidth - 10) ball.vx *= -0.6;
+                // Batas Dinding
+                if (ball.x < 10) { ball.x = 10; ball.vx *= -0.5; }
+                if (ball.x > container.offsetWidth - 10) { ball.x = container.offsetWidth - 10; ball.vx *= -0.5; }
 
                 ball.el.style.left = ball.x + 'px';
                 ball.el.style.top = ball.y + 'px';
 
-                // Selesai
+                // Garis Finish
                 if (ball.y > 345) { 
                     clearInterval(anim);
                     ball.el.remove();
@@ -372,16 +381,11 @@
             const playAreaWidth = containerW - (paddingSide * 2);
             const slotW = playAreaWidth / slotMults.length;
             
-            // 2. Cek apakah bola masuk kotak atau terlempar keluar
-            if (finalX < paddingSide || finalX > (containerW - paddingSide)) {
-                // Bola terlempar keluar = KALAH
-                return; 
-            }
+            if (finalX < paddingSide || finalX > (containerW - paddingSide)) return; 
 
             let winIdx = Math.floor((finalX - paddingSide) / slotW);
             winIdx = Math.max(0, Math.min(slotMults.length - 1, winIdx));
             
-            // 1. Efek di Kotak Perkalian
             const slots = document.getElementById('multiplier-row').children;
             const targetSlot = slots[winIdx];
             targetSlot.classList.add('active-hit');
@@ -390,14 +394,12 @@
             const multiplier = slotMults[winIdx];
             const winAmount = Math.floor(bet * multiplier);
             
-            // Update Saldo (Hanya jika masuk kotak)
             if (multiplier >= 1) playSound('win');
             let currentSaldo = Number(localStorage.getItem('user_saldo') || 0);
             const total = currentSaldo + winAmount;
             localStorage.setItem('user_saldo', total);
             updateSaldoUI();
 
-            // Tampilkan papan skor
             showWinPopup(winAmount, multiplier, finalX);
             syncToCloud(bet, multiplier);
         }
@@ -413,7 +415,6 @@
                     })
                 });
                 const res = await response.json();
-                // 7. Pastikan saldo sinkron dengan sheet
                 if(res.result === "SUCCESS" && res.newSaldo !== undefined) {
                     localStorage.setItem('user_saldo', res.newSaldo);
                     updateSaldoUI();
@@ -449,8 +450,7 @@
             initPegs(); 
             updateSaldoUI(); 
             fetchLatestSaldo(); 
-            // Interval sinkronisasi saldo setiap 10 detik agar sesuai sheet
-            setInterval(fetchLatestSaldo, 10000);
+            setInterval(fetchLatestSaldo, 10000); // Sinkronisasi saldo dompet utama berkala
         };
     </script>
 </body>
