@@ -19,22 +19,23 @@
         }
         
         body { 
-            /* 2. LATAR BELAKANG (Disederhanakan menjadi warna solid gelap agar lebih fokus) */
             background: var(--bg); 
             color: white; 
-            font-family: 'Segoe UI', sans-serif; 
+            font-family: 'Segoe UI', Roboto, sans-serif; 
             margin: 0; 
             overflow: hidden; 
             height: 100vh; 
             display: flex; 
             flex-direction: column;
+            transition: background 0.5s ease;
         }
 
-        /* 1. PERBAIKAN HEADER & SALDO (Putih Neon) */
+        /* 1. HEADER & SALDO */
         .header { 
             display: flex; justify-content: space-between; align-items: center; 
             padding: 15px 20px; background: rgba(5, 7, 20, 0.95); 
             border-bottom: 3px solid var(--cyan); z-index: 1000;
+            box-shadow: 0 5px 15px rgba(0, 255, 255, 0.2);
         }
 
         .balance-box { 
@@ -42,7 +43,11 @@
             border: 4px solid var(--pink); 
             border-radius: 50px; 
             padding: 8px 25px; text-align: center; box-shadow: var(--pink-neon);
+            transition: transform 0.2s ease;
         }
+        
+        .balance-box:active { transform: scale(0.95); }
+
         .label-saldo { 
             font-size: 11px; 
             color: var(--white); 
@@ -56,50 +61,53 @@
             margin-top: 2px;
         }
 
-        /* MULTIPLIER SLOTS */
+        /* 2. KOTAK PERKALIAN (Tulisan Hitam) */
         .multipliers { display: flex; justify-content: center; gap: 4px; padding: 0 40px; height: 35px; z-index: 10; position: relative;}
         .slot { 
             flex: 1; display: flex; align-items: center; justify-content: center; 
-            border-radius: 5px; font-size: 10px; font-weight: 900; border: 3px solid;
-            color: var(--white) !important; 
-            text-shadow: var(--white-neon) !important;
+            border-radius: 8px; font-size: 11px; font-weight: 900; border: 3px solid;
+            color: #000 !important; /* Semua tulisan hitam */
+            text-shadow: none !important;
+            transition: transform 0.1s;
         }
         
-        /* 1. Slot 2x Spesifik: Bingkai Biru Cyan Tanpa Efek Neon */
-        .m-x2 { 
-            background: var(--yellow); 
-            border-color: var(--cyan) !important; 
-            box-shadow: none !important; /* Menghapus efek neon sesuai permintaan */
-            color: #000 !important; /* Menyesuaikan agar kontras di BG kuning */
-            text-shadow: none !important;
-        }
-
+        .m-x2 { background: var(--yellow); border-color: var(--cyan) !important; box-shadow: none !important; }
         .m-x5 { background: var(--pink); border-color: var(--yellow); }
         .m-x1 { background: var(--cyan); border-color: var(--yellow); }
-        .m-low { background: #000; border-color: #222; }
+        .m-low { background: var(--white); border-color: #222; }
+
+        /* 3. SETTING ICON (Kuning Neon) */
+        .fa-gear {
+            color: var(--yellow) !important;
+            text-shadow: var(--yellow-neon) !important;
+            filter: drop-shadow(0 0 5px var(--yellow));
+        }
 
         /* GAME AREA */
         #game-container { position: relative; width: 100%; height: 350px; margin-top: 5px; overflow: hidden; }
         .peg { 
-            position: absolute; width: 7px; height: 7px; background: var(--white); border-radius: 50%; 
-            box-shadow: var(--white-neon); z-index: 5; transition: all 0.05s;
+            position: absolute; width: 8px; height: 8px; background: var(--white); border-radius: 50%; 
+            box-shadow: var(--white-neon); z-index: 5; transition: all 0.1s;
+            opacity: 0.8;
         }
-        .peg.hit { background: var(--yellow) !important; box-shadow: var(--yellow-neon) !important; transform: scale(1.5); }
+        .peg.hit { background: var(--yellow) !important; box-shadow: var(--yellow-neon) !important; transform: scale(1.6); opacity: 1; }
 
         /* MODES */
         .mode-container { display: flex; justify-content: center; gap: 10px; margin: 10px 0; }
         .btn-mode { padding: 10px 20px; border-radius: 12px; font-size: 11px; font-weight: 900; cursor: pointer; background: #000; transition: 0.3s; }
         #btn-turbo { border: 3px solid var(--yellow); color: var(--yellow); box-shadow: var(--yellow-neon); }
-        #btn-turbo.active-turbo { border-color: var(--pink); color: var(--pink); box-shadow: var(--pink-neon); }
+        #btn-turbo.active-turbo { border-color: var(--pink); color: var(--pink); box-shadow: var(--pink-neon); background: rgba(255, 0, 119, 0.1); }
         #btn-auto { border: 3px solid var(--pink); color: var(--pink); box-shadow: var(--pink-neon); }
-        #btn-auto.active-mode { border-color: var(--cyan); color: var(--cyan); box-shadow: var(--cyan-neon); }
+        #btn-auto.active-mode { border-color: var(--cyan); color: var(--cyan); box-shadow: var(--cyan-neon); background: rgba(0, 255, 255, 0.1); }
 
         /* NAV GRID */
         .nav-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 10px 20px; }
         .btn-nav { 
             background: #000; padding: 12px 5px; border-radius: 15px; text-align: center; 
             display: flex; flex-direction: column; align-items: center; gap: 8px; border: 3px solid;
+            transition: all 0.3s ease;
         }
+        .btn-nav:hover { transform: translateY(-3px); }
         .btn-nav i { font-size: 30px; stroke-width: 20px; }
         .btn-nav span { font-size: 8px; font-weight: 900; letter-spacing: 0.5px; }
         
@@ -115,11 +123,10 @@
         .nav-rw i { color: var(--yellow); text-shadow: var(--yellow-neon); }
         .nav-rw span { color: var(--cyan); text-shadow: var(--cyan-neon); }
 
-        /* MODAL & UI LAIN */
-        #neon-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 9999; }
-        .modal-box { background: #050714; border: 4px solid var(--pink); border-radius: 20px; padding: 30px; width: 80%; text-align: center; box-shadow: var(--pink-neon); }
-        .modal-box h2 { color: var(--cyan); text-shadow: var(--cyan-neon); margin-top: 0; }
-        .modal-box p { color: var(--yellow); text-shadow: var(--yellow-neon); font-weight: 900; }
+        /* MODAL */
+        #neon-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 9999; backdrop-filter: blur(5px); }
+        .modal-box { background: #050714; border: 4px solid var(--pink); border-radius: 20px; padding: 30px; width: 80%; text-align: center; box-shadow: var(--pink-neon); transform: scale(0.8); transition: 0.3s; }
+        #neon-modal.show .modal-box { transform: scale(1); }
 
         .play-area { padding: 10px 20px; gap: 10px; display: flex; flex-direction: column; }
         .bet-selector { 
@@ -130,25 +137,34 @@
             width: 100%; padding: 16px; border-radius: 50px; border: 4px solid var(--yellow); 
             font-weight: 900; font-size: 18px; color: white; cursor: pointer;
             background: linear-gradient(90deg, var(--pink), #9900ff, var(--cyan)); box-shadow: 0 0 20px var(--pink); text-transform: uppercase;
+            transition: all 0.2s;
         }
+        .btn-main:active { transform: scale(0.98); filter: brightness(1.2); }
 
         .ball { position: absolute; width: 14px; height: 14px; background: radial-gradient(circle at 30% 30%, #fff, var(--pink)); border-radius: 50%; box-shadow: var(--pink-neon); z-index: 10; transform: translate(-50%, -50%); }
         .win-popup { position: absolute; font-weight: 900; font-size: 24px; animation: quickFadeUp 0.8s forwards; z-index: 100; text-shadow: 0 0 10px black; }
-        @keyframes quickFadeUp { 0% { opacity: 0; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-30px) scale(1.2); } 100% { opacity: 0; transform: translateY(-60px); } }
+        
+        @keyframes quickFadeUp { 0% { opacity: 0; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-30px) scale(1.3); } 100% { opacity: 0; transform: translateY(-60px); } }
     </style>
 </head>
 <body>
 
+    <audio id="sfx-click" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
+    <audio id="sfx-drop" src="https://assets.mixkit.co/active_storage/sfx/2004/2004-preview.mp3"></audio>
+    <audio id="sfx-hit" src="https://assets.mixkit.co/active_storage/sfx/2577/2577-preview.mp3"></audio>
+    <audio id="sfx-win" src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3"></audio>
+    <audio id="sfx-fail" src="https://assets.mixkit.co/active_storage/sfx/253/253-preview.mp3"></audio>
+
     <div id="neon-modal">
         <div class="modal-box">
-            <h2 id="modal-title">NOTIFIKASI</h2>
-            <p id="modal-msg"></p>
+            <h2 id="modal-title" style="color: var(--cyan); text-shadow: var(--cyan-neon);">NOTIFIKASI</h2>
+            <p id="modal-msg" style="color: var(--yellow); text-shadow: var(--yellow-neon); font-weight: 900;"></p>
             <button class="btn-main" onclick="closeModal()" style="padding: 10px; font-size: 14px;">MENGERTI</button>
         </div>
     </div>
 
     <div class="header">
-        <div class="nav-item" onclick="location.href='profil.html'" style="display: flex; flex-direction: column; align-items: center; cursor: pointer;">
+        <div class="nav-item" onclick="playSound('click'); location.href='profil.html'" style="display: flex; flex-direction: column; align-items: center; cursor: pointer;">
             <i class="fa-solid fa-user-ninja" style="color: var(--pink); text-shadow: var(--pink-neon); font-size: 24px;"></i>
             <span style="font-size: 9px; font-weight: 900; color: var(--cyan); text-shadow: var(--cyan-neon);">PROFIL</span>
         </div>
@@ -156,8 +172,8 @@
             <div class="label-saldo">SALDO UTAMA</div>
             <div id="display-saldo">IDR 0</div>
         </div>
-        <div class="nav-item" onclick="location.href='settings.html'" style="display: flex; flex-direction: column; align-items: center; cursor: pointer;">
-            <i class="fa-solid fa-gear" style="color: var(--cyan); text-shadow: var(--cyan-neon); font-size: 24px;"></i>
+        <div class="nav-item" onclick="playSound('click'); location.href='settings.html'" style="display: flex; flex-direction: column; align-items: center; cursor: pointer;">
+            <i class="fa-solid fa-gear" style="font-size: 24px;"></i>
             <span style="font-size: 9px; font-weight: 900; color: var(--pink); text-shadow: var(--pink-neon);">SETTING</span>
         </div>
     </div>
@@ -180,15 +196,15 @@
     </div>
 
     <div class="nav-grid">
-        <div class="btn-nav nav-wd" onclick="location.href='withdraw.html'">
+        <div class="btn-nav nav-wd" onclick="playSound('click'); location.href='withdraw.html'">
             <i class="fa-solid fa-wallet"></i>
             <span>WITHDRAW</span>
         </div>
-        <div class="btn-nav nav-dp" onclick="location.href='deposit.html'">
+        <div class="btn-nav nav-dp" onclick="playSound('click'); location.href='deposit.html'">
             <i class="fa-solid fa-money-bill-trend-up"></i>
             <span>DEPOSIT</span>
         </div>
-        <div class="btn-nav nav-rw" onclick="location.href='reward.html'">
+        <div class="btn-nav nav-rw" onclick="playSound('click'); location.href='reward.html'">
             <i class="fa-solid fa-gift"></i>
             <span>REWARD</span>
         </div>
@@ -214,10 +230,18 @@
         let isAuto = false;
         let autoTimer = null;
 
+        // Sound System
+        function playSound(type) {
+            const sound = document.getElementById(`sfx-${type}`);
+            if (sound) {
+                sound.currentTime = 0;
+                sound.play().catch(e => console.log("Audio play blocked"));
+            }
+        }
+
         function updateSaldoUI() {
             let saldo = localStorage.getItem('user_saldo');
             if (saldo === null) saldo = sessionStorage.getItem('temp_saldo') || 0;
-            
             document.getElementById('display-saldo').innerText = "IDR " + Number(saldo).toLocaleString();
             sessionStorage.setItem('temp_saldo', saldo);
         }
@@ -240,11 +264,13 @@
         }
 
         function changeBet(dir) {
+            playSound('click');
             betIdx = Math.max(0, Math.min(bets.length - 1, betIdx + dir));
             document.getElementById('current-bet').innerText = bets[betIdx].toLocaleString();
         }
 
         function toggleTurbo() {
+            playSound('click');
             isTurbo = !isTurbo;
             const btn = document.getElementById('btn-turbo');
             btn.innerText = isTurbo ? "TURBO: ON" : "TURBO: OFF";
@@ -252,6 +278,7 @@
         }
 
         function toggleAuto() {
+            playSound('click');
             isAuto = !isAuto;
             const btn = document.getElementById('btn-auto');
             btn.innerText = isAuto ? "AUTO: ON" : "AUTO: OFF";
@@ -285,13 +312,14 @@
 
         function handlePlay() {
             const bet = bets[betIdx];
-            const username = localStorage.getItem('user_session');
             let saldo = Number(localStorage.getItem('user_saldo') || 0);
             if (saldo < bet) { 
+                playSound('fail');
                 showModal("SALDO TIDAK CUKUP!"); 
                 if(isAuto) toggleAuto();
                 return; 
             }
+            playSound('drop');
             saldo -= bet;
             localStorage.setItem('user_saldo', saldo);
             sessionStorage.setItem('temp_saldo', saldo);
@@ -311,6 +339,7 @@
                     const dx = ball.x - p.x; const dy = ball.y - p.y;
                     const dist = Math.sqrt(dx*dx + dy*dy);
                     if (dist < 12) {
+                        playSound('hit');
                         ball.vy *= -0.5; ball.vx += (dx * 0.2) + (Math.random() - 0.5);
                         ball.y = p.y + 12;
                         p.el.classList.add('hit');
@@ -319,7 +348,11 @@
                 });
                 if (ball.x < 10 || ball.x > container.offsetWidth - 10) ball.vx *= -0.8;
                 ball.el.style.left = ball.x + 'px'; ball.el.style.top = ball.y + 'px';
-                if (ball.y > 345) { clearInterval(anim); ball.el.remove(); finishGame(ball.x, betAmount); }
+                if (ball.y > 345) { 
+                    clearInterval(anim); 
+                    ball.el.remove(); 
+                    finishGame(ball.x, betAmount); 
+                }
             }, 1000/60);
         }
 
@@ -332,6 +365,9 @@
             winIdx = Math.max(0, Math.min(slotMults.length - 1, winIdx));
             const multiplier = slotMults[winIdx];
             const winAmount = Math.floor(bet * multiplier);
+            
+            if (multiplier >= 1) playSound('win');
+            
             let currentSaldo = Number(localStorage.getItem('user_saldo') || 0);
             const total = currentSaldo + winAmount;
             
@@ -346,7 +382,13 @@
             try {
                 await fetch(SCRIPT_URL, {
                     method: 'POST',
-                    body: JSON.stringify({ action: 'playGame', username: localStorage.getItem('user_session'), betAmount: bet, multiplier: mult, isClientHandled: true })
+                    body: JSON.stringify({ 
+                        action: 'playGame', 
+                        username: localStorage.getItem('user_session'), 
+                        betAmount: bet, 
+                        multiplier: mult, 
+                        isClientHandled: true 
+                    })
                 });
             } catch (e) {}
         }
@@ -363,9 +405,17 @@
 
         function showModal(msg) {
             document.getElementById('modal-msg').innerText = msg;
-            document.getElementById('neon-modal').style.display = 'flex';
+            const modal = document.getElementById('neon-modal');
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
         }
-        function closeModal() { document.getElementById('neon-modal').style.display = 'none'; }
+        
+        function closeModal() { 
+            playSound('click');
+            const modal = document.getElementById('neon-modal');
+            modal.classList.remove('show');
+            setTimeout(() => modal.style.display = 'none', 300);
+        }
 
         window.onload = () => { 
             initPegs(); 
