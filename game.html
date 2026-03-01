@@ -262,9 +262,10 @@
                 return; 
             }
 
+            // Potong saldo di latar belakang tapi JANGAN panggil updateSaldoUI() di sini
             saldo -= bet;
             localStorage.setItem('user_saldo', saldo);
-            updateSaldoUI();
+            
             dropBall(bet);
         }
 
@@ -339,10 +340,23 @@
                     slotEls[winIdx].style.boxShadow = "none";
                 }, 300);
             }
+            
+            // Panggil sinkronisasi - UI akan update DI DALAM fungsi ini setelah proses selesai
             await syncWinToCloud(bet, multiplier, finalX);
         }
 
         async function syncWinToCloud(bet, mult, xPos) {
+            const winAmount = bet * mult;
+            let localSaldo = Number(localStorage.getItem('user_saldo') || 0);
+
+            // OPTIMISTIC UPDATE: Tambahkan kemenangan ke storage
+            localSaldo += winAmount;
+            localStorage.setItem('user_saldo', localSaldo);
+            
+            // UPDATE PAPAN SKOR SEKARANG (Bola sudah masuk)
+            updateSaldoUI(); 
+            showWinPopup(winAmount, mult, xPos);
+
             try {
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
@@ -357,7 +371,6 @@
                 if (res.result === "SUCCESS") {
                     localStorage.setItem('user_saldo', res.newSaldo);
                     updateSaldoUI();
-                    showWinPopup(bet * mult, mult, xPos);
                 }
             } catch (e) { console.error("Sync Gagal:", e); }
         }
