@@ -3,30 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEON PLINKO VIP - ULTIMATE</title>
+    <title>NEON PLINKO VIP - ULTIMATE DESIGN</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
         :root {
             --pink: #ff0077; --blue: #0044ff; --yellow: #fbff00; --white: #ffffff; --bg: #03040a;
             --neon-pink: 0 0 15px var(--pink), 0 0 30px var(--pink);
-            --neon-white: 0 0 10px var(--white);
-            --neon-yellow: 0 0 15px var(--yellow);
+            --neon-blue: 0 0 15px var(--blue), 0 0 30px var(--blue);
+            --neon-white: 0 0 10px var(--white), 0 0 20px var(--white);
+            --neon-yellow: 0 0 15px var(--yellow), 0 0 30px var(--yellow);
         }
         body {
             background: var(--bg); color: white; font-family: sans-serif;
             margin: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column;
         }
+
+        /* HEADER & TOP NAV */
         .header {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 15px; background: rgba(0, 0, 0, 0.9); border-bottom: 2px solid var(--blue);
+            padding: 10px 15px; background: rgba(0, 0, 0, 0.9); border-bottom: 2px solid var(--blue);
         }
+        .header-item { text-align: center; cursor: pointer; min-width: 60px; }
+        .header-item i { font-size: 30px; display: block; margin-bottom: 2px; }
+        .header-item span { font-size: 10px; font-weight: 900; letter-spacing: 1px; }
+
         .balance-box {
-            background: #000; border: 2px solid var(--pink); border-radius: 50px;
-            padding: 8px 20px; box-shadow: var(--neon-pink);
+            background: #000; border: 2px solid var(--pink); border-radius: 20px;
+            padding: 5px 20px; box-shadow: var(--neon-pink); text-align: center;
         }
-        #display-saldo { font-size: 18px; font-weight: bold; text-shadow: 0 0 5px white; }
-        
-        #game-board { position: relative; width: 100%; height: 380px; overflow: visible; }
+        .saldo-label { font-size: 9px; color: var(--white); text-shadow: var(--neon-white); font-weight: bold; }
+        #display-saldo { font-size: 18px; font-weight: bold; color: var(--white); }
+
+        /* GAME BOARD */
+        #game-board { position: relative; width: 100%; height: 360px; overflow: visible; }
         .peg {
             position: absolute; width: 6px; height: 6px; background: var(--white);
             border-radius: 50%; box-shadow: var(--neon-white); transform: translate(-50%, -50%);
@@ -37,6 +46,7 @@
             border-radius: 50%; box-shadow: var(--neon-pink); transform: translate(-50%, -50%); z-index: 10;
         }
         
+        /* MULTIPLIERS */
         .multiplier-row { display: flex; justify-content: center; gap: 4px; padding: 0 10px; margin: 10px 0; }
         .slot {
             flex: 1; height: 35px; display: flex; align-items: center; justify-content: center;
@@ -45,40 +55,96 @@
         .slot.active { transform: translateY(-10px) scale(1.1); box-shadow: 0 0 20px white; filter: brightness(1.5); }
         .s-high { background: var(--pink); } .s-mid { background: var(--yellow); } .s-low { background: var(--blue); color: white !important; }
 
+        /* PAPAN SCORE BERJALAN (3 BARIS) */
         #floating-score {
-            position: fixed; top: 80px; right: 20px; background: rgba(0,0,0,0.8);
-            border: 2px solid var(--yellow); border-radius: 10px; padding: 10px;
-            display: none; z-index: 1000; box-shadow: var(--neon-yellow);
+            position: fixed; top: 100px; right: 10px; background: rgba(0,0,0,0.85);
+            border: 1px solid var(--yellow); border-radius: 8px; padding: 8px;
+            z-index: 1000; box-shadow: var(--neon-yellow); min-width: 100px;
         }
+        .score-entry { 
+            font-size: 11px; font-weight: bold; color: var(--yellow); 
+            border-bottom: 1px solid rgba(251, 255, 0, 0.2); padding: 2px 0;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
 
+        /* CONTROLS */
         .controls { padding: 15px; background: #050714; border-top: 2px solid var(--blue); }
-        .mode-row { display: flex; justify-content: center; gap: 10px; margin-bottom: 10px; }
+        .mode-row { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; }
+        
         .btn-mode {
-            background: #000; border: 1px solid var(--pink); color: white; padding: 8px 12px;
-            border-radius: 8px; font-size: 10px; cursor: pointer;
+            background: transparent; padding: 10px 15px; border-radius: 10px; 
+            font-size: 10px; font-weight: 900; cursor: pointer; transition: 0.3s;
         }
-        .btn-mode.active { background: var(--pink); box-shadow: var(--neon-pink); }
+        /* NORMAL PINK */
+        #m-normal { border: 2px solid var(--pink); color: var(--pink); }
+        #m-normal.active { background: var(--pink); color: white; box-shadow: var(--neon-pink); }
+        /* TURBO BLUE/YELLOW */
+        #m-turbo { border: 2px solid var(--blue); color: var(--blue); }
+        #m-turbo.active { background: var(--yellow); border-color: var(--yellow); color: black; box-shadow: var(--neon-yellow); }
+        /* AUTO YELLOW/BLUE */
+        #m-auto { border: 2px solid var(--yellow); color: var(--yellow); }
+        #m-auto.active { background: var(--blue); border-color: var(--blue); color: white; box-shadow: var(--neon-blue); }
+
         .btn-play {
-            width: 100%; padding: 15px; border-radius: 50px; background: linear-gradient(90deg, #aa0055, #0022aa);
-            color: white; font-weight: 900; border: 2px solid var(--yellow);
+            width: 100%; padding: 16px; border-radius: 50px; background: linear-gradient(90deg, #aa0055, #0022aa);
+            color: white; font-weight: 900; border: 2px solid var(--yellow); text-transform: uppercase;
+            box-shadow: 0 0 10px rgba(251, 255, 0, 0.3);
         }
         
-        .nav-bottom { display: grid; grid-template-columns: repeat(4, 1fr); background: #000; padding: 10px 0; }
-        .nav-item { color: white; font-size: 9px; text-align: center; text-decoration: none; opacity: 0.7; }
-        .nav-item i { font-size: 18px; display: block; margin-bottom: 2px; }
+        /* NAV BOTTOM RE-DESIGNED */
+        .nav-bottom { 
+            display: grid; grid-template-columns: repeat(3, 1fr); 
+            background: #000; padding: 12px 5px; gap: 10px; border-top: 2px solid var(--blue);
+        }
+        .nav-btn {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 8px 0; border-radius: 12px; text-decoration: none; border: 2px solid; font-weight: 900;
+        }
+        .nav-btn i { font-size: 20px; margin-bottom: 4px; }
+        .nav-btn span { font-size: 10px; }
+
+        /* WITHDRAW: KUNING BINGKAI, PINK LOGO, BLUE TEXT */
+        .btn-withdraw { border-color: var(--yellow); box-shadow: var(--neon-yellow); }
+        .btn-withdraw i { color: var(--pink); text-shadow: var(--neon-pink); }
+        .btn-withdraw span { color: var(--blue); text-shadow: 0 0 5px var(--blue); }
+
+        /* DEPOSIT: PINK BINGKAI, BLUE LOGO, YELLOW TEXT */
+        .btn-deposit { border-color: var(--pink); box-shadow: var(--neon-pink); }
+        .btn-deposit i { color: var(--blue); text-shadow: var(--neon-blue); }
+        .btn-deposit span { color: var(--yellow); text-shadow: var(--neon-yellow); }
+
+        /* REWARD: BLUE BINGKAI, YELLOW LOGO, PINK TEXT */
+        .btn-reward { border-color: var(--blue); box-shadow: var(--neon-blue); }
+        .btn-reward i { color: var(--yellow); text-shadow: var(--neon-yellow); }
+        .btn-reward span { color: var(--pink); text-shadow: var(--neon-pink); }
     </style>
 </head>
 <body>
 
     <div id="floating-score">
-        <div style="font-size: 8px;">LAST WIN</div>
-        <div id="score-val" style="color: var(--yellow); font-weight: bold;">0</div>
+        <div id="score-list">
+            <div class="score-entry" style="opacity:0.3">Waiting...</div>
+            <div class="score-entry" style="opacity:0.3">Waiting...</div>
+            <div class="score-entry" style="opacity:0.3">Waiting...</div>
+        </div>
     </div>
 
     <div class="header">
-        <div onclick="location.href='profil.html'"><i class="fa-solid fa-user-circle" style="color: var(--pink); font-size: 24px;"></i></div>
-        <div class="balance-box"><div id="display-saldo">IDR 0</div></div>
-        <div onclick="location.href='settings.html'"><i class="fa-solid fa-gear" style="color: var(--yellow); font-size: 22px;"></i></div>
+        <div class="header-item" onclick="location.href='profil.html'">
+            <i class="fa-solid fa-circle-user" style="color: var(--yellow); text-shadow: var(--neon-yellow);"></i>
+            <span style="color: var(--yellow); text-shadow: var(--neon-yellow);">PROFIL</span>
+        </div>
+
+        <div class="balance-box">
+            <div class="saldo-label">SALDO UTAMA</div>
+            <div id="display-saldo">IDR 0</div>
+        </div>
+
+        <div class="header-item" onclick="location.href='settings.html'">
+            <i class="fa-solid fa-gear" style="color: var(--blue); text-shadow: var(--neon-blue);"></i>
+            <span style="color: var(--blue); text-shadow: var(--neon-blue);">SETTING</span>
+        </div>
     </div>
 
     <div id="game-board"></div>
@@ -90,19 +156,30 @@
             <button class="btn-mode" id="m-turbo" onclick="setSpeed('turbo')">TURBO</button>
             <button class="btn-mode" id="m-auto" onclick="toggleAuto()">AUTO: OFF</button>
         </div>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <i class="fa-solid fa-minus" onclick="changeBet(-1)" style="color:var(--pink)"></i>
-            <span id="current-bet" style="color:var(--yellow); font-size:20px; font-weight:bold;">400</span>
-            <i class="fa-solid fa-plus" onclick="changeBet(1)" style="color:var(--blue)"></i>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding: 0 10px;">
+            <i class="fa-solid fa-circle-minus" onclick="changeBet(-1)" style="color:var(--pink); font-size: 25px;"></i>
+            <div style="text-align: center;">
+                <div style="font-size: 9px; color: gray; font-weight: bold;">TARUHAN</div>
+                <span id="current-bet" style="color:var(--yellow); font-size:22px; font-weight:bold; text-shadow: var(--neon-yellow);">400</span>
+            </div>
+            <i class="fa-solid fa-circle-plus" onclick="changeBet(1)" style="color:var(--blue); font-size: 25px;"></i>
         </div>
         <button class="btn-play" onclick="handlePlay()">PLAY BALL</button>
     </div>
 
     <div class="nav-bottom">
-        <a href="deposit.html" class="nav-item"><i class="fa-solid fa-wallet"></i>DEPOSIT</a>
-        <a href="withdraw.html" class="nav-item"><i class="fa-solid fa-money-bill-transfer"></i>WITHDRAW</a>
-        <a href="reward.html" class="nav-item"><i class="fa-solid fa-gift"></i>REWARD</a>
-        <a href="profil.html" class="nav-item"><i class="fa-solid fa-user"></i>PROFIL</a>
+        <a href="withdraw.html" class="nav-btn btn-withdraw">
+            <i class="fa-solid fa-money-bill-transfer"></i>
+            <span>WITHDRAW</span>
+        </a>
+        <a href="deposit.html" class="nav-btn btn-deposit">
+            <i class="fa-solid fa-wallet"></i>
+            <span>DEPOSIT</span>
+        </a>
+        <a href="reward.html" class="nav-btn btn-reward">
+            <i class="fa-solid fa-gift"></i>
+            <span>REWARD</span>
+        </a>
     </div>
 
     <script src="global.js"></script>
@@ -111,6 +188,7 @@
         const betList = [400, 800, 1000, 2000, 5000, 10000, 20000, 50000];
         const multipliers = [5, 2, 1.2, 0.5, 0.2, 0.5, 1.2, 2, 5];
         let betIdx = 0, pegLocs = [], speed = 'normal', isAuto = false, autoInt;
+        let recentWins = []; // Array untuk menyimpan 3 kemenangan terakhir
 
         function updateSaldoUI() {
             const s = localStorage.getItem('user_saldo') || 0;
@@ -142,6 +220,8 @@
             speed = m;
             document.getElementById('m-normal').classList.toggle('active', m === 'normal');
             document.getElementById('m-turbo').classList.toggle('active', m === 'turbo');
+            // Jika auto sedang aktif, restart interval dengan speed baru
+            if(isAuto) { clearInterval(autoInt); autoInt = setInterval(handlePlay, speed === 'turbo' ? 400 : 1000); }
         }
 
         function toggleAuto() {
@@ -189,23 +269,37 @@
             }, 16);
         }
 
+        function updateScoreList(winAmount) {
+            const list = document.getElementById('score-list');
+            recentWins.unshift("IDR " + winAmount.toLocaleString()); // Tambah ke atas
+            if(recentWins.length > 3) recentWins.pop(); // Hanya simpan 3
+            
+            list.innerHTML = '';
+            recentWins.forEach(win => {
+                const div = document.createElement('div');
+                div.className = 'score-entry';
+                div.innerText = win;
+                list.appendChild(div);
+            });
+        }
+
         function finish(x, bet) {
             const idx = Math.floor(x / (board.offsetWidth / multipliers.length));
             const mult = multipliers[Math.max(0, Math.min(multipliers.length - 1, idx))];
             const win = Math.floor(bet * mult);
+            
+            // Efek Slot
             const slots = document.querySelectorAll('.slot');
             const s = slots[Math.max(0, Math.min(slots.length - 1, idx))];
             s.classList.add('active'); setTimeout(() => s.classList.remove('active'), 400);
             
-            const fs = document.getElementById('floating-score');
-            document.getElementById('score-val').innerText = "IDR " + win.toLocaleString();
-            fs.style.display = 'block'; setTimeout(() => fs.style.display = 'none', 2000);
+            // Update Papan Skor 3 Baris
+            updateScoreList(win);
 
             let cur = Number(localStorage.getItem('user_saldo') || 0);
             localStorage.setItem('user_saldo', cur + win);
             updateSaldoUI();
             
-            // Sync ke Sheet Anda via global.js
             if(typeof syncResult === 'function') syncResult(bet, mult, win);
         }
 
