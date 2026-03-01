@@ -180,6 +180,7 @@
         let isTurbo = false;
         let isAuto = false;
         let autoTimer = null;
+        let isSyncing = false; // Kunci untuk mencegah tabrakan data
 
         function playSound(type) {
             const sound = document.getElementById(`sfx-${type}`);
@@ -192,9 +193,7 @@
         }
 
         async function fetchLatestSaldo() {
-            // Hindari fetching saat ada bola aktif agar saldo tidak melompat-lompat
-            if(activeBalls.length > 0) return;
-            
+            if(isSyncing) return; // Jangan ambil data jika sedang mengirim data kemenangan
             const user = localStorage.getItem('user_session');
             if(!user) return;
             try {
@@ -203,7 +202,7 @@
                     body: JSON.stringify({ action: 'getUserData', username: user })
                 });
                 const res = await response.json();
-                if(res.result === "SUCCESS") {
+                if(res.result === "SUCCESS" && !isSyncing) {
                     localStorage.setItem('user_saldo', res.saldo);
                     updateSaldoUI();
                 }
@@ -328,7 +327,6 @@
             }, 1000/60);
         }
 
-        // BAGIAN YANG DIPERBAIKI: Kalkulasi Kemenangan dan Sinkronisasi
         function finishGame(finalX, bet) {
             const containerW = container.offsetWidth;
             const paddingSide = 40; 
@@ -346,26 +344,19 @@
             slots[winIdx].classList.add('active-hit');
             setTimeout(() => slots[winIdx].classList.remove('active-hit'), 300);
 
-            // LOGIKA SALDO YANG BENAR:
-            // 1. Ambil saldo terakhir (yang sudah dipotong bet)
             let currentSaldo = Number(localStorage.getItem('user_saldo') || 0);
-            
-            // 2. Tambahkan kemenangan ke variabel baru
             const saldoBaru = currentSaldo + winAmount; 
             
-            // 3. Simpan ke storage dan update tampilan UI SEGERA
             localStorage.setItem('user_saldo', saldoBaru);
             updateSaldoUI();
 
-            // 4. Baru jalankan suara dan popup
             if (multiplier >= 1) playSound('win');
             showWinPopup(winAmount, multiplier, finalX);
-            
-            // 5. Kirim ke cloud TANPA mengganggu saldo lokal yang sudah benar
             syncToCloud(bet, multiplier);
         }
 
         async function syncToCloud(bet, mult) {
+            isSyncing = true; // Mengunci agar fetch saldo tidak menimpa
             try {
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
@@ -375,13 +366,15 @@
                     })
                 });
                 const res = await response.json();
-                
-                // Hanya update saldo dari server jika bola sudah tidak ada yang jalan
-                if(res.result === "SUCCESS" && res.newSaldo !== undefined && activeBalls.length === 0) {
+                if(res.result === "SUCCESS" && res.newSaldo !== undefined) {
                     localStorage.setItem('user_saldo', res.newSaldo);
                     updateSaldoUI();
                 }
-            } catch (e) {}
+            } catch (e) {
+            } finally {
+                // Beri jeda sedikit sebelum membuka kunci sync agar server benar-benar selesai
+                setTimeout(() => { isSyncing = false; }, 1000);
+            }
         }
 
         function showWinPopup(amount, mult, x) {
@@ -409,10 +402,7 @@
             initPegs(); 
             updateSaldoUI(); 
             fetchLatestSaldo(); 
-            // Cek saldo berkala hanya jika tidak sedang bermain
-            setInterval(() => {
-                if(activeBalls.length === 0) fetchLatestSaldo();
-            }, 15000); 
+            setInterval(fetchLatestSaldo, 10000); 
         };
     </script>
 </body>
