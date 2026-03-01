@@ -47,7 +47,7 @@
             height: 380px; 
             margin-top: 5px; 
             overflow: visible; 
-            display: block !important;
+            background: transparent;
         }
 
         /* PAKU - NEON PUTIH */
@@ -68,26 +68,18 @@
 
         /* BOLA - NEON PINK */
         .ball { 
-            position: absolute; width: 12px; height: 12px; 
+            position: absolute; width: 14px; height: 14px; 
             background: radial-gradient(circle at 30% 30%, #fff, var(--pink)); 
             border-radius: 50%; box-shadow: var(--pink-neon); 
             z-index: 10; transform: translate(-50%, -50%); pointer-events: none; 
         }
 
         .multipliers { display: flex; justify-content: center; gap: 4px; padding: 0 40px; height: 35px; z-index: 10; position: relative; }
-        .slot { flex: 1; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 11px; font-weight: 900; border: 2px solid; color: #000 !important; }
+        .slot { flex: 1; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 11px; font-weight: 900; border: 2px solid; color: #000 !important; transition: transform 0.1s; }
         .m-x5 { background: var(--pink); border-color: var(--yellow); }
         .m-x2 { background: var(--yellow); border-color: var(--deep-blue); }
         .m-x1 { background: var(--deep-blue); border-color: var(--yellow); color: #fff !important; }
         .m-low { background: var(--white); border-color: #333; }
-
-        .mode-container { display: flex; justify-content: center; gap: 10px; margin: 10px 0; }
-        .btn-mode { padding: 10px 20px; border-radius: 12px; font-size: 11px; font-weight: 900; cursor: pointer; background: #000; color: white; border: 2px solid var(--pink); }
-        .active-mode { border-color: var(--deep-blue); box-shadow: var(--blue-neon); color: var(--deep-blue); }
-
-        .nav-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 10px 20px; }
-        .btn-nav { background: rgba(0,0,0,0.6); padding: 12px 5px; border-radius: 15px; text-align: center; border: 2px solid var(--deep-blue); }
-        .btn-nav span { font-size: 8px; font-weight: 900; }
 
         .play-area { padding: 10px 20px; gap: 10px; display: flex; flex-direction: column; }
         .bet-selector { display: flex; align-items: center; justify-content: space-between; background: #000; border-radius: 15px; padding: 10px 25px; border: 2px solid var(--deep-blue); }
@@ -131,14 +123,8 @@
         <div class="slot m-x1">1.2x</div><div class="slot m-x2">2x</div><div class="slot m-x5">5x</div>
     </div>
 
-    <div class="mode-container">
-        <button id="btn-auto" class="btn-mode" onclick="toggleAuto()">AUTO: OFF</button>
-    </div>
-
-    <div class="nav-grid">
-        <div class="btn-nav" onclick="location.href='withdraw.html'"><i class="fa-solid fa-wallet" style="color: var(--deep-blue)"></i><br><span>WITHDRAW</span></div>
-        <div class="btn-nav" onclick="location.href='deposit.html'"><i class="fa-solid fa-money-bill-trend-up" style="color: var(--pink)"></i><br><span>DEPOSIT</span></div>
-        <div class="btn-nav" onclick="location.href='reward.html'"><i class="fa-solid fa-gift" style="color: var(--yellow)"></i><br><span>REWARD</span></div>
+    <div style="display: flex; justify-content: center; gap: 10px; margin: 10px 0;">
+        <button id="btn-auto" style="padding: 10px 20px; border-radius: 12px; font-size: 11px; font-weight: 900; background: #000; color: white; border: 2px solid var(--pink);" onclick="toggleAuto()">AUTO: OFF</button>
     </div>
 
     <div class="play-area">
@@ -160,7 +146,7 @@
 
     <script>
         const container = document.getElementById('game-container');
-        const bets = [400, 800, 1000, 2000, 5000, 10000];
+        const bets = [400, 800, 1000, 2000, 5000, 10000, 20000, 50000];
         const slotMults = [5, 2, 1.2, 0.2, 1.2, 2, 5];
         let betIdx = 0;
         let pegLocs = [];
@@ -179,25 +165,30 @@
 
         function toggleAuto() {
             isAuto = !isAuto;
-            document.getElementById('btn-auto').innerText = isAuto ? "AUTO: ON" : "AUTO: OFF";
-            document.getElementById('btn-auto').classList.toggle('active-mode', isAuto);
+            const btn = document.getElementById('btn-auto');
+            btn.innerText = isAuto ? "AUTO: ON" : "AUTO: OFF";
+            btn.style.borderColor = isAuto ? "var(--deep-blue)" : "var(--pink)";
             if(isAuto) runAutoPlay(); else clearTimeout(autoTimer);
         }
 
         function runAutoPlay() {
             if(!isAuto) return;
             handlePlay();
-            autoTimer = setTimeout(runAutoPlay, 800);
+            autoTimer = setTimeout(runAutoPlay, 1000);
         }
 
         function handlePlay() {
             const bet = bets[betIdx];
             let saldo = Number(localStorage.getItem('user_saldo') || 0);
+            
             if (saldo < bet) {
                 showModal("SALDO TIDAK CUKUP!");
                 isAuto = false;
+                document.getElementById('btn-auto').innerText = "AUTO: OFF";
                 return;
             }
+
+            // LOGIKA 1: POTONG SALDO DI AWAL
             localStorage.setItem('user_saldo', saldo - bet);
             if(typeof updateSaldoUI === 'function') updateSaldoUI();
             
@@ -211,37 +202,44 @@
             ball.className = 'ball';
             container.appendChild(ball);
 
-            let x = container.offsetWidth / 2 + (Math.random() * 4 - 2);
+            // Posisi awal di tengah atas dengan sedikit variasi acak
+            let x = container.offsetWidth / 2 + (Math.random() * 6 - 3);
             let y = 10;
             let vx = (Math.random() - 0.5) * 2;
             let vy = 0;
 
+            const gravity = 0.38;
+            const bounce = 0.5;
+
             const anim = setInterval(() => {
-                vy += 0.35; // gravitasi
+                vy += gravity;
                 x += vx;
                 y += vy;
 
-                // Tabrakan Paku
+                // Cek tabrakan paku
                 pegLocs.forEach(p => {
                     const dx = x - p.x;
                     const dy = y - p.y;
                     const dist = Math.sqrt(dx*dx + dy*dy);
-                    if (dist < 11) {
+                    if (dist < 12) {
                         playSound('hit');
                         const angle = Math.atan2(dy, dx);
-                        vx += Math.cos(angle) * 2;
-                        vy = Math.sin(angle) * 2;
+                        vx += Math.cos(angle) * 2.5;
+                        vy = Math.sin(angle) * 1.5;
+                        
                         p.el.classList.add('hit');
                         setTimeout(() => p.el.classList.remove('hit'), 100);
                     }
                 });
 
-                // Batas Dinding
-                if (x < 15 || x > container.offsetWidth - 15) vx *= -0.5;
+                // Pantulan dinding samping
+                if (x < 15) { x = 15; vx *= -0.4; }
+                if (x > container.offsetWidth - 15) { x = container.offsetWidth - 15; vx *= -0.4; }
 
                 ball.style.left = x + 'px';
                 ball.style.top = y + 'px';
 
+                // Sampai di dasar (Multipliers)
                 if (y > 370) {
                     clearInterval(anim);
                     ball.remove();
@@ -255,20 +253,26 @@
             lastWinTime = Date.now();
             const padding = 40;
             const gameWidth = container.offsetWidth - (padding * 2);
-            const winIdx = Math.floor(((finalX - padding) / gameWidth) * slotMults.length);
-            const mult = slotMults[Math.max(0, Math.min(slotMults.length - 1, winIdx))];
             
+            // Hitung index slot berdasarkan posisi jatuh X
+            let winIdx = Math.floor(((finalX - padding) / gameWidth) * slotMults.length);
+            winIdx = Math.max(0, Math.min(slotMults.length - 1, winIdx));
+            const mult = slotMults[winIdx];
+            
+            // LOGIKA 2: TAMBAH SALDO BERDASARKAN MULTIPLIER
             const winAmount = Math.floor(bet * mult);
             let current = Number(localStorage.getItem('user_saldo') || 0);
             localStorage.setItem('user_saldo', current + winAmount);
+            
             if(typeof updateSaldoUI === 'function') updateSaldoUI();
             
+            // Efek visual menang
             if(winAmount > 0) {
-                playSound('win');
+                if(mult >= 1) playSound('win');
                 showWinPopup(winAmount, finalX);
             }
             
-            // Kirim data ke server (jika ada SCRIPT_URL di global.js)
+            // Sinkronisasi ke database melalui global.js
             syncWinToServer(bet, mult);
         }
 
@@ -276,7 +280,7 @@
             isSyncing = true;
             try {
                 const user = localStorage.getItem('user_session');
-                await fetch(SCRIPT_URL, {
+                const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
                     body: JSON.stringify({ 
                         action: 'playGame', 
@@ -286,7 +290,16 @@
                         isClientHandled: true 
                     })
                 });
-            } catch (e) {} finally { isSyncing = false; }
+                const res = await response.json();
+                if(res.result === "SUCCESS" && res.newSaldo) {
+                    localStorage.setItem('user_saldo', res.newSaldo);
+                    if(typeof updateSaldoUI === 'function') updateSaldoUI();
+                }
+            } catch (e) {
+                console.log("Sync failed");
+            } finally {
+                isSyncing = false;
+            }
         }
 
         function showWinPopup(amt, x) {
@@ -329,13 +342,17 @@
         }
         function closeModal() { document.getElementById('neon-modal').style.display = 'none'; }
 
+        // Eksekusi saat halaman dimuat
         window.onload = () => {
             initPegs();
             if(typeof updateSaldoUI === 'function') updateSaldoUI();
+            // Sinkronisasi saldo periodik dari server (anti-mental)
             setInterval(() => {
                 if(typeof fetchLatestSaldo === 'function') fetchLatestSaldo();
             }, 8000);
         };
+        
+        window.onresize = initPegs;
     </script>
 </body>
 </html>
