@@ -38,7 +38,6 @@
             border-radius: 50px; padding: 8px 25px; text-align: center; box-shadow: var(--pink-neon);
             transition: transform 0.2s ease;
         }
-        
         .balance-box:active { transform: scale(0.95); }
 
         .label-saldo { font-size: 10px; color: var(--white); font-weight: 900; text-shadow: var(--white-neon); letter-spacing: 1px; opacity: 0.8; }
@@ -56,8 +55,6 @@
         .m-x5 { background: var(--pink); border-color: var(--yellow); }
         .m-x1 { background: var(--deep-blue); border-color: var(--yellow); color: #fff !important; }
         .m-low { background: var(--white); border-color: #333; }
-
-        .fa-gear { color: var(--yellow) !important; text-shadow: var(--yellow-neon) !important; }
 
         #game-container { position: relative; width: 100%; height: 350px; margin-top: 5px; overflow: hidden; }
         .peg { 
@@ -95,24 +92,12 @@
         .nav-rw span { color: var(--deep-blue); }
 
         #neon-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 9999; backdrop-filter: blur(4px); }
-        .modal-box { 
-            background: #050714; border: 2px solid var(--pink); 
-            border-radius: 20px; padding: 25px; width: 75%; text-align: center; 
-            box-shadow: var(--pink-neon); transform: scale(0.9); transition: 0.3s; 
-        }
+        .modal-box { background: #050714; border: 2px solid var(--pink); border-radius: 20px; padding: 25px; width: 75%; text-align: center; box-shadow: var(--pink-neon); transform: scale(0.9); transition: 0.3s; }
         #neon-modal.show .modal-box { transform: scale(1); border-color: var(--deep-blue); box-shadow: var(--blue-neon); }
 
         .play-area { padding: 10px 20px; gap: 10px; display: flex; flex-direction: column; }
-        .bet-selector { 
-            display: flex; align-items: center; justify-content: space-between; 
-            background: #000; border-radius: 15px; padding: 10px 25px; border: 2px solid var(--deep-blue); box-shadow: var(--blue-neon);
-        }
-        .btn-main { 
-            width: 100%; padding: 16px; border-radius: 50px; border: 2px solid var(--yellow); 
-            font-weight: 900; font-size: 16px; color: white; cursor: pointer;
-            background: linear-gradient(90deg, #aa0055, #0022aa); box-shadow: 0 4px 15px rgba(0,0,0,0.5); text-transform: uppercase;
-            transition: all 0.2s;
-        }
+        .bet-selector { display: flex; align-items: center; justify-content: space-between; background: #000; border-radius: 15px; padding: 10px 25px; border: 2px solid var(--deep-blue); box-shadow: var(--blue-neon); }
+        .btn-main { width: 100%; padding: 16px; border-radius: 50px; border: 2px solid var(--yellow); font-weight: 900; font-size: 16px; color: white; cursor: pointer; background: linear-gradient(90deg, #aa0055, #0022aa); box-shadow: 0 4px 15px rgba(0,0,0,0.5); text-transform: uppercase; transition: all 0.2s; }
         .btn-main:active { transform: scale(0.98); }
 
         .ball { position: absolute; width: 12px; height: 12px; background: radial-gradient(circle at 30% 30%, #fff, var(--pink)); border-radius: 50%; box-shadow: var(--pink-neon); z-index: 10; transform: translate(-50%, -50%); pointer-events: none; }
@@ -147,7 +132,7 @@
             <div id="display-saldo">IDR 0</div>
         </div>
         <div class="nav-item" onclick="playSound('click'); location.href='settings.html'" style="display: flex; flex-direction: column; align-items: center; cursor: pointer;">
-            <i class="fa-solid fa-gear" style="font-size: 22px;"></i>
+            <i class="fa-solid fa-gear" style="font-size: 22px; color: var(--yellow) !important; text-shadow: var(--yellow-neon);"></i>
             <span style="font-size: 9px; font-weight: 900; color: var(--pink);">SETTING</span>
         </div>
     </div>
@@ -248,22 +233,19 @@
         function runAutoPlay() {
             if(!isAuto) return;
             handlePlay();
-            let delay = isTurbo ? 250 : 600; // Percepat interval auto
+            let delay = isTurbo ? 300 : 700; 
             autoTimer = setTimeout(runAutoPlay, delay);
         }
 
         function initPegs() {
-            container.innerHTML = '';
-            pegLocs = [];
-            const rows = 9; 
-            const centerX = container.offsetWidth / 2;
+            container.innerHTML = ''; pegLocs = [];
+            const rows = 9; const centerX = container.offsetWidth / 2;
             for (let r = 2; r <= rows; r++) {
                 for (let i = 0; i < r; i++) {
                     const x = centerX + (i - (r - 1) / 2) * 42;
                     const y = r * 35;
                     const peg = document.createElement('div');
-                    peg.className = 'peg';
-                    peg.style.left = x + 'px'; peg.style.top = y + 'px';
+                    peg.className = 'peg'; peg.style.left = x + 'px'; peg.style.top = y + 'px';
                     container.appendChild(peg);
                     pegLocs.push({ x, y, el: peg });
                 }
@@ -274,10 +256,8 @@
             const bet = bets[betIdx];
             let saldo = Number(localStorage.getItem('user_saldo') || 0);
             if (saldo < bet) { 
-                playSound('fail');
-                showModal("SALDO TIDAK CUKUP!"); 
-                if(isAuto) toggleAuto();
-                return; 
+                playSound('fail'); showModal("SALDO TIDAK CUKUP!"); 
+                if(isAuto) toggleAuto(); return; 
             }
             playSound('drop');
             saldo -= bet;
@@ -288,97 +268,89 @@
 
         function dropBall(betAmount) {
             const ballEl = document.createElement('div');
-            ballEl.className = 'ball';
-            container.appendChild(ballEl);
-
+            ballEl.className = 'ball'; container.appendChild(ballEl);
+            
             let ball = { 
                 el: ballEl, 
                 x: container.offsetWidth / 2 + (Math.random() * 6 - 3), 
                 y: 10, 
                 vx: (Math.random() - 0.5) * 2, 
-                vy: 0,
-                radius: 6,
+                vy: 0, 
                 bet: betAmount 
             };
             activeBalls.push(ball);
 
-            const gravity = isTurbo ? 0.45 : 0.25; 
-            const friction = 0.99;
-            const bounce = 0.55; 
+            const gravity = isTurbo ? 0.40 : 0.24; 
+            const friction = 0.99; const bounce = 0.55; 
 
             const anim = setInterval(() => {
-                ball.vy += gravity;
-                ball.vx *= friction;
-                ball.x += ball.vx;
-                ball.y += ball.vy;
+                ball.vy += gravity; ball.vx *= friction;
+                ball.x += ball.vx; ball.y += ball.vy;
 
+                // Tabrakan Paku
                 pegLocs.forEach(p => {
-                    const dx = ball.x - p.x;
-                    const dy = ball.y - p.y;
+                    const dx = ball.x - p.x; const dy = ball.y - p.y;
                     const dist = Math.sqrt(dx*dx + dy*dy);
-                    
                     if (dist < 12) { 
                         playSound('hit');
                         const angle = Math.atan2(dy, dx);
                         const overlap = 12 - dist;
-                        ball.x += Math.cos(angle) * overlap;
-                        ball.y += Math.sin(angle) * overlap;
-
+                        ball.x += Math.cos(angle) * overlap; ball.y += Math.sin(angle) * overlap;
                         const speed = Math.sqrt(ball.vx**2 + ball.vy**2);
                         ball.vx = Math.cos(angle) * speed * bounce + (Math.random() - 0.5) * 0.5;
                         ball.vy = Math.sin(angle) * speed * bounce;
+                        p.el.classList.add('hit'); setTimeout(() => p.el.classList.remove('hit'), 100);
+                    }
+                });
 
-                        if(Math.abs(ball.vx) < 0.1) ball.vx = (Math.random() - 0.5) * 1.5;
-
-                        p.el.classList.add('hit');
-                        setTimeout(() => p.el.classList.remove('hit'), 100);
+                // Tabrakan Antar Bola
+                activeBalls.forEach(other => {
+                    if (other === ball) return;
+                    const dx = ball.x - other.x; const dy = ball.y - other.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < 12) {
+                        const angle = Math.atan2(dy, dx);
+                        ball.vx += Math.cos(angle) * 0.5;
+                        other.vx -= Math.cos(angle) * 0.5;
                     }
                 });
 
                 if (ball.x < 10) { ball.x = 10; ball.vx *= -0.5; }
                 if (ball.x > container.offsetWidth - 10) { ball.x = container.offsetWidth - 10; ball.vx *= -0.5; }
-
-                ball.el.style.left = ball.x + 'px';
-                ball.el.style.top = ball.y + 'px';
+                ball.el.style.left = ball.x + 'px'; ball.el.style.top = ball.y + 'px';
 
                 if (ball.y > 345) { 
-                    clearInterval(anim);
-                    ball.el.remove();
+                    clearInterval(anim); ball.el.remove();
                     activeBalls = activeBalls.filter(b => b !== ball);
                     finishGame(ball.x, ball.bet); 
                 }
             }, 1000/60);
         }
 
-        // PERBAIKAN UTAMA: Saldo instan 12.240 & Tanpa Delay
         function finishGame(finalX, bet) {
             const containerW = container.offsetWidth;
             const paddingSide = 40; 
             const playAreaWidth = containerW - (paddingSide * 2);
             const slotW = playAreaWidth / slotMults.length;
             
-            if (finalX < paddingSide || finalX > (containerW - paddingSide)) return; 
-
-            let winIdx = Math.floor((finalX - paddingSide) / slotW);
+            // Deteksi Slot Presisi
+            let relativeX = finalX - paddingSide;
+            let winIdx = Math.floor(relativeX / slotW);
             winIdx = Math.max(0, Math.min(slotMults.length - 1, winIdx));
             
-            const slots = document.getElementById('multiplier-row').children;
-            const targetSlot = slots[winIdx];
-            targetSlot.classList.add('active-hit');
-            setTimeout(() => targetSlot.classList.remove('active-hit'), 300);
-
             const multiplier = slotMults[winIdx];
             const winAmount = Math.floor(bet * multiplier);
             
-            if (multiplier >= 1) playSound('win');
-            
-            // LOGIKA SALDO INSTAN (Penting: Update lokal dulu agar tidak delay)
-            let currentSaldo = Number(localStorage.getItem('user_saldo') || 0);
-            const totalBaru = currentSaldo + winAmount;
-            
-            localStorage.setItem('user_saldo', totalBaru);
-            updateSaldoUI(); // Tampilan IDR langsung berubah ke 12.240
+            const slots = document.getElementById('multiplier-row').children;
+            slots[winIdx].classList.add('active-hit');
+            setTimeout(() => slots[winIdx].classList.remove('active-hit'), 300);
 
+            // Update Saldo Instan
+            let currentSaldo = Number(localStorage.getItem('user_saldo') || 0);
+            localStorage.setItem('user_saldo', currentSaldo + winAmount);
+            updateSaldoUI();
+
+            if (multiplier >= 1) playSound('win');
             showWinPopup(winAmount, multiplier, finalX);
             syncToCloud(bet, multiplier);
         }
@@ -388,13 +360,11 @@
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
                     body: JSON.stringify({ 
-                        action: 'playGame', 
-                        username: localStorage.getItem('user_session'), 
+                        action: 'playGame', username: localStorage.getItem('user_session'), 
                         betAmount: bet, multiplier: mult, isClientHandled: true 
                     })
                 });
                 const res = await response.json();
-                // Tetap sinkronkan jika ada perbedaan dari server di latar belakang
                 if(res.result === "SUCCESS" && res.newSaldo !== undefined) {
                     localStorage.setItem('user_saldo', res.newSaldo);
                     updateSaldoUI();
@@ -408,29 +378,26 @@
             p.innerText = mult >= 1 ? "IDR " + amount.toLocaleString() : "LOSE";
             p.style.color = mult >= 1 ? 'var(--yellow)' : '#ff4444';
             p.style.left = x + 'px'; p.style.top = '280px';
-            container.appendChild(p);
-            setTimeout(() => p.remove(), 800);
+            container.appendChild(p); setTimeout(() => p.remove(), 800);
         }
 
         function showModal(msg) {
             document.getElementById('modal-msg').innerText = msg;
             const modal = document.getElementById('neon-modal');
-            modal.style.display = 'flex';
-            setTimeout(() => modal.classList.add('show'), 10);
+            modal.style.display = 'flex'; setTimeout(() => modal.classList.add('show'), 10);
         }
         
         function closeModal() { 
             playSound('click');
             const modal = document.getElementById('neon-modal');
-            modal.classList.remove('show');
-            setTimeout(() => modal.style.display = 'none', 300);
+            modal.classList.remove('show'); setTimeout(() => modal.style.display = 'none', 300);
         }
 
         window.onload = () => { 
             initPegs(); 
             updateSaldoUI(); 
             fetchLatestSaldo(); 
-            setInterval(fetchLatestSaldo, 15000); // Sinkronisasi latar belakang setiap 15 detik
+            setInterval(fetchLatestSaldo, 10000); 
         };
     </script>
 </body>
