@@ -3,22 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEON PLINKO VIP - ULTIMATE DESIGN</title>
+    <title>NEON PLINKO VIP - REFINED</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
         :root {
+            /* Warna diredupkan (bias-bias saja) */
             --pink: #ff0077; --blue: #0044ff; --yellow: #fbff00; --white: #ffffff; --bg: #03040a;
-            --neon-pink: 0 0 15px var(--pink), 0 0 30px var(--pink);
-            --neon-blue: 0 0 15px var(--blue), 0 0 30px var(--blue);
-            --neon-white: 0 0 10px var(--white), 0 0 20px var(--white);
-            --neon-yellow: 0 0 15px var(--yellow), 0 0 30px var(--yellow);
+            --neon-pink: 0 0 8px rgba(255, 0, 119, 0.5);
+            --neon-blue: 0 0 8px rgba(0, 68, 255, 0.5);
+            --neon-white: 0 0 5px rgba(255, 255, 255, 0.3);
+            --neon-yellow: 0 0 8px rgba(251, 255, 0, 0.5);
         }
         body {
             background: var(--bg); color: white; font-family: sans-serif;
             margin: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column;
         }
 
-        /* HEADER & TOP NAV */
+        /* CUSTOM NEON MODAL (Replacement for Alert) */
+        #neon-modal {
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: #0a0b1e; border: 2px solid var(--pink); border-radius: 15px;
+            box-shadow: var(--neon-pink); z-index: 9999; padding: 20px; text-align: center;
+            min-width: 250px; animation: modalIn 0.3s ease;
+        }
+        @keyframes modalIn { from { opacity: 0; scale: 0.8; } to { opacity: 1; scale: 1; } }
+        .modal-btn {
+            margin-top: 15px; padding: 8px 20px; border-radius: 5px; cursor: pointer;
+            border: 1px solid var(--yellow); background: transparent; color: var(--yellow); font-weight: bold;
+        }
+
+        /* HEADER */
         .header {
             display: flex; justify-content: space-between; align-items: center;
             padding: 10px 15px; background: rgba(0, 0, 0, 0.9); border-bottom: 2px solid var(--blue);
@@ -34,13 +48,13 @@
         .saldo-label { font-size: 9px; color: var(--white); text-shadow: var(--neon-white); font-weight: bold; }
         #display-saldo { font-size: 18px; font-weight: bold; color: var(--white); }
 
-        /* GAME BOARD */
+        /* BOARD */
         #game-board { position: relative; width: 100%; height: 360px; overflow: visible; }
         .peg {
             position: absolute; width: 6px; height: 6px; background: var(--white);
             border-radius: 50%; box-shadow: var(--neon-white); transform: translate(-50%, -50%);
         }
-        .peg.hit { background: var(--yellow); box-shadow: var(--neon-yellow); transform: translate(-50%, -50%) scale(1.8); }
+        .peg.hit { background: var(--yellow); box-shadow: var(--neon-yellow); transform: translate(-50%, -50%) scale(1.5); }
         .ball {
             position: absolute; width: 14px; height: 14px; background: var(--pink);
             border-radius: 50%; box-shadow: var(--neon-pink); transform: translate(-50%, -50%); z-index: 10;
@@ -52,75 +66,61 @@
             flex: 1; height: 35px; display: flex; align-items: center; justify-content: center;
             font-size: 10px; font-weight: 900; border-radius: 5px; color: #000; transition: 0.2s;
         }
-        .slot.active { transform: translateY(-10px) scale(1.1); box-shadow: 0 0 20px white; filter: brightness(1.5); }
+        .slot.active { transform: translateY(-10px) scale(1.1); box-shadow: 0 0 15px white; filter: brightness(1.3); }
         .s-high { background: var(--pink); } .s-mid { background: var(--yellow); } .s-low { background: var(--blue); color: white !important; }
 
-        /* PAPAN SCORE BERJALAN (3 BARIS) */
         #floating-score {
             position: fixed; top: 100px; right: 10px; background: rgba(0,0,0,0.85);
             border: 1px solid var(--yellow); border-radius: 8px; padding: 8px;
             z-index: 1000; box-shadow: var(--neon-yellow); min-width: 100px;
         }
-        .score-entry { 
-            font-size: 11px; font-weight: bold; color: var(--yellow); 
-            border-bottom: 1px solid rgba(251, 255, 0, 0.2); padding: 2px 0;
-            animation: fadeIn 0.3s ease;
-        }
-        @keyframes fadeIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+        .score-entry { font-size: 11px; font-weight: bold; color: var(--yellow); border-bottom: 1px solid rgba(251, 255, 0, 0.1); padding: 2px 0; }
 
         /* CONTROLS */
         .controls { padding: 15px; background: #050714; border-top: 2px solid var(--blue); }
         .mode-row { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; }
+        .btn-mode { background: transparent; padding: 10px 15px; border-radius: 10px; font-size: 10px; font-weight: 900; cursor: pointer; transition: 0.3s; }
         
-        .btn-mode {
-            background: transparent; padding: 10px 15px; border-radius: 10px; 
-            font-size: 10px; font-weight: 900; cursor: pointer; transition: 0.3s;
-        }
-        /* NORMAL PINK */
-        #m-normal { border: 2px solid var(--pink); color: var(--pink); }
+        #m-normal { border: 1px solid var(--pink); color: var(--pink); }
         #m-normal.active { background: var(--pink); color: white; box-shadow: var(--neon-pink); }
-        /* TURBO BLUE/YELLOW */
-        #m-turbo { border: 2px solid var(--blue); color: var(--blue); }
+        #m-turbo { border: 1px solid var(--blue); color: var(--blue); }
         #m-turbo.active { background: var(--yellow); border-color: var(--yellow); color: black; box-shadow: var(--neon-yellow); }
-        /* AUTO YELLOW/BLUE */
-        #m-auto { border: 2px solid var(--yellow); color: var(--yellow); }
+        #m-auto { border: 1px solid var(--yellow); color: var(--yellow); }
         #m-auto.active { background: var(--blue); border-color: var(--blue); color: white; box-shadow: var(--neon-blue); }
 
         .btn-play {
             width: 100%; padding: 16px; border-radius: 50px; background: linear-gradient(90deg, #aa0055, #0022aa);
             color: white; font-weight: 900; border: 2px solid var(--yellow); text-transform: uppercase;
-            box-shadow: 0 0 10px rgba(251, 255, 0, 0.3);
         }
         
-        /* NAV BOTTOM RE-DESIGNED */
-        .nav-bottom { 
-            display: grid; grid-template-columns: repeat(3, 1fr); 
-            background: #000; padding: 12px 5px; gap: 10px; border-top: 2px solid var(--blue);
-        }
-        .nav-btn {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            padding: 8px 0; border-radius: 12px; text-decoration: none; border: 2px solid; font-weight: 900;
-        }
+        .nav-bottom { display: grid; grid-template-columns: repeat(3, 1fr); background: #000; padding: 12px 5px; gap: 10px; border-top: 2px solid var(--blue); }
+        .nav-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 0; border-radius: 12px; text-decoration: none; border: 1px solid; font-weight: 900; }
         .nav-btn i { font-size: 20px; margin-bottom: 4px; }
         .nav-btn span { font-size: 10px; }
 
-        /* WITHDRAW: KUNING BINGKAI, PINK LOGO, BLUE TEXT */
-        .btn-withdraw { border-color: var(--yellow); box-shadow: var(--neon-yellow); }
-        .btn-withdraw i { color: var(--pink); text-shadow: var(--neon-pink); }
-        .btn-withdraw span { color: var(--blue); text-shadow: 0 0 5px var(--blue); }
-
-        /* DEPOSIT: PINK BINGKAI, BLUE LOGO, YELLOW TEXT */
-        .btn-deposit { border-color: var(--pink); box-shadow: var(--neon-pink); }
-        .btn-deposit i { color: var(--blue); text-shadow: var(--neon-blue); }
-        .btn-deposit span { color: var(--yellow); text-shadow: var(--neon-yellow); }
-
-        /* REWARD: BLUE BINGKAI, YELLOW LOGO, PINK TEXT */
-        .btn-reward { border-color: var(--blue); box-shadow: var(--neon-blue); }
-        .btn-reward i { color: var(--yellow); text-shadow: var(--neon-yellow); }
-        .btn-reward span { color: var(--pink); text-shadow: var(--neon-pink); }
+        .btn-withdraw { border-color: var(--yellow); }
+        .btn-withdraw i { color: var(--pink); }
+        .btn-withdraw span { color: var(--blue); }
+        .btn-deposit { border-color: var(--pink); }
+        .btn-deposit i { color: var(--blue); }
+        .btn-deposit span { color: var(--yellow); }
+        .btn-reward { border-color: var(--blue); }
+        .btn-reward i { color: var(--yellow); }
+        .btn-reward span { color: var(--pink); }
     </style>
 </head>
 <body>
+
+    <audio id="snd-click" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3"></audio>
+    <audio id="snd-hit" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
+    <audio id="snd-win" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3"></audio>
+    <audio id="snd-error" src="https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3"></audio>
+
+    <div id="neon-modal">
+        <h3 id="modal-title" style="color: var(--pink); margin: 0;">NOTIFIKASI</h3>
+        <p id="modal-msg" style="color: white; font-size: 14px;"></p>
+        <button class="modal-btn" onclick="closeModal()">OK</button>
+    </div>
 
     <div id="floating-score">
         <div id="score-list">
@@ -131,19 +131,17 @@
     </div>
 
     <div class="header">
-        <div class="header-item" onclick="location.href='profil.html'">
+        <div class="header-item" onclick="playSound('click'); location.href='profil.html'">
             <i class="fa-solid fa-circle-user" style="color: var(--yellow); text-shadow: var(--neon-yellow);"></i>
-            <span style="color: var(--yellow); text-shadow: var(--neon-yellow);">PROFIL</span>
+            <span style="color: var(--yellow);">PROFIL</span>
         </div>
-
         <div class="balance-box">
             <div class="saldo-label">SALDO UTAMA</div>
             <div id="display-saldo">IDR 0</div>
         </div>
-
-        <div class="header-item" onclick="location.href='settings.html'">
+        <div class="header-item" onclick="playSound('click'); location.href='settings.html'">
             <i class="fa-solid fa-gear" style="color: var(--blue); text-shadow: var(--neon-blue);"></i>
-            <span style="color: var(--blue); text-shadow: var(--neon-blue);">SETTING</span>
+            <span style="color: var(--blue);">SETTING</span>
         </div>
     </div>
 
@@ -160,7 +158,7 @@
             <i class="fa-solid fa-circle-minus" onclick="changeBet(-1)" style="color:var(--pink); font-size: 25px;"></i>
             <div style="text-align: center;">
                 <div style="font-size: 9px; color: gray; font-weight: bold;">TARUHAN</div>
-                <span id="current-bet" style="color:var(--yellow); font-size:22px; font-weight:bold; text-shadow: var(--neon-yellow);">400</span>
+                <span id="current-bet" style="color:var(--yellow); font-size:22px; font-weight:bold;">400</span>
             </div>
             <i class="fa-solid fa-circle-plus" onclick="changeBet(1)" style="color:var(--blue); font-size: 25px;"></i>
         </div>
@@ -168,29 +166,45 @@
     </div>
 
     <div class="nav-bottom">
-        <a href="withdraw.html" class="nav-btn btn-withdraw">
-            <i class="fa-solid fa-money-bill-transfer"></i>
-            <span>WITHDRAW</span>
+        <a href="withdraw.html" class="nav-btn btn-withdraw" onclick="playSound('click')">
+            <i class="fa-solid fa-money-bill-transfer"></i><span>WITHDRAW</span>
         </a>
-        <a href="deposit.html" class="nav-btn btn-deposit">
-            <i class="fa-solid fa-wallet"></i>
-            <span>DEPOSIT</span>
+        <a href="deposit.html" class="nav-btn btn-deposit" onclick="playSound('click')">
+            <i class="fa-solid fa-wallet"></i><span>DEPOSIT</span>
         </a>
-        <a href="reward.html" class="nav-btn btn-reward">
-            <i class="fa-solid fa-gift"></i>
-            <span>REWARD</span>
+        <a href="reward.html" class="nav-btn btn-reward" onclick="playSound('click')">
+            <i class="fa-solid fa-gift"></i><span>REWARD</span>
         </a>
     </div>
 
     <script src="global.js"></script>
     <script>
         const board = document.getElementById('game-board');
-        const betList = [400, 800, 1000, 2000, 5000, 10000, 20000, 50000];
+        // Update Daftar Taruhan sesuai instruksi
+        const betList = [400, 800, 1000, 1200, 1600, 1800, 2000, 4000, 8000, 10000, 12000, 16000, 18000, 20000];
         const multipliers = [5, 2, 1.2, 0.5, 0.2, 0.5, 1.2, 2, 5];
         let betIdx = 0, pegLocs = [], speed = 'normal', isAuto = false, autoInt;
-        let recentWins = []; // Array untuk menyimpan 3 kemenangan terakhir
+        let recentWins = [];
+
+        function playSound(type) {
+            const s = document.getElementById('snd-' + type);
+            if(s) { s.currentTime = 0; s.play().catch(e => {}); }
+        }
+
+        function showModal(msg, color = 'var(--pink)') {
+            document.getElementById('modal-msg').innerText = msg;
+            document.getElementById('neon-modal').style.borderColor = color;
+            document.getElementById('modal-title').style.color = color;
+            document.getElementById('neon-modal').style.display = 'block';
+        }
+
+        function closeModal() {
+            playSound('click');
+            document.getElementById('neon-modal').style.display = 'none';
+        }
 
         function updateSaldoUI() {
+            // Memastikan saldo sinkron dengan localStorage
             const s = localStorage.getItem('user_saldo') || 0;
             document.getElementById('display-saldo').innerText = "IDR " + Number(s).toLocaleString();
         }
@@ -217,14 +231,15 @@
         }
 
         function setSpeed(m) {
+            playSound('click');
             speed = m;
             document.getElementById('m-normal').classList.toggle('active', m === 'normal');
             document.getElementById('m-turbo').classList.toggle('active', m === 'turbo');
-            // Jika auto sedang aktif, restart interval dengan speed baru
             if(isAuto) { clearInterval(autoInt); autoInt = setInterval(handlePlay, speed === 'turbo' ? 400 : 1000); }
         }
 
         function toggleAuto() {
+            playSound('click');
             isAuto = !isAuto;
             document.getElementById('m-auto').innerText = isAuto ? "AUTO: ON" : "AUTO: OFF";
             document.getElementById('m-auto').classList.toggle('active', isAuto);
@@ -233,6 +248,7 @@
         }
 
         function changeBet(d) {
+            playSound('click');
             betIdx = Math.max(0, Math.min(betList.length - 1, betIdx + d));
             document.getElementById('current-bet').innerText = betList[betIdx].toLocaleString();
         }
@@ -240,7 +256,11 @@
         function handlePlay() {
             const bet = betList[betIdx];
             let saldo = Number(localStorage.getItem('user_saldo') || 0);
-            if (saldo < bet) { if(isAuto) toggleAuto(); return alert("Saldo Habis!"); }
+            if (saldo < bet) { 
+                playSound('error');
+                if(isAuto) toggleAuto(); 
+                return showModal("Saldo Tidak Cukup!", 'var(--pink)'); 
+            }
             localStorage.setItem('user_saldo', saldo - bet);
             updateSaldoUI();
             dropBall(bet);
@@ -256,6 +276,7 @@
                 pegLocs.forEach(p => {
                     const dx = px - p.x, dy = py - p.y, dist = Math.sqrt(dx*dx + dy*dy);
                     if (dist < 11) {
+                        playSound('hit');
                         vx = (dx / dist) * 2.8; vy = (dy / dist) * 1.5;
                         p.el.classList.add('hit'); setTimeout(() => p.el.classList.remove('hit'), 80);
                     }
@@ -271,9 +292,8 @@
 
         function updateScoreList(winAmount) {
             const list = document.getElementById('score-list');
-            recentWins.unshift("IDR " + winAmount.toLocaleString()); // Tambah ke atas
-            if(recentWins.length > 3) recentWins.pop(); // Hanya simpan 3
-            
+            recentWins.unshift("IDR " + winAmount.toLocaleString());
+            if(recentWins.length > 3) recentWins.pop();
             list.innerHTML = '';
             recentWins.forEach(win => {
                 const div = document.createElement('div');
@@ -288,14 +308,13 @@
             const mult = multipliers[Math.max(0, Math.min(multipliers.length - 1, idx))];
             const win = Math.floor(bet * mult);
             
-            // Efek Slot
+            if(mult >= 1) playSound('win');
+            
             const slots = document.querySelectorAll('.slot');
             const s = slots[Math.max(0, Math.min(slots.length - 1, idx))];
             s.classList.add('active'); setTimeout(() => s.classList.remove('active'), 400);
             
-            // Update Papan Skor 3 Baris
             updateScoreList(win);
-
             let cur = Number(localStorage.getItem('user_saldo') || 0);
             localStorage.setItem('user_saldo', cur + win);
             updateSaldoUI();
