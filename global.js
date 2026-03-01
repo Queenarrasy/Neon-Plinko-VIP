@@ -1,192 +1,51 @@
 /**
- * GLOBAL JS - SISTEM PLINKO VIP V3.6.4 (Fixed Conflict)
- * Terintegrasi: Cloud Sync, Auth, Transaction History, & Anti-Lag Balance Update
+ * GLOBAL SCRIPT NEON PLINKO VIP
+ * Menangani Sesi, Saldo, dan Navigasi
  */
 
-// 1. KONFIGURASI UTAMA
-const CLOUD_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
-const SCRIPT_URL = CLOUD_URL;
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
 
-/**
- * Komunikasi Utama ke Google Apps Script (Server)
- */
-async function callCloud(payload) {
-    try {
-        const response = await fetch(CLOUD_URL, {
-            method: "POST",
-            body: JSON.stringify(payload)
-        });
-        return await response.json();
-    } catch (error) {
-        console.error("Koneksi Error:", error);
-        return { result: "ERROR", message: "Gagal terhubung ke server" };
-    }
-}
-
-/**
- * AUTHENTICATION: LOGIN HANDLER
- */
-async function handleLogin(user, pass) {
-    const loader = document.getElementById('loading-overlay');
-    if (loader) loader.style.display = 'flex';
-    
-    try {
-        const result = await callCloud({
-            action: "login",
-            username: user,
-            password: pass
-        });
-
-        if (result && result.result === "SUCCESS") {
-            localStorage.setItem('user_session', result.username);
-            localStorage.setItem('user_fullname', result.fullname);
-            localStorage.setItem('saldo', result.saldo);
-            localStorage.setItem('tier', result.tier || "BRONZE");
-            localStorage.setItem('user_winrate', result.winrate || 70);
-
-            window.location.href = "game.html";
-        } else {
-            if (loader) loader.style.display = 'none';
-            alert(result.message || "Username atau Password salah!");
-        }
-    } catch (err) {
-        if (loader) loader.style.display = 'none';
-        alert("Gangguan koneksi server.");
-    }
-}
-
-/**
- * AUTHENTICATION: LOGOUT HANDLER
- */
-async function handleLogout() {
+// 1. CEK SESI (Dijalankan di setiap halaman kecuali index.html)
+function checkSession() {
     const user = localStorage.getItem('user_session');
-    if (user) {
-        await callCloud({ action: "logout", username: user });
-    }
-    localStorage.clear();
-    window.location.href = "index.html";
-}
+    const currentPage = window.location.pathname.split("/").pop();
 
-/**
- * SISTEM SALDO: UPDATE LOKAL (PROTEKSI NaN)
- */
-function updateSaldoLokal(newAmount) {
-    if (newAmount === undefined || newAmount === null || isNaN(newAmount)) return;
-    
-    localStorage.setItem('saldo', newAmount);
-    
-    const saldoDisplay = document.getElementById('display-saldo') || 
-                         document.getElementById('user-balance') || 
-                         document.getElementById('saldo-header');
-                         
-    if (saldoDisplay) {
-        saldoDisplay.innerText = "IDR " + Number(newAmount).toLocaleString('id-ID');
+    // Jika tidak ada user dan bukan di halaman login, tendang ke index.html
+    if (!user && currentPage !== "index.html" && currentPage !== "") {
+        window.location.href = "index.html";
     }
 }
 
-/**
- * SISTEM SALDO: SYNC DARI SERVER
- */
+// 2. AMBIL DATA SALDO TERBARU DARI SERVER
 async function syncSaldo() {
     const user = localStorage.getItem('user_session');
     if (!user) return;
 
     try {
-        const result = await callCloud({
-            action: "getUserData",
-            username: user
+        const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'getUserData', username: user })
         });
-
-        if (result && result.result === "SUCCESS") {
-            updateSaldoLokal(result.saldo);
-            localStorage.setItem('user_winrate', result.winrate || 70);
-            if (result.tier) localStorage.setItem('tier', result.tier);
-        }
-    } catch (e) {
-        console.warn("Auto-sync failed.");
-    }
-}
-
-/**
- * SISTEM PERMAINAN: KIRIM HASIL KE SERVER
- * Diubah namanya dari processGameResult menjadi sendGameResultToCloud
- * agar tidak bentrok dengan fungsi di game.html
- */
-async function sendGameResultToCloud(multiplierValue, betAmount) {
-    const user = localStorage.getItem('user_session');
-    if (!user) return null;
-
-    try {
-        const res = await callCloud({ 
-            action: 'playGame', 
-            username: user, 
-            betAmount: betAmount, 
-            multiplier: multiplierValue.toString() 
-        });
-
+        const res = await response.json();
+        
         if (res.result === "SUCCESS") {
-            return res; 
-        } else {
-            if(res.message === "SALDO HABIS") syncSaldo();
-            return null;
-        }
-    } catch (e) { 
-        console.error("Gagal sinkronisasi cloud."); 
-        return null; 
-    }
-}
-
-/**
- * TRANSAKSI: MUAT RIWAYAT
- */
-async function loadRiwayat(type) {
-    const user = localStorage.getItem('user_session');
-    const container = document.getElementById('history-list');
-
-    if (!user || !container) return;
-
-    container.innerHTML = '<div style="text-align:center; padding:20px; color:#00d4ff;">MEMUAT DATA...</div>';
-
-    try {
-        const res = await callCloud({
-            action: "getRiwayat",
-            username: user,
-            type: type
-        });
-
-        if (res.result === "SUCCESS" && res.data && res.data.length > 0) {
-            container.innerHTML = ''; 
-            res.data.forEach(item => {
-                const statusColor = item.status.toLowerCase() === 'success' || item.status.toLowerCase() === 'berhasil' ? '#00ff88' : 
-                                   (item.status.toLowerCase() === 'pending' || item.status.toLowerCase() === 'proses' ? '#ffcc00' : '#ff0077');
-                
-                const card = document.createElement('div');
-                card.style = "background:rgba(255,255,255,0.05); border:1px solid #333; border-radius:10px; padding:12px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;";
-                card.innerHTML = `
-                    <div>
-                        <div style="font-size:10px; color:#888;">${item.tanggal}</div>
-                        <div style="font-size:12px; font-weight:900; color:white;">${item.metode.toUpperCase()}</div>
-                    </div>
-                    <div style="text-align:right;">
-                        <div style="font-size:14px; font-weight:900; color:#fbff00;">IDR ${Number(item.jumlah).toLocaleString('id-ID')}</div>
-                        <div style="font-size:9px; font-weight:900; color:${statusColor}; text-transform:uppercase;">● ${item.status}</div>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-        } else {
-            container.innerHTML = '<div style="text-align:center; padding:40px; color:#555; font-size:12px;">BELUM ADA TRANSAKSI</div>';
+            localStorage.setItem('user_saldo', res.saldo);
+            // Update tampilan saldo jika elemennya ada
+            const saldoEl = document.getElementById('display-saldo');
+            if (saldoEl) {
+                saldoEl.innerText = "IDR " + Number(res.saldo).toLocaleString('id-ID');
+            }
         }
     } catch (e) {
-        container.innerHTML = '<div style="text-align:center; padding:20px; color:#ff0077;">GAGAL MEMUAT RIWAYAT</div>';
+        console.error("Gagal sinkron saldo server");
     }
 }
 
-/**
- * SECURITY: AUTO-REDIRECT
- */
-if (window.location.pathname.endsWith('index.html') || window.location.pathname === '/' || window.location.pathname.endsWith('login.html')) {
-    if (localStorage.getItem('user_session')) {
-        window.location.href = "game.html";
-    }
+// 3. FUNGSI LOGOUT
+function logout() {
+    localStorage.clear();
+    window.location.href = "index.html";
 }
+
+// Jalankan proteksi sesi saat script dimuat
+checkSession();
