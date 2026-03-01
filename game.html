@@ -142,16 +142,21 @@
         <button class="btn-main" id="play-btn" onclick="handlePlay()">LEPASKAN BOLA</button>
     </div>
 
+    <script src="global.js"></script>
+
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
         const container = document.getElementById('game-container');
         const bets = [400, 800, 1000, 1200, 1400, 1600, 1800, 2000, 4000, 6000, 8000, 10000, 12000, 14000, 16000, 18000, 20000];
         const slotMults = [5, 2, 1.2, 0.2, 1.2, 2, 5];
+        
+        // VARIABEL KUNCI UNTUK GLOBAL JS SINKRONISASI
         let betIdx = 0;
         let pegLocs = [];
-        let activeBalls = 0;
-        let isSyncing = false;
-        let lastWinTime = 0;
+        let activeBalls = 0;   // Melacak jumlah bola di layar
+        let isSyncing = false; // Status komunikasi dengan server
+        let lastWinTime = 0;   // Waktu terakhir menang (milidetik)
+        
         let isTurbo = false;
         let isAuto = false;
         let autoTimer = null;
@@ -161,30 +166,37 @@
             if (sound) { sound.currentTime = 0; sound.play().catch(() => {}); }
         }
 
+        // Fungsi Update Tampilan Saldo
         function updateSaldoUI() {
             let saldo = localStorage.getItem('user_saldo') || 0;
-            document.getElementById('display-saldo').innerText = "IDR " + Number(saldo).toLocaleString();
+            const saldoEl = document.getElementById('display-saldo');
+            if (saldoEl) {
+                saldoEl.innerText = "IDR " + Number(saldo).toLocaleString('id-ID');
+            }
         }
 
+        // Fungsi Ambil Saldo (Memanggil fungsi di Global JS jika tersedia)
         async function fetchLatestSaldo() {
-            const now = Date.now();
-            if (activeBalls > 0 || isSyncing || (now - lastWinTime < 4000)) return;
-
-            try {
-                const user = localStorage.getItem('user_session');
-                const response = await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'getUserData', username: user })
-                });
-                const res = await response.json();
-                
-                // Cegah saldo melompat mundur (Anti-Latency)
-                let localSaldo = Number(localStorage.getItem('user_saldo') || 0);
-                if (res.result === "SUCCESS" && activeBalls === 0 && res.saldo >= (localSaldo - 100)) {
-                    localStorage.setItem('user_saldo', res.saldo);
-                    updateSaldoUI();
-                }
-            } catch (e) {}
+            if (typeof window.fetchLatestSaldo === "function") {
+                await window.fetchLatestSaldo();
+            } else {
+                // Fallback jika global.js belum dimuat atau tidak ada fungsinya
+                const now = Date.now();
+                if (activeBalls > 0 || isSyncing || (now - lastWinTime < 4000)) return;
+                try {
+                    const user = localStorage.getItem('user_session');
+                    const response = await fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'getUserData', username: user })
+                    });
+                    const res = await response.json();
+                    let localSaldo = Number(localStorage.getItem('user_saldo') || 0);
+                    if (res.result === "SUCCESS" && activeBalls === 0 && res.saldo >= (localSaldo - 100)) {
+                        localStorage.setItem('user_saldo', res.saldo);
+                        updateSaldoUI();
+                    }
+                } catch (e) {}
+            }
         }
 
         function changeBet(dir) {
@@ -213,21 +225,26 @@
         function runAutoPlay() {
             if(!isAuto) return;
             handlePlay();
-            // Jarak bola lebih rapat namun realistis
-            autoTimer = setTimeout(runAutoPlay, isTurbo ? 250 : 600);
+            autoTimer = setTimeout(runAutoPlay, isTurbo ? 300 : 700);
         }
 
         function handlePlay() {
             const bet = bets[betIdx];
             let saldo = Number(localStorage.getItem('user_saldo') || 0);
+            
             if (saldo < bet) {
-                playSound('fail'); showModal("SALDO TIDAK CUKUP!");
-                if(isAuto) toggleAuto(); return;
+                playSound('fail'); 
+                showModal("SALDO TIDAK CUKUP!");
+                if(isAuto) toggleAuto(); 
+                return;
             }
+
+            // Potong saldo lokal SEGERA agar UI responsif
             saldo -= bet;
             localStorage.setItem('user_saldo', saldo);
             updateSaldoUI();
-            activeBalls++;
+            
+            activeBalls++; 
             playSound('drop');
             dropBall(bet);
         }
@@ -252,23 +269,20 @@
                 x += vx;
                 y += vy;
                 
-                // Deteksi Tabrakan Paku (Presisi Radius)
                 pegLocs.forEach(p => {
                     const dx = x - p.x;
                     const dy = y - p.y;
                     const dist = Math.sqrt(dx*dx + dy*dy);
-                    if (dist < 10) { // Radius paku + bola
+                    if (dist < 10) { 
                         playSound('hit');
                         const angle = Math.atan2(dy, dx);
-                        const force = Math.abs(vy) * bounce;
                         vx += Math.cos(angle) * 2;
-                        vy = Math.sin(angle) * force - (Math.random() * 2);
+                        vy = Math.sin(angle) * (Math.abs(vy) * bounce) - (Math.random() * 2);
                         p.el.classList.add('hit');
                         setTimeout(() => p.el.classList.remove('hit'), 100);
                     }
                 });
 
-                // Pantulan Dinding
                 if (x < 15 || x > container.offsetWidth - 15) {
                     vx *= -0.6;
                     x = x < 15 ? 15 : container.offsetWidth - 15;
@@ -280,7 +294,7 @@
                 if (y > 345) {
                     clearInterval(anim);
                     ballEl.remove();
-                    activeBalls--;
+                    activeBalls--; 
                     finishGame(x, bet);
                 }
             }, 1000/60);
@@ -291,10 +305,9 @@
             const containerW = container.offsetWidth;
             const gameWidth = containerW - (padding * 2);
             
-            // Validasi bola di dalam kotak
+            lastWinTime = Date.now(); 
+
             if (finalX < padding || finalX > containerW - padding) {
-                // Bola jatuh diluar kotak = KALAH
-                lastWinTime = Date.now();
                 syncWinToServer(bet, 0); 
                 return;
             }
@@ -303,14 +316,10 @@
             const multiplier = slotMults[Math.max(0, Math.min(slotMults.length - 1, winIdx))];
             const winAmount = Math.floor(bet * multiplier);
 
-            // Update Saldo Lokal
             let current = Number(localStorage.getItem('user_saldo') || 0);
             localStorage.setItem('user_saldo', current + winAmount);
             updateSaldoUI();
             
-            lastWinTime = Date.now();
-            
-            // Kemenangan hanya tampil jika > 0
             if (winAmount > 0) {
                 if (multiplier >= 1) playSound('win');
                 showWinPopup(winAmount, multiplier, finalX);
@@ -320,7 +329,7 @@
         }
 
         async function syncWinToServer(bet, mult) {
-            isSyncing = true;
+            isSyncing = true; 
             try {
                 const user = localStorage.getItem('user_session');
                 const response = await fetch(SCRIPT_URL, {
@@ -328,17 +337,21 @@
                     body: JSON.stringify({ 
                         action: 'playGame', 
                         username: user,
-                        betAmount: bet, multiplier: mult, isClientHandled: true 
+                        betAmount: bet, 
+                        multiplier: mult, 
+                        isClientHandled: true 
                     })
                 });
                 const res = await response.json();
+                
                 if(res.result === "SUCCESS" && res.newSaldo !== undefined) {
-                    // Update ke saldo server hanya jika sinkronisasi selesai
                     localStorage.setItem('user_saldo', res.newSaldo);
                     updateSaldoUI();
                 }
-            } catch (e) {} finally {
-                setTimeout(() => { isSyncing = false; }, 1500);
+            } catch (e) {
+                console.error("Sync Error");
+            } finally {
+                setTimeout(() => { isSyncing = false; }, 1000);
             }
         }
 
@@ -379,7 +392,6 @@
         window.onload = () => {
             initPegs(); 
             updateSaldoUI(); 
-            fetchLatestSaldo();
             setInterval(fetchLatestSaldo, 8000);
         };
     </script>
