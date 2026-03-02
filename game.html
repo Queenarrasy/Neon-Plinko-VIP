@@ -54,7 +54,7 @@
         .ball {
             position: absolute; width: 14px; height: 14px; background: var(--pink);
             border-radius: 50%; box-shadow: var(--neon-pink); transform: translate(-50%, -50%); z-index: 10;
-            will-change: left, top; /* Optimasi Performa */
+            will-change: left, top;
         }
         
         .multiplier-row { display: flex; justify-content: center; gap: 4px; padding: 0 10px; margin: 10px 0; }
@@ -70,7 +70,7 @@
             border: 1px solid var(--yellow); border-radius: 8px; padding: 8px;
             z-index: 1000; box-shadow: var(--neon-yellow); min-width: 100px;
         }
-        .score-entry { font-size: 11px; font-weight: bold; color: var(--yellow); border-bottom: 1px solid rgba(251, 255, 0, 0.1); padding: 2px 0; animation: scoreIn 0.3s ease; }
+        .score-entry { font-size: 11px; font-weight: bold; color: var(--yellow); border-bottom: 1px solid rgba(251, 255, 0, 0.1); padding: 2px 0; animation: scoreIn 0.3s ease forwards; }
         @keyframes scoreIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
 
         .controls { padding: 15px; background: #050714; border-top: 2px solid var(--blue); }
@@ -86,7 +86,7 @@
 
         .btn-play {
             width: 100%; padding: 16px; border-radius: 50px; background: linear-gradient(90deg, #aa0055, #0022aa);
-            color: white; font-weight: 900; border: 2px solid var(--yellow); text-transform: uppercase;
+            color: white; font-weight: 900; border: 2px solid var(--yellow); text-transform: uppercase; cursor: pointer;
         }
         
         .nav-bottom { display: grid; grid-template-columns: repeat(3, 1fr); background: #000; padding: 12px 5px; gap: 10px; border-top: 2px solid var(--blue); }
@@ -177,7 +177,6 @@
         const betList = [400, 800, 1000, 1200, 1600, 1800, 2000, 4000, 8000, 10000, 12000, 16000, 18000, 20000];
         const multipliers = [5, 2, 1.2, 0.5, 0.2, 0.5, 1.2, 2, 5];
         let betIdx = 0, pegLocs = [], speed = 'normal', isAuto = false, autoInt;
-        let recentWins = [];
 
         function playSound(type) {
             const s = document.getElementById('snd-' + type);
@@ -245,7 +244,6 @@
             document.getElementById('current-bet').innerText = betList[betIdx].toLocaleString();
         }
 
-        // --- SISTEM DETERMINASI SERVER-SYNC ---
         async function handlePlay() {
             const bet = betList[betIdx];
             let saldo = Number(localStorage.getItem('user_saldo') || 0);
@@ -265,7 +263,7 @@
                 const res = await response.json();
 
                 if(res.result === "SUCCESS") {
-                    // Update saldo lokal setelah bet (optimistic)
+                    // Update saldo lokal segera untuk stabilitas server (Optimistic)
                     localStorage.setItem('user_saldo', res.newSaldo); 
                     dropBall(bet, res.target_multiplier);
                 } else {
@@ -288,7 +286,6 @@
             const targetIdx = multipliers.indexOf(targetMult);
             const targetX = (targetIdx + 0.5) * (board.offsetWidth / multipliers.length);
 
-            // Ganti setInterval dengan requestAnimationFrame agar lebih smooth/stabil
             function animate() {
                 vy += 0.8; px += vx; py += vy;
                 
@@ -298,9 +295,9 @@
                         playSound('hit');
                         vx = (dx / dist) * 3; vy = (dy / dist) * 1.8;
                         
-                        // Smart Magnet: Arahkan bola secara halus ke target multiplier
-                        if (py > 150) {
-                            vx += (targetX - px) * 0.12; 
+                        // Sistem Magnetisme: Arahkan ke target multiplier dengan halus
+                        if (py > 120) {
+                            vx += (targetX - px) * 0.15; 
                         }
                         p.el.classList.add('hit'); setTimeout(() => p.el.classList.remove('hit'), 80);
                     }
@@ -313,7 +310,7 @@
                     requestAnimationFrame(animate);
                 } else {
                     ball.remove();
-                    finish(px, bet, targetMult);
+                    finish(bet, targetMult);
                 }
             }
             requestAnimationFrame(animate);
@@ -328,7 +325,7 @@
             if(list.children.length > 5) list.removeChild(list.lastChild);
         }
 
-        function finish(x, bet, targetMult) {
+        function finish(bet, targetMult) {
             const win = Math.floor(bet * targetMult);
             const idx = multipliers.indexOf(targetMult);
             
@@ -341,11 +338,13 @@
                 setTimeout(() => s.classList.remove('active'), 400);
             }
             
+            // UPDATE PAPAN SCORE & SALDO SECARA INSTAN
             updateScoreBoard(win, targetMult);
             updateSaldoUI(); 
         }
 
         window.onload = () => { init(); updateSaldoUI(); };
+        window.onresize = init;
     </script>
 </body>
 </html>
