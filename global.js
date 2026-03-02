@@ -1,43 +1,53 @@
 /**
- * GLOBAL SCRIPT NEON PLINKO VIP - V4.5
- * Menangani Sesi, Saldo (Anti-Mental Logic), dan Navigasi
+ * GLOBAL SCRIPT NEON PLINKO VIP - V5.0
+ * Menangani Sesi, Saldo (Anti-Mental Logic), dan Sinkronisasi Server
  */
 
-// Menyamakan SCRIPT_URL dengan API_URL agar fungsi fetch di HTML tidak error
+// URL API dari App Script Anda
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
 const API_URL = SCRIPT_URL; 
 
-// 1. CEK SESI (Dijalankan di setiap halaman kecuali index.html)
+/**
+ * 1. CEK SESI
+ * Memastikan user sudah login sebelum mengakses halaman permainan
+ */
 function checkSession() {
     const user = localStorage.getItem('user_session');
     const currentPage = window.location.pathname.split("/").pop();
 
-    // Jika tidak ada user dan bukan di halaman login, tendang ke index.html
+    // Jika tidak ada sesi dan bukan di halaman index (login), kembalikan ke index
     if (!user && currentPage !== "index.html" && currentPage !== "") {
         window.location.href = "index.html";
     }
 }
 
-// 2. FUNGSI UPDATE UI (Helper untuk sinkronisasi tampilan)
+/**
+ * 2. UPDATE UI SALDO
+ * Memperbarui tampilan saldo di elemen 'display-saldo'
+ */
 function updateSaldoUI() {
     const saldo = localStorage.getItem('user_saldo') || 0;
     const saldoEl = document.getElementById('display-saldo');
     if (saldoEl) {
+        // Format Rupiah Indonesia
         saldoEl.innerText = "IDR " + Number(saldo).toLocaleString('id-ID');
     }
 }
 
-// 3. AMBIL DATA SALDO TERBARU DARI SERVER (LOGIKA ANTI-MENTAL)
+/**
+ * 3. LOGIKA ANTI-MENTAL (fetchLatestSaldo)
+ * Mengambil saldo dari server tanpa mengganggu animasi kemenangan lokal
+ */
 async function fetchLatestSaldo() {
     const now = Date.now();
     
-    // TRIPLE LOCK: JANGAN tarik data jika:
-    // - Ada bola aktif di layar (activeBalls > 0)
-    // - Sedang proses kirim data menang (isSyncing)
-    // - Baru saja menang kurang dari 5 detik (now - lastWinTime < 5000)
-    if (typeof activeBalls !== 'undefined' && activeBalls > 0) return;
-    if (typeof isSyncing !== 'undefined' && isSyncing) return;
-    if (typeof lastWinTime !== 'undefined' && (now - lastWinTime < 5000)) return;
+    // KUNCI SINKRONISASI:
+    // Jangan tarik data jika ada bola yang sedang meluncur (mengacu pada ballActiveCount di HTML)
+    if (typeof ballActiveCount !== 'undefined' && ballActiveCount > 0) return;
+    
+    // Jangan tarik data jika baru saja menang kurang dari 4 detik 
+    // agar saldo lokal tidak tertimpa saldo server yang belum terupdate
+    if (typeof lastWinTime !== 'undefined' && (now - lastWinTime < 4000)) return;
 
     const user = localStorage.getItem('user_session');
     if (!user) return;
@@ -49,45 +59,59 @@ async function fetchLatestSaldo() {
         });
         const res = await response.json();
         
-        let localSaldo = Number(localStorage.getItem('user_saldo') || 0);
-        
-        // HANYA UPDATE JIKA:
-        // 1. Saldo server lebih besar (artinya ada deposit/admin update)
-        // 2. Atau saldo server sama (sinkron)
-        if (res.result === "SUCCESS" && res.saldo >= localSaldo) {
-            localStorage.setItem('user_saldo', res.saldo);
-            updateSaldoUI();
+        if (res.result === "SUCCESS") {
+            let localSaldo = Number(localStorage.getItem('user_saldo') || 0);
+            let serverSaldo = Number(res.saldo);
+            
+            // HANYA UPDATE JIKA:
+            // Saldo server berubah (biasanya karena Admin Update atau Deposit Masuk)
+            // Dan pastikan tidak sedang dalam kondisi bermain (isPlaying false)
+            if (typeof isPlaying !== 'undefined' && !isPlaying) {
+                if (serverSaldo !== localSaldo) {
+                    localStorage.setItem('user_saldo', serverSaldo);
+                    updateSaldoUI();
+                }
+            }
         }
     } catch (e) {
-        console.error("Gagal sinkron saldo server");
+        console.warn("Gagal sinkron saldo: Koneksi sibuk.");
     }
 }
 
-// 4. ALIAS UNTUK KOMPATIBILITAS (syncSaldo diarahkan ke fetchLatestSaldo)
-async function syncSaldo() {
-    await fetchLatestSaldo();
-}
-
 /**
- * TAMBAHAN UNTUK FIX KONEKSI SERVER GAGAL PADA AKUN BARU
- * Memastikan 'username' selalu tersedia untuk fungsi game_play
+ * 4. FIX USER SESSION
+ * Memastikan 'username' selalu tersedia untuk parameter 'game_play' di App Script
  */
 function fixUserSession() {
     const session = localStorage.getItem('user_session');
     const username = localStorage.getItem('username');
     
-    // Jika user_session ada tapi username kosong (biasanya terjadi setelah login/register baru)
+    // Sinkronkan key 'user_session' ke 'username' untuk kompatibilitas script game
     if (session && !username) {
         localStorage.setItem('username', session);
     }
 }
 
-// 5. FUNGSI LOGOUT
+/**
+ * 5. COMPATIBILITY ALIAS
+ */
+async function syncSaldo() {
+    await fetchLatestSaldo();
+}
+
+/**
+ * 6. LOGOUT
+ */
 function logout() {
     localStorage.clear();
     window.location.href = "index.html";
 }
 
-// Jalankan fungsi otomatis saat script dimuat
+// Jalankan otomatis saat halaman dimuat
 checkSession();
 fixUserSession();
+
+// Jalankan sinkronisasi berkala setiap 10 detik untuk cek deposit masuk (background sync)
+setInterval(() => {
+    fetchLatestSaldo();
+}, 10000);
