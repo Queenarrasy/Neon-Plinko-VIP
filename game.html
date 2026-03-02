@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEON PLINKO VIP - REFINED</title>
+    <title>NEON PLINKO VIP - ULTIMATE</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
         :root {
@@ -54,6 +54,7 @@
         .ball {
             position: absolute; width: 14px; height: 14px; background: var(--pink);
             border-radius: 50%; box-shadow: var(--neon-pink); transform: translate(-50%, -50%); z-index: 10;
+            will-change: left, top; /* Optimasi Performa */
         }
         
         .multiplier-row { display: flex; justify-content: center; gap: 4px; padding: 0 10px; margin: 10px 0; }
@@ -69,7 +70,8 @@
             border: 1px solid var(--yellow); border-radius: 8px; padding: 8px;
             z-index: 1000; box-shadow: var(--neon-yellow); min-width: 100px;
         }
-        .score-entry { font-size: 11px; font-weight: bold; color: var(--yellow); border-bottom: 1px solid rgba(251, 255, 0, 0.1); padding: 2px 0; }
+        .score-entry { font-size: 11px; font-weight: bold; color: var(--yellow); border-bottom: 1px solid rgba(251, 255, 0, 0.1); padding: 2px 0; animation: scoreIn 0.3s ease; }
+        @keyframes scoreIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
 
         .controls { padding: 15px; background: #050714; border-top: 2px solid var(--blue); }
         .mode-row { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; }
@@ -118,9 +120,7 @@
 
     <div id="floating-score">
         <div id="score-list">
-            <div class="score-entry" style="opacity:0.3">Waiting...</div>
-            <div class="score-entry" style="opacity:0.3">Waiting...</div>
-            <div class="score-entry" style="opacity:0.3">Waiting...</div>
+            <div class="score-entry" style="opacity:0.3">Ready...</div>
         </div>
     </div>
 
@@ -178,7 +178,6 @@
         const multipliers = [5, 2, 1.2, 0.5, 0.2, 0.5, 1.2, 2, 5];
         let betIdx = 0, pegLocs = [], speed = 'normal', isAuto = false, autoInt;
         let recentWins = [];
-        let maxWinLimit = 50000; // Default limit
 
         function playSound(type) {
             const s = document.getElementById('snd-' + type);
@@ -228,7 +227,7 @@
             speed = m;
             document.getElementById('m-normal').classList.toggle('active', m === 'normal');
             document.getElementById('m-turbo').classList.toggle('active', m === 'turbo');
-            if(isAuto) { clearInterval(autoInt); autoInt = setInterval(handlePlay, speed === 'turbo' ? 400 : 1000); }
+            if(isAuto) { clearInterval(autoInt); autoInt = setInterval(handlePlay, speed === 'turbo' ? 300 : 900); }
         }
 
         function toggleAuto() {
@@ -236,7 +235,7 @@
             isAuto = !isAuto;
             document.getElementById('m-auto').innerText = isAuto ? "AUTO: ON" : "AUTO: OFF";
             document.getElementById('m-auto').classList.toggle('active', isAuto);
-            if(isAuto) autoInt = setInterval(handlePlay, speed === 'turbo' ? 400 : 1000);
+            if(isAuto) autoInt = setInterval(handlePlay, speed === 'turbo' ? 300 : 900);
             else clearInterval(autoInt);
         }
 
@@ -246,19 +245,7 @@
             document.getElementById('current-bet').innerText = betList[betIdx].toLocaleString();
         }
 
-        // --- SISTEM KEAMANAN CADANGAN DI CLIENT ---
-        function determineOutcome(userSaldo, winRate, limit) {
-          if (userSaldo >= limit) {
-            return 0.2; 
-          }
-          let kopyok = Math.random() * 100;
-          if (kopyok <= winRate) {
-            return 5.0; 
-          } else {
-            return 0.2; 
-          }
-        }
-
+        // --- SISTEM DETERMINASI SERVER-SYNC ---
         async function handlePlay() {
             const bet = betList[betIdx];
             let saldo = Number(localStorage.getItem('user_saldo') || 0);
@@ -266,35 +253,29 @@
             if (saldo < bet) { 
                 playSound('error');
                 if(isAuto) toggleAuto(); 
-                return showModal("Saldo Tidak Cukup!", 'var(--pink)'); 
+                return showModal("Saldo Habis!", 'var(--pink)'); 
             }
 
             try {
                 const user = localStorage.getItem('username');
                 const response = await fetch(API_URL, {
                     method: 'POST',
-                    body: JSON.stringify({
-                        action: 'game_play',
-                        username: user,
-                        bet: bet
-                    })
+                    body: JSON.stringify({ action: 'game_play', username: user, bet: bet })
                 });
                 const res = await response.json();
 
                 if(res.result === "SUCCESS") {
-                    localStorage.setItem('user_saldo', res.newSaldo);
-                    // Gunakan target dari server
+                    // Update saldo lokal setelah bet (optimistic)
+                    localStorage.setItem('user_saldo', res.newSaldo); 
                     dropBall(bet, res.target_multiplier);
                 } else {
-                    // Jika server sibuk/gagal, gunakan proteksi client side agar game tidak macet
-                    let fallbackTarget = determineOutcome(saldo, 10, maxWinLimit);
-                    dropBall(bet, fallbackTarget);
+                    showModal(res.message);
+                    if(isAuto) toggleAuto();
                 }
             } catch (e) {
                 console.error(e);
-                // Fallback jika koneksi putus
-                let fallbackTarget = determineOutcome(saldo, 5, maxWinLimit);
-                dropBall(bet, fallbackTarget);
+                showModal("Koneksi Server Gagal");
+                if(isAuto) toggleAuto();
             }
         }
 
@@ -304,62 +285,63 @@
             board.appendChild(ball);
             
             let px = board.offsetWidth / 2, py = 10, vx = (Math.random() - 0.5) * 2, vy = 0;
-            
-            const anim = setInterval(() => {
-                vy += 0.6; px += vx; py += vy;
+            const targetIdx = multipliers.indexOf(targetMult);
+            const targetX = (targetIdx + 0.5) * (board.offsetWidth / multipliers.length);
+
+            // Ganti setInterval dengan requestAnimationFrame agar lebih smooth/stabil
+            function animate() {
+                vy += 0.8; px += vx; py += vy;
                 
                 pegLocs.forEach(p => {
                     const dx = px - p.x, dy = py - p.y, dist = Math.sqrt(dx*dx + dy*dy);
                     if (dist < 11) {
                         playSound('hit');
-                        vx = (dx / dist) * 2.8; vy = (dy / dist) * 1.5;
+                        vx = (dx / dist) * 3; vy = (dy / dist) * 1.8;
                         
-                        // Magnet Logic
-                        if (py > 180) {
-                            const targetIdx = multipliers.indexOf(targetMult);
-                            const targetX = (targetIdx + 0.5) * (board.offsetWidth / multipliers.length);
-                            vx += (targetX - px) * 0.08; 
+                        // Smart Magnet: Arahkan bola secara halus ke target multiplier
+                        if (py > 150) {
+                            vx += (targetX - px) * 0.12; 
                         }
-
                         p.el.classList.add('hit'); setTimeout(() => p.el.classList.remove('hit'), 80);
                     }
                 });
 
-                if (px < 15 || px > board.offsetWidth - 15) vx *= -0.6;
+                if (px < 15 || px > board.offsetWidth - 15) vx *= -0.7;
                 ball.style.left = px + 'px'; ball.style.top = py + 'px';
 
-                if (py > 370) {
-                    clearInterval(anim); ball.remove();
-                    finish(px, bet);
+                if (py < 375) {
+                    requestAnimationFrame(animate);
+                } else {
+                    ball.remove();
+                    finish(px, bet, targetMult);
                 }
-            }, 16);
+            }
+            requestAnimationFrame(animate);
         }
 
-        function updateScoreList(winAmount) {
+        function updateScoreBoard(winAmount, mult) {
             const list = document.getElementById('score-list');
-            recentWins.unshift("IDR " + winAmount.toLocaleString());
-            if(recentWins.length > 3) recentWins.pop();
-            list.innerHTML = '';
-            recentWins.forEach(win => {
-                const div = document.createElement('div');
-                div.className = 'score-entry';
-                div.innerText = win;
-                list.appendChild(div);
-            });
+            const entry = document.createElement('div');
+            entry.className = 'score-entry';
+            entry.innerHTML = `<span style="color:var(--yellow)">${mult}x</span> | IDR ${winAmount.toLocaleString()}`;
+            list.prepend(entry);
+            if(list.children.length > 5) list.removeChild(list.lastChild);
         }
 
-        function finish(x, bet) {
-            const idx = Math.floor(x / (board.offsetWidth / multipliers.length));
-            const mult = multipliers[Math.max(0, Math.min(multipliers.length - 1, idx))];
-            const win = Math.floor(bet * mult);
+        function finish(x, bet, targetMult) {
+            const win = Math.floor(bet * targetMult);
+            const idx = multipliers.indexOf(targetMult);
             
-            if(mult >= 1) playSound('win');
+            if(targetMult >= 1.2) playSound('win');
             
             const slots = document.querySelectorAll('.slot');
-            const s = slots[Math.max(0, Math.min(slots.length - 1, idx))];
-            s.classList.add('active'); setTimeout(() => s.classList.remove('active'), 400);
+            const s = slots[idx];
+            if(s) {
+                s.classList.add('active'); 
+                setTimeout(() => s.classList.remove('active'), 400);
+            }
             
-            updateScoreList(win);
+            updateScoreBoard(win, targetMult);
             updateSaldoUI(); 
         }
 
