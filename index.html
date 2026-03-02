@@ -235,6 +235,16 @@
             return p.length >= 6 && hasLetter && hasNumber;
         }
 
+        // --- FUNGSI BARU UNTUK RESET WAKTU GACOR ---
+        async function startSession(user) {
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'reset_session', username: user })
+                });
+            } catch (e) { console.error("Session Error", e); }
+        }
+
         async function processAuth() {
             playClick();
             const user = document.getElementById('username').value.trim();
@@ -258,13 +268,14 @@
             btn.disabled = true;
 
             try {
+                // Gunakan getUserData untuk login agar data password divalidasi langsung dari server
                 let payload = { 
-                    action: isLogin ? 'login' : 'register', 
-                    username: user, 
-                    password: pass 
+                    action: isLogin ? 'getUserData' : 'register', 
+                    username: user
                 };
                 
                 if (!isLogin) {
+                    payload.password = pass;
                     payload.phone = document.getElementById('phone').value.trim();
                     payload.fullname = document.getElementById('fullname').value.trim();
                     payload.bank = document.getElementById('bank').value;
@@ -286,18 +297,42 @@
                 });
 
                 const result = await response.json();
-                loader.style.display = 'none';
+                
+                // Jika login, lakukan verifikasi password dari data server
+                if (isLogin) {
+                    if (result.result === "SUCCESS") {
+                        if (result.password === pass) {
+                            // Password Benar
+                        } else {
+                            loader.style.display = 'none';
+                            btn.disabled = false;
+                            playError();
+                            showNeonAlert("Password Salah!", "GAGAL LOGIN");
+                            return;
+                        }
+                    } else {
+                        loader.style.display = 'none';
+                        btn.disabled = false;
+                        playError();
+                        showNeonAlert("Username tidak ditemukan!", "GAGAL LOGIN");
+                        return;
+                    }
+                }
 
                 if (result.result === "SUCCESS") {
                     playSuccess();
                     
-                    // --- SINKRONISASI DATA KE SEMUA VARIABEL ---
+                    // Reset Session Gacor (Menit Gacor dimulai saat login sukses)
+                    await startSession(user);
+
+                    // SINKRONISASI DATA
                     localStorage.setItem('user_session', user); 
-                    localStorage.setItem('username', user);     // Tambahan agar game.html tidak gagal koneksi
+                    localStorage.setItem('username', user);
                     localStorage.setItem('user_fullname', result.fullname || user);
                     localStorage.setItem('user_saldo', result.saldo || 0);
 
                     const successMsg = isLogin ? "LOGIN BERHASIL! Selamat Datang." : "BERHASIL TERDAFTAR! Memasuki Game...";
+                    loader.style.display = 'none';
                     showNeonAlert(successMsg, "BERHASIL", true);
 
                     setTimeout(() => { 
@@ -305,11 +340,11 @@
                     }, 1500);
 
                 } else {
+                    loader.style.display = 'none';
                     btn.disabled = false;
                     playError();
                     let errMsg = result.message || "Terjadi kesalahan.";
                     if(result.result === "EXISTS") errMsg = "Username sudah digunakan!";
-                    if(result.result === "WRONG") errMsg = "Password salah!";
                     showNeonAlert(errMsg, "GAGAL");
                 }
 
@@ -317,7 +352,7 @@
                 loader.style.display = 'none';
                 btn.disabled = false;
                 playError();
-                showNeonAlert("Koneksi Error. Pastikan internet stabil dan server aktif.");
+                showNeonAlert("Koneksi Error. Pastikan internet stabil.");
                 console.error("Auth Error:", error);
             }
         }
