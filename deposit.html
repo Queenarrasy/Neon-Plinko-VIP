@@ -244,7 +244,7 @@
                     username: user,
                     fullname: full,
                     amount: finalAmount,
-                    method: metodeTerpilih
+                    method: metodeTerpilih // Ini mengirimkan 'QRIS' atau 'CRYPTO'
                 });
                 
                 if(res.result === "SUCCESS") {
@@ -262,7 +262,7 @@
         }
 
         // ==========================================================
-        // PERBAIKAN VISUAL RIWAYAT DEPOSIT SESUAI INSTRUKSI
+        // PERBAIKAN FINAL: FORMAT WAKTU & METODE TERBACA JELAS
         // ==========================================================
         async function muatRiwayatCloud() {
             const user = localStorage.getItem('user_session');
@@ -271,7 +271,7 @@
 
             try {
                 const res = await callCloud({
-                    action: "getDepoHistory", // Sesuai dengan action di server GAS Anda
+                    action: "getDepoHistory",
                     username: user
                 });
 
@@ -287,15 +287,22 @@
                             sText = "BERHASIL";
                         }
                         
-                        // Membersihkan format waktu dari embel-embel huruf/timezone
-                        let tglBersih = item.tgl;
+                        // Perbaikan Format Waktu: Pastikan hanya DD/MM/YYYY HH:MM:SS
+                        let tglStr = String(item.tgl);
+                        let tglBersih = tglStr.split('T')[0].split('.')[0].replace('Z', '').replace('GMT+0700', '').trim();
+                        // Jika format sudah dari GAS, ambil substring standar
+                        if(tglBersih.length > 19) tglBersih = tglBersih.substring(0, 19);
+
+                        // Perbaikan Metode: Jika 'CRYPTO' tampilkan 'USDT CRYPTO'
+                        let displayMethod = String(item.metode || 'QRIS').toUpperCase();
+                        if(displayMethod === 'CRYPTO') displayMethod = 'USDT CRYPTO';
 
                         const card = document.createElement('div');
                         card.className = 'history-item';
                         card.innerHTML = `
                             <div style="text-align: left;">
-                                <div style="font-size:11px; color:#ffffff; font-weight:900; margin-bottom:2px;">${item.metode ? item.metode.toUpperCase() : 'QRIS'}</div>
-                                <div style="font-size:10px; color:#ffffff; font-weight:normal;">${tglBersih}</div>
+                                <div style="font-size:11px; color:#ffffff; font-weight:900; margin-bottom:2px;">${displayMethod}</div>
+                                <div style="font-size:10px; color:#ffffff; font-weight:normal; opacity:0.9;">${tglBersih}</div>
                             </div>
                             <div style="text-align:right;">
                                 <div style="font-size:14px; font-weight:900; color:var(--neon-pink); margin-bottom:2px;">Rp ${Number(item.amt).toLocaleString('id-ID')}</div>
@@ -316,7 +323,6 @@
             await updateKurs();
             pilihMetode('QRIS'); 
             muatRiwayatCloud(); 
-            // Refresh otomatis setiap 20 detik
             setInterval(muatRiwayatCloud, 20000);
         };
     </script>
