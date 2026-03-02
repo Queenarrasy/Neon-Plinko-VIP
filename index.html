@@ -185,7 +185,7 @@
 
     <script>
         let isLogin = false;
-        // URL SCRIPT ANDA SUDAH TERPASANG DI SINI
+        // URL SCRIPT ANDA
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
 
         function playClick() { document.getElementById('snd-click').currentTime = 0; document.getElementById('snd-click').play(); }
@@ -264,7 +264,6 @@
                     password: pass 
                 };
                 
-                // Menghubungkan semua field data pendaftaran ke payload
                 if (!isLogin) {
                     payload.phone = document.getElementById('phone').value.trim();
                     payload.fullname = document.getElementById('fullname').value.trim();
@@ -281,14 +280,8 @@
                     }
                 }
 
-                // Mengirim data ke Google Script URL dengan mode 'no-cors' atau 'cors' tergantung setingan GAS Anda
-                // Disini kita gunakan standar POST JSON
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'cors', // Pastikan script Google Anda mengizinkan CORS
-                    headers: {
-                        'Content-Type': 'text/plain;charset=utf-8',
-                    },
                     body: JSON.stringify(payload)
                 });
 
@@ -297,7 +290,10 @@
 
                 if (result.result === "SUCCESS") {
                     playSuccess();
-                    localStorage.setItem('user_session', user);
+                    
+                    // --- SINKRONISASI DATA KE SEMUA VARIABEL ---
+                    localStorage.setItem('user_session', user); 
+                    localStorage.setItem('username', user);     // Tambahan agar game.html tidak gagal koneksi
                     localStorage.setItem('user_fullname', result.fullname || user);
                     localStorage.setItem('user_saldo', result.saldo || 0);
 
@@ -321,7 +317,7 @@
                 loader.style.display = 'none';
                 btn.disabled = false;
                 playError();
-                showNeonAlert("Koneksi Error. Pastikan URL Script benar dan sudah di-deploy sebagai 'Anyone'.");
+                showNeonAlert("Koneksi Error. Pastikan internet stabil dan server aktif.");
                 console.error("Auth Error:", error);
             }
         }
