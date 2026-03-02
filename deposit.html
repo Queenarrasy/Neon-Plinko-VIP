@@ -160,8 +160,17 @@
             playClick();
             const inputVal = parseFloat(document.getElementById('input-nominal').value);
             const user = localStorage.getItem('user_session');
+            
             if (!user) return showPopup("Sesi habis, silakan login ulang");
             if (!inputVal || inputVal <= 0) return showPopup("Masukkan nominal valid");
+
+            // VALIDASI MINIMUM DEPOSIT BERDASARKAN METODE
+            if (metodeTerpilih === 'QRIS' && inputVal < 20000) {
+                return showPopup("Gagal! Minimal deposit via QRIS adalah IDR 20,000");
+            }
+            if (metodeTerpilih === 'CRYPTO' && inputVal < 10) {
+                return showPopup("Gagal! Minimal deposit via USDT adalah $10");
+            }
 
             document.getElementById('loading-overlay').style.display = 'flex';
             const finalAmount = metodeTerpilih === 'CRYPTO' ? (inputVal - 2) * hargaUSDT : inputVal;
@@ -191,11 +200,9 @@
             if(!user) return;
 
             try {
-                // SINKRONISASI: Action 'getDepoHistory' sesuai GAS Anda
                 const response = await fetch(`${SCRIPT_URL}?action=getDepoHistory&username=${user}&t=${new Date().getTime()}`);
                 const res = await response.json();
 
-                // SINKRONISASI: Menggunakan 'res.history' sesuai GAS Anda
                 if (res.result === "SUCCESS" && res.history && res.history.length > 0) {
                     container.innerHTML = ''; 
                     res.history.forEach(item => {
@@ -208,13 +215,14 @@
                         
                         const card = document.createElement('div');
                         card.className = 'history-item';
+                        // PERUBAHAN TATA LETAK & WARNA SESUAI INSTRUKSI
                         card.innerHTML = `
                             <div>
-                                <div style="font-size:9px; color:#aaa; font-weight:bold;">${item.tgl}</div>
-                                <span style="font-size:11px; color:var(--neon-blue); text-shadow: var(--blue-bias);">${item.metode || 'QRIS'}</span>
+                                <div style="font-size:11px; color:var(--neon-blue); font-weight:900; text-transform:uppercase; text-shadow: var(--blue-bias);">${item.metode || 'QRIS'}</div>
+                                <div style="font-size:9px; color:#fff; font-weight:bold; margin-top:2px;">${item.tgl}</div>
                             </div>
                             <div style="text-align:right;">
-                                <div style="font-size:13px; font-weight:900; color:#fff;">Rp ${Number(item.amt).toLocaleString('id-ID')}</div>
+                                <div style="font-size:13px; font-weight:900; color:var(--neon-pink); text-shadow: var(--pink-bias);">Rp ${Number(item.amt).toLocaleString('id-ID')}</div>
                                 <div style="font-size:10px; font-weight:900; color:${sColor};">● ${sText}</div>
                             </div>
                         `;
