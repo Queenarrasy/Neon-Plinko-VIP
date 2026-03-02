@@ -87,6 +87,7 @@
         .btn-play {
             width: 100%; padding: 16px; border-radius: 50px; background: linear-gradient(90deg, #aa0055, #0022aa);
             color: white; font-weight: 900; border: 2px solid var(--yellow); text-transform: uppercase; cursor: pointer;
+            transition: all 0.3s ease;
         }
         
         .nav-bottom { display: grid; grid-template-columns: repeat(3, 1fr); background: #000; padding: 12px 5px; gap: 10px; border-top: 2px solid var(--blue); }
@@ -149,12 +150,12 @@
             <button class="btn-mode" id="m-auto" onclick="toggleAuto()">AUTO: OFF</button>
         </div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding: 0 10px;">
-            <i class="fa-solid fa-circle-minus" onclick="changeBet(-1)" style="color:var(--pink); font-size: 25px;"></i>
+            <i class="fa-solid fa-circle-minus btn-bet-ctrl" onclick="changeBet(-1)" style="color:var(--pink); font-size: 25px;"></i>
             <div style="text-align: center;">
                 <div style="font-size: 9px; color: gray; font-weight: bold;">TARUHAN</div>
                 <span id="current-bet" style="color:var(--yellow); font-size:22px; font-weight:bold;">400</span>
             </div>
-            <i class="fa-solid fa-circle-plus" onclick="changeBet(1)" style="color:var(--blue); font-size: 25px;"></i>
+            <i class="fa-solid fa-circle-plus btn-bet-ctrl" onclick="changeBet(1)" style="color:var(--blue); font-size: 25px;"></i>
         </div>
         <button class="btn-play" onclick="handlePlay()">PLAY BALL</button>
     </div>
@@ -176,7 +177,14 @@
         const board = document.getElementById('game-board');
         const betList = [400, 800, 1000, 1200, 1600, 1800, 2000, 4000, 8000, 10000, 12000, 16000, 18000, 20000];
         const multipliers = [5, 2, 1.2, 0.5, 0.2, 0.5, 1.2, 2, 5];
-        let betIdx = 0, pegLocs = [], speed = 'normal', isAuto = false, autoInt;
+        
+        let betIdx = 0;
+        let pegLocs = [];
+        let speed = 'normal';
+        let isAuto = false;
+        let autoInt = null;
+        let isPlaying = false; 
+        let ballActiveCount = 0;
 
         function playSound(type) {
             const s = document.getElementById('snd-' + type);
@@ -221,30 +229,65 @@
             });
         }
 
-        function setSpeed(m) {
-            playSound('click');
-            speed = m;
-            document.getElementById('m-normal').classList.toggle('active', m === 'normal');
-            document.getElementById('m-turbo').classList.toggle('active', m === 'turbo');
-            if(isAuto) { clearInterval(autoInt); autoInt = setInterval(handlePlay, speed === 'turbo' ? 300 : 900); }
-        }
-
-        function toggleAuto() {
-            playSound('click');
-            isAuto = !isAuto;
-            document.getElementById('m-auto').innerText = isAuto ? "AUTO: ON" : "AUTO: OFF";
-            document.getElementById('m-auto').classList.toggle('active', isAuto);
-            if(isAuto) autoInt = setInterval(handlePlay, speed === 'turbo' ? 300 : 900);
-            else clearInterval(autoInt);
-        }
-
+        // --- LOCK BET & UI CONTROLS ---
         function changeBet(d) {
+            if (isPlaying || isAuto) return; // INSTRUKSI 8: Lock bet saat jalan
             playSound('click');
             betIdx = Math.max(0, Math.min(betList.length - 1, betIdx + d));
             document.getElementById('current-bet').innerText = betList[betIdx].toLocaleString();
         }
 
+        function setSpeed(m) {
+            if (isAuto) return; // Mencegah ganti mode saat auto aktif demi kestabilan server
+            playSound('click');
+            speed = m;
+            document.getElementById('m-normal').classList.toggle('active', m === 'normal');
+            document.getElementById('m-turbo').classList.toggle('active', m === 'turbo');
+        }
+
+        // --- AUTO LOGIC (INSTRUKSI 6 & 7) ---
+        function toggleAuto() {
+            // INSTRUKSI 6: Harus PLAY BALL dulu baru bisa AUTO
+            if (!isPlaying && !isAuto) {
+                showModal("Tekan PLAY BALL dulu sebelum masuk Mode AUTO!", "var(--yellow)");
+                return;
+            }
+            
+            isAuto = !isAuto;
+            const btnAuto = document.getElementById('m-auto');
+            const btnPlay = document.querySelector('.btn-play');
+
+            if (isAuto) {
+                btnAuto.innerText = "AUTO: ON";
+                btnAuto.classList.add('active');
+                btnPlay.innerText = "STOP AUTO"; // INSTRUKSI 7
+                btnPlay.style.background = "linear-gradient(90deg, #ff0000, #660000)";
+                startAutoMode();
+            } else {
+                btnAuto.innerText = "AUTO: OFF";
+                btnAuto.classList.remove('active');
+                btnPlay.innerText = "PLAY BALL";
+                btnPlay.style.background = "linear-gradient(90deg, #aa0055, #0022aa)";
+                if(autoInt) clearInterval(autoInt);
+            }
+        }
+
+        function startAutoMode() {
+            const interval = speed === 'turbo' ? 500 : 1300;
+            autoInt = setInterval(() => {
+                if (isAuto) executeDrop();
+            }, interval);
+        }
+
         async function handlePlay() {
+            if (isAuto) { 
+                toggleAuto(); // Jika sedang auto, tombol Play berfungsi sebagai Stop
+                return; 
+            }
+            executeDrop();
+        }
+
+        async function executeDrop() {
             const bet = betList[betIdx];
             let saldo = Number(localStorage.getItem('user_saldo') || 0);
             
@@ -253,6 +296,10 @@
                 if(isAuto) toggleAuto(); 
                 return showModal("Saldo Habis!", 'var(--pink)'); 
             }
+
+            isPlaying = true;
+            // Visual lock bet buttons
+            document.querySelectorAll('.btn-bet-ctrl').forEach(i => i.style.opacity = "0.3");
 
             try {
                 const user = localStorage.getItem('username');
@@ -263,7 +310,6 @@
                 const res = await response.json();
 
                 if(res.result === "SUCCESS") {
-                    // Update saldo lokal segera untuk stabilitas server (Optimistic)
                     localStorage.setItem('user_saldo', res.newSaldo); 
                     dropBall(bet, res.target_multiplier);
                 } else {
@@ -271,37 +317,51 @@
                     if(isAuto) toggleAuto();
                 }
             } catch (e) {
-                console.error(e);
-                showModal("Koneksi Server Gagal");
+                console.error("Koneksi Error");
                 if(isAuto) toggleAuto();
             }
         }
 
+        // --- PHYSICS & ANIMATION (INSTRUKSI 2, 3, 4) ---
         function dropBall(bet, targetMult) {
+            ballActiveCount++;
             const ball = document.createElement('div');
             ball.className = 'ball';
             board.appendChild(ball);
             
-            let px = board.offsetWidth / 2, py = 10, vx = (Math.random() - 0.5) * 2, vy = 0;
+            // INSTRUKSI 2: Instant drop (tanpa delay start)
+            let px = board.offsetWidth / 2, py = 10;
+            let vx = (Math.random() - 0.5) * 1.5; // INSTRUKSI 4: Jarak dipersempit
+            let vy = 0;
+            
             const targetIdx = multipliers.indexOf(targetMult);
             const targetX = (targetIdx + 0.5) * (board.offsetWidth / multipliers.length);
 
             function animate() {
-                vy += 0.8; px += vx; py += vy;
+                // INSTRUKSI 3: Gravity realistis (Normal vs Turbo)
+                let gravity = speed === 'turbo' ? 0.9 : 0.65; 
+                vy += gravity;
+                px += vx;
+                py += vy;
                 
                 pegLocs.forEach(p => {
                     const dx = px - p.x, dy = py - p.y, dist = Math.sqrt(dx*dx + dy*dy);
                     if (dist < 11) {
                         playSound('hit');
-                        vx = (dx / dist) * 3; vy = (dy / dist) * 1.8;
+                        // Pantulan serealistis mungkin
+                        vx = (dx / dist) * (speed === 'turbo' ? 3.5 : 2.2); 
+                        vy = (dy / dist) * 1.5;
                         
-                        // Sistem Magnetisme: Arahkan ke target multiplier dengan halus (Winrate Logic)
-                        if (py > 120) {
-                            vx += (targetX - px) * 0.15; 
+                        // Magnetisme Winrate Logic (Mengarahkan ke target)
+                        if (py > 150) {
+                            vx += (targetX - px) * 0.12; 
                         }
                         p.el.classList.add('hit'); setTimeout(() => p.el.classList.remove('hit'), 80);
                     }
                 });
+
+                // Gesekan udara tipis agar bola tidak liar
+                vx *= 0.99;
 
                 if (px < 15 || px > board.offsetWidth - 15) vx *= -0.7;
                 ball.style.left = px + 'px'; ball.style.top = py + 'px';
@@ -310,6 +370,12 @@
                     requestAnimationFrame(animate);
                 } else {
                     ball.remove();
+                    ballActiveCount--;
+                    // Jika semua bola selesai dan tidak sedang auto, buka kunci bet
+                    if (ballActiveCount <= 0 && !isAuto) {
+                        isPlaying = false;
+                        document.querySelectorAll('.btn-bet-ctrl').forEach(i => i.style.opacity = "1");
+                    }
                     finish(bet, targetMult);
                 }
             }
@@ -338,7 +404,6 @@
                 setTimeout(() => s.classList.remove('active'), 400);
             }
             
-            // UPDATE PAPAN SCORE & SALDO SECARA INSTAN SAAT BOLA MASUK
             updateScoreBoard(win, targetMult);
             updateSaldoUI(); 
         }
