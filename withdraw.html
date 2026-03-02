@@ -8,9 +8,10 @@
     <style>
         :root { 
             --pink: #ff0077; 
-            --blue: #0044ff; 
+            --blue: #0044ff; /* Deep Blue Neon */
             --yellow: #fbff00; 
             --bg: #070816; 
+            /* Efek Neon Bias Tipis sesuai permintaan */
             --pink-bias: 0 0 6px rgba(255, 0, 119, 0.3);
             --blue-bias: 0 0 6px rgba(0, 68, 255, 0.3);
             --yellow-bias: 0 0 6px rgba(251, 255, 0, 0.3);
@@ -37,8 +38,22 @@
             margin-bottom: 20px;
             box-shadow: var(--pink-bias);
         }
-        .wd-balance p { font-size: 10px; color: #ffffff; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin: 0; opacity: 0.8; }
-        .wd-balance h2 { font-size: 26px; color: #ffffff; font-weight: 900; text-shadow: 0 0 5px rgba(255, 255, 255, 0.2); margin: 5px 0 0 0; }
+        .wd-balance p { 
+            font-size: 10px; 
+            color: #ffffff; 
+            font-weight: 900; 
+            text-transform: uppercase; 
+            letter-spacing: 2px; 
+            margin: 0;
+            opacity: 0.8;
+        }
+        .wd-balance h2 { 
+            font-size: 26px; 
+            color: #ffffff; 
+            font-weight: 900; 
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.2); 
+            margin: 5px 0 0 0; 
+        }
         
         .form-group { text-align: left; margin-bottom: 15px; }
         .form-group label { font-size: 9px; color: var(--blue); font-weight: 900; margin-left: 5px; text-transform: uppercase; }
@@ -94,20 +109,21 @@
         .btn-wd:active, .btn-back:active { transform: scale(0.96); }
 
         .history-section { 
-            margin-top: 25px; 
-            background: #000; 
+            margin-top: 30px; 
+            background: rgba(0,0,0,0.6); 
             border-radius: 20px; 
             padding: 15px; 
-            border: 2.5px solid var(--blue);
+            border: 2px solid var(--blue);
             box-shadow: var(--blue-bias);
             text-align: left;
         }
-        .history-title { font-size: 13px; color: var(--blue); font-weight: 900; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;}
-        .scroll-list { max-height: 200px; overflow-y: auto; padding-right: 5px; }
+        .history-title { font-size: 11px; color: var(--yellow); font-weight: 900; margin-bottom: 15px; letter-spacing: 1px; text-transform: uppercase;}
+        .table-scroll { max-height: 250px; overflow-y: auto; padding-right: 5px; }
         
-        /* Custom Scrollbar */
-        .scroll-list::-webkit-scrollbar { width: 4px; }
-        .scroll-list::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 10px; }
+        .table-scroll::-webkit-scrollbar { width: 4px; }
+        .table-scroll::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 10px; }
+
+        .history-item { background: rgba(255,255,255,0.05); border: 1px solid #333; border-radius: 10px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
 
         #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 2000000; }
         .spinner { width: 40px; height: 40px; border: 4px solid rgba(0, 68, 255, 0.1); border-top: 4px solid var(--blue); border-radius: 50%; animation: spin 1s linear infinite; }
@@ -170,11 +186,9 @@
         <button class="btn-wd" onclick="playClick(); konfirmasiWD()">AJUKAN PENARIKAN</button>
         
         <div class="history-section">
-            <h3 class="history-title">
-                <i class="fa-solid fa-clock-rotate-left"></i> Riwayat Penarikan
-            </h3>
-            <div id="wd-history-list" class="scroll-list">
-                <p style="text-align:center; font-size:11px; color:#555;">Memuat riwayat...</p>
+            <div class="history-title"><i class="fa-solid fa-clock-rotate-left"></i> RIWAYAT PENARIKAN</div>
+            <div id="wd-history-list" class="table-scroll">
+                <div style="text-align:center; padding:20px; color:#666; font-size:10px;">MEMUAT RIWAYAT...</div>
             </div>
         </div>
 
@@ -190,6 +204,14 @@
         function playSuccess() { document.getElementById('sfx-success').play(); }
         function playError() { document.getElementById('sfx-error').play(); }
         function playPop() { document.getElementById('sfx-pop').play(); }
+
+        // Helper untuk memformat tanggal ke: DD/MM/YYYY HH:MM:SS
+        function formatWaktu(dateStr) {
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return dateStr; // Balikkan string asli jika bukan date
+            const pad = (num) => String(num).padStart(2, '0');
+            return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        }
 
         async function callCloud(payload) {
             try {
@@ -211,10 +233,6 @@
                 const data = await callCloud({ action: 'getUserData', username: user });
                 if (data.result === "SUCCESS") {
                     localStorage.setItem('saldo', data.saldo);
-                    localStorage.setItem('user_fullname', data.fullname);
-                    localStorage.setItem('rekening', data.rekening);
-                    localStorage.setItem('bank', data.bank);
-
                     document.getElementById('display-saldo').innerText = "IDR " + Number(data.saldo).toLocaleString('id-ID');
                     document.getElementById('wd-name').value = data.fullname.toUpperCase();
                     document.getElementById('wd-rek').value = data.bank ? `${data.bank.toUpperCase()} - ${data.rekening}` : data.rekening;
@@ -294,7 +312,9 @@
 
         async function loadWDHistory() {
             const user = localStorage.getItem('user_session');
-            if(!user) return;
+            const container = document.getElementById('wd-history-list');
+            if(!user || !container) return;
+
             try {
                 const resp = await fetch(SCRIPT_URL, {
                     method: 'POST',
@@ -302,22 +322,29 @@
                 });
                 const data = await resp.json();
                 
-                if(data.result === "SUCCESS") {
-                    const html = data.history.map(h => `
-                        <div style="display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid #222; font-size:11px; align-items:center;">
+                if(data.result === "SUCCESS" && data.history.length > 0) {
+                    const html = data.history.map(h => {
+                        let sColor = h.status === 'BERHASIL' ? '#00ff00' : '#fbff00';
+                        if (h.status === 'GAGAL') sColor = '#ff0077';
+                        
+                        return `
+                        <div class="history-item">
                             <div style="text-align:left;">
-                                <span style="display:block; color:#fff; font-weight:900;">IDR ${h.amt.toLocaleString('id-ID')}</span>
-                                <small style="color:#666; font-size:9px;">${h.tgl}</small>
+                                <div style="font-size:9px; color:#aaa; font-weight:bold;">${formatWaktu(h.tgl)}</div>
+                                <div style="font-size:11px; font-weight:900; color:#ffffff;">PENARIKAN DANA</div>
                             </div>
-                            <span style="color:${h.status === 'BERHASIL' ? '#00ff00' : '#ffaa00'}; font-weight:900; text-shadow: 0 0 5px ${h.status === 'BERHASIL' ? '#00ff0044' : '#ffaa0044'};">
-                                ● ${h.status}
-                            </span>
-                        </div>
-                    `).join('');
-                    document.getElementById('wd-history-list').innerHTML = html || "<p style='text-align:center; color:#444; font-size:10px;'>Belum ada penarikan.</p>";
+                            <div style="text-align:right;">
+                                <div style="font-size:13px; font-weight:900; color:#ffffff;">IDR ${Number(h.amt).toLocaleString('id-ID')}</div>
+                                <div style="font-size:9px; font-weight:900; color:${sColor}; text-shadow: 0 0 5px ${sColor}44;">● ${h.status}</div>
+                            </div>
+                        </div>`;
+                    }).join('');
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<div style="text-align:center; padding:20px; color:#666; font-size:10px;">BELUM ADA RIWAYAT</div>';
                 }
             } catch (e) { 
-                document.getElementById('wd-history-list').innerHTML = "<p style='text-align:center; color:var(--pink); font-size:10px;'>Gagal memuat riwayat.</p>";
+                container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--pink); font-size:10px;">GAGAL MEMUAT DATA</div>';
             }
         }
 
