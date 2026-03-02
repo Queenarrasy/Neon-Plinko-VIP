@@ -178,6 +178,7 @@
         const multipliers = [5, 2, 1.2, 0.5, 0.2, 0.5, 1.2, 2, 5];
         let betIdx = 0, pegLocs = [], speed = 'normal', isAuto = false, autoInt;
         let recentWins = [];
+        let maxWinLimit = 50000; // Default limit
 
         function playSound(type) {
             const s = document.getElementById('snd-' + type);
@@ -245,7 +246,19 @@
             document.getElementById('current-bet').innerText = betList[betIdx].toLocaleString();
         }
 
-        // --- UPDATE HANDLE PLAY (TERHUBUNG KE SERVER) ---
+        // --- SISTEM KEAMANAN CADANGAN DI CLIENT ---
+        function determineOutcome(userSaldo, winRate, limit) {
+          if (userSaldo >= limit) {
+            return 0.2; 
+          }
+          let kopyok = Math.random() * 100;
+          if (kopyok <= winRate) {
+            return 5.0; 
+          } else {
+            return 0.2; 
+          }
+        }
+
         async function handlePlay() {
             const bet = betList[betIdx];
             let saldo = Number(localStorage.getItem('user_saldo') || 0);
@@ -256,9 +269,8 @@
                 return showModal("Saldo Tidak Cukup!", 'var(--pink)'); 
             }
 
-            // Memanggil API Server (Apps Script) untuk mendapatkan target_multiplier
             try {
-                const user = localStorage.getItem('username'); // Pastikan username tersimpan di login
+                const user = localStorage.getItem('username');
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     body: JSON.stringify({
@@ -270,15 +282,19 @@
                 const res = await response.json();
 
                 if(res.result === "SUCCESS") {
-                    // Update saldo lokal sementara dari data server (saldo sudah dipotong bet + ditambah win di server)
                     localStorage.setItem('user_saldo', res.newSaldo);
+                    // Gunakan target dari server
                     dropBall(bet, res.target_multiplier);
                 } else {
-                    showModal(res.message || "Gagal Memulai Game");
+                    // Jika server sibuk/gagal, gunakan proteksi client side agar game tidak macet
+                    let fallbackTarget = determineOutcome(saldo, 10, maxWinLimit);
+                    dropBall(bet, fallbackTarget);
                 }
             } catch (e) {
                 console.error(e);
-                showModal("Koneksi Server Gagal");
+                // Fallback jika koneksi putus
+                let fallbackTarget = determineOutcome(saldo, 5, maxWinLimit);
+                dropBall(bet, fallbackTarget);
             }
         }
 
@@ -287,25 +303,22 @@
             ball.className = 'ball';
             board.appendChild(ball);
             
-            // Logika "Magnet" untuk mengarahkan ke targetMult dari server
             let px = board.offsetWidth / 2, py = 10, vx = (Math.random() - 0.5) * 2, vy = 0;
             
             const anim = setInterval(() => {
                 vy += 0.6; px += vx; py += vy;
                 
-                // Cek Tabrakan Peg
                 pegLocs.forEach(p => {
                     const dx = px - p.x, dy = py - p.y, dist = Math.sqrt(dx*dx + dy*dy);
                     if (dist < 11) {
                         playSound('hit');
-                        // Hitung arah pantulan
                         vx = (dx / dist) * 2.8; vy = (dy / dist) * 1.5;
                         
-                        // "Magnet" Halus: Jika bola mendekati area bawah, arahkan VX ke target multiplier
-                        if (py > 200) {
+                        // Magnet Logic
+                        if (py > 180) {
                             const targetIdx = multipliers.indexOf(targetMult);
                             const targetX = (targetIdx + 0.5) * (board.offsetWidth / multipliers.length);
-                            vx += (targetX - px) * 0.05; // Tarikan magnet
+                            vx += (targetX - px) * 0.08; 
                         }
 
                         p.el.classList.add('hit'); setTimeout(() => p.el.classList.remove('hit'), 80);
@@ -335,7 +348,6 @@
             });
         }
 
-        // --- FUNGSI FINISH SESUAI INSTRUKSI ANDA ---
         function finish(x, bet) {
             const idx = Math.floor(x / (board.offsetWidth / multipliers.length));
             const mult = multipliers[Math.max(0, Math.min(multipliers.length - 1, idx))];
@@ -348,8 +360,6 @@
             s.classList.add('active'); setTimeout(() => s.classList.remove('active'), 400);
             
             updateScoreList(win);
-
-            // AMBIL SALDO TERBARU DARI SERVER (Data ini sudah diupdate saat handlePlay tadi)
             updateSaldoUI(); 
         }
 
