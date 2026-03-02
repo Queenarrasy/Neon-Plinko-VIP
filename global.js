@@ -1,15 +1,13 @@
 /**
- * GLOBAL SCRIPT NEON PLINKO VIP - V5.1
- * Bridge for App Script V5.1
+ * GLOBAL SCRIPT NEON PLINKO VIP - V5.2
+ * Bridge for App Script V5.2 (Support Session Timer)
  */
 
-// Ganti dengan URL Web App yang Anda dapatkan setelah Deploy di Google Sheets
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";// Mengambil sesi user
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
 const user = localStorage.getItem('user_session') || localStorage.getItem('username');
 
 /**
  * 1. SESSION & AUTH
- * Memastikan user login dan status sinkron
  */
 function checkSession() {
     if (!user && !window.location.pathname.includes("index.html")) {
@@ -18,13 +16,34 @@ function checkSession() {
 }
 
 /**
+ * NEW: START SESSION LOGIC
+ * Fungsi ini memicu reset waktu "StartTime" di Kolom R Sheet
+ * Panggil fungsi ini saat tombol "PLAY" di game di-klik atau saat login sukses.
+ */
+async function startSession() {
+    if (!user) return;
+    try {
+        await fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'reset_session', username: user })
+        });
+        console.log("Session Gacor Dimulai!");
+    } catch (e) {
+        console.error("Session Error:", e);
+    }
+}
+
+/**
  * 2. SYNC SALDO & PROFILE
- * Mengambil data terbaru dari Kolom G (Saldo) dan H (Tier)
  */
 async function syncUserData() {
     if (!user) return;
     try {
-        const response = await fetch(SCRIPT_URL + "?action=getUserData&username=" + user);
+        // Menggunakan POST agar lebih aman dan sesuai dengan route getUserData di GAS
+        const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'getUserData', username: user })
+        });
         const res = await response.json();
         
         if (res.result === "SUCCESS") {
@@ -43,14 +62,16 @@ function updateUI(data) {
     const tierEl = document.getElementById('display-tier');
     const nameEl = document.getElementById('display-name');
 
-    if (saldoEl) saldoEl.innerText = "IDR " + Number(data.saldo).toLocaleString('id-ID');
-    if (tierEl) tierEl.innerText = data.tier;
-    if (nameEl) nameEl.innerText = data.fullname;
+    if (saldoEl) {
+        const val = Number(data.saldo);
+        saldoEl.innerText = isNaN(val) ? "IDR 0" : "IDR " + val.toLocaleString('id-ID');
+    }
+    if (tierEl) tierEl.innerText = data.tier || "BRONZE";
+    if (nameEl) nameEl.innerText = data.fullname || user;
 }
 
 /**
  * 3. WITHDRAWAL SYSTEM
- * Validasi Min 50.000 & Sinkronisasi Langsung
  */
 async function submitWithdraw(amount) {
     if (amount < 50000) {
@@ -69,8 +90,8 @@ async function submitWithdraw(amount) {
         });
         const res = await response.json();
         if (res.result === "SUCCESS") {
-            alert("Withdraw Berhasil Diajukan! Saldo Anda telah dipotong.");
-            syncUserData(); // Langsung update saldo di tampilan
+            alert("Withdraw Berhasil Diajukan!");
+            syncUserData(); 
         } else {
             alert("Error: " + (res.message || "Saldo tidak mencukupi"));
         }
@@ -80,8 +101,7 @@ async function submitWithdraw(amount) {
 }
 
 /**
- * 4. DEPOSIT SYSTEM (QRIS & USDT)
- * Menolak transaksi di bawah limit (20rb / $10)
+ * 4. DEPOSIT SYSTEM
  */
 async function submitDeposit(method, amount) {
     if (method === "QRIS" && amount < 20000) {
@@ -105,7 +125,7 @@ async function submitDeposit(method, amount) {
         });
         const res = await response.json();
         if (res.result === "SUCCESS") {
-            alert("Tiket Deposit Berhasil Dibuat. Silahkan selesaikan pembayaran.");
+            alert("Tiket Deposit Berhasil Dibuat.");
         } else {
             alert("Gagal: " + res.message);
         }
@@ -116,7 +136,6 @@ async function submitDeposit(method, amount) {
 
 /**
  * 5. REWARD & INBOX SYSTEM
- * Handle Klaim Harian & Pesan Admin
  */
 async function claimDaily() {
     try {
@@ -126,7 +145,7 @@ async function claimDaily() {
         });
         const res = await response.json();
         if (res.result === "SUCCESS") {
-            alert("Selamat! Bonus Harian IDR " + res.bonus + " masuk ke saldo.");
+            alert("Selamat! Bonus Harian IDR " + res.bonus + " masuk.");
             syncUserData();
         } else {
             alert(res.message);
@@ -138,7 +157,6 @@ async function fetchInbox() {
     try {
         const response = await fetch(SCRIPT_URL + "?action=getInbox&username=" + user);
         const res = await response.json();
-        // Logika untuk menampilkan list pesan di HTML
         return res; 
     } catch (e) { return []; }
 }
@@ -151,7 +169,7 @@ async function claimInboxBonus(msgId) {
         });
         const res = await response.json();
         if (res.result === "SUCCESS") {
-            alert("Bonus dari Inbox telah diklaim!");
+            alert("Bonus Inbox Berhasil diklaim!");
             syncUserData();
         }
     } catch (e) { console.log(e); }
@@ -161,5 +179,5 @@ async function claimInboxBonus(msgId) {
 checkSession();
 syncUserData();
 
-// Interval update saldo tiap 10 detik agar sinkron dengan admin (Sheet)
+// Interval update saldo tiap 10 detik
 setInterval(syncUserData, 10000);
