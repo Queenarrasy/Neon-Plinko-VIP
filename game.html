@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
         :root {
-            /* Warna diredupkan (bias-bias saja) */
             --pink: #ff0077; --blue: #0044ff; --yellow: #fbff00; --white: #ffffff; --bg: #03040a;
             --neon-pink: 0 0 8px rgba(255, 0, 119, 0.5);
             --neon-blue: 0 0 8px rgba(0, 68, 255, 0.5);
@@ -19,7 +18,6 @@
             margin: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column;
         }
 
-        /* CUSTOM NEON MODAL (Replacement for Alert) */
         #neon-modal {
             display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: #0a0b1e; border: 2px solid var(--pink); border-radius: 15px;
@@ -32,7 +30,6 @@
             border: 1px solid var(--yellow); background: transparent; color: var(--yellow); font-weight: bold;
         }
 
-        /* HEADER */
         .header {
             display: flex; justify-content: space-between; align-items: center;
             padding: 10px 15px; background: rgba(0, 0, 0, 0.9); border-bottom: 2px solid var(--blue);
@@ -48,7 +45,6 @@
         .saldo-label { font-size: 9px; color: var(--white); text-shadow: var(--neon-white); font-weight: bold; }
         #display-saldo { font-size: 18px; font-weight: bold; color: var(--white); }
 
-        /* BOARD */
         #game-board { position: relative; width: 100%; height: 360px; overflow: visible; }
         .peg {
             position: absolute; width: 6px; height: 6px; background: var(--white);
@@ -60,7 +56,6 @@
             border-radius: 50%; box-shadow: var(--neon-pink); transform: translate(-50%, -50%); z-index: 10;
         }
         
-        /* MULTIPLIERS */
         .multiplier-row { display: flex; justify-content: center; gap: 4px; padding: 0 10px; margin: 10px 0; }
         .slot {
             flex: 1; height: 35px; display: flex; align-items: center; justify-content: center;
@@ -76,7 +71,6 @@
         }
         .score-entry { font-size: 11px; font-weight: bold; color: var(--yellow); border-bottom: 1px solid rgba(251, 255, 0, 0.1); padding: 2px 0; }
 
-        /* CONTROLS */
         .controls { padding: 15px; background: #050714; border-top: 2px solid var(--blue); }
         .mode-row { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; }
         .btn-mode { background: transparent; padding: 10px 15px; border-radius: 10px; font-size: 10px; font-weight: 900; cursor: pointer; transition: 0.3s; }
@@ -92,6 +86,7 @@
             width: 100%; padding: 16px; border-radius: 50px; background: linear-gradient(90deg, #aa0055, #0022aa);
             color: white; font-weight: 900; border: 2px solid var(--yellow); text-transform: uppercase;
         }
+        .btn-play:disabled { opacity: 0.5; filter: grayscale(1); }
         
         .nav-bottom { display: grid; grid-template-columns: repeat(3, 1fr); background: #000; padding: 12px 5px; gap: 10px; border-top: 2px solid var(--blue); }
         .nav-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 0; border-radius: 12px; text-decoration: none; border: 1px solid; font-weight: 900; }
@@ -99,14 +94,14 @@
         .nav-btn span { font-size: 10px; }
 
         .btn-withdraw { border-color: var(--yellow); }
-        .btn-withdraw i { color: var(--pink); }
-        .btn-withdraw span { color: var(--blue); }
+        .nav-btn.btn-withdraw i { color: var(--pink); }
+        .nav-btn.btn-withdraw span { color: var(--blue); }
         .btn-deposit { border-color: var(--pink); }
-        .btn-deposit i { color: var(--blue); }
-        .btn-deposit span { color: var(--yellow); }
+        .nav-btn.btn-deposit i { color: var(--blue); }
+        .nav-btn.btn-deposit span { color: var(--yellow); }
         .btn-reward { border-color: var(--blue); }
-        .btn-reward i { color: var(--yellow); }
-        .btn-reward span { color: var(--pink); }
+        .nav-btn.btn-reward i { color: var(--yellow); }
+        .nav-btn.btn-reward span { color: var(--pink); }
     </style>
 </head>
 <body>
@@ -162,7 +157,7 @@
             </div>
             <i class="fa-solid fa-circle-plus" onclick="changeBet(1)" style="color:var(--blue); font-size: 25px;"></i>
         </div>
-        <button class="btn-play" onclick="handlePlay()">PLAY BALL</button>
+        <button class="btn-play" id="btn-play" onclick="handlePlay()">PLAY BALL</button>
     </div>
 
     <div class="nav-bottom">
@@ -177,14 +172,14 @@
         </a>
     </div>
 
-    <script src="global.js"></script>
     <script>
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
         const board = document.getElementById('game-board');
-        // Update Daftar Taruhan sesuai instruksi
         const betList = [400, 800, 1000, 1200, 1600, 1800, 2000, 4000, 8000, 10000, 12000, 16000, 18000, 20000];
         const multipliers = [5, 2, 1.2, 0.5, 0.2, 0.5, 1.2, 2, 5];
         let betIdx = 0, pegLocs = [], speed = 'normal', isAuto = false, autoInt;
         let recentWins = [];
+        let isProcessing = false;
 
         function playSound(type) {
             const s = document.getElementById('snd-' + type);
@@ -204,7 +199,6 @@
         }
 
         function updateSaldoUI() {
-            // Memastikan saldo sinkron dengan localStorage
             const s = localStorage.getItem('user_saldo') || 0;
             document.getElementById('display-saldo').innerText = "IDR " + Number(s).toLocaleString();
         }
@@ -253,26 +247,78 @@
             document.getElementById('current-bet').innerText = betList[betIdx].toLocaleString();
         }
 
-        function handlePlay() {
+        async function handlePlay() {
+            if(isProcessing) return;
             const bet = betList[betIdx];
             let saldo = Number(localStorage.getItem('user_saldo') || 0);
+            
             if (saldo < bet) { 
                 playSound('error');
                 if(isAuto) toggleAuto(); 
                 return showModal("Saldo Tidak Cukup!", 'var(--pink)'); 
             }
-            localStorage.setItem('user_saldo', saldo - bet);
-            updateSaldoUI();
-            dropBall(bet);
+
+            isProcessing = true;
+            document.getElementById('btn-play').disabled = true;
+
+            try {
+                // MENGHUBUNGI SERVER UNTUK INSTRUKSI HASIL
+                const username = localStorage.getItem('user_session') || "GUEST";
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: "game_play", username: username, bet: bet })
+                });
+                const result = await response.json();
+
+                if (result.result === "SUCCESS") {
+                    localStorage.setItem('user_saldo', saldo - bet);
+                    updateSaldoUI();
+                    // Kirim target multiplier ke dropBall
+                    dropBall(bet, result.target_multiplier);
+                } else {
+                    showModal(result.message || "Server Error", "var(--pink)");
+                    if(isAuto) toggleAuto();
+                }
+            } catch (e) {
+                console.error(e);
+                // Fallback jika server down (Acak Murni)
+                localStorage.setItem('user_saldo', saldo - bet);
+                updateSaldoUI();
+                dropBall(bet, null);
+            } finally {
+                setTimeout(() => {
+                    isProcessing = false;
+                    document.getElementById('btn-play').disabled = false;
+                }, 200);
+            }
         }
 
-        function dropBall(bet) {
+        function dropBall(bet, targetMultiplier) {
             const ball = document.createElement('div');
             ball.className = 'ball';
             board.appendChild(ball);
+
+            // Tentukan target X berdasarkan instruksi multiplier
+            let targetX = null;
+            if (targetMultiplier !== null) {
+                const targetIndices = [];
+                multipliers.forEach((m, idx) => { if(m === targetMultiplier) targetIndices.push(idx); });
+                const chosenIdx = targetIndices[Math.floor(Math.random() * targetIndices.length)];
+                const slotWidth = board.offsetWidth / multipliers.length;
+                targetX = (chosenIdx * slotWidth) + (slotWidth / 2);
+            }
+
             let px = board.offsetWidth / 2 + (Math.random() * 4 - 2), py = 10, vx = (Math.random() - 0.5) * 2, vy = 0;
+            
             const anim = setInterval(() => {
                 vy += 0.6; px += vx; py += vy;
+
+                // Logika Magnet: Tarik bola perlahan ke arah targetX
+                if (targetX !== null && py > 100) {
+                    let force = (targetX - px) * 0.015; 
+                    vx += force;
+                }
+
                 pegLocs.forEach(p => {
                     const dx = px - p.x, dy = py - p.y, dist = Math.sqrt(dx*dx + dy*dy);
                     if (dist < 11) {
@@ -281,8 +327,10 @@
                         p.el.classList.add('hit'); setTimeout(() => p.el.classList.remove('hit'), 80);
                     }
                 });
+
                 if (px < 15 || px > board.offsetWidth - 15) vx *= -0.6;
                 ball.style.left = px + 'px'; ball.style.top = py + 'px';
+
                 if (py > 370) {
                     clearInterval(anim); ball.remove();
                     finish(px, bet);
@@ -318,8 +366,6 @@
             let cur = Number(localStorage.getItem('user_saldo') || 0);
             localStorage.setItem('user_saldo', cur + win);
             updateSaldoUI();
-            
-            if(typeof syncResult === 'function') syncResult(bet, mult, win);
         }
 
         window.onload = () => { init(); updateSaldoUI(); };
