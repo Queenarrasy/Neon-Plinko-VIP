@@ -66,7 +66,7 @@
         .btn-blue { background: var(--blue); color: #fff; box-shadow: var(--blue-bias); }
         .btn-pink { background: var(--pink); color: #fff; box-shadow: var(--pink-bias); }
         .neon-btn:active { transform: scale(0.97); }
-        .neon-btn:disabled { background: #333 !important; color: #666 !important; box-shadow: none !important; cursor: not-allowed; }
+        .neon-btn:disabled { background: #1a1a1a !important; color: #444 !important; box-shadow: none !important; cursor: not-allowed; border-color: #333; }
 
         .inbox-section { border: 2.5px solid var(--yellow); border-radius: 20px; padding: 15px; background: rgba(0, 0, 0, 0.3); margin-bottom: 25px; box-shadow: var(--yellow-bias); }
         .inbox-title { color: var(--yellow); font-weight: 900; font-size: 13px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; text-transform: uppercase; text-shadow: var(--yellow-bias); }
@@ -76,7 +76,7 @@
         }
 
         .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 25px; }
-        .stat-card.stat-invite { border: 2.5px solid var(--pink); box-shadow: var(--pink-bias); }
+        .stat-card stat-invite { border: 2.5px solid var(--pink); box-shadow: var(--pink-bias); }
         .stat-card { background: #000; border: 2.5px solid var(--blue); padding: 15px; border-radius: 15px; text-align: center; box-shadow: var(--blue-bias); }
         .stat-card small { font-size: 10px; color: #aaa; text-transform: uppercase; font-weight: bold; }
 
@@ -117,13 +117,13 @@
             <h3 id="modal-title">INFO SYSTEM</h3>
             <p id="modal-msg"></p>
             <div class="modal-btn-container">
-                <button class="neon-btn btn-blue" onclick="closeModal()">MENGERTI</button>
+                <button class="neon-btn btn-blue" onclick="closeModal()">OK</button>
             </div>
         </div>
     </div>
 
     <a href="game.html" class="btn-back">
-        <i class="fa-solid fa-arrow-left"></i> KEMBALI KE GAME
+        <i class="fa-solid fa-arrow-left"></i> KEMBALI
     </a>
 
     <div class="leader-card">
@@ -134,18 +134,17 @@
                 <span>$100.00 <small style="font-size:10px; color:var(--yellow)">USDT</small></span>
             </div>
         </div>
-        <i class="fa-solid fa-crown" style="color:var(--yellow); font-size: 20px; filter: drop-shadow(0 0 5px var(--yellow));"></i>
+        <i class="fa-solid fa-crown" style="color:var(--yellow); font-size: 20px;"></i>
     </div>
 
     <div class="neon-card promo-card">
         <h2>Bagikan Keseruan!</h2>
-        <p>Dapatkan bonus <span class="highlight">IDR 5.000</span> langsung ke saldo Anda untuk setiap teman yang mendaftar dan <span class="highlight">melakukan deposit pertama</span>.</p>
+        <p>Bonus <span class="highlight">IDR 5.000</span> untuk setiap teman yang deposit pertama.</p>
     </div>
 
     <div class="referral-container">
-        <small style="color: var(--pink); font-weight: 900; letter-spacing: 1px;">KODE REFERRAL ANDA</small>
+        <small style="color: var(--pink); font-weight: 900;">KODE REFERRAL ANDA</small>
         <div class="code-box" id="my-referral-code" onclick="copyCode()">--------</div>
-        <small style="color: #888;">Klik kotak untuk menyalin kode</small>
     </div>
 
     <div class="neon-card" style="border-color: var(--yellow); box-shadow: var(--yellow-bias);">
@@ -155,21 +154,21 @@
                 <button id="btn-daily" class="neon-btn btn-yellow" onclick="claimDaily()">AMBIL JATAH HARIAN (2.000)</button>
             </div>
             <div style="margin-top: 10px; border-top: 1px solid #333; padding-top: 10px;">
-                <small style="color:var(--pink); font-weight: bold;">REWARD REFERRAL (MINGGUAN)</small>
-                <button id="btn-claim-ref" class="neon-btn btn-pink" onclick="claimReferral()">KLAIM KOMISI REFERRAL</button>
+                <small style="color:var(--pink); font-weight: bold;">REWARD REFERRAL</small>
+                <button id="btn-claim-ref" class="neon-btn btn-pink" onclick="claimReferral()">KLAIM KOMISI</button>
             </div>
         </div>
     </div>
 
     <div class="inbox-section">
-        <div class="inbox-title"><i class="fa-solid fa-gift"></i> HADIAH & PESAN ADMIN</div>
+        <div class="inbox-title"><i class="fa-solid fa-gift"></i> HADIAH & PESAN</div>
         <div id="inbox-list">
-            <div style="text-align:center; font-size:11px; color:#555; padding: 10px;">Mengecek kotak masuk...</div>
+            <div style="text-align:center; font-size:11px; color:#555; padding: 10px;">Mengecek...</div>
         </div>
     </div>
 
     <div class="stat-grid">
-        <div class="stat-card stat-invite">
+        <div class="stat-card">
             <small>Total Undangan</small>
             <div id="total-invite" style="color: var(--pink); font-size: 18px; font-weight: 900;">0</div>
         </div>
@@ -180,7 +179,7 @@
     </div>
 
     <div class="history-section">
-        <h3 class="history-title"><i class="fa-solid fa-users"></i> Daftar Teman Anda</h3>
+        <h3 class="history-title"><i class="fa-solid fa-users"></i> Teman Anda</h3>
         <div id="referral-list" class="scroll-list">
             <p style='text-align:center; font-size:11px; color:#444;'>Tidak ada data.</p>
         </div>
@@ -208,7 +207,7 @@
             document.getElementById('loading-overlay').style.display = 'flex';
             
             try {
-                // 1. Ambil Data Profil & Referral
+                // 1. Ambil Data Profil & Status Klaim Terakhir dari Server
                 const resp = await fetch(SCRIPT_URL, {
                     method: 'POST',
                     body: JSON.stringify({ action: "getUserData", username: USERNAME })
@@ -217,8 +216,12 @@
 
                 if(user.result === "SUCCESS") {
                     document.getElementById('my-referral-code').innerText = user.refCode || "NOCODE";
-                    // Komisi Statis (Contoh: Total Depo teman dihitung di server, di sini kita tampilkan IDR 0 jika data belum ada)
-                    document.getElementById('total-reward').innerText = "IDR 0"; 
+                    
+                    // CEK APAKAH SUDAH KLAIM HARI INI (Dari Kolom O di Sheet)
+                    const today = new Date().toLocaleDateString('en-CA'); // Format YYYY-MM-DD
+                    if (user.lastClaim === today) {
+                        lockDailyButton();
+                    }
                 }
 
                 // 2. Ambil Inbox
@@ -241,14 +244,24 @@
                 }
 
             } catch (e) { 
-                playError(); 
-                showModal("Gagal memuat data server.", "error", "SERVER ERROR"); 
+                console.error(e);
+                showModal("Gagal memuat data.", "error", "ERROR"); 
             }
             document.getElementById('loading-overlay').style.display = 'none';
         }
 
+        function lockDailyButton() {
+            const btn = document.getElementById('btn-daily');
+            btn.disabled = true;
+            btn.innerText = "SUDAH KLAIM HARI INI";
+            btn.style.opacity = "0.5";
+        }
+
         async function claimDaily() {
             playClick();
+            const btn = document.getElementById('btn-daily');
+            btn.disabled = true; // Mencegah klik ganda saat proses loading
+
             document.getElementById('loading-overlay').style.display = 'flex';
             try {
                 const resp = await fetch(SCRIPT_URL, {
@@ -256,15 +269,22 @@
                     body: JSON.stringify({ action: "claimDaily", username: USERNAME })
                 });
                 const res = await resp.json();
+                
                 if(res.result === "SUCCESS") {
                     playSuccess();
-                    showModal("Bonus harian IDR 2.000 berhasil masuk!", "success", "BERHASIL");
-                    initPage(); // Refresh data
+                    showModal("Bonus IDR 2.000 masuk ke saldo!", "success", "BERHASIL");
+                    lockDailyButton();
                 } else { 
                     playError(); 
-                    showModal(res.message || "Sudah klaim hari ini", "error"); 
+                    showModal(res.message || "Gagal klaim.", "error");
+                    // Jika gagal karena sudah klaim, pastikan tombol terkunci
+                    if(res.message && res.message.includes("SUDAH")) lockDailyButton();
+                    else btn.disabled = false;
                 }
-            } catch (e) { playError(); }
+            } catch (e) { 
+                btn.disabled = false;
+                playError(); 
+            }
             document.getElementById('loading-overlay').style.display = 'none';
         }
 
@@ -279,7 +299,7 @@
                 const res = await resp.json();
                 if(res.result === "SUCCESS") {
                     playSuccess();
-                    showModal("Hadiah berhasil masuk ke saldo utama!", "success");
+                    showModal("Hadiah berhasil diklaim!", "success");
                     initPage();
                 }
             } catch (e) { playError(); }
@@ -290,17 +310,18 @@
             playClick();
             const now = new Date();
             if (now.getDay() !== 0) {
-                showModal("Klaim Komisi hanya bisa dilakukan setiap hari MINGGU.", "error", "LOCKED");
+                showModal("Komisi hanya bisa dicairkan hari MINGGU.", "error", "LOCKED");
             } else {
-                showModal("Fitur klaim komisi sedang dalam sinkronisasi.", "info");
+                showModal("Fitur sedang disiapkan.", "info");
             }
         }
 
         function copyCode() {
             playClick();
             const code = document.getElementById('my-referral-code').innerText;
+            if(code === "--------") return;
             navigator.clipboard.writeText(code).then(() => {
-                alert("Kode Referral Disalin: " + code);
+                alert("Salin Berhasil!");
             });
         }
 
