@@ -86,7 +86,6 @@
             width: 100%; padding: 16px; border-radius: 50px; background: linear-gradient(90deg, #aa0055, #0022aa);
             color: white; font-weight: 900; border: 2px solid var(--yellow); text-transform: uppercase;
         }
-        .btn-play:disabled { opacity: 0.5; filter: grayscale(1); }
         
         .nav-bottom { display: grid; grid-template-columns: repeat(3, 1fr); background: #000; padding: 12px 5px; gap: 10px; border-top: 2px solid var(--blue); }
         .nav-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 0; border-radius: 12px; text-decoration: none; border: 1px solid; font-weight: 900; }
@@ -94,14 +93,14 @@
         .nav-btn span { font-size: 10px; }
 
         .btn-withdraw { border-color: var(--yellow); }
-        .nav-btn.btn-withdraw i { color: var(--pink); }
-        .nav-btn.btn-withdraw span { color: var(--blue); }
+        .btn-withdraw i { color: var(--pink); }
+        .btn-withdraw span { color: var(--blue); }
         .btn-deposit { border-color: var(--pink); }
-        .nav-btn.btn-deposit i { color: var(--blue); }
-        .nav-btn.btn-deposit span { color: var(--yellow); }
+        .btn-deposit i { color: var(--blue); }
+        .btn-deposit span { color: var(--yellow); }
         .btn-reward { border-color: var(--blue); }
-        .nav-btn.btn-reward i { color: var(--yellow); }
-        .nav-btn.btn-reward span { color: var(--pink); }
+        .btn-reward i { color: var(--yellow); }
+        .btn-reward span { color: var(--pink); }
     </style>
 </head>
 <body>
@@ -157,7 +156,7 @@
             </div>
             <i class="fa-solid fa-circle-plus" onclick="changeBet(1)" style="color:var(--blue); font-size: 25px;"></i>
         </div>
-        <button class="btn-play" id="btn-play" onclick="handlePlay()">PLAY BALL</button>
+        <button class="btn-play" onclick="handlePlay()">PLAY BALL</button>
     </div>
 
     <div class="nav-bottom">
@@ -172,14 +171,13 @@
         </a>
     </div>
 
+    <script src="global.js"></script>
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
         const board = document.getElementById('game-board');
         const betList = [400, 800, 1000, 1200, 1600, 1800, 2000, 4000, 8000, 10000, 12000, 16000, 18000, 20000];
         const multipliers = [5, 2, 1.2, 0.5, 0.2, 0.5, 1.2, 2, 5];
         let betIdx = 0, pegLocs = [], speed = 'normal', isAuto = false, autoInt;
         let recentWins = [];
-        let isProcessing = false;
 
         function playSound(type) {
             const s = document.getElementById('snd-' + type);
@@ -247,8 +245,8 @@
             document.getElementById('current-bet').innerText = betList[betIdx].toLocaleString();
         }
 
+        // --- UPDATE HANDLE PLAY (TERHUBUNG KE SERVER) ---
         async function handlePlay() {
-            if(isProcessing) return;
             const bet = betList[betIdx];
             let saldo = Number(localStorage.getItem('user_saldo') || 0);
             
@@ -258,72 +256,58 @@
                 return showModal("Saldo Tidak Cukup!", 'var(--pink)'); 
             }
 
-            isProcessing = true;
-            document.getElementById('btn-play').disabled = true;
-
+            // Memanggil API Server (Apps Script) untuk mendapatkan target_multiplier
             try {
-                // MENGHUBUNGI SERVER UNTUK INSTRUKSI HASIL
-                const username = localStorage.getItem('user_session') || "GUEST";
-                const response = await fetch(SCRIPT_URL, {
+                const user = localStorage.getItem('username'); // Pastikan username tersimpan di login
+                const response = await fetch(API_URL, {
                     method: 'POST',
-                    body: JSON.stringify({ action: "game_play", username: username, bet: bet })
+                    body: JSON.stringify({
+                        action: 'game_play',
+                        username: user,
+                        bet: bet
+                    })
                 });
-                const result = await response.json();
+                const res = await response.json();
 
-                if (result.result === "SUCCESS") {
-                    localStorage.setItem('user_saldo', saldo - bet);
-                    updateSaldoUI();
-                    // Kirim target multiplier ke dropBall
-                    dropBall(bet, result.target_multiplier);
+                if(res.result === "SUCCESS") {
+                    // Update saldo lokal sementara dari data server (saldo sudah dipotong bet + ditambah win di server)
+                    localStorage.setItem('user_saldo', res.newSaldo);
+                    dropBall(bet, res.target_multiplier);
                 } else {
-                    showModal(result.message || "Server Error", "var(--pink)");
-                    if(isAuto) toggleAuto();
+                    showModal(res.message || "Gagal Memulai Game");
                 }
             } catch (e) {
                 console.error(e);
-                // Fallback jika server down (Acak Murni)
-                localStorage.setItem('user_saldo', saldo - bet);
-                updateSaldoUI();
-                dropBall(bet, null);
-            } finally {
-                setTimeout(() => {
-                    isProcessing = false;
-                    document.getElementById('btn-play').disabled = false;
-                }, 200);
+                showModal("Koneksi Server Gagal");
             }
         }
 
-        function dropBall(bet, targetMultiplier) {
+        function dropBall(bet, targetMult) {
             const ball = document.createElement('div');
             ball.className = 'ball';
             board.appendChild(ball);
-
-            // Tentukan target X berdasarkan instruksi multiplier
-            let targetX = null;
-            if (targetMultiplier !== null) {
-                const targetIndices = [];
-                multipliers.forEach((m, idx) => { if(m === targetMultiplier) targetIndices.push(idx); });
-                const chosenIdx = targetIndices[Math.floor(Math.random() * targetIndices.length)];
-                const slotWidth = board.offsetWidth / multipliers.length;
-                targetX = (chosenIdx * slotWidth) + (slotWidth / 2);
-            }
-
-            let px = board.offsetWidth / 2 + (Math.random() * 4 - 2), py = 10, vx = (Math.random() - 0.5) * 2, vy = 0;
+            
+            // Logika "Magnet" untuk mengarahkan ke targetMult dari server
+            let px = board.offsetWidth / 2, py = 10, vx = (Math.random() - 0.5) * 2, vy = 0;
             
             const anim = setInterval(() => {
                 vy += 0.6; px += vx; py += vy;
-
-                // Logika Magnet: Tarik bola perlahan ke arah targetX
-                if (targetX !== null && py > 100) {
-                    let force = (targetX - px) * 0.015; 
-                    vx += force;
-                }
-
+                
+                // Cek Tabrakan Peg
                 pegLocs.forEach(p => {
                     const dx = px - p.x, dy = py - p.y, dist = Math.sqrt(dx*dx + dy*dy);
                     if (dist < 11) {
                         playSound('hit');
+                        // Hitung arah pantulan
                         vx = (dx / dist) * 2.8; vy = (dy / dist) * 1.5;
+                        
+                        // "Magnet" Halus: Jika bola mendekati area bawah, arahkan VX ke target multiplier
+                        if (py > 200) {
+                            const targetIdx = multipliers.indexOf(targetMult);
+                            const targetX = (targetIdx + 0.5) * (board.offsetWidth / multipliers.length);
+                            vx += (targetX - px) * 0.05; // Tarikan magnet
+                        }
+
                         p.el.classList.add('hit'); setTimeout(() => p.el.classList.remove('hit'), 80);
                     }
                 });
@@ -351,6 +335,7 @@
             });
         }
 
+        // --- FUNGSI FINISH SESUAI INSTRUKSI ANDA ---
         function finish(x, bet) {
             const idx = Math.floor(x / (board.offsetWidth / multipliers.length));
             const mult = multipliers[Math.max(0, Math.min(multipliers.length - 1, idx))];
@@ -363,9 +348,9 @@
             s.classList.add('active'); setTimeout(() => s.classList.remove('active'), 400);
             
             updateScoreList(win);
-            let cur = Number(localStorage.getItem('user_saldo') || 0);
-            localStorage.setItem('user_saldo', cur + win);
-            updateSaldoUI();
+
+            // AMBIL SALDO TERBARU DARI SERVER (Data ini sudah diupdate saat handlePlay tadi)
+            updateSaldoUI(); 
         }
 
         window.onload = () => { init(); updateSaldoUI(); };
