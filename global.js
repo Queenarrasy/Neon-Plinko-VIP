@@ -1,9 +1,11 @@
 /**
- * GLOBAL SCRIPT NEON PLINKO VIP
+ * GLOBAL SCRIPT NEON PLINKO VIP - V4.5
  * Menangani Sesi, Saldo (Anti-Mental Logic), dan Navigasi
  */
 
+// Menyamakan SCRIPT_URL dengan API_URL agar fungsi fetch di HTML tidak error
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
+const API_URL = SCRIPT_URL; 
 
 // 1. CEK SESI (Dijalankan di setiap halaman kecuali index.html)
 function checkSession() {
@@ -33,7 +35,6 @@ async function fetchLatestSaldo() {
     // - Ada bola aktif di layar (activeBalls > 0)
     // - Sedang proses kirim data menang (isSyncing)
     // - Baru saja menang kurang dari 5 detik (now - lastWinTime < 5000)
-    // Note: Pastikan variabel activeBalls, isSyncing, dan lastWinTime terdefinisi di game.html
     if (typeof activeBalls !== 'undefined' && activeBalls > 0) return;
     if (typeof isSyncing !== 'undefined' && isSyncing) return;
     if (typeof lastWinTime !== 'undefined' && (now - lastWinTime < 5000)) return;
@@ -53,7 +54,6 @@ async function fetchLatestSaldo() {
         // HANYA UPDATE JIKA:
         // 1. Saldo server lebih besar (artinya ada deposit/admin update)
         // 2. Atau saldo server sama (sinkron)
-        // JANGAN UPDATE jika saldo server lebih kecil (mencegah data "basi" menimpa kemenangan baru)
         if (res.result === "SUCCESS" && res.saldo >= localSaldo) {
             localStorage.setItem('user_saldo', res.saldo);
             updateSaldoUI();
@@ -68,11 +68,26 @@ async function syncSaldo() {
     await fetchLatestSaldo();
 }
 
+/**
+ * TAMBAHAN UNTUK FIX KONEKSI SERVER GAGAL PADA AKUN BARU
+ * Memastikan 'username' selalu tersedia untuk fungsi game_play
+ */
+function fixUserSession() {
+    const session = localStorage.getItem('user_session');
+    const username = localStorage.getItem('username');
+    
+    // Jika user_session ada tapi username kosong (biasanya terjadi setelah login/register baru)
+    if (session && !username) {
+        localStorage.setItem('username', session);
+    }
+}
+
 // 5. FUNGSI LOGOUT
 function logout() {
     localStorage.clear();
     window.location.href = "index.html";
 }
 
-// Jalankan proteksi sesi saat script dimuat
+// Jalankan fungsi otomatis saat script dimuat
 checkSession();
+fixUserSession();
