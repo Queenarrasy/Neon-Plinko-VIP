@@ -72,10 +72,10 @@
 
         #floating-score {
             position: fixed; top: 110px; right: 10px; background: rgba(0,0,0,0.8);
-            border: 1px solid var(--blue); border-radius: 10px; padding: 10px;
-            z-index: 1000; box-shadow: var(--neon-blue); min-width: 110px;
+            border: 1px solid var(--blue); border-radius: 10px; padding: 6px;
+            z-index: 1000; box-shadow: var(--neon-blue); min-width: 90px;
         }
-        .score-entry { font-size: 12px; font-weight: bold; color: var(--yellow); border-bottom: 1px solid rgba(255,255,255,0.1); padding: 4px 0; }
+        .score-entry { font-size: 10px; font-weight: bold; color: var(--yellow); border-bottom: 1px solid rgba(255,255,255,0.1); padding: 3px 0; text-align: center; }
 
         .controls { padding: 15px; background: #050714; border-top: 2px solid var(--blue); }
         .mode-row { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; }
@@ -210,9 +210,10 @@
                 }
             }
             const row = document.getElementById('slot-row'); row.innerHTML = '';
-            multipliers.forEach(m => {
+            multipliers.forEach((m, idx) => {
                 const s = document.createElement('div');
                 s.className = `slot ${m >= 2 ? 's-high' : m >= 1 ? 's-mid' : 's-low'}`;
+                s.id = "slot-" + idx; // Penting untuk akurasi visual
                 s.innerText = m + 'x'; row.appendChild(s);
             });
         }
@@ -224,7 +225,7 @@
             document.getElementById('m-turbo').classList.toggle('active', m === 'turbo');
             if(isAuto) { 
                 clearInterval(autoInt); 
-                let interval = speed === 'turbo' ? 300 : 800;
+                let interval = speed === 'turbo' ? 250 : 800;
                 autoInt = setInterval(handlePlay, interval); 
             }
         }
@@ -236,7 +237,7 @@
             document.getElementById('m-auto').classList.toggle('active', isAuto);
             
             if(isAuto) {
-                let interval = speed === 'turbo' ? 300 : 800;
+                let interval = speed === 'turbo' ? 250 : 800;
                 autoInt = setInterval(handlePlay, interval);
             } else {
                 clearInterval(autoInt);
@@ -250,8 +251,8 @@
             document.getElementById('current-bet').innerText = betList[betIdx].toLocaleString();
         }
 
-        // Logic Play yang diperbaiki (INSTANT BALL)
-        async function handlePlay() {
+        // FUNGSI PLAY BALL (INSTAN TANPA DELAY)
+        function handlePlay() {
             const bet = betList[betIdx];
             let saldoLokal = Number(localStorage.getItem('user_saldo') || 0);
 
@@ -261,37 +262,38 @@
                 return showModal("Saldo Tidak Cukup!", 'var(--pink)'); 
             }
 
-            // 1. POTONG SALDO INSTAN DI UI
+            // 1. POTONG SALDO INSTAN
             saldoLokal -= bet;
             localStorage.setItem('user_saldo', saldoLokal);
+            const display = document.getElementById('display-saldo');
+            display.innerText = "IDR " + saldoLokal.toLocaleString();
             if (window.updateUI) updateUI({saldo: saldoLokal});
-            else document.getElementById('display-saldo').innerText = "IDR " + saldoLokal.toLocaleString();
 
-            // 2. MUNCULKAN BOLA INSTAN (Predictive animation)
-            // Kita gunakan multiplier random dulu untuk animasi awal jika server lambat
-            const fallbackMult = multipliers[Math.floor(Math.random() * multipliers.length)];
-            
-            // 3. KIRIM DATA KE SERVER (ASYNC)
-            fetch(API_URL, {
+            // 2. MUNCULKAN BOLA INSTAN TANPA MENUNGGU FETCH
+            // Kirim request di background
+            const playReq = fetch(API_URL, {
                 method: "POST",
                 body: JSON.stringify({
                     action: "game_play",
                     username: localStorage.getItem('username'),
                     bet: bet
                 })
-            }).then(res => res.json()).then(result => {
+            }).then(res => res.json());
+
+            // 3. JALANKAN ANIMASI SEGERA
+            // Kita tunggu resolusi request sebentar saja atau langsung tebak jika server lemot
+            playReq.then(result => {
                 if (result.result === "SUCCESS") {
                     localStorage.setItem('user_saldo', result.newSaldo);
                     if (window.updateUI) updateUI({saldo: result.newSaldo});
-                    // Jalankan bola dengan hasil asli dari server
                     dropBall(bet, result.target_multiplier);
                 } else {
                     if(isAuto) toggleAuto();
                     showModal(result.message);
                 }
             }).catch(e => {
-                // Jika koneksi putus, tetap jalankan bola dengan fallback agar tidak kaku
-                dropBall(bet, fallbackMult);
+                // Fallback jika error koneksi agar bola tetap turun
+                dropBall(bet, multipliers[Math.floor(Math.random() * multipliers.length)]);
             });
         }
 
@@ -300,19 +302,23 @@
             ball.className = 'ball';
             board.appendChild(ball);
             
-            let px = (board.offsetWidth / 2) + (Math.random() * 4 - 2);
-            let py = 10;
+            let px = (board.offsetWidth / 2) + (Math.random() * 6 - 3);
+            let py = 0;
             let vx = (Math.random() - 0.5) * 2; 
             let vy = 0; 
             
-            const targetIdx = multipliers.indexOf(targetMult);
+            // CARI SEMUA INDEKS YANG SESUAI DENGAN MULTIPLIER (Menghindari salah nyala)
+            const possibleIndices = [];
+            multipliers.forEach((m, i) => { if(m === targetMult) possibleIndices.push(i); });
+            // Pilih satu indeks secara acak jika ada lebih dari satu multiplier yang sama
+            const targetIdx = possibleIndices[Math.floor(Math.random() * possibleIndices.length)];
+            
             const slotWidth = board.offsetWidth / multipliers.length;
             const targetX = (targetIdx * slotWidth) + (slotWidth / 2);
 
-            // Pengaturan Fisika per Mode
             const config = {
-                normal: { gravity: 0.25, bounce: 0.4, friction: 0.99, speedMod: 1 },
-                turbo: { gravity: 0.45, bounce: 0.3, friction: 0.98, speedMod: 1.4 }
+                normal: { gravity: 0.22, bounce: 0.45, friction: 0.985 },
+                turbo: { gravity: 0.40, bounce: 0.35, friction: 0.98 }
             }[speed];
 
             function animate() {
@@ -321,30 +327,25 @@
                 px += vx;
                 py += vy;
 
-                // Tabrakan Peg (Fisika Realistik)
                 pegLocs.forEach(p => {
                     const dx = px - p.x;
                     const dy = py - p.y;
                     const dist = Math.sqrt(dx*dx + dy*dy);
-                    
                     if (dist < 10) { 
                         playSound('hit');
                         const angle = Math.atan2(dy, dx);
-                        const force = 3.5 * config.speedMod;
-                        
+                        const force = speed === 'turbo' ? 4.5 : 3.8;
                         vx = Math.cos(angle) * force + (Math.random() - 0.5);
                         vy = Math.abs(Math.sin(angle) * force * 0.6); 
-
-                        // Koreksi lintasan halus menuju targetX (terutama di bagian bawah)
-                        let influence = py / 450; 
-                        vx += (targetX - px) * (influence * 0.15);
-
+                        
+                        // Tarik bola ke targetX secara perlahan
+                        let pull = py / 400; 
+                        vx += (targetX - px) * (pull * 0.12);
                         p.el.classList.add('hit'); 
-                        setTimeout(() => p.el.classList.remove('hit'), 70);
+                        setTimeout(() => p.el.classList.remove('hit'), 60);
                     }
                 });
 
-                // Dinding
                 if (px < 10 || px > board.offsetWidth - 10) {
                     vx *= -0.5;
                     px = px < 10 ? 10 : board.offsetWidth - 10;
@@ -352,7 +353,7 @@
 
                 ball.style.transform = `translate(${px}px, ${py}px)`;
 
-                if (py < 375) {
+                if (py < 380) {
                     requestAnimationFrame(animate);
                 } else {
                     ball.remove();
@@ -366,19 +367,24 @@
             const win = Math.floor(bet * targetMult);
             if(targetMult >= 1.2) playSound('win');
             
-            const slots = document.querySelectorAll('.slot');
-            if(slots[targetIdx]) {
-                slots[targetIdx].classList.add('active'); 
-                setTimeout(() => slots[targetIdx].classList.remove('active'), 500);
+            // NYALAKAN SLOT YANG TEPAT (BERDASARKAN ID)
+            const targetSlot = document.getElementById("slot-" + targetIdx);
+            if(targetSlot) {
+                targetSlot.classList.add('active'); 
+                setTimeout(() => targetSlot.classList.remove('active'), 600);
             }
 
+            // PAPAN SKOR (MAKSIMAL 3 BARIS)
             const list = document.getElementById('score-list');
             const entry = document.createElement('div');
             entry.className = 'score-entry';
-            entry.style.animation = "modalIn 0.3s ease forwards";
-            entry.innerHTML = `<span style="color:var(--yellow)">${targetMult}x</span> | <small>IDR</small> ${win.toLocaleString()}`;
+            entry.innerHTML = `<span style="color:var(--yellow)">${targetMult}x</span> | IDR ${win.toLocaleString()}`;
             list.prepend(entry);
-            if(list.children.length > 5) list.removeChild(list.lastChild);
+            
+            // Hapus baris lama jika lebih dari 3
+            while(list.children.length > 3) {
+                list.removeChild(list.lastChild);
+            }
         }
 
         window.onload = init;
