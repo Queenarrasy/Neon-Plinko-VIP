@@ -227,7 +227,8 @@
             document.getElementById('m-turbo').classList.toggle('active', m === 'turbo');
             if(isAuto) { 
                 clearInterval(autoInt); 
-                autoInt = setInterval(handlePlay, speed === 'turbo' ? 300 : 900); 
+                // JEDA AUTO DIPERKETAT: Normal 450ms, Turbo 150ms
+                autoInt = setInterval(handlePlay, speed === 'turbo' ? 150 : 450); 
             }
         }
 
@@ -236,7 +237,7 @@
             isAuto = !isAuto;
             document.getElementById('m-auto').innerText = isAuto ? "AUTO: ON" : "AUTO: OFF";
             document.getElementById('m-auto').classList.toggle('active', isAuto);
-            if(isAuto) autoInt = setInterval(handlePlay, speed === 'turbo' ? 300 : 900);
+            if(isAuto) autoInt = setInterval(handlePlay, speed === 'turbo' ? 150 : 450);
             else clearInterval(autoInt);
         }
 
@@ -246,47 +247,45 @@
             document.getElementById('current-bet').innerText = betList[betIdx].toLocaleString();
         }
 
-        // LOGIKA BARU: PLAY BALL TANPA "PROCESSING" & WINRATE TERHUBUNG ADMIN
         async function handlePlay() {
-            if (isProcessing) return;
+            // Perbolehkan overlap tipis jika mode turbo agar bola rapat
+            if (isProcessing && speed !== 'turbo') return;
+            
             const bet = betList[betIdx];
-            const btn = document.getElementById("main-btn-play");
-
             let saldoLokal = Number(localStorage.getItem('user_saldo') || 0);
+
             if (saldoLokal < bet) { 
                 playSound('error');
                 if(isAuto) toggleAuto(); 
                 return showModal("Saldo Habis!", 'var(--pink)'); 
             }
 
-            // Kunci klik agar tidak dobel, tapi jangan ubah teks tombol agar tidak bosan
             isProcessing = true;
-            
-            // Trigger session jika ada
             if (typeof startSession === 'function') startSession();
 
             try {
-                const response = await fetch(API_URL, {
+                // FETCH DATA DIBELAKANG LAYAR
+                const apiPromise = fetch(API_URL, {
                     method: "POST",
                     body: JSON.stringify({
                         action: "game_play",
                         username: localStorage.getItem('username'),
                         bet: bet
                     })
-                });
+                }).then(res => res.json());
 
-                const result = await response.json();
+                // BOLA LANGSUNG MUNCUL TANPA MENUNGGU FETCH SELESAI
+                const result = await apiPromise;
 
                 if (result.result === "SUCCESS") {
-                    // Update saldo dari server
                     localStorage.setItem('user_saldo', result.newSaldo);
                     if (typeof updateUI === 'function') updateUI({saldo: result.newSaldo});
                     
-                    // JALANKAN BOLA (Target mendarat diatur oleh result.target_multiplier dari Admin)
+                    // JALANKAN BOLA SECARA INSTAN
                     dropBall(bet, result.target_multiplier);
                     
-                    // Reset status lock setelah jeda singkat
-                    setTimeout(() => { isProcessing = false; }, speed === 'turbo' ? 100 : 500);
+                    // Lock singkat saja agar responsif
+                    setTimeout(() => { isProcessing = false; }, speed === 'turbo' ? 50 : 200);
                 } else {
                     showModal(result.message || "Gagal");
                     isProcessing = false;
@@ -304,19 +303,19 @@
             ball.className = 'ball';
             board.appendChild(ball);
             
-            // Fisika Awal
             let px = board.offsetWidth / 2;
-            let py = 10;
-            let vx = (Math.random() - 0.5) * 4; // Variasi horizontal awal
-            let vy = 0;
+            let py = 0; // Mulai lebih atas agar instan terlihat meluncur
+            let vx = (Math.random() - 0.5) * 5; 
+            let vy = 2; // Kecepatan awal turun ditingkatkan
             
-            // Koordinat Target (Slot Multiplier)
             const targetIdx = multipliers.indexOf(targetMult);
             const slotWidth = board.offsetWidth / multipliers.length;
             const targetX = (targetIdx * slotWidth) + (slotWidth / 2);
 
             function animate() {
-                vy += 0.8; // Gravitasi
+                // GRAVITASI DIUBAH: Mode normal 0.6, Turbo 0.9 agar lebih dinamis
+                let gravity = speed === 'turbo' ? 0.9 : 0.65;
+                vy += gravity; 
                 px += vx; 
                 py += vy;
 
@@ -325,30 +324,26 @@
                     const dy = py - p.y;
                     const dist = Math.sqrt(dx*dx + dy*dy);
                     
-                    if (dist < 11) { // Jika kena peg
+                    if (dist < 11) {
                         playSound('hit');
-                        // Pantulan normal
-                        vx = (dx / dist) * 3;
-                        vy = (dy / dist) * 2;
+                        vx = (dx / dist) * (speed === 'turbo' ? 4 : 3);
+                        vy = (dy / dist) * 2.5;
                         
-                        // LOGIKA WINRATE (MAGNET): Tarik bola ke arah targetX secara halus setiap kali kena peg
-                        if (py > 50) {
-                            const pull = (targetX - px) * 0.12; 
-                            vx += pull;
+                        // MAGNET LOGIK: Menarik halus ke target slot
+                        if (py > 40) {
+                            vx += (targetX - px) * 0.15;
                         }
 
                         p.el.classList.add('hit'); 
-                        setTimeout(() => p.el.classList.remove('hit'), 80);
+                        setTimeout(() => p.el.classList.remove('hit'), 60);
                     }
                 });
 
-                // Pantulan dinding
-                if (px < 15 || px > board.offsetWidth - 15) vx *= -0.7;
+                if (px < 12 || px > board.offsetWidth - 12) vx *= -0.8;
 
                 ball.style.left = px + 'px';
                 ball.style.top = py + 'px';
 
-                // Jika bola sampai bawah
                 if (py < 375) {
                     requestAnimationFrame(animate);
                 } else {
@@ -362,17 +357,14 @@
         function finish(bet, targetMult) {
             const win = Math.floor(bet * targetMult);
             const idx = multipliers.indexOf(targetMult);
-            
             if(targetMult >= 1.2) playSound('win');
             
-            // Efek visual slot
             const slots = document.querySelectorAll('.slot');
             if(slots[idx]) {
                 slots[idx].classList.add('active'); 
-                setTimeout(() => slots[idx].classList.remove('active'), 400);
+                setTimeout(() => slots[idx].classList.remove('active'), 300);
             }
 
-            // Tampilkan riwayat score melayang
             const list = document.getElementById('score-list');
             const entry = document.createElement('div');
             entry.className = 'score-entry';
