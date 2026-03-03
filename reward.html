@@ -1,61 +1,193 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="styles.css">
-    <script src="global.js"></script>
-    <title>Neon Plinko VIP - Daily Bonus</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>REWARDS - NEON PLINKO VIP</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        :root {
+            --pink: #ff0077; --blue: #0044ff; --yellow: #fbff00; --white: #ffffff; --bg: #03040a;
+            --neon-pink: 0 0 15px rgba(255, 0, 119, 0.7);
+            --neon-blue: 0 0 15px rgba(0, 68, 255, 0.7);
+            --neon-yellow: 0 0 15px rgba(251, 255, 0, 0.7);
+        }
+        body {
+            background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif;
+            margin: 0; padding: 0; min-height: 100vh;
+        }
+
+        #neon-modal {
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: #0a0b1e; border: 2px solid var(--pink); border-radius: 15px;
+            box-shadow: var(--neon-pink); z-index: 9999; padding: 25px; text-align: center;
+            min-width: 280px; animation: modalIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes modalIn { from { opacity: 0; scale: 0.5; } to { opacity: 1; scale: 1; } }
+        .modal-btn {
+            margin-top: 20px; padding: 10px 25px; border-radius: 50px; cursor: pointer;
+            border: 1px solid var(--yellow); background: var(--yellow); color: black; font-weight: bold;
+        }
+
+        .header {
+            padding: 20px; background: rgba(0, 0, 0, 0.9); border-bottom: 2px solid var(--blue);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .btn-back { color: var(--white); font-size: 20px; text-decoration: none; }
+
+        .container { padding: 20px; }
+
+        /* KOTAK HADIAH / GIFT BOX */
+        .gift-box-card {
+            background: linear-gradient(135deg, #0f0c29, #302b63);
+            border: 2px solid var(--pink); border-radius: 20px; padding: 20px;
+            margin-bottom: 25px; box-shadow: var(--neon-pink); text-align: center;
+        }
+        .gift-box-card i { font-size: 50px; color: var(--pink); text-shadow: var(--neon-pink); margin-bottom: 15px; }
+        .gift-input {
+            width: 100%; padding: 12px; background: #000; border: 1px solid var(--yellow);
+            border-radius: 10px; color: var(--yellow); text-align: center; font-weight: bold;
+            font-size: 16px; margin-bottom: 15px; outline: none; box-sizing: border-box;
+        }
+        .btn-redeem {
+            width: 100%; padding: 12px; border-radius: 50px; background: var(--pink);
+            color: white; font-weight: 900; border: none; cursor: pointer; text-transform: uppercase;
+        }
+
+        /* VIP Card */
+        .vip-status-card {
+            background: rgba(255, 255, 255, 0.05); border: 1px solid var(--blue);
+            border-radius: 15px; padding: 15px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px;
+        }
+        .vip-icon { font-size: 30px; color: var(--yellow); }
+        .vip-info h4 { margin: 0; font-size: 14px; color: var(--yellow); }
+        .vip-info p { margin: 0; font-size: 11px; opacity: 0.7; }
+
+        /* Reward Grid */
+        .reward-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .reward-item {
+            background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(0, 68, 255, 0.3);
+            border-radius: 15px; padding: 15px; text-align: center;
+        }
+        .reward-item i { font-size: 24px; color: var(--blue); margin-bottom: 10px; display: block; }
+        .reward-item h5 { margin: 5px 0; font-size: 12px; }
+        .btn-claim-small {
+            background: transparent; border: 1px solid var(--blue); color: var(--blue);
+            padding: 5px 10px; border-radius: 50px; font-size: 10px; font-weight: bold; cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Claim Your Daily Bonus!</h1>
-        <div id="inbox-display"></div>
-        <button id="claim-bonus">Claim Bonus</button>
+
+    <div id="neon-modal">
+        <h3 id="modal-title" style="color: var(--yellow);">REWARD!</h3>
+        <p id="modal-msg"></p>
+        <button class="modal-btn" onclick="closeModal()">AMBIL</button>
     </div>
 
+    <div class="header">
+        <a href="index.html" class="btn-back"><i class="fa-solid fa-arrow-left"></i></a>
+        <div style="font-weight: 900; letter-spacing: 2px;">REWARD & GIFT</div>
+        <div style="width: 20px;"></div>
+    </div>
+
+    <div class="container">
+        <div class="gift-box-card">
+            <i class="fa-solid fa-box-open"></i>
+            <h3 style="margin: 0 0 10px 0; font-size: 18px; color: var(--white);">KOTAK HADIAH ADMIN</h3>
+            <p style="font-size: 11px; color: #ccc; margin-bottom: 15px;">Masukkan kode voucher dari Admin untuk klaim saldo gratis.</p>
+            <input type="text" id="gift-code" class="gift-input" placeholder="MASUKKAN KODE">
+            <button class="btn-redeem" onclick="redeemGift()">KLAIM HADIAH</button>
+        </div>
+
+        <div class="vip-status-card">
+            <i class="fa-solid fa-crown vip-icon"></i>
+            <div class="vip-info">
+                <h4>VIP PLATINUM STATUS</h4>
+                <p>Nikmati limit withdraw lebih tinggi & prioritas klaim.</p>
+            </div>
+        </div>
+
+        <div class="reward-grid">
+            <div class="reward-item">
+                <i class="fa-solid fa-calendar-day"></i>
+                <h5>DAILY BONUS</h5>
+                <button class="btn-claim-small" onclick="claimType('daily')">CLAIM 500</button>
+            </div>
+            <div class="reward-item">
+                <i class="fa-solid fa-share-nodes" style="color: var(--pink);"></i>
+                <h5>REFERRAL</h5>
+                <button class="btn-claim-small" onclick="copyLink()" style="border-color: var(--pink); color: var(--pink);">SALIN LINK</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="global.js"></script>
     <script>
-        const claimButton = document.getElementById('claim-bonus');
-        const inboxDisplay = document.getElementById('inbox-display');
-        const SCRIPT_URL = window.SCRIPT_URL;
-        let lastClaimTime = localStorage.getItem('lastClaimTime') || 0;
+        const API_URL = typeof SCRIPT_URL !== 'undefined' ? SCRIPT_URL : "";
 
-        claimButton.addEventListener('click', async () => {
-            const currentTime = new Date().getTime();
-            const cooldownPeriod = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+        function showModal(msg, title = "REWARD") {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-msg').innerText = msg;
+            document.getElementById('neon-modal').style.display = 'block';
+        }
 
-            if (currentTime - lastClaimTime < cooldownPeriod) {
-                AlertUser('You can only claim once every 24 hours!', 'error');
-                return;
-            }
+        function closeModal() {
+            document.getElementById('neon-modal').style.display = 'none';
+        }
+
+        async function redeemGift() {
+            const code = document.getElementById('gift-code').value.trim();
+            const username = localStorage.getItem('username');
+
+            if (!code) return showModal("Harap masukkan kode hadiah!");
+            
+            const btn = document.querySelector('.btn-redeem');
+            btn.disabled = true;
+            btn.innerText = "MENGECEK...";
 
             try {
-                const response = await fetch(SCRIPT_URL + '/claim-bonus');
-                const data = await response.json();
-                if (data.success) {
-                    lastClaimTime = currentTime;
-                    localStorage.setItem('lastClaimTime', lastClaimTime);
-                    AlertUser('Bonus claimed successfully!', 'success');
-                    UpdateInboxDisplay(data.message);
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        action: "redeem_gift",
+                        username: username,
+                        gift_code: code
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.result === "SUCCESS") {
+                    // Update Saldo Utama
+                    localStorage.setItem('user_saldo', result.newSaldo);
+                    showModal(`Selamat! Kode berhasil diklaim. Saldo IDR ${result.bonus.toLocaleString()} masuk ke akun anda.`, "GIFT SUCCESS");
+                    document.getElementById('gift-code').value = "";
                 } else {
-                    AlertUser(data.message || 'Failed to claim bonus.', 'error');
+                    showModal(result.message || "Kode hadiah salah atau sudah kadaluarsa.", "GAGAL");
                 }
-            } catch (error) {
-                AlertUser('An error occurred while claiming bonus.', 'error');
+            } catch (e) {
+                showModal("Gagal terhubung ke server.");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "KLAIM HADIAH";
             }
-        });
-
-        function AlertUser(message, type) {
-            const alertBox = document.createElement('div');
-            alertBox.className = `alert ${type}`;
-            alertBox.innerText = message;
-            document.body.appendChild(alertBox);
-            setTimeout(() => alertBox.remove(), 3000);
         }
 
-        function UpdateInboxDisplay(message) {
-            inboxDisplay.innerHTML = `<p>${message}</p>`;
+        function copyLink() {
+            const user = localStorage.getItem('username') || 'player';
+            navigator.clipboard.writeText(`https://neonplinko.vip/reg?ref=${user}`);
+            showModal("Link referral berhasil disalin!", "INFO");
         }
+
+        async function claimType(type) {
+            // Logika klaim harian (Daily) mirip dengan redeemGift
+            showModal("Fitur Daily Bonus sedang diproses oleh sistem.");
+        }
+
+        window.onload = () => {
+            if(!localStorage.getItem('username')) location.href = 'login.html';
+        };
     </script>
 </body>
 </html>
