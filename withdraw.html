@@ -1,55 +1,212 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Withdrawal History</title>
-    <link rel="stylesheet" href="path/to/neon-theme.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WITHDRAW - NEON PLINKO VIP</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        :root {
+            --pink: #ff0077; --blue: #0044ff; --yellow: #fbff00; --white: #ffffff; --bg: #03040a;
+            --neon-pink: 0 0 15px rgba(255, 0, 119, 0.7);
+            --neon-blue: 0 0 15px rgba(0, 68, 255, 0.7);
+        }
+        body {
+            background: var(--bg); color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0; padding: 0; min-height: 100vh;
+        }
+
+        #neon-modal {
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: #0a0b1e; border: 2px solid var(--pink); border-radius: 15px;
+            box-shadow: var(--neon-pink); z-index: 9999; padding: 25px; text-align: center;
+            min-width: 280px; animation: modalIn 0.3s ease;
+        }
+        @keyframes modalIn { from { opacity: 0; scale: 0.8; } to { opacity: 1; scale: 1; } }
+        .modal-btn {
+            margin-top: 20px; padding: 10px 25px; border-radius: 50px; cursor: pointer;
+            border: 1px solid var(--yellow); background: transparent; color: var(--yellow); font-weight: bold;
+        }
+
+        .header {
+            padding: 20px; background: rgba(0, 0, 0, 0.9); border-bottom: 2px solid var(--blue);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .btn-back { color: var(--white); font-size: 20px; text-decoration: none; }
+
+        .container { padding: 20px; }
+
+        .balance-card {
+            background: linear-gradient(135deg, rgba(0, 68, 255, 0.2), rgba(255, 0, 119, 0.2));
+            border: 1px solid var(--blue); border-radius: 15px; padding: 20px; text-align: center;
+            margin-bottom: 20px; box-shadow: var(--neon-blue);
+        }
+        .bal-label { font-size: 11px; color: var(--white); letter-spacing: 2px; opacity: 0.8; }
+        .bal-value { font-size: 24px; font-weight: 900; color: var(--yellow); margin-top: 5px; }
+
+        .card {
+            background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 0, 119, 0.3);
+            border-radius: 15px; padding: 20px; margin-bottom: 20px;
+        }
+
+        .label { font-size: 11px; color: var(--pink); font-weight: bold; margin-bottom: 8px; display: block; letter-spacing: 1px; }
+        
+        input, select {
+            width: 100%; padding: 12px; background: #000; border: 1px solid var(--blue);
+            border-radius: 8px; color: white; font-size: 15px; box-sizing: border-box; outline: none;
+            margin-bottom: 15px; transition: 0.3s;
+        }
+        input:focus { border-color: var(--pink); box-shadow: var(--neon-pink); }
+
+        .btn-withdraw {
+            width: 100%; padding: 16px; border-radius: 50px; background: linear-gradient(90deg, #aa0055, #0022aa);
+            color: white; font-weight: 900; border: 2px solid var(--yellow); text-transform: uppercase; cursor: pointer;
+            box-shadow: var(--neon-pink); margin-top: 5px; transition: 0.3s;
+        }
+        .btn-withdraw:active { transform: scale(0.95); opacity: 0.8; }
+
+        .info-box {
+            background: rgba(251, 255, 0, 0.05); border: 1px dashed var(--yellow);
+            border-radius: 10px; padding: 15px; font-size: 11px; color: #ccc; line-height: 1.6;
+        }
+        .info-box ul { margin: 5px 0 0 15px; padding: 0; }
+    </style>
+</head>
+<body>
+
+    <div id="neon-modal">
+        <h3 id="modal-title" style="color: var(--pink); margin: 0;">WITHDRAWAL</h3>
+        <p id="modal-msg" style="color: white; font-size: 14px; margin-top: 10px;"></p>
+        <button class="modal-btn" onclick="closeModal()">OK</button>
+    </div>
+
+    <div class="header">
+        <a href="index.html" class="btn-back"><i class="fa-solid fa-arrow-left"></i></a>
+        <div style="font-weight: 900; letter-spacing: 2px;">PENARIKAN DANA</div>
+        <div style="width: 20px;"></div>
+    </div>
+
+    <div class="container">
+        <div class="balance-card">
+            <div class="bal-label">SALDO DAPAT DITARIK</div>
+            <div class="bal-value" id="wd-balance">IDR 0</div>
+        </div>
+
+        <div class="card">
+            <span class="label">NOMINAL PENARIKAN (IDR)</span>
+            <input type="number" id="wd-amount" placeholder="Minimal 50,000">
+
+            <span class="label">PILIH BANK / E-WALLET</span>
+            <select id="wd-method">
+                <option value="DANA">DANA</option>
+                <option value="OVO">OVO</option>
+                <option value="GOPAY">GOPAY</option>
+                <option value="BCA">BANK BCA</option>
+                <option value="MANDIRI">BANK MANDIRI</option>
+                <option value="BRI">BANK BRI</option>
+            </select>
+
+            <span class="label">NOMOR REKENING / E-WALLET</span>
+            <input type="text" id="wd-account-num" placeholder="Contoh: 0812xxxx atau 731xxx">
+
+            <span class="label">NAMA PEMILIK REKENING</span>
+            <input type="text" id="wd-account-name" placeholder="Nama lengkap sesuai rekening">
+
+            <button class="btn-withdraw" onclick="processWithdraw()">AJUKAN PENARIKAN</button>
+        </div>
+
+        <div class="info-box">
+            <strong>SYARAT & KETENTUAN:</strong>
+            <ul>
+                <li>Minimal penarikan dana adalah <strong>IDR 50,000</strong>.</li>
+                <li>Proses penarikan memakan waktu 5-30 menit (jam kerja).</li>
+                <li>Pastikan data rekening benar, kesalahan data bukan tanggung jawab kami.</li>
+                <li>Nama rekening harus sama dengan data pendaftaran.</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="global.js"></script>
     <script>
-        async function fetchWithdrawalHistory() {
+        const API_URL = typeof SCRIPT_URL !== 'undefined' ? SCRIPT_URL : "";
+
+        function updateBalanceDisplay() {
+            const saldo = Number(localStorage.getItem('user_saldo') || 0);
+            document.getElementById('wd-balance').innerText = "IDR " + saldo.toLocaleString();
+        }
+
+        function showModal(msg, color = 'var(--pink)') {
+            document.getElementById('modal-msg').innerText = msg;
+            document.getElementById('neon-modal').style.borderColor = color;
+            document.getElementById('neon-modal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('neon-modal').style.display = 'none';
+        }
+
+        async function processWithdraw() {
+            const username = localStorage.getItem('username');
+            const amount = Number(document.getElementById('wd-amount').value);
+            const method = document.getElementById('wd-method').value;
+            const accountNum = document.getElementById('wd-account-num').value;
+            const accountName = document.getElementById('wd-account-name').value;
+            const currentSaldo = Number(localStorage.getItem('user_saldo') || 0);
+
+            // Validasi Input
+            if (!username) return showModal("Sesi berakhir, silahkan login kembali.");
+            if (amount < 50000) return showModal("Minimal penarikan IDR 50,000");
+            if (amount > currentSaldo) return showModal("Saldo tidak mencukupi!");
+            if (!accountNum || !accountName) return showModal("Harap isi data rekening dengan lengkap.");
+
+            const btn = document.querySelector('.btn-withdraw');
+            btn.disabled = true;
+            btn.innerText = "MEMPROSES...";
+
             try {
-                const response = await fetch('/api/withdrawals');
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        action: "withdraw",
+                        username: username,
+                        amount: amount,
+                        method: method,
+                        account_num: accountNum,
+                        account_name: accountName
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.result === "SUCCESS") {
+                    // Update saldo lokal setelah pengajuan (opsional, tergantung logic sistem Anda)
+                    localStorage.setItem('user_saldo', result.newSaldo);
+                    updateBalanceDisplay();
+                    showModal("Withdrawal berhasil diajukan! Dana akan diproses segera.", 'var(--blue)');
+                    
+                    // Reset Form
+                    document.getElementById('wd-amount').value = "";
+                    document.getElementById('wd-account-num').value = "";
+                    document.getElementById('wd-account-name').value = "";
+                } else {
+                    showModal(result.message || "Gagal memproses penarikan.");
                 }
-                const data = await response.json();
-                displayWithdrawalHistory(data);
             } catch (error) {
-                showError(error.message);
+                console.error("WD Error:", error);
+                showModal("Terjadi kesalahan koneksi ke server.");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "AJUKAN PENARIKAN";
             }
         }
 
-        function displayWithdrawalHistory(data) {
-            const historyContainer = document.getElementById('history');
-            historyContainer.innerHTML = '';
-            data.forEach(transaction => {
-                const transactionElement = document.createElement('div');
-                transactionElement.classList.add('transaction');
-                transactionElement.textContent = `Amount: ${transaction.amount} - Status: ${transaction.status}`;
-                historyContainer.appendChild(transactionElement);
-            });
-        }
-
-        function showError(message) {
-            const errorContainer = document.getElementById('error');
-            errorContainer.textContent = message;
-            errorContainer.classList.add('visible');
-        }
-
-        function autoRefresh() {
-            fetchWithdrawalHistory();
-            setTimeout(autoRefresh, 30000); // refresh every 30 seconds
-        }
-
         window.onload = () => {
-            fetchWithdrawalHistory();
-            autoRefresh();
+            if(!localStorage.getItem('username')) {
+                location.href = 'login.html';
+            } else {
+                updateBalanceDisplay();
+            }
         };
     </script>
-</head>
-<body>
-    <h1>Withdrawal History</h1>
-    <div id="error" class="error"></div>
-    <div id="history"></div>
 </body>
 </html>
