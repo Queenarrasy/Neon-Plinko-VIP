@@ -41,6 +41,7 @@
         .balance-box {
             background: #000; border: 2px solid var(--pink); border-radius: 20px;
             padding: 5px 20px; box-shadow: var(--neon-pink); text-align: center;
+            flex-grow: 1; margin: 0 20px;
         }
         .saldo-label { font-size: 9px; color: var(--white); text-shadow: var(--neon-white); font-weight: bold; }
         #display-saldo { font-size: 18px; font-weight: bold; color: var(--white); }
@@ -52,7 +53,7 @@
         }
         .peg.hit { background: var(--yellow); box-shadow: var(--neon-yellow); transform: translate(-50%, -50%) scale(1.5); }
         .ball {
-            position: absolute; width: 14px; height: 14px; background: var(--pink);
+            position: absolute; width: 13px; height: 13px; background: var(--pink);
             border-radius: 50%; box-shadow: var(--neon-pink); transform: translate(-50%, -50%); z-index: 10;
             will-change: left, top;
         }
@@ -134,10 +135,7 @@
             <div class="saldo-label">SALDO UTAMA</div>
             <div id="display-saldo">IDR 0</div>
         </div>
-        <div class="header-item" onclick="playSound('click'); location.href='settings.html'">
-            <i class="fa-solid fa-gear" style="color: var(--blue); text-shadow: var(--neon-blue);"></i>
-            <span style="color: var(--blue);">SETTING</span>
-        </div>
+        <div class="header-item" style="visibility: hidden;"></div>
     </div>
 
     <div id="game-board"></div>
@@ -150,12 +148,12 @@
             <button class="btn-mode" id="m-auto" onclick="toggleAuto()">AUTO: OFF</button>
         </div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding: 0 10px;">
-            <i class="fa-solid fa-circle-minus" onclick="changeBet(-1)" style="color:var(--pink); font-size: 25px;"></i>
+            <i class="fa-solid fa-circle-minus" onclick="changeBet(-1)" id="minus-bet" style="color:var(--pink); font-size: 25px;"></i>
             <div style="text-align: center;">
                 <div style="font-size: 9px; color: gray; font-weight: bold;">TARUHAN</div>
                 <span id="current-bet" style="color:var(--yellow); font-size:22px; font-weight:bold;">400</span>
             </div>
-            <i class="fa-solid fa-circle-plus" onclick="changeBet(1)" style="color:var(--blue); font-size: 25px;"></i>
+            <i class="fa-solid fa-circle-plus" onclick="changeBet(1)" id="plus-bet" style="color:var(--blue); font-size: 25px;"></i>
         </div>
         <button class="btn-play" id="main-btn-play" onclick="handlePlay()">PLAY BALL</button>
     </div>
@@ -227,7 +225,9 @@
             document.getElementById('m-turbo').classList.toggle('active', m === 'turbo');
             if(isAuto) { 
                 clearInterval(autoInt); 
-                autoInt = setInterval(handlePlay, speed === 'turbo' ? 200 : 600); 
+                // Mode Normal Auto dibuat lebih realistis (jeda antar bola)
+                let interval = speed === 'turbo' ? 250 : 800;
+                autoInt = setInterval(handlePlay, interval); 
             }
         }
 
@@ -236,17 +236,29 @@
             isAuto = !isAuto;
             document.getElementById('m-auto').innerText = isAuto ? "AUTO: ON" : "AUTO: OFF";
             document.getElementById('m-auto').classList.toggle('active', isAuto);
-            if(isAuto) autoInt = setInterval(handlePlay, speed === 'turbo' ? 200 : 600);
-            else clearInterval(autoInt);
+            
+            // Toggle visual status tombol bet
+            const opacity = isAuto ? "0.3" : "1";
+            document.getElementById('minus-bet').style.opacity = opacity;
+            document.getElementById('plus-bet').style.opacity = opacity;
+
+            if(isAuto) {
+                let interval = speed === 'turbo' ? 250 : 800;
+                autoInt = setInterval(handlePlay, interval);
+            } else {
+                clearInterval(autoInt);
+            }
         }
 
         function changeBet(d) {
+            if(isAuto) return; // Hanya bisa ganti saat auto mati
             playSound('click');
             betIdx = Math.max(0, Math.min(betList.length - 1, betIdx + d));
             document.getElementById('current-bet').innerText = betList[betIdx].toLocaleString();
         }
 
         async function handlePlay() {
+            // Jika sedang memproses data, abaikan klik baru kecuali turbo (untuk cascade)
             if (isProcessing && speed !== 'turbo') return;
             
             const bet = betList[betIdx];
@@ -259,37 +271,44 @@
             }
 
             isProcessing = true;
-            if (typeof startSession === 'function') startSession();
-
+            
             try {
-                const apiPromise = fetch(API_URL, {
+                // Fetch dengan Timeout untuk mencegah bug notifikasi gantung
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+                const response = await fetch(API_URL, {
                     method: "POST",
+                    signal: controller.signal,
                     body: JSON.stringify({
                         action: "game_play",
                         username: localStorage.getItem('username'),
                         bet: bet
                     })
-                }).then(res => res.json());
-
-                const result = await apiPromise;
+                });
+                
+                clearTimeout(timeoutId);
+                const result = await response.json();
 
                 if (result.result === "SUCCESS") {
                     localStorage.setItem('user_saldo', result.newSaldo);
                     if (typeof updateUI === 'function') updateUI({saldo: result.newSaldo});
                     
-                    // BOLA TURUN INSTAN SETELAH RESPON
                     dropBall(bet, result.target_multiplier);
-                    
-                    setTimeout(() => { isProcessing = false; }, speed === 'turbo' ? 50 : 200);
+                    // Reset lock lebih cepat agar cascade lancar
+                    setTimeout(() => { isProcessing = false; }, 100);
                 } else {
-                    showModal(result.message || "Gagal");
+                    // Mencegah notifikasi "Akses Ditolak" muncul terus menerus
+                    if(result.message && !result.message.includes("Akses")) {
+                        showModal(result.message);
+                    }
                     isProcessing = false;
                     if(isAuto) toggleAuto();
                 }
             } catch (e) {
                 isProcessing = false;
-                showModal("Koneksi Error");
-                if(isAuto) toggleAuto();
+                // Jika error koneksi atau abort, jangan tampilkan modal yang mengganggu permainan auto
+                console.log("Play error:", e);
             }
         }
 
@@ -298,26 +317,26 @@
             ball.className = 'ball';
             board.appendChild(ball);
             
-            // Perbaikan posisi awal: py = 0 agar bola langsung terlihat meluncur dari atas
             let px = board.offsetWidth / 2;
-            let py = -10; 
-            let vx = (Math.random() - 0.5) * 6; // Variasi rute lebih lebar
-            let vy = 3; // Kecepatan awal langsung turun (tidak melayang)
+            let py = -5; 
+            let vx = (Math.random() - 0.5) * 4; 
+            let vy = 2; 
             
-            // Penentuan target X yang presisi berdasarkan index multiplier
             const targetIdx = multipliers.indexOf(targetMult);
             const slotWidth = board.offsetWidth / multipliers.length;
-            // TargetX dihitung agar bola mendarat tepat di tengah kotak slot yang benar
             const targetX = (targetIdx * slotWidth) + (slotWidth / 2);
 
             function animate() {
-                // Fisika gravitasi yang lebih berat agar bola tidak melayang
-                let gravity = speed === 'turbo' ? 1.0 : 0.8;
-                vy += gravity; 
+                // FISIKA REALISTIS: Gravitasi lebih berat agar tidak melayang
+                // Normal: Lebih lambat & mantap | Turbo: Cepat & tajam
+                let gravity = speed === 'turbo' ? 0.45 : 0.28;
+                let friction = 0.99; // Sedikit hambatan udara
+
+                vy += gravity;
+                vx *= friction;
                 px += vx; 
                 py += vy;
 
-                // Cek Tabrakan Peg
                 pegLocs.forEach(p => {
                     const dx = px - p.x;
                     const dy = py - p.y;
@@ -325,27 +344,27 @@
                     
                     if (dist < 11) {
                         playSound('hit');
-                        // Pantulan yang responsif
-                        vx = (dx / dist) * (speed === 'turbo' ? 5 : 4);
-                        vy = (dy / dist) * 2;
+                        // Pantulan responsif
+                        let bounce = speed === 'turbo' ? 4.5 : 3.2;
+                        vx = (dx / dist) * bounce;
+                        vy = (dy / dist) * (bounce * 0.6);
                         
-                        // Sistem Magnetis: Menarik bola ke target secara natural tapi pasti
-                        if (py > 50) {
-                            vx += (targetX - px) * 0.18; // Kekuatan tarikan ditingkatkan agar presisi
-                        }
+                        // Perbaikan rute: Magnet halus ke arah targetX
+                        // Semakin dekat ke bawah, semakin kuat tarikan ke target slot
+                        let pullStrength = py / 1800; 
+                        vx += (targetX - px) * pullStrength;
 
                         p.el.classList.add('hit'); 
                         setTimeout(() => p.el.classList.remove('hit'), 60);
                     }
                 });
 
-                // Pantulan dinding samping
-                if (px < 10 || px > board.offsetWidth - 10) vx *= -0.7;
+                // Dinding
+                if (px < 10 || px > board.offsetWidth - 10) vx *= -0.5;
 
                 ball.style.left = px + 'px';
                 ball.style.top = py + 'px';
 
-                // Jika bola melewati batas bawah board
                 if (py < 370) {
                     requestAnimationFrame(animate);
                 } else {
@@ -360,7 +379,6 @@
             const win = Math.floor(bet * targetMult);
             if(targetMult >= 1.2) playSound('win');
             
-            // Kedipan kotak slot yang presisi menggunakan index target
             const slots = document.querySelectorAll('.slot');
             if(slots[targetIdx]) {
                 slots[targetIdx].classList.add('active'); 
