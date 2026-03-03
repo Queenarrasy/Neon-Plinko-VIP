@@ -6,64 +6,292 @@
     <title>WITHDRAW VIP - NEON</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { background: #070816; color: white; font-family: sans-serif; padding: 20px; }
-        .card { background: rgba(255,255,255,0.02); border: 2px solid #ff0077; border-radius: 20px; padding: 20px; max-width: 400px; margin: auto; }
-        .wd-balance { background: #000; padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 20px; border: 1px solid #ff0077; }
-        input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #fbff00; background: #000; color: white; margin-bottom: 15px; box-sizing: border-box; }
-        .btn-wd { width: 100%; padding: 15px; background: #ff0077; border: none; color: white; font-weight: 900; border-radius: 8px; cursor: pointer; }
-        .history-section { margin-top: 20px; text-align: left; }
-        .history-item { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; border-left: 3px solid #fbff00; }
+        :root { 
+            --pink: #ff0077; 
+            --blue: #0044ff; 
+            --yellow: #fbff00; 
+            --bg: #070816; 
+            --pink-bias: 0 0 6px rgba(255, 0, 119, 0.3);
+            --blue-bias: 0 0 6px rgba(0, 68, 255, 0.3);
+            --yellow-bias: 0 0 6px rgba(251, 255, 0, 0.3);
+        }
+        
+        body { background: var(--bg); color: #ffffff; font-family: 'Segoe UI', sans-serif; text-align: center; padding: 20px; margin: 0; }
+        
+        .card { 
+            background: rgba(255,255,255,0.02); 
+            border: 1.5px solid var(--pink); 
+            border-radius: 25px; 
+            padding: 25px; 
+            max-width: 400px; 
+            margin: auto; 
+            box-shadow: var(--pink-bias);
+            backdrop-filter: blur(10px);
+        }
+
+        .wd-balance {
+            background: #000;
+            border: 2px solid var(--pink);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: var(--pink-bias);
+        }
+        .wd-balance p { font-size: 10px; color: #ffffff; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin: 0; opacity: 0.8; }
+        .wd-balance h2 { font-size: 26px; color: #ffffff; font-weight: 900; text-shadow: 0 0 5px rgba(255, 255, 255, 0.2); margin: 5px 0 0 0; }
+        
+        .form-group { text-align: left; margin-bottom: 15px; }
+        .form-group label { font-size: 9px; color: var(--blue); font-weight: 900; margin-left: 5px; text-transform: uppercase; }
+        
+        input { 
+            width: 100%; 
+            padding: 14px; 
+            border-radius: 12px; 
+            border: 1.5px solid var(--yellow); 
+            background: #000 !important; 
+            color: #ffffff !important; 
+            margin-top: 5px; 
+            box-sizing: border-box; 
+            outline: none; 
+            font-size: 14px;
+            box-shadow: var(--yellow-bias);
+        }
+        input:focus { border-color: var(--pink); box-shadow: var(--pink-bias); }
+        input[readonly] { background: #0a0a0a !important; color: #ffffff !important; opacity: 0.8; cursor: not-allowed; }
+        
+        .btn-wd { width: 100%; padding: 16px; background: linear-gradient(135deg, #ffffff -20%, var(--pink) 40%, #cc0061 100%); color: #ffffff; border: none; border-radius: 12px; font-weight: 900; margin-top: 10px; cursor: pointer; box-shadow: var(--pink-bias); text-transform: uppercase; transition: 0.3s; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+        .btn-back { display: block; margin-top: 20px; padding: 16px; text-decoration: none; color: #ffffff; background: linear-gradient(135deg, #ffffff -20%, var(--blue) 40%, #0033cc 100%); font-size: 11px; font-weight: 900; border-radius: 12px; text-transform: uppercase; box-shadow: var(--blue-bias); transition: 0.3s; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+        
+        .btn-wd:active, .btn-back:active { transform: scale(0.96); }
+
+        .history-section { margin-top: 30px; background: rgba(0,0,0,0.6); border-radius: 20px; padding: 15px; border: 2px solid var(--blue); box-shadow: var(--blue-bias); text-align: left; }
+        .history-title { font-size: 11px; color: var(--yellow); font-weight: 900; margin-bottom: 15px; letter-spacing: 1px; text-transform: uppercase;}
+        .table-scroll { max-height: 250px; overflow-y: auto; padding-right: 5px; }
+        
+        .table-scroll::-webkit-scrollbar { width: 4px; }
+        .table-scroll::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 10px; }
+
+        .history-item { background: rgba(255,255,255,0.05); border: 1px solid #333; border-radius: 10px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 2000000; }
+        .spinner { width: 40px; height: 40px; border: 4px solid rgba(0, 68, 255, 0.1); border-top: 4px solid var(--blue); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        #neon-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); backdrop-filter: blur(8px); display: none; justify-content: center; align-items: center; z-index: 10000; }
+        .neon-modal { background: #0d0f26; border: 2px solid var(--pink); border-radius: 25px; padding: 30px; text-align: center; width: 85%; max-width: 320px; box-shadow: var(--pink-bias); }
+        .neon-modal h2 { margin-top: 0; font-weight: 900; letter-spacing: 1px; }
+        .neon-modal p { color: #ffffff; margin: 20px 0; font-size: 14px; line-height: 1.5; font-weight: 500; }
+        .neon-modal-btn { flex: 1; background: var(--pink); border: none; padding: 12px; border-radius: 10px; color: #fff; font-weight: 900; cursor: pointer; text-transform: uppercase; box-shadow: var(--pink-bias); }
+        .neon-modal-btn.cancel { background: #333; color: #fff; box-shadow: none; }
     </style>
 </head>
 <body>
+
+    <audio id="sfx-click" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
+    <audio id="sfx-success" src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3"></audio>
+    <audio id="sfx-error" src="https://assets.mixkit.co/active_storage/sfx/253/253-preview.mp3"></audio>
+    <audio id="sfx-pop" src="https://assets.mixkit.co/active_storage/sfx/2577/2577-preview.mp3"></audio>
+
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <p style="margin-top: 15px; color: var(--blue); font-size: 10px; font-weight: bold; letter-spacing: 2px;">MENGHUBUNGI SERVER...</p>
+    </div>
+
+    <div id="neon-modal-overlay">
+        <div class="neon-modal">
+            <h2 id="modal-title" style="color: var(--yellow); text-shadow: var(--yellow-bias);">INFO</h2>
+            <p id="modal-msg">Pesan sistem.</p>
+            <div style="display: flex; gap: 10px; margin-top: 20px;" id="modal-footer">
+                <button class="neon-modal-btn" onclick="closeNeonModal()">MENGERTI</button>
+            </div>
+        </div>
+    </div>
+
     <div class="card">
-        <h3>WITHDRAW</h3>
+        <h2 style="color: var(--yellow); text-shadow: var(--yellow-bias); margin-top: 0; letter-spacing: 2px;"><i class="fa-solid fa-money-bill-transfer"></i> WITHDRAW</h2>
+        
         <div class="wd-balance">
-            <p style="font-size:10px;margin:0;">SALDO ANDA</p>
+            <p>SALDO UTAMA</p>
             <h2 id="display-saldo">IDR 0</h2>
         </div>
-        <input type="number" id="wd-amount" placeholder="Nominal (Min 50.000)">
-        <button class="btn-wd" onclick="prosesWD()">AJUKAN WD</button>
-        <div class="history-section">
-            <p style="font-size:10px;font-weight:bold;">RIWAYAT WD</p>
-            <div id="wd-history-list"></div>
+
+        <div class="form-group">
+            <label>NAMA SESUAI REKENING:</label>
+            <input type="text" id="wd-name" readonly placeholder="Mencari Nama...">
         </div>
-        <a href="game.html" style="display:block;margin-top:20px;color:white;text-decoration:none;font-size:12px;">KEMBALI</a>
+
+        <div class="form-group">
+            <label>NOMOR REKENING TUJUAN:</label>
+            <input type="text" id="wd-rek" readonly placeholder="Mencari Rekening...">
+        </div>
+
+        <div class="form-group">
+            <label>NOMINAL PENARIKAN (IDR):</label>
+            <input type="number" id="wd-amount" placeholder="Min. 50000">
+            <small style="color: #bbb; font-size: 9px; margin-top: 5px; display: block;">*Minimal penarikan IDR 50.000</small>
+        </div>
+
+        <button class="btn-wd" onclick="playClick(); konfirmasiWD()">AJUKAN PENARIKAN</button>
+        
+        <div class="history-section">
+            <div class="history-title"><i class="fa-solid fa-clock-rotate-left"></i> RIWAYAT PENARIKAN</div>
+            <div id="wd-history-list" class="table-scroll">
+                <div style="text-align:center; padding:20px; color:#666; font-size:10px;">MEMUAT RIWAYAT...</div>
+            </div>
+        </div>
+
+        <a href="game.html" class="btn-back" onclick="playClick()">
+            <i class="fa-solid fa-arrow-left"></i> KEMBALI KE LOBBY
+        </a>
     </div>
 
     <script src="global.js"></script>
     <script>
-        async function prosesWD() {
-            const amt = document.getElementById('wd-amount').value;
-            if(amt < 50000) return alert("Min 50rb");
+        const URL_TARGET = typeof SCRIPT_URL !== 'undefined' ? SCRIPT_URL : "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
+
+        function playClick() { document.getElementById('sfx-click').play(); }
+        function playSuccess() { document.getElementById('sfx-success').play(); }
+        function playError() { document.getElementById('sfx-error').play(); }
+        function playPop() { document.getElementById('sfx-pop').play(); }
+
+        async function callCloud(payload) {
             try {
-                const res = await fetch(SCRIPT_URL, {
+                const response = await fetch(URL_TARGET, {
                     method: 'POST',
-                    body: JSON.stringify({ action: 'withdraw', username: user, amount: amt })
+                    body: JSON.stringify(payload)
                 });
-                const data = await res.json();
-                alert(data.result === "SUCCESS" ? "Berhasil!" : data.message);
-                loadWDHistory();
-            } catch(e) { alert("Error"); }
+                return await response.json();
+            } catch (err) {
+                return { result: "ERROR" };
+            }
         }
-        async function loadWDHistory() {
-            const container = document.getElementById('wd-history-list');
+
+        async function prepareWithdrawPage() {
+            const user = localStorage.getItem('user_session') || localStorage.getItem('username');
+            if (!user) { window.location.href = 'index.html'; return; }
+
             try {
-                const resp = await fetch(SCRIPT_URL, {
+                const data = await callCloud({ action: 'getUserData', username: user });
+                if (data.result === "SUCCESS") {
+                    localStorage.setItem('user_saldo', data.saldo);
+                    document.getElementById('display-saldo').innerText = "IDR " + Number(data.saldo).toLocaleString('id-ID');
+                    document.getElementById('wd-name').value = (data.fullname || user).toUpperCase();
+                    document.getElementById('wd-rek').value = data.bank ? `${data.bank.toUpperCase()} - ${data.rekening}` : data.rekening;
+                }
+            } catch (err) {
+                const localSaldo = localStorage.getItem('user_saldo') || 0;
+                document.getElementById('display-saldo').innerText = "IDR " + Number(localSaldo).toLocaleString('id-ID');
+            }
+            loadWDHistory();
+        }
+
+        function showNeonModal(msg, title = "INFO", isConfirm = false, onConfirm = null) {
+            playPop();
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-msg').innerText = msg;
+            const footer = document.getElementById('modal-footer');
+            if (isConfirm) {
+                footer.innerHTML = `
+                    <button class="neon-modal-btn cancel" onclick="playClick(); closeNeonModal()">BATAL</button>
+                    <button class="neon-modal-btn" id="confirm-ok" style="background:var(--yellow); color:#000;">YA, TARIK</button>
+                `;
+                document.getElementById('confirm-ok').onclick = () => { playClick(); closeNeonModal(); if(onConfirm) onConfirm(); };
+            } else {
+                footer.innerHTML = `<button class="neon-modal-btn" onclick="playClick(); closeNeonModal()" style="background:var(--blue); color:#fff;">MENGERTI</button>`;
+            }
+            document.getElementById('neon-modal-overlay').style.display = 'flex';
+        }
+
+        function closeNeonModal() { document.getElementById('neon-modal-overlay').style.display = 'none'; }
+
+        function konfirmasiWD() {
+            const amt = parseInt(document.getElementById('wd-amount').value);
+            const saldo = parseInt(localStorage.getItem('user_saldo')) || 0;
+
+            if (isNaN(amt) || amt < 50000) {
+                playError();
+                showNeonModal("Minimal penarikan adalah IDR 50.000", "NOMINAL SALAH");
+                return;
+            }
+            if (amt > saldo) {
+                playError();
+                showNeonModal("Saldo tidak mencukupi!", "SALDO KURANG");
+                return;
+            }
+            showNeonModal(`Tarik dana IDR ${amt.toLocaleString('id-ID')}?`, "KONFIRMASI", true, kirimWDKeCloud);
+        }
+
+        async function kirimWDKeCloud() {
+            const amt = parseInt(document.getElementById('wd-amount').value);
+            const user = localStorage.getItem('user_session') || localStorage.getItem('username');
+            document.getElementById('loading-overlay').style.display = 'flex';
+
+            try {
+                const result = await callCloud({
+                    action: "withdraw",
+                    username: user,
+                    amount: amt
+                });
+                
+                document.getElementById('loading-overlay').style.display = 'none';
+
+                if (result.result === "SUCCESS") {
+                    playSuccess();
+                    showNeonModal("Penarikan berhasil diajukan. Saldo Anda telah terpotong.", "SUKSES");
+                    document.getElementById('wd-amount').value = "";
+                    prepareWithdrawPage(); 
+                } else {
+                    playError();
+                    showNeonModal(result.message || "Gagal mengirim permintaan.", "GAGAL");
+                }
+            } catch (e) {
+                playError();
+                document.getElementById('loading-overlay').style.display = 'none';
+                showNeonModal("Koneksi server gagal.", "KONEKSI ERROR");
+            }
+        }
+
+        async function loadWDHistory() {
+            const user = localStorage.getItem('user_session') || localStorage.getItem('username');
+            const container = document.getElementById('wd-history-list');
+            if(!user || !container) return;
+
+            try {
+                // SINKRONISASI: Gunakan action 'getWDHistory'
+                const resp = await fetch(URL_TARGET, {
                     method: 'POST',
                     body: JSON.stringify({ action: "getWDHistory", username: user })
                 });
                 const data = await resp.json();
-                if(data.result === "SUCCESS" && data.history) {
-                    container.innerHTML = data.history.map(h => `
-                        <div class="history-item">
-                            <div><div style="font-size:10px;">WD</div><div style="font-size:8px;">${h.tgl}</div></div>
-                            <div style="text-align:right;"><div style="font-size:11px;">IDR ${Number(h.nominal).toLocaleString()}</div><div style="font-size:8px;">${h.status}</div></div>
-                        </div>`).join('');
+                
+                if(data.result === "SUCCESS" && data.history && data.history.length > 0) {
+                    container.innerHTML = data.history.map(h => {
+                        let statusRaw = (h.status || "PROSES").toUpperCase();
+                        let sColor = '#fbff00'; 
+                        if (statusRaw === 'BERHASIL' || statusRaw === 'SUCCESS') sColor = '#00ff00'; 
+                        if (statusRaw === 'GAGAL') sColor = '#ff0077'; 
+                        
+                        return `
+                        <div class="history-item" style="border-left: 3px solid ${sColor};">
+                            <div style="text-align:left;">
+                                <div style="font-size:11px; font-weight:900; color:var(--pink);">PENARIKAN DANA</div>
+                                <div style="font-size:9px; color:#aaa; font-weight:bold; margin-top:2px;">${h.tgl || ''}</div>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="font-size:13px; font-weight:900; color:var(--yellow);">IDR ${Number(h.nominal || 0).toLocaleString('id-ID')}</div>
+                                <div style="font-size:9px; font-weight:900; color:${sColor};">● ${statusRaw}</div>
+                            </div>
+                        </div>`;
+                    }).join('');
+                } else {
+                    container.innerHTML = '<div style="text-align:center; padding:20px; color:#666; font-size:10px; font-weight:bold;">BELUM ADA RIWAYAT PENARIKAN</div>';
                 }
-            } catch(e) {}
+            } catch (e) { 
+                container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--pink); font-size:10px; font-weight:bold;">GAGAL MEMUAT DATA</div>';
+            }
         }
-        loadWDHistory();
+
+        window.onload = prepareWithdrawPage;
     </script>
 </body>
 </html>
