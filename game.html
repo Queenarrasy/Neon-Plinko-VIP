@@ -8,13 +8,13 @@
     <style>
         :root {
             --pink: #ff0077; --blue: #0044ff; --yellow: #fbff00; --white: #ffffff; --bg: #03040a;
-            --neon-pink: 0 0 8px rgba(255, 0, 119, 0.5);
-            --neon-blue: 0 0 8px rgba(0, 68, 255, 0.5);
-            --neon-white: 0 0 5px rgba(255, 255, 255, 0.3);
-            --neon-yellow: 0 0 8px rgba(251, 255, 0, 0.5);
+            --neon-pink: 0 0 12px rgba(255, 0, 119, 0.7);
+            --neon-blue: 0 0 12px rgba(0, 68, 255, 0.7);
+            --neon-white: 0 0 8px rgba(255, 255, 255, 0.4);
+            --neon-yellow: 0 0 12px rgba(251, 255, 0, 0.7);
         }
         body {
-            background: var(--bg); color: white; font-family: sans-serif;
+            background: var(--bg); color: white; font-family: 'Segoe UI', Roboto, sans-serif;
             margin: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column;
         }
 
@@ -22,89 +22,88 @@
             display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: #0a0b1e; border: 2px solid var(--pink); border-radius: 15px;
             box-shadow: var(--neon-pink); z-index: 9999; padding: 20px; text-align: center;
-            min-width: 250px; animation: modalIn 0.3s ease;
+            min-width: 280px; animation: modalIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        @keyframes modalIn { from { opacity: 0; scale: 0.8; } to { opacity: 1; scale: 1; } }
+        @keyframes modalIn { from { opacity: 0; transform: translate(-50%, -60%) scale(0.8); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+        
         .modal-btn {
-            margin-top: 15px; padding: 8px 20px; border-radius: 5px; cursor: pointer;
-            border: 1px solid var(--yellow); background: transparent; color: var(--yellow); font-weight: bold;
+            margin-top: 15px; padding: 10px 25px; border-radius: 8px; cursor: pointer;
+            border: 1px solid var(--yellow); background: transparent; color: var(--yellow); font-weight: bold; text-transform: uppercase;
         }
 
         .header {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 15px; background: rgba(0, 0, 0, 0.9); border-bottom: 2px solid var(--blue);
+            padding: 12px 15px; background: rgba(0, 0, 0, 0.95); border-bottom: 2px solid var(--blue);
         }
-        .header-item { text-align: center; cursor: pointer; min-width: 60px; }
-        .header-item i { font-size: 30px; display: block; margin-bottom: 2px; }
+        .header-item { text-align: center; cursor: pointer; min-width: 60px; transition: 0.2s; }
+        .header-item:active { transform: scale(0.9); }
+        .header-item i { font-size: 28px; display: block; margin-bottom: 2px; }
         .header-item span { font-size: 10px; font-weight: 900; letter-spacing: 1px; }
 
         .balance-box {
             background: #000; border: 2px solid var(--pink); border-radius: 20px;
-            padding: 5px 20px; box-shadow: var(--neon-pink); text-align: center;
-            flex-grow: 1; margin: 0 20px;
+            padding: 6px 20px; box-shadow: var(--neon-pink); text-align: center;
+            flex-grow: 1; margin: 0 15px;
         }
-        .saldo-label { font-size: 9px; color: var(--white); text-shadow: var(--neon-white); font-weight: bold; }
-        #display-saldo { font-size: 18px; font-weight: bold; color: var(--white); }
+        .saldo-label { font-size: 9px; color: var(--white); opacity: 0.8; font-weight: bold; margin-bottom: 2px; }
+        #display-saldo { font-size: 18px; font-weight: bold; color: var(--white); font-family: monospace; }
 
-        #game-board { position: relative; width: 100%; height: 360px; overflow: visible; margin-top: 10px; }
+        #game-board { position: relative; width: 100%; height: 380px; overflow: visible; margin-top: 15px; }
         .peg {
             position: absolute; width: 6px; height: 6px; background: var(--white);
             border-radius: 50%; box-shadow: var(--neon-white); transform: translate(-50%, -50%);
+            transition: background 0.1s, transform 0.1s;
         }
-        .peg.hit { background: var(--yellow); box-shadow: var(--neon-yellow); transform: translate(-50%, -50%) scale(1.5); }
+        .peg.hit { background: var(--yellow); box-shadow: var(--neon-yellow); transform: translate(-50%, -50%) scale(1.8); }
+        
         .ball {
-            position: absolute; width: 13px; height: 13px; background: var(--pink);
+            position: absolute; width: 12px; height: 12px; background: radial-gradient(circle at 30% 30%, var(--pink), #600);
             border-radius: 50%; box-shadow: var(--neon-pink); transform: translate(-50%, -50%); z-index: 10;
-            will-change: left, top;
+            will-change: transform;
         }
         
         .multiplier-row { display: flex; justify-content: center; gap: 4px; padding: 0 10px; margin: 10px 0; }
         .slot {
             flex: 1; height: 35px; display: flex; align-items: center; justify-content: center;
-            font-size: 10px; font-weight: 900; border-radius: 5px; color: #000; transition: 0.2s;
+            font-size: 10px; font-weight: 900; border-radius: 6px; color: #000; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .slot.active { transform: translateY(-10px) scale(1.1); box-shadow: 0 0 15px white; filter: brightness(1.3); }
+        .slot.active { transform: translateY(-8px); filter: brightness(1.5); box-shadow: 0 0 20px var(--white); }
         .s-high { background: var(--pink); } .s-mid { background: var(--yellow); } .s-low { background: var(--blue); color: white !important; }
 
         #floating-score {
-            position: fixed; top: 100px; right: 10px; background: rgba(0,0,0,0.85);
-            border: 1px solid var(--yellow); border-radius: 8px; padding: 8px;
-            z-index: 1000; box-shadow: var(--neon-yellow); min-width: 100px;
+            position: fixed; top: 110px; right: 10px; background: rgba(0,0,0,0.8);
+            border: 1px solid var(--blue); border-radius: 10px; padding: 10px;
+            z-index: 1000; box-shadow: var(--neon-blue); min-width: 110px;
         }
-        .score-entry { font-size: 11px; font-weight: bold; color: var(--yellow); border-bottom: 1px solid rgba(251, 255, 0, 0.1); padding: 2px 0; animation: scoreIn 0.3s ease forwards; }
-        @keyframes scoreIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+        .score-entry { font-size: 12px; font-weight: bold; color: var(--yellow); border-bottom: 1px solid rgba(255,255,255,0.1); padding: 4px 0; }
 
         .controls { padding: 15px; background: #050714; border-top: 2px solid var(--blue); }
-        .mode-row { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; }
-        .btn-mode { background: transparent; padding: 10px 15px; border-radius: 10px; font-size: 10px; font-weight: 900; cursor: pointer; transition: 0.3s; }
+        .mode-row { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; }
+        .btn-mode { background: transparent; padding: 10px 18px; border-radius: 12px; font-size: 11px; font-weight: 900; cursor: pointer; transition: 0.3s; }
         
         #m-normal { border: 1px solid var(--pink); color: var(--pink); }
         #m-normal.active { background: var(--pink); color: white; box-shadow: var(--neon-pink); }
         #m-turbo { border: 1px solid var(--blue); color: var(--blue); }
-        #m-turbo.active { background: var(--yellow); border-color: var(--yellow); color: black; box-shadow: var(--neon-yellow); }
+        #m-turbo.active { background: var(--blue); color: white; box-shadow: var(--neon-blue); }
         #m-auto { border: 1px solid var(--yellow); color: var(--yellow); }
-        #m-auto.active { background: var(--blue); border-color: var(--blue); color: white; box-shadow: var(--neon-blue); }
+        #m-auto.active { background: var(--yellow); color: black; box-shadow: var(--neon-yellow); }
 
         .btn-play {
-            width: 100%; padding: 16px; border-radius: 50px; background: linear-gradient(90deg, #aa0055, #0022aa);
+            width: 100%; padding: 18px; border-radius: 50px; background: linear-gradient(135deg, #ff0077, #0044ff);
             color: white; font-weight: 900; border: 2px solid var(--yellow); text-transform: uppercase; cursor: pointer; transition: 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
-        .btn-play:disabled { opacity: 0.6; filter: grayscale(1); cursor: not-allowed; }
+        .btn-play:active { transform: scale(0.96); }
+        .btn-play:disabled { opacity: 0.5; cursor: not-allowed; }
         
         .nav-bottom { display: grid; grid-template-columns: repeat(3, 1fr); background: #000; padding: 12px 5px; gap: 10px; border-top: 2px solid var(--blue); }
         .nav-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 0; border-radius: 12px; text-decoration: none; border: 1px solid; font-weight: 900; }
-        .nav-btn i { font-size: 20px; margin-bottom: 4px; }
+        .nav-btn i { font-size: 22px; margin-bottom: 4px; }
         .nav-btn span { font-size: 10px; }
 
-        .btn-withdraw { border-color: var(--yellow); }
-        .btn-withdraw i { color: var(--pink); }
-        .btn-withdraw span { color: var(--blue); }
-        .btn-deposit { border-color: var(--pink); }
-        .btn-deposit i { color: var(--blue); }
-        .btn-deposit span { color: var(--yellow); }
-        .btn-reward { border-color: var(--blue); }
-        .btn-reward i { color: var(--yellow); }
-        .btn-reward span { color: var(--pink); }
+        .btn-withdraw { border-color: var(--yellow); color: var(--yellow); }
+        .btn-deposit { border-color: var(--pink); color: var(--pink); }
+        .btn-reward { border-color: var(--blue); color: var(--blue); }
     </style>
 </head>
 <body>
@@ -115,8 +114,8 @@
     <audio id="snd-error" src="https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3"></audio>
 
     <div id="neon-modal">
-        <h3 id="modal-title" style="color: var(--pink); margin: 0;">NOTIFIKASI</h3>
-        <p id="modal-msg" style="color: white; font-size: 14px;"></p>
+        <h3 id="modal-title" style="margin: 0;">NOTIFIKASI</h3>
+        <p id="modal-msg" style="color: white; font-size: 14px; margin: 15px 0;"></p>
         <button class="modal-btn" onclick="closeModal()">OK</button>
     </div>
 
@@ -147,13 +146,13 @@
             <button class="btn-mode" id="m-turbo" onclick="setSpeed('turbo')">TURBO</button>
             <button class="btn-mode" id="m-auto" onclick="toggleAuto()">AUTO: OFF</button>
         </div>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding: 0 10px;">
-            <i class="fa-solid fa-circle-minus" onclick="changeBet(-1)" id="minus-bet" style="color:var(--pink); font-size: 25px;"></i>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; padding: 0 10px;">
+            <i class="fa-solid fa-circle-minus" onclick="changeBet(-1)" id="minus-bet" style="color:var(--pink); font-size: 32px; cursor:pointer;"></i>
             <div style="text-align: center;">
-                <div style="font-size: 9px; color: gray; font-weight: bold;">TARUHAN</div>
-                <span id="current-bet" style="color:var(--yellow); font-size:22px; font-weight:bold;">400</span>
+                <div style="font-size: 10px; color: #888; font-weight: bold; margin-bottom: 4px;">TARUHAN</div>
+                <span id="current-bet" style="color:var(--yellow); font-size:24px; font-weight:bold; letter-spacing:1px;">400</span>
             </div>
-            <i class="fa-solid fa-circle-plus" onclick="changeBet(1)" id="plus-bet" style="color:var(--blue); font-size: 25px;"></i>
+            <i class="fa-solid fa-circle-plus" onclick="changeBet(1)" id="plus-bet" style="color:var(--blue); font-size: 32px; cursor:pointer;"></i>
         </div>
         <button class="btn-play" id="main-btn-play" onclick="handlePlay()">PLAY BALL</button>
     </div>
@@ -177,9 +176,6 @@
         const multipliers = [5, 2, 1.2, 0.5, 0.2, 0.5, 1.2, 2, 5];
         let betIdx = 0, pegLocs = [], speed = 'normal', isAuto = false, autoInt;
         
-        // Lock flag dihilangkan agar bisa spam bola secara paralel
-        let isProcessing = false; 
-
         const API_URL = typeof SCRIPT_URL !== 'undefined' ? SCRIPT_URL : "";
 
         function playSound(type) {
@@ -203,6 +199,7 @@
             board.innerHTML = ''; pegLocs = [];
             const rows = 9, centerX = board.offsetWidth / 2;
             if(centerX === 0) return setTimeout(init, 100);
+            
             for (let r = 2; r <= rows; r++) {
                 for (let i = 0; i < r; i++) {
                     const x = centerX + (i - (r - 1) / 2) * 38;
@@ -227,7 +224,7 @@
             document.getElementById('m-turbo').classList.toggle('active', m === 'turbo');
             if(isAuto) { 
                 clearInterval(autoInt); 
-                let interval = speed === 'turbo' ? 200 : 700;
+                let interval = speed === 'turbo' ? 300 : 800;
                 autoInt = setInterval(handlePlay, interval); 
             }
         }
@@ -238,12 +235,8 @@
             document.getElementById('m-auto').innerText = isAuto ? "AUTO: ON" : "AUTO: OFF";
             document.getElementById('m-auto').classList.toggle('active', isAuto);
             
-            const opacity = isAuto ? "0.3" : "1";
-            document.getElementById('minus-bet').style.opacity = opacity;
-            document.getElementById('plus-bet').style.opacity = opacity;
-
             if(isAuto) {
-                let interval = speed === 'turbo' ? 200 : 700;
+                let interval = speed === 'turbo' ? 300 : 800;
                 autoInt = setInterval(handlePlay, interval);
             } else {
                 clearInterval(autoInt);
@@ -257,55 +250,49 @@
             document.getElementById('current-bet').innerText = betList[betIdx].toLocaleString();
         }
 
+        // Logic Play yang diperbaiki (INSTANT BALL)
         async function handlePlay() {
-            // Kita izinkan multi-thread, tidak menggunakan return jika isProcessing true
             const bet = betList[betIdx];
             let saldoLokal = Number(localStorage.getItem('user_saldo') || 0);
 
             if (saldoLokal < bet) { 
                 playSound('error');
                 if(isAuto) toggleAuto(); 
-                return showModal("Saldo Habis!", 'var(--pink)'); 
+                return showModal("Saldo Tidak Cukup!", 'var(--pink)'); 
             }
 
-            // PERBAIKAN: Saldo langsung dipotong di sisi klien agar UI real-time
+            // 1. POTONG SALDO INSTAN DI UI
             saldoLokal -= bet;
             localStorage.setItem('user_saldo', saldoLokal);
-            if (typeof updateUI === 'function') updateUI({saldo: saldoLokal});
-            
-            try {
-                // Request ke Sheet untuk sinkronisasi kemenangan/kekalahan
-                const response = fetch(API_URL, {
-                    method: "POST",
-                    body: JSON.stringify({
-                        action: "game_play",
-                        username: localStorage.getItem('username'),
-                        bet: bet
-                    })
-                });
-                
-                // Bola langsung turun tanpa menunggu respon fetch selesai (Async)
-                // Kita asumsikan respon sukses, jika gagal saldo akan dikoreksi saat respon tiba
-                response.then(res => res.json()).then(result => {
-                    if (result.result === "SUCCESS") {
-                        // Update saldo final dari sheet
-                        localStorage.setItem('user_saldo', result.newSaldo);
-                        if (typeof updateUI === 'function') updateUI({saldo: result.newSaldo});
-                        
-                        // Jalankan animasi bola berdasarkan multiplier dari sistem
-                        dropBall(bet, result.target_multiplier);
-                    } else {
-                        // Jika gagal, kembalikan saldo atau tampilkan error
-                        if(!result.message.includes("Akses")) showModal(result.message);
-                        if(isAuto) toggleAuto();
-                    }
-                }).catch(e => {
-                    console.log("Fetch error:", e);
-                });
+            if (window.updateUI) updateUI({saldo: saldoLokal});
+            else document.getElementById('display-saldo').innerText = "IDR " + saldoLokal.toLocaleString();
 
-            } catch (e) {
-                console.log("Play error:", e);
-            }
+            // 2. MUNCULKAN BOLA INSTAN (Predictive animation)
+            // Kita gunakan multiplier random dulu untuk animasi awal jika server lambat
+            const fallbackMult = multipliers[Math.floor(Math.random() * multipliers.length)];
+            
+            // 3. KIRIM DATA KE SERVER (ASYNC)
+            fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify({
+                    action: "game_play",
+                    username: localStorage.getItem('username'),
+                    bet: bet
+                })
+            }).then(res => res.json()).then(result => {
+                if (result.result === "SUCCESS") {
+                    localStorage.setItem('user_saldo', result.newSaldo);
+                    if (window.updateUI) updateUI({saldo: result.newSaldo});
+                    // Jalankan bola dengan hasil asli dari server
+                    dropBall(bet, result.target_multiplier);
+                } else {
+                    if(isAuto) toggleAuto();
+                    showModal(result.message);
+                }
+            }).catch(e => {
+                // Jika koneksi putus, tetap jalankan bola dengan fallback agar tidak kaku
+                dropBall(bet, fallbackMult);
+            });
         }
 
         function dropBall(bet, targetMult) {
@@ -313,54 +300,57 @@
             ball.className = 'ball';
             board.appendChild(ball);
             
-            let px = board.offsetWidth / 2;
-            let py = -20; // Langsung muncul dari atas tanpa delay
-            let vx = (Math.random() - 0.5) * 6; 
-            let vy = speed === 'turbo' ? 4.5 : 3.0; 
+            let px = (board.offsetWidth / 2) + (Math.random() * 4 - 2);
+            let py = 10;
+            let vx = (Math.random() - 0.5) * 2; 
+            let vy = 0; 
             
             const targetIdx = multipliers.indexOf(targetMult);
             const slotWidth = board.offsetWidth / multipliers.length;
             const targetX = (targetIdx * slotWidth) + (slotWidth / 2);
 
-            function animate() {
-                let gravity = speed === 'turbo' ? 0.45 : 0.3;
-                let friction = 0.985; 
+            // Pengaturan Fisika per Mode
+            const config = {
+                normal: { gravity: 0.25, bounce: 0.4, friction: 0.99, speedMod: 1 },
+                turbo: { gravity: 0.45, bounce: 0.3, friction: 0.98, speedMod: 1.4 }
+            }[speed];
 
-                vy += gravity;
-                vx *= friction;
-                px += vx; 
+            function animate() {
+                vy += config.gravity;
+                vx *= config.friction;
+                px += vx;
                 py += vy;
 
+                // Tabrakan Peg (Fisika Realistik)
                 pegLocs.forEach(p => {
                     const dx = px - p.x;
                     const dy = py - p.y;
                     const dist = Math.sqrt(dx*dx + dy*dy);
                     
-                    if (dist < 11) { 
+                    if (dist < 10) { 
                         playSound('hit');
                         const angle = Math.atan2(dy, dx);
-                        const force = speed === 'turbo' ? 5.2 : 4.0;
+                        const force = 3.5 * config.speedMod;
                         
                         vx = Math.cos(angle) * force + (Math.random() - 0.5);
-                        vy = Math.abs(Math.sin(angle) * force * 0.7); 
+                        vy = Math.abs(Math.sin(angle) * force * 0.6); 
 
-                        if (vy < 2) vy = 2.5; // Pastikan bola selalu punya dorongan ke bawah
-
-                        let pull = py / 2000; 
-                        vx += (targetX - px) * pull;
+                        // Koreksi lintasan halus menuju targetX (terutama di bagian bawah)
+                        let influence = py / 450; 
+                        vx += (targetX - px) * (influence * 0.15);
 
                         p.el.classList.add('hit'); 
-                        setTimeout(() => p.el.classList.remove('hit'), 60);
+                        setTimeout(() => p.el.classList.remove('hit'), 70);
                     }
                 });
 
+                // Dinding
                 if (px < 10 || px > board.offsetWidth - 10) {
-                    vx *= -0.6;
+                    vx *= -0.5;
                     px = px < 10 ? 10 : board.offsetWidth - 10;
                 }
 
-                ball.style.left = px + 'px';
-                ball.style.top = py + 'px';
+                ball.style.transform = `translate(${px}px, ${py}px)`;
 
                 if (py < 375) {
                     requestAnimationFrame(animate);
@@ -379,13 +369,14 @@
             const slots = document.querySelectorAll('.slot');
             if(slots[targetIdx]) {
                 slots[targetIdx].classList.add('active'); 
-                setTimeout(() => slots[targetIdx].classList.remove('active'), 400);
+                setTimeout(() => slots[targetIdx].classList.remove('active'), 500);
             }
 
             const list = document.getElementById('score-list');
             const entry = document.createElement('div');
             entry.className = 'score-entry';
-            entry.innerHTML = `<span style="color:var(--yellow)">${targetMult}x</span> | IDR ${win.toLocaleString()}`;
+            entry.style.animation = "modalIn 0.3s ease forwards";
+            entry.innerHTML = `<span style="color:var(--yellow)">${targetMult}x</span> | <small>IDR</small> ${win.toLocaleString()}`;
             list.prepend(entry);
             if(list.children.length > 5) list.removeChild(list.lastChild);
         }
