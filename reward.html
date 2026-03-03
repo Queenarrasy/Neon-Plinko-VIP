@@ -1,181 +1,42 @@
-<!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>REWARD VIP - NEON PLINKO</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Reward</title>
     <style>
-        :root { 
-            --neon-pink: #ff0077; --neon-blue: #0044ff; --neon-gold: #fbff00; --bg-dark: #070816;
-            --pink-bias: 0 0 10px rgba(255, 0, 119, 0.5);
-            --blue-bias: 0 0 10px rgba(0, 68, 255, 0.5);
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: 'Arial', sans-serif;
         }
-        body { background: var(--bg-dark); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; text-align: center; }
-        .glass-card { background: rgba(255, 255, 255, 0.03); border: 2px solid var(--neon-blue); border-radius: 20px; padding: 20px; box-shadow: var(--blue-bias); margin-bottom: 20px; }
-        .neon-title { color: var(--neon-gold); font-size: 20px; font-weight: 900; text-transform: uppercase; margin-bottom: 15px; }
-        
-        /* Referral Box */
-        .ref-box { background: #000; border: 1.5px dashed var(--neon-gold); padding: 15px; border-radius: 12px; margin: 15px 0; }
-        .ref-code { font-size: 24px; font-weight: 900; color: #fff; letter-spacing: 3px; display: block; margin: 5px 0; }
-        
-        /* Reward Grid */
-        .reward-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
-        .btn-reward { background: #000; border: 2px solid var(--neon-pink); border-radius: 12px; padding: 15px; cursor: pointer; transition: 0.3s; box-shadow: var(--pink-bias); }
-        .btn-reward i { font-size: 25px; color: var(--neon-gold); margin-bottom: 8px; }
-        .btn-reward span { display: block; font-size: 10px; font-weight: bold; color: #fff; }
-
-        /* Inbox Style */
-        .inbox-item { background: rgba(255,255,255,0.05); border: 1px solid var(--neon-blue); padding: 12px; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .btn-claim-msg { background: var(--neon-pink); border: none; color: white; padding: 6px 12px; border-radius: 6px; font-size: 10px; font-weight: 900; cursor: pointer; }
-        
-        .btn-back { display: block; margin-top: 20px; padding: 12px; background: var(--neon-blue); color: white; text-decoration: none; border-radius: 10px; font-weight: 900; font-size: 12px; box-shadow: var(--blue-bias); }
-        #loading { display:none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:999; flex-direction:column; justify-content:center; align-items:center; }
+        .neon {
+            text-shadow: 0 0 5px #0ff, 0 0 10px #0ff;
+        }
+        .error {
+            color: red;
+        }
     </style>
 </head>
 <body>
-
-    <div id="loading"><div style="border:4px solid #f3f3f3; border-top:4px solid var(--neon-blue); border-radius:50%; width:30px; height:30px; animation:spin 1s linear infinite;"></div><p style="font-size:10px; margin-top:10px;">PROSES...</p></div>
-
-    <div class="glass-card">
-        <h2 class="neon-title">PROGRAM REFERRAL</h2>
-        <p style="font-size: 10px; color: #bbb;">Bagikan kode Anda dan dapatkan bonus <b>IDR 5,000</b> setiap teman melakukan deposit pertama!</p>
-        <div class="ref-box">
-            <span style="font-size: 9px; color: var(--neon-gold);">KODE REFERRAL SAYA:</span>
-            <span id="my-ref-code" class="ref-code">MEMUAT...</span>
-            <button onclick="copyRef()" style="background:none; border:none; color:var(--neon-blue); font-size:11px; font-weight:bold; cursor:pointer;">[ SALIN KODE ]</button>
-        </div>
-        <div style="background:rgba(251,255,0,0.1); padding:10px; border-radius:8px; border:1px solid var(--neon-gold);">
-            <span style="font-size:9px; color:var(--neon-gold);">TOTAL REWARD TERKUMPUL:</span>
-            <div id="reward-saldo" style="font-size:18px; font-weight:900; color:#fff;">Rp 0</div>
-            <button onclick="claimReferral()" style="margin-top:8px; width:100%; padding:8px; background:var(--neon-gold); border:none; border-radius:5px; font-weight:900; font-size:11px; cursor:pointer;">KLAIM KE SALDO UTAMA (MINGGU)</button>
-        </div>
-    </div>
-
-    <div class="glass-card">
-        <h2 class="neon-title">BONUS HARIAN</h2>
-        <div class="reward-grid">
-            <div class="btn-reward" onclick="claimDaily()">
-                <i class="fa-solid fa-calendar-check"></i>
-                <span>ABSEN HARIAN</span>
-                <small style="color:var(--neon-pink); font-size:9px;">+ IDR 2,000</small>
-            </div>
-            <div class="btn-reward" style="opacity:0.5; cursor:not-allowed;">
-                <i class="fa-solid fa-gift"></i>
-                <span>GIFT CODE</span>
-                <small style="color:var(--neon-blue); font-size:9px;">COMING SOON</small>
-            </div>
-        </div>
-    </div>
-
-    <div class="glass-card">
-        <h2 class="neon-title"><i class="fa-solid fa-envelope"></i> PESAN HADIAH</h2>
-        <div id="inbox-list">
-            <p style="font-size:10px; color:#666; padding:20px;">Tidak ada pesan baru</p>
-        </div>
-    </div>
-
-    <a href="game.html" class="btn-back">KEMBALI KE GAME</a>
+    <h1 class="neon">Claim Your Daily Bonus</h1>
+    <button id="claimButton">Claim Bonus</button>
+    <div id="alert" class="neon" style="display: none;"></div>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
-        const userNow = localStorage.getItem('user_session');
+      document.getElementById('claimButton').onclick = function() {
+          try {
+              // Simulate bonus claiming logic
+              throw new Error('Bonus already claimed today!');  // Placeholder for error handling
+          } catch (e) {
+              showAlert(e.message, 'error');
+          }
+      }
 
-        async function muatRewardData() {
-            if(!userNow) return;
-            try {
-                const res = await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: "getUserData", username: userNow })
-                });
-                const data = await res.json();
-                if(data.result === "SUCCESS") {
-                    // Update tampilan kode referral (Kolom M)
-                    document.getElementById('my-ref-code').innerText = data.referralCode || "TIDAK ADA";
-                    document.getElementById('reward-saldo').innerText = "Rp " + data.saldoReward.toLocaleString('id-ID');
-                }
-                muatInbox();
-            } catch(e) { console.error(e); }
-        }
-
-        async function muatInbox() {
-            try {
-                const res = await fetch(`${SCRIPT_URL}?action=getInbox&username=${userNow}`);
-                const data = await res.json();
-                const list = document.getElementById('inbox-list');
-                if(data.length > 0) {
-                    list.innerHTML = data.map(m => `
-                        <div class="inbox-item">
-                            <div style="text-align:left">
-                                <div style="font-size:11px; font-weight:bold; color:var(--neon-gold);">${m.pesan}</div>
-                                <div style="font-size:9px; color:#ccc;">Bonus: Rp ${Number(m.saldo).toLocaleString('id-ID')}</div>
-                            </div>
-                            <button class="btn-claim-msg" onclick="claimInbox('${m.id}')">KLAIM</button>
-                        </div>
-                    `).join('');
-                }
-            } catch(e) { console.error(e); }
-        }
-
-        async function claimDaily() {
-            toggleLoading(true);
-            try {
-                const res = await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: "claimDaily", username: userNow })
-                });
-                const data = await res.json();
-                if(data.result === "SUCCESS") {
-                    alert("✅ BERHASIL! Anda mendapatkan bonus harian IDR " + data.nominal);
-                    location.reload();
-                } else {
-                    alert("❌ GAGAL: " + data.message);
-                }
-            } catch(e) { alert("Kesalahan koneksi."); }
-            toggleLoading(false);
-        }
-
-        async function claimInbox(id) {
-            toggleLoading(true);
-            try {
-                const res = await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: "claimInbox", username: userNow, id: id })
-                });
-                const data = await res.json();
-                if(data.result === "SUCCESS") {
-                    alert("✅ HADIAH DITERIMA! Saldo bertambah Rp " + data.nominal);
-                    location.reload();
-                }
-            } catch(e) { alert("Gagal klaim."); }
-            toggleLoading(false);
-        }
-
-        async function claimReferral() {
-            toggleLoading(true);
-            try {
-                const res = await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: "claimReferral", username: userNow })
-                });
-                const data = await res.json();
-                alert(data.message || (data.result === "SUCCESS" ? "Berhasil klaim reward!" : "Gagal"));
-                if(data.result === "SUCCESS") location.reload();
-            } catch(e) { alert("Gagal koneksi."); }
-            toggleLoading(false);
-        }
-
-        function copyRef() {
-            const code = document.getElementById('my-ref-code').innerText;
-            navigator.clipboard.writeText(code);
-            alert("Kode referral disalin: " + code);
-        }
-
-        function toggleLoading(show) {
-            document.getElementById('loading').style.display = show ? 'flex' : 'none';
-        }
-
-        window.onload = muatRewardData;
+      function showAlert(message, type) {
+          var alertDiv = document.getElementById('alert');
+          alertDiv.className = type === 'error' ? 'neon error' : 'neon';
+          alertDiv.innerText = message;
+          alertDiv.style.display = 'block';
+          setTimeout(() => { alertDiv.style.display = 'none'; }, 3000);
+      }
     </script>
 </body>
 </html>
