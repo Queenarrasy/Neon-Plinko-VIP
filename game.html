@@ -178,7 +178,7 @@
         const betList = [400, 800, 1000, 1200, 1600, 1800, 2000, 4000, 8000, 10000, 12000, 16000, 18000, 20000];
         const multipliers = [5, 2, 1.2, 0.5, 0.2, 0.5, 1.2, 2, 5];
         let betIdx = 0, pegLocs = [], speed = 'normal', isAuto = false, autoInt;
-        let isProcessing = false; // Flag Stabilitas untuk anti-spam
+        let isProcessing = false;
 
         function playSound(type) {
             const s = document.getElementById('snd-' + type);
@@ -202,7 +202,6 @@
             document.getElementById('display-saldo').innerText = "IDR " + Number(s).toLocaleString();
         }
 
-        // --- STABILITAS: SINKRONISASI DATA SERVER SAAT LOAD ---
         async function syncUserFromServer() {
             const user = localStorage.getItem('username');
             if(!user) return;
@@ -263,60 +262,76 @@
             document.getElementById('current-bet').innerText = betList[betIdx].toLocaleString();
         }
 
-        // --- CORE LOGIC: SERVER STABILIZED HANDLE PLAY ---
+        // --- CORE GAMEPLAY LOGIC (KODDING YANG ANDA MINTA DIMASUKKAN) ---
         async function handlePlay() {
-            if (isProcessing) return; // Kunci proses jika sedang berjalan
-
-            const bet = betList[betIdx];
-            let saldoLokal = Number(localStorage.getItem('user_saldo') || 0);
+            if (isProcessing) return;
             
+            // Mengambil bet dari betList berdasarkan betIdx (sinkron dengan UI tombol plus-minus)
+            const bet = betList[betIdx];
+            const btn = document.getElementById("main-btn-play");
+
+            // Validasi saldo lokal dulu untuk mencegah request mubazir
+            let saldoLokal = Number(localStorage.getItem('user_saldo') || 0);
             if (saldoLokal < bet) { 
                 playSound('error');
                 if(isAuto) toggleAuto(); 
                 return showModal("Saldo Habis!", 'var(--pink)'); 
             }
 
-            // Kunci tombol & Mulai proses
+            if (isNaN(bet) || bet < 200) {
+                showModal("Minimal Bet IDR 200");
+                return;
+            }
+
             isProcessing = true;
-            const btn = document.getElementById('main-btn-play');
             btn.disabled = true;
-            btn.innerText = "WAIT...";
+            btn.innerText = "PROCESSING...";
 
             try {
                 const user = localStorage.getItem('username');
                 const response = await fetch(API_URL, {
-                    method: 'POST',
+                    method: "POST",
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'game_play', username: user, bet: bet })
+                    body: JSON.stringify({
+                        action: "game_play",
+                        username: user,
+                        bet: bet
+                    })
                 });
 
-                if (!response.ok) throw new Error("Server Busy");
+                const result = await response.json();
 
-                const res = await response.json();
-
-                if(res.result === "SUCCESS") {
-                    // Update saldo lokal dari data REAL server
-                    localStorage.setItem('user_saldo', res.newSaldo); 
-                    updateSaldoUI(res.newSaldo);
+                if (result.result === "SUCCESS") {
+                    // Update saldo lokal dan UI segera
+                    localStorage.setItem('user_saldo', result.newSaldo);
+                    updateSaldoUI(result.newSaldo);
                     
-                    // Lepas kunci proses segera setelah dapat angka multiplier
+                    // Jalankan bola plinko
+                    dropBall(bet, result.target_multiplier);
+                    
+                    // Re-enable button setelah sedikit delay agar tidak spam (opsional)
+                    setTimeout(() => {
+                        isProcessing = false;
+                        btn.disabled = false;
+                        btn.innerText = "PLAY BALL";
+                    }, speed === 'turbo' ? 100 : 800);
+                } else {
+                    showModal(result.message || "Gagal Memulai Permainan");
                     isProcessing = false;
                     btn.disabled = false;
                     btn.innerText = "PLAY BALL";
-                    
-                    // Jalankan visual bola
-                    dropBall(bet, res.target_multiplier);
-                } else {
-                    throw new Error(res.message || "Gagal Taruhan");
+                    if(isAuto) toggleAuto();
                 }
+
             } catch (e) {
-                console.error(e);
+                console.error("DEBUG ERROR:", e); 
                 isProcessing = false;
                 btn.disabled = false;
                 btn.innerText = "PLAY BALL";
                 
-                showModal("Koneksi Server Gagal/Sibuk. Coba Lagi!");
-                if(isAuto) toggleAuto();
+                // Tampilkan error yang lebih spesifik jika ada
+                showModal("Koneksi Error: " + e.message); 
+                if(typeof isAuto !== 'undefined' && isAuto) toggleAuto();
             }
         }
 
@@ -337,11 +352,7 @@
                     if (dist < 11) {
                         playSound('hit');
                         vx = (dx / dist) * 3; vy = (dy / dist) * 1.8;
-                        
-                        // Sistem Magnetisme: Arahkan ke target multiplier dengan halus
-                        if (py > 120) {
-                            vx += (targetX - px) * 0.15; 
-                        }
+                        if (py > 120) vx += (targetX - px) * 0.15; 
                         p.el.classList.add('hit'); setTimeout(() => p.el.classList.remove('hit'), 80);
                     }
                 });
@@ -371,7 +382,6 @@
         function finish(bet, targetMult) {
             const win = Math.floor(bet * targetMult);
             const idx = multipliers.indexOf(targetMult);
-            
             if(targetMult >= 1.2) playSound('win');
             
             const slots = document.querySelectorAll('.slot');
@@ -380,15 +390,13 @@
                 s.classList.add('active'); 
                 setTimeout(() => s.classList.remove('active'), 400);
             }
-            
             updateScoreBoard(win, targetMult);
-            // Saldo UI tetap sinkron dengan updateSaldoUI() yang dipanggil di handlePlay
         }
 
         window.onload = () => { 
             init(); 
             updateSaldoUI(); 
-            syncUserFromServer(); // Jalankan sinkronisasi database saat masuk game
+            syncUserFromServer(); 
         };
         window.onresize = init;
     </script>
