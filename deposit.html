@@ -16,7 +16,6 @@
             margin: 0; padding: 0; min-height: 100vh;
         }
 
-        /* Modal Style */
         #neon-modal {
             display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: #0a0b1e; border: 2px solid var(--blue); border-radius: 15px;
@@ -35,16 +34,16 @@
         }
         .btn-back { color: var(--white); font-size: 20px; text-decoration: none; }
 
-        .container { padding: 20px; }
+        .container { padding: 20px; max-width: 500px; margin: auto; }
         
         .card {
             background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 68, 255, 0.3);
-            border-radius: 15px; padding: 20px; margin-bottom: 20px;
+            border-radius: 15px; padding: 15px; margin-bottom: 20px;
         }
 
-        .label { font-size: 12px; color: var(--blue); font-weight: bold; margin-bottom: 8px; display: block; }
+        .label { font-size: 11px; color: var(--blue); font-weight: bold; margin-bottom: 8px; display: block; text-transform: uppercase; }
         
-        input[type="number"], select {
+        input[type="number"] {
             width: 100%; padding: 12px; background: #000; border: 1px solid var(--pink);
             border-radius: 8px; color: white; font-size: 16px; box-sizing: border-box; outline: none;
         }
@@ -60,12 +59,17 @@
         .amount-item:active { background: var(--blue); color: white; }
 
         .method-item {
-            display: flex; align-items: center; gap: 15px; padding: 15px;
+            display: flex; align-items: center; gap: 15px; padding: 12px;
             border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; margin-bottom: 10px;
             cursor: pointer; transition: 0.3s;
         }
         .method-item.active { border-color: var(--yellow); background: rgba(251, 255, 0, 0.05); }
-        .method-item i { font-size: 24px; width: 30px; text-align: center; }
+        .method-item i { font-size: 20px; width: 25px; text-align: center; }
+
+        #qris-container { display: none; text-align: center; padding: 10px; background: white; border-radius: 10px; margin-top: 10px; }
+        #qris-container img { width: 100%; max-width: 250px; border-radius: 5px; }
+
+        .crypto-info { font-size: 12px; color: var(--yellow); margin-top: 10px; line-height: 1.4; border-top: 1px solid #333; padding-top: 10px; }
 
         .btn-submit {
             width: 100%; padding: 16px; border-radius: 50px; background: linear-gradient(90deg, #0022aa, #aa0055);
@@ -73,7 +77,19 @@
             box-shadow: var(--neon-pink); margin-top: 10px;
         }
 
-        .footer-note { font-size: 11px; color: #666; text-align: center; margin-top: 20px; line-height: 1.5; }
+        .history-section { margin-top: 30px; }
+        .history-item {
+            background: rgba(255, 255, 255, 0.03); border: 1px solid #222; border-radius: 10px;
+            padding: 12px; margin-bottom: 10px; position: relative;
+        }
+        .hist-method { font-weight: bold; color: var(--pink); font-size: 13px; }
+        .hist-date { font-size: 10px; color: #888; margin: 4px 0; }
+        .hist-amount { font-weight: 900; color: var(--white); font-size: 14px; }
+        .hist-status { position: absolute; right: 12px; top: 12px; font-size: 10px; font-weight: bold; padding: 3px 8px; border-radius: 4px; }
+        .status-proses { background: rgba(251, 255, 0, 0.1); color: var(--yellow); border: 1px solid var(--yellow); }
+        .status-sukses { background: rgba(0, 255, 0, 0.1); color: #00ff00; border: 1px solid #00ff00; }
+
+        .footer-note { font-size: 10px; color: #555; text-align: center; margin-top: 20px; line-height: 1.5; }
     </style>
 </head>
 <body>
@@ -85,76 +101,119 @@
     </div>
 
     <div class="header">
-        <a href="index.html" class="btn-back"><i class="fa-solid fa-arrow-left"></i></a>
+        <a href="game.html" class="btn-back"><i class="fa-solid fa-arrow-left"></i></a>
         <div style="font-weight: 900; letter-spacing: 2px;">DEPOSIT SALDO</div>
         <div style="width: 20px;"></div>
     </div>
 
     <div class="container">
         <div class="card">
-            <span class="label">NOMINAL DEPOSIT (IDR)</span>
-            <input type="number" id="depo-amount" placeholder="Minimal 10,000" min="10000">
+            <span class="label" id="label-nominal">NOMINAL DEPOSIT (IDR)</span>
+            <input type="number" id="depo-amount" placeholder="Min. 20,000 / $10" oninput="calculateUSDT()">
             
-            <div class="amount-grid">
+            <div class="amount-grid" id="idr-grid">
                 <div class="amount-item" onclick="setAmount(20000)">20K</div>
                 <div class="amount-item" onclick="setAmount(50000)">50K</div>
                 <div class="amount-item" onclick="setAmount(100000)">100K</div>
-                <div class="amount-item" onclick="setAmount(200000)">200K</div>
+                <div class="amount-item" onclick="setAmount(250000)">250K</div>
                 <div class="amount-item" onclick="setAmount(500000)">500K</div>
                 <div class="amount-item" onclick="setAmount(1000000)">1M</div>
+            </div>
+
+            <div id="usdt-calc" class="crypto-info" style="display: none;">
+                Total Penerimaan: <strong id="usdt-to-idr">IDR 0</strong><br>
+                <small>*Kurs: Rp 15.500 | Potongan Fee: $2</small>
             </div>
         </div>
 
         <div class="card">
-            <span class="label">METODE PEMBAYARAN</span>
+            <span class="label">PILIH METODE</span>
             
             <div class="method-item active" onclick="selectMethod(this, 'QRIS')">
                 <i class="fa-solid fa-qrcode" style="color: var(--pink);"></i>
                 <div>
-                    <div style="font-weight: bold; font-size: 14px;">QRIS ALL PAYMENT</div>
-                    <div style="font-size: 10px; color: #888;">Proses Instan & Otomatis</div>
+                    <div style="font-weight: bold; font-size: 13px;">QRIS ALL PAYMENT</div>
+                    <div style="font-size: 10px; color: #888;">Scan & Bayar Otomatis</div>
                 </div>
             </div>
 
-            <div class="method-item" onclick="selectMethod(this, 'E-WALLET')">
-                <i class="fa-solid fa-wallet" style="color: var(--blue);"></i>
+            <div id="qris-container">
+                <img src="https://i.ibb.co/C3YnN4p/25989.png" alt="QRIS PAYMENT">
+                <div style="color: black; font-size: 9px; margin-top: 5px; font-weight: bold;">ARRASHY STORE - NMID: ID1024357689073</div>
+            </div>
+
+            <div class="method-item" onclick="selectMethod(this, 'USDT')">
+                <i class="fa-brands fa-ethereum" style="color: #26a17b;"></i>
                 <div>
-                    <div style="font-weight: bold; font-size: 14px;">E-WALLET (DANA/OVO/GOPAY)</div>
-                    <div style="font-size: 10px; color: #888;">Konfirmasi Manual 1-3 Menit</div>
+                    <div style="font-weight: bold; font-size: 13px;">USDT / CRYPTO (TRC20)</div>
+                    <div style="font-size: 10px; color: #888;">Minimal Deposit $10</div>
                 </div>
             </div>
 
             <div class="method-item" onclick="selectMethod(this, 'BANK')">
                 <i class="fa-solid fa-building-columns" style="color: var(--yellow);"></i>
                 <div>
-                    <div style="font-weight: bold; font-size: 14px;">TRANSFER BANK</div>
-                    <div style="font-size: 10px; color: #888;">BCA / MANDIRI / BNI / BRI</div>
+                    <div style="font-weight: bold; font-size: 13px;">TRANSFER BANK / WALLET</div>
+                    <div style="font-size: 10px; color: #888;">BCA / MANDIRI / DANA</div>
                 </div>
             </div>
         </div>
 
-        <button class="btn-submit" onclick="processDeposit()">LANJUTKAN PEMBAYARAN</button>
+        <button class="btn-submit" onclick="processDeposit()">AJUKAN DEPOSIT</button>
+
+        <div class="history-section">
+            <div class="history-title" style="font-weight: bold; color: var(--yellow); margin-bottom: 10px; font-size: 14px;">
+                <i class="fa-solid fa-clock-rotate-left"></i> RIWAYAT DEPOSIT
+            </div>
+            <div id="depo-history-list">
+                <div style="text-align: center; color: #444; font-size: 11px; padding: 20px;">Belum ada riwayat transaksi.</div>
+            </div>
+        </div>
 
         <div class="footer-note">
-            *Pastikan nominal transfer sesuai dengan angka unik yang diberikan.<br>
-            *Saldo akan masuk otomatis setelah sistem mendeteksi pembayaran.<br>
-            *Simpan bukti transfer untuk kendala lebih lanjut.
+            *Pastikan nominal transfer sesuai dengan tagihan.<br>
+            *Deposit USDT wajib menggunakan jaringan <strong>TRC20</strong>.<br>
+            *Saldo masuk otomatis setelah verifikasi sistem.
         </div>
     </div>
 
     <script src="global.js"></script>
     <script>
         let selectedMethod = 'QRIS';
+        const KURS_USDT = 15500;
+        const FEE_USDT = 2;
         const API_URL = typeof SCRIPT_URL !== 'undefined' ? SCRIPT_URL : "";
 
         function setAmount(val) {
             document.getElementById('depo-amount').value = val;
+            calculateUSDT();
+        }
+
+        function calculateUSDT() {
+            if (selectedMethod === 'USDT') {
+                const amount = document.getElementById('depo-amount').value;
+                const display = document.getElementById('usdt-to-idr');
+                if (amount > FEE_USDT) {
+                    const cleanAmount = (amount - FEE_USDT) * KURS_USDT;
+                    display.innerText = "IDR " + cleanAmount.toLocaleString();
+                } else {
+                    display.innerText = "IDR 0";
+                }
+            }
         }
 
         function selectMethod(el, method) {
             selectedMethod = method;
             document.querySelectorAll('.method-item').forEach(m => m.classList.remove('active'));
             el.classList.add('active');
+
+            // Toggle UI Elements
+            document.getElementById('qris-container').style.display = (method === 'QRIS') ? 'block' : 'none';
+            document.getElementById('usdt-calc').style.display = (method === 'USDT') ? 'block' : 'none';
+            document.getElementById('idr-grid').style.display = (method === 'USDT') ? 'none' : 'grid';
+            document.getElementById('label-nominal').innerText = (method === 'USDT') ? 'NOMINAL DEPOSIT (USDT)' : 'NOMINAL DEPOSIT (IDR)';
+            
+            calculateUSDT();
         }
 
         function showModal(msg, title = "NOTIFIKASI") {
@@ -168,57 +227,73 @@
         }
 
         async function processDeposit() {
-            const amount = document.getElementById('depo-amount').value;
+            const amount = Number(document.getElementById('depo-amount').value);
             const username = localStorage.getItem('username');
 
-            if (!amount || amount < 10000) {
-                return showModal("Minimal deposit adalah IDR 10,000", "ERROR");
+            // VALIDASI MINIMAL TRANSAKSI (Sesuai Poin 6)
+            if (selectedMethod === 'USDT') {
+                if (amount < 10) {
+                    return showModal("Minimal deposit USDT adalah $10", "ERROR");
+                }
+            } else {
+                if (amount < 20000) {
+                    return showModal("Minimal deposit Rupiah adalah IDR 20,000", "ERROR");
+                }
             }
 
-            if (!username) {
-                return showModal("Silahkan login terlebih dahulu", "ERROR");
-            }
+            if (!username) return showModal("Sesi berakhir, silakan login kembali.", "ERROR");
 
-            // Tampilkan loading sederhana pada tombol
             const btn = document.querySelector('.btn-submit');
-            const originalText = btn.innerText;
-            btn.innerText = "MEMPROSES...";
+            btn.innerText = "MENGIRIM...";
             btn.disabled = true;
 
             try {
+                // Kalkulasi final jika USDT
+                let finalReceive = amount;
+                if(selectedMethod === 'USDT') {
+                    finalReceive = (amount - FEE_USDT) * KURS_USDT;
+                }
+
                 const response = await fetch(API_URL, {
                     method: "POST",
                     body: JSON.stringify({
                         action: "deposit",
                         username: username,
                         amount: amount,
-                        method: selectedMethod
+                        method: selectedMethod,
+                        receive_idr: finalReceive,
+                        timestamp: new Date().toLocaleString('id-ID')
                     })
                 });
 
                 const result = await response.json();
 
                 if (result.result === "SUCCESS") {
-                    showModal(`Permintaan deposit ${selectedMethod} sebesar IDR ${Number(amount).toLocaleString()} telah diterima. Silahkan cek halaman konfirmasi pembayaran.`, "SUKSES");
-                    // Anda bisa mengarahkan ke halaman pembayaran spesifik di sini
-                    // setTimeout(() => { location.href = 'payment_page.html'; }, 3000);
+                    showModal("Pengajuan Berhasil! Silakan selesaikan pembayaran dan tunggu verifikasi admin.", "SUKSES");
+                    loadHistory();
                 } else {
                     showModal(result.message || "Gagal memproses deposit.", "GAGAL");
                 }
             } catch (error) {
-                console.error("Depo error:", error);
-                showModal("Terjadi kesalahan koneksi server.", "ERROR");
+                showModal("Gagal terhubung ke server.", "ERROR");
             } finally {
-                btn.innerText = originalText;
+                btn.innerText = "AJUKAN DEPOSIT";
                 btn.disabled = false;
             }
         }
 
-        // Cek status login saat load
+        function loadHistory() {
+            const username = localStorage.getItem('username');
+            // Simulasi/Pemuatan data riwayat dari Sheet (Jika API mendukung)
+            // Di sini Anda bisa menambahkan fetch ke API_URL dengan action "get_depo_history"
+        }
+
         window.onload = () => {
             if(!localStorage.getItem('username')) {
                 location.href = 'login.html';
             }
+            // Tampilkan QRIS secara default sesuai style awal
+            document.getElementById('qris-container').style.display = 'block';
         };
     </script>
 </body>
