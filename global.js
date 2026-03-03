@@ -15,10 +15,13 @@ function checkSession() {
     }
 }
 
+/**
+ * START SESSION LOGIC
+ */
 async function startSession() {
     if (!user) return;
     try {
-        await fetch(SCRIPT_URL, {
+        fetch(SCRIPT_URL, {
             method: 'POST',
             body: JSON.stringify({ action: 'reset_session', username: user })
         });
@@ -65,54 +68,46 @@ function updateUI(data) {
 }
 
 /**
- * NEW: FUNGSI RIWAYAT (Agar riwayat tidak hilang)
- * Panggil fungsi ini di halaman deposit.html atau withdraw.html
+ * 3. REWARD & INBOX SYSTEM
  */
-async function fetchHistory(type) { // type: 'deposit' atau 'withdraw'
-    if (!user) return [];
-    try {
-        const response = await fetch(`${SCRIPT_URL}?action=getHistory&username=${user}&type=${type}`);
-        const res = await response.json();
-        return res; // Mengembalikan array data riwayat
-    } catch (e) {
-        console.error("History Error:", e);
-        return [];
-    }
-}
-
-/**
- * 3. WITHDRAWAL SYSTEM
- */
-async function submitWithdraw(amount) {
-    if (amount < 50000) {
-        alert("Gagal: Minimal penarikan adalah IDR 50.000");
-        return;
-    }
-
+async function claimDaily() {
     try {
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
-            body: JSON.stringify({
-                action: 'withdraw',
-                username: user,
-                amount: amount
-            })
+            body: JSON.stringify({ action: 'claimDaily', username: user })
         });
         const res = await response.json();
         if (res.result === "SUCCESS") {
-            alert("Withdraw Berhasil Diajukan!");
-            syncUserData(); 
+            alert("Selamat! Bonus Harian IDR " + res.bonus + " masuk.");
+            syncUserData();
         } else {
-            alert("Error: " + (res.message || "Saldo tidak mencukupi"));
+            alert(res.message);
         }
-    } catch (e) {
-        alert("Koneksi Server Gagal");
-    }
+    } catch (e) { console.log(e); }
 }
 
-// ... (Gunakan sisa fungsi deposit, claimDaily, inbox dari kode Anda sebelumnya)
+async function fetchInbox() {
+    try {
+        const response = await fetch(SCRIPT_URL + "?action=getInbox&username=" + user);
+        return await response.json();
+    } catch (e) { return []; }
+}
 
-// Jalankan otomatis
+async function claimInboxBonus(msgId) {
+    try {
+        const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'claimInbox', username: user, id: msgId })
+        });
+        const res = await response.json();
+        if (res.result === "SUCCESS") {
+            alert("Bonus Inbox Berhasil diklaim!");
+            syncUserData();
+        }
+    } catch (e) { console.log(e); }
+}
+
+// Jalankan otomatis saat halaman dimuat
 checkSession();
 syncUserData();
-setInterval(syncUserData, 10000);
+setInterval(syncUserData, 15000);
