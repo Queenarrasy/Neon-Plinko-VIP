@@ -13,7 +13,7 @@
         }
         body {
             background: var(--bg); color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0; padding: 0; min-height: 100vh;
+            margin: 0; padding: 0; min-height: 100vh; overflow-x: hidden;
         }
 
         #neon-modal {
@@ -30,11 +30,11 @@
 
         .header {
             padding: 20px; background: rgba(0, 0, 0, 0.9); border-bottom: 2px solid var(--blue);
-            display: flex; align-items: center; justify-content: space-between;
+            display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100;
         }
-        .btn-back { color: var(--white); font-size: 20px; text-decoration: none; }
+        .btn-back { color: var(--white); font-size: 20px; text-decoration: none; cursor: pointer; }
 
-        .container { padding: 20px; }
+        .container { padding: 20px; padding-bottom: 40px; }
 
         .balance-card {
             background: linear-gradient(135deg, rgba(0, 68, 255, 0.2), rgba(255, 0, 119, 0.2));
@@ -53,23 +53,32 @@
         
         input, select {
             width: 100%; padding: 12px; background: #000; border: 1px solid var(--blue);
-            border-radius: 8px; color: white; font-size: 15px; box-sizing: border-box; outline: none;
+            border-radius: 8px; color: white; font-size: 14px; box-sizing: border-box; outline: none;
             margin-bottom: 15px; transition: 0.3s;
         }
-        input:focus { border-color: var(--pink); box-shadow: var(--neon-pink); }
+        input:read-only { opacity: 0.6; border-color: #333; color: #aaa; cursor: not-allowed; }
+        input:focus:not(:read-only) { border-color: var(--pink); box-shadow: var(--neon-pink); }
 
         .btn-withdraw {
             width: 100%; padding: 16px; border-radius: 50px; background: linear-gradient(90deg, #aa0055, #0022aa);
             color: white; font-weight: 900; border: 2px solid var(--yellow); text-transform: uppercase; cursor: pointer;
-            box-shadow: var(--neon-pink); margin-top: 5px; transition: 0.3s;
+            box-shadow: var(--neon-pink); margin-top: 5px;
         }
-        .btn-withdraw:active { transform: scale(0.95); opacity: 0.8; }
 
-        .info-box {
-            background: rgba(251, 255, 0, 0.05); border: 1px dashed var(--yellow);
-            border-radius: 10px; padding: 15px; font-size: 11px; color: #ccc; line-height: 1.6;
+        /* RIWAYAT SECTION */
+        .history-title { font-size: 14px; font-weight: 900; color: var(--yellow); margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+        .history-list { display: flex; flex-direction: column; gap: 10px; }
+        .history-item {
+            background: rgba(255, 255, 255, 0.05); border-left: 3px solid var(--pink);
+            padding: 12px; border-radius: 8px; font-size: 12px;
         }
-        .info-box ul { margin: 5px 0 0 15px; padding: 0; }
+        .hist-top { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 4px; }
+        .hist-time { font-size: 10px; color: #888; }
+        .status-badge { padding: 2px 8px; border-radius: 4px; font-size: 9px; text-transform: uppercase; }
+        .status-proses { background: rgba(251, 255, 0, 0.2); color: var(--yellow); }
+        .status-sukses { background: rgba(0, 255, 0, 0.2); color: #00ff00; }
+        .status-gagal { background: rgba(255, 0, 0, 0.2); color: #ff4444; }
+
     </style>
 </head>
 <body>
@@ -81,7 +90,7 @@
     </div>
 
     <div class="header">
-        <a href="index.html" class="btn-back"><i class="fa-solid fa-arrow-left"></i></a>
+        <a href="game.html" class="btn-back"><i class="fa-solid fa-circle-chevron-left"></i></a>
         <div style="font-weight: 900; letter-spacing: 2px;">PENARIKAN DANA</div>
         <div style="width: 20px;"></div>
     </div>
@@ -96,33 +105,23 @@
             <span class="label">NOMINAL PENARIKAN (IDR)</span>
             <input type="number" id="wd-amount" placeholder="Minimal 50,000">
 
-            <span class="label">PILIH BANK / E-WALLET</span>
-            <select id="wd-method">
-                <option value="DANA">DANA</option>
-                <option value="OVO">OVO</option>
-                <option value="GOPAY">GOPAY</option>
-                <option value="BCA">BANK BCA</option>
-                <option value="MANDIRI">BANK MANDIRI</option>
-                <option value="BRI">BANK BRI</option>
-            </select>
+            <span class="label">BANK / E-WALLET (TERKUNCI)</span>
+            <input type="text" id="wd-method" readonly placeholder="Memuat data...">
 
-            <span class="label">NOMOR REKENING / E-WALLET</span>
-            <input type="text" id="wd-account-num" placeholder="Contoh: 0812xxxx atau 731xxx">
+            <span class="label">NOMOR REKENING (TERKUNCI)</span>
+            <input type="text" id="wd-account-num" readonly placeholder="Memuat data...">
 
-            <span class="label">NAMA PEMILIK REKENING</span>
-            <input type="text" id="wd-account-name" placeholder="Nama lengkap sesuai rekening">
+            <span class="label">NAMA PEMILIK (TERKUNCI)</span>
+            <input type="text" id="wd-account-name" readonly placeholder="Memuat data...">
 
-            <button class="btn-withdraw" onclick="processWithdraw()">AJUKAN PENARIKAN</button>
+            <button class="btn-withdraw" id="btn-submit-wd" onclick="processWithdraw()">AJUKAN PENARIKAN</button>
         </div>
 
-        <div class="info-box">
-            <strong>SYARAT & KETENTUAN:</strong>
-            <ul>
-                <li>Minimal penarikan dana adalah <strong>IDR 50,000</strong>.</li>
-                <li>Proses penarikan memakan waktu 5-30 menit (jam kerja).</li>
-                <li>Pastikan data rekening benar, kesalahan data bukan tanggung jawab kami.</li>
-                <li>Nama rekening harus sama dengan data pendaftaran.</li>
-            </ul>
+        <div class="history-title">
+            <i class="fa-solid fa-clock-rotate-left"></i> RIWAYAT PENARIKAN
+        </div>
+        <div class="history-list" id="wd-history">
+            <div style="text-align: center; color: #555; font-size: 12px; padding: 20px;">Belum ada riwayat transaksi</div>
         </div>
     </div>
 
@@ -145,21 +144,81 @@
             document.getElementById('neon-modal').style.display = 'none';
         }
 
+        // FUNGSI MENGAMBIL DATA REKENING DARI SERVER (LOCK DATA)
+        async function loadUserPaymentData() {
+            const username = localStorage.getItem('username');
+            try {
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ action: "get_user_data", username: username })
+                });
+                const result = await response.json();
+                if (result.result === "SUCCESS") {
+                    document.getElementById('wd-method').value = result.data.bank_name || "-";
+                    document.getElementById('wd-account-num').value = result.data.account_number || "-";
+                    document.getElementById('wd-account-name').value = result.data.account_name || "-";
+                    
+                    // Jika data kosong, beri peringatan
+                    if(!result.data.account_number || result.data.account_number === "-") {
+                        showModal("Data rekening belum diatur. Silahkan hubungi Admin untuk verifikasi data.");
+                        document.getElementById('btn-submit-wd').disabled = true;
+                        document.getElementById('btn-submit-wd').style.opacity = "0.5";
+                    }
+                }
+            } catch (e) { console.error("Load data error", e); }
+        }
+
+        // FUNGSI LOAD RIWAYAT DARI SHEET
+        async function loadWithdrawHistory() {
+            const username = localStorage.getItem('username');
+            const container = document.getElementById('wd-history');
+            
+            try {
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ action: "get_wd_history", username: username })
+                });
+                const result = await response.json();
+                
+                if (result.result === "SUCCESS" && result.data.length > 0) {
+                    container.innerHTML = "";
+                    result.data.forEach(item => {
+                        const statusClass = item.status.toLowerCase() === 'approve' ? 'status-sukses' : 
+                                            (item.status.toLowerCase() === 'reject' ? 'status-gagal' : 'status-proses');
+                        
+                        // Menampilkan "PROSES" jika status dari sheet adalah "pending"
+                        const statusText = item.status.toLowerCase() === 'pending' ? 'PROSES' : item.status;
+
+                        container.innerHTML += `
+                            <div class="history-item">
+                                <div class="hist-top">
+                                    <span>PENARIKAN DANA</span>
+                                    <span class="status-badge ${statusClass}">${statusText}</span>
+                                </div>
+                                <div style="color:var(--yellow); font-weight:bold; font-size:14px; margin: 4px 0;">
+                                    IDR ${Number(item.amount).toLocaleString()}
+                                </div>
+                                <div class="hist-time">${item.timestamp}</div>
+                            </div>
+                        `;
+                    });
+                }
+            } catch (e) { console.log("History error", e); }
+        }
+
         async function processWithdraw() {
             const username = localStorage.getItem('username');
             const amount = Number(document.getElementById('wd-amount').value);
+            const currentSaldo = Number(localStorage.getItem('user_saldo') || 0);
+            
             const method = document.getElementById('wd-method').value;
             const accountNum = document.getElementById('wd-account-num').value;
             const accountName = document.getElementById('wd-account-name').value;
-            const currentSaldo = Number(localStorage.getItem('user_saldo') || 0);
 
-            // Validasi Input
-            if (!username) return showModal("Sesi berakhir, silahkan login kembali.");
             if (amount < 50000) return showModal("Minimal penarikan IDR 50,000");
             if (amount > currentSaldo) return showModal("Saldo tidak mencukupi!");
-            if (!accountNum || !accountName) return showModal("Harap isi data rekening dengan lengkap.");
 
-            const btn = document.querySelector('.btn-withdraw');
+            const btn = document.getElementById('btn-submit-wd');
             btn.disabled = true;
             btn.innerText = "MEMPROSES...";
 
@@ -179,20 +238,15 @@
                 const result = await response.json();
 
                 if (result.result === "SUCCESS") {
-                    // Update saldo lokal setelah pengajuan (opsional, tergantung logic sistem Anda)
                     localStorage.setItem('user_saldo', result.newSaldo);
                     updateBalanceDisplay();
-                    showModal("Withdrawal berhasil diajukan! Dana akan diproses segera.", 'var(--blue)');
-                    
-                    // Reset Form
+                    showModal("Withdrawal berhasil diajukan! Status: PROSES", 'var(--blue)');
                     document.getElementById('wd-amount').value = "";
-                    document.getElementById('wd-account-num').value = "";
-                    document.getElementById('wd-account-name').value = "";
+                    loadWithdrawHistory(); 
                 } else {
                     showModal(result.message || "Gagal memproses penarikan.");
                 }
             } catch (error) {
-                console.error("WD Error:", error);
                 showModal("Terjadi kesalahan koneksi ke server.");
             } finally {
                 btn.disabled = false;
@@ -205,6 +259,8 @@
                 location.href = 'login.html';
             } else {
                 updateBalanceDisplay();
+                loadUserPaymentData();
+                loadWithdrawHistory();
             }
         };
     </script>
