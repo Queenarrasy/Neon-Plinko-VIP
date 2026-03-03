@@ -1,42 +1,61 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <title>Reward</title>
-    <style>
-        body {
-            background-color: #000;
-            color: #fff;
-            font-family: 'Arial', sans-serif;
-        }
-        .neon {
-            text-shadow: 0 0 5px #0ff, 0 0 10px #0ff;
-        }
-        .error {
-            color: red;
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <script src="global.js"></script>
+    <title>Neon Plinko VIP - Daily Bonus</title>
 </head>
 <body>
-    <h1 class="neon">Claim Your Daily Bonus</h1>
-    <button id="claimButton">Claim Bonus</button>
-    <div id="alert" class="neon" style="display: none;"></div>
+    <div class="container">
+        <h1>Claim Your Daily Bonus!</h1>
+        <div id="inbox-display"></div>
+        <button id="claim-bonus">Claim Bonus</button>
+    </div>
 
     <script>
-      document.getElementById('claimButton').onclick = function() {
-          try {
-              // Simulate bonus claiming logic
-              throw new Error('Bonus already claimed today!');  // Placeholder for error handling
-          } catch (e) {
-              showAlert(e.message, 'error');
-          }
-      }
+        const claimButton = document.getElementById('claim-bonus');
+        const inboxDisplay = document.getElementById('inbox-display');
+        const SCRIPT_URL = window.SCRIPT_URL;
+        let lastClaimTime = localStorage.getItem('lastClaimTime') || 0;
 
-      function showAlert(message, type) {
-          var alertDiv = document.getElementById('alert');
-          alertDiv.className = type === 'error' ? 'neon error' : 'neon';
-          alertDiv.innerText = message;
-          alertDiv.style.display = 'block';
-          setTimeout(() => { alertDiv.style.display = 'none'; }, 3000);
-      }
+        claimButton.addEventListener('click', async () => {
+            const currentTime = new Date().getTime();
+            const cooldownPeriod = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+            if (currentTime - lastClaimTime < cooldownPeriod) {
+                AlertUser('You can only claim once every 24 hours!', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(SCRIPT_URL + '/claim-bonus');
+                const data = await response.json();
+                if (data.success) {
+                    lastClaimTime = currentTime;
+                    localStorage.setItem('lastClaimTime', lastClaimTime);
+                    AlertUser('Bonus claimed successfully!', 'success');
+                    UpdateInboxDisplay(data.message);
+                } else {
+                    AlertUser(data.message || 'Failed to claim bonus.', 'error');
+                }
+            } catch (error) {
+                AlertUser('An error occurred while claiming bonus.', 'error');
+            }
+        });
+
+        function AlertUser(message, type) {
+            const alertBox = document.createElement('div');
+            alertBox.className = `alert ${type}`;
+            alertBox.innerText = message;
+            document.body.appendChild(alertBox);
+            setTimeout(() => alertBox.remove(), 3000);
+        }
+
+        function UpdateInboxDisplay(message) {
+            inboxDisplay.innerHTML = `<p>${message}</p>`;
+        }
     </script>
 </body>
 </html>
