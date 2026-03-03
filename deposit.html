@@ -1,50 +1,58 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="neon-theme">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Deposit History</title>
-    <style>
-        body {
-            background-color: #222;
-            color: #fff;
-            font-family: 'Arial', sans-serif;
-        }
-        .neon {
-            text-shadow: 0 0 5px #35f, 0 0 10px #35f, 0 0 20px #35f;
-        }
-        .error {
-            color: red;
-        }
-    </style>
+    <link rel="stylesheet" href="styles/neon-theme.css">
+    <script src="scripts/depositHistory.js" defer></script>
 </head>
 <body>
-    <h1 class="neon">Deposit History</h1>
-    <div id="deposit-history">
-        <p>Loading deposit history...</p>
-        <div id="error-message" class="error" style="display: none;"></div>
-    </div>
-
+    <h1>Deposit History</h1>
+    <div id="errorMsg" class="error-message" style="display: none;"></div>
+    <table id="depositTable">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Deposit history records will be inserted here -->
+        </tbody>
+    </table>
+    
     <script>
-        async function loadDepositHistory() {
+        async function fetchDepositHistory() {
             try {
-                const response = await fetch('/api/deposit-history');
+                const response = await fetch('/api/deposit-history'); // Update with actual endpoint
                 if (!response.ok) {
-                    throw new Error('Failed to load deposit history');
+                    throw new Error('Network response was not ok');
                 }
                 const data = await response.json();
-                // Render deposit history
-                // Assuming data is an array of deposits
-                const historyDiv = document.getElementById('deposit-history');
-                historyDiv.innerHTML = data.map(deposit => `<p>${deposit.date}: $${deposit.amount}</p>`).join('');
+                const tableBody = document.getElementById('depositTable').querySelector('tbody');
+                tableBody.innerHTML = ''; // Clear existing records
+                data.forEach(record => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td>${record.date}</td><td>${record.amount}</td><td>${record.status}</td>`;
+                    tableBody.appendChild(row);
+                });
             } catch (error) {
-                const errorMessageDiv = document.getElementById('error-message');
-                errorMessageDiv.innerText = error.message;
-                errorMessageDiv.style.display = 'block';
+                document.getElementById('errorMsg').innerText = 'Failed to load deposit history: ' + error.message;
+                document.getElementById('errorMsg').style.display = 'block';
             }
         }
 
-        window.onload = loadDepositHistory;
+        function autoRefresh() {
+            fetchDepositHistory();
+            setTimeout(autoRefresh, 30000); // Refresh every 30 seconds
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchDepositHistory();
+            autoRefresh();
+        });
     </script>
 </body>
 </html>
