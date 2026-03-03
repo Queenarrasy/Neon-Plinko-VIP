@@ -225,7 +225,6 @@
             document.getElementById('m-turbo').classList.toggle('active', m === 'turbo');
             if(isAuto) { 
                 clearInterval(autoInt); 
-                // Mode Normal Auto dibuat lebih realistis (jeda antar bola)
                 let interval = speed === 'turbo' ? 250 : 800;
                 autoInt = setInterval(handlePlay, interval); 
             }
@@ -237,7 +236,6 @@
             document.getElementById('m-auto').innerText = isAuto ? "AUTO: ON" : "AUTO: OFF";
             document.getElementById('m-auto').classList.toggle('active', isAuto);
             
-            // Toggle visual status tombol bet
             const opacity = isAuto ? "0.3" : "1";
             document.getElementById('minus-bet').style.opacity = opacity;
             document.getElementById('plus-bet').style.opacity = opacity;
@@ -251,14 +249,13 @@
         }
 
         function changeBet(d) {
-            if(isAuto) return; // Hanya bisa ganti saat auto mati
+            if(isAuto) return;
             playSound('click');
             betIdx = Math.max(0, Math.min(betList.length - 1, betIdx + d));
             document.getElementById('current-bet').innerText = betList[betIdx].toLocaleString();
         }
 
         async function handlePlay() {
-            // Jika sedang memproses data, abaikan klik baru kecuali turbo (untuk cascade)
             if (isProcessing && speed !== 'turbo') return;
             
             const bet = betList[betIdx];
@@ -273,7 +270,6 @@
             isProcessing = true;
             
             try {
-                // Fetch dengan Timeout untuk mencegah bug notifikasi gantung
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 5000);
 
@@ -295,10 +291,8 @@
                     if (typeof updateUI === 'function') updateUI({saldo: result.newSaldo});
                     
                     dropBall(bet, result.target_multiplier);
-                    // Reset lock lebih cepat agar cascade lancar
                     setTimeout(() => { isProcessing = false; }, 100);
                 } else {
-                    // Mencegah notifikasi "Akses Ditolak" muncul terus menerus
                     if(result.message && !result.message.includes("Akses")) {
                         showModal(result.message);
                     }
@@ -307,7 +301,6 @@
                 }
             } catch (e) {
                 isProcessing = false;
-                // Jika error koneksi atau abort, jangan tampilkan modal yang mengganggu permainan auto
                 console.log("Play error:", e);
             }
         }
@@ -317,54 +310,66 @@
             ball.className = 'ball';
             board.appendChild(ball);
             
+            // PERBAIKAN: Posisi awal lebih tinggi dan langsung meluncur (tanpa delay)
             let px = board.offsetWidth / 2;
-            let py = -5; 
-            let vx = (Math.random() - 0.5) * 4; 
-            let vy = 2; 
+            let py = -15; 
+            // Memencar: Variasi awal lebih dinamis
+            let vx = (Math.random() - 0.5) * 6; 
+            let vy = speed === 'turbo' ? 4 : 2.5; 
             
             const targetIdx = multipliers.indexOf(targetMult);
             const slotWidth = board.offsetWidth / multipliers.length;
             const targetX = (targetIdx * slotWidth) + (slotWidth / 2);
 
             function animate() {
-                // FISIKA REALISTIS: Gravitasi lebih berat agar tidak melayang
-                // Normal: Lebih lambat & mantap | Turbo: Cepat & tajam
-                let gravity = speed === 'turbo' ? 0.45 : 0.28;
-                let friction = 0.99; // Sedikit hambatan udara
+                // HUKUM FISIKA: Gravitasi & Gesekan Udara
+                let gravity = speed === 'turbo' ? 0.4 : 0.25;
+                let friction = 0.985; 
 
                 vy += gravity;
                 vx *= friction;
                 px += vx; 
                 py += vy;
 
+                // Tabrakan Paku (Peg)
                 pegLocs.forEach(p => {
                     const dx = px - p.x;
                     const dy = py - p.y;
                     const dist = Math.sqrt(dx*dx + dy*dy);
                     
-                    if (dist < 11) {
+                    if (dist < 11) { // Jarak tabrakan
                         playSound('hit');
-                        // Pantulan responsif
-                        let bounce = speed === 'turbo' ? 4.5 : 3.2;
-                        vx = (dx / dist) * bounce;
-                        vy = (dy / dist) * (bounce * 0.6);
                         
-                        // Perbaikan rute: Magnet halus ke arah targetX
-                        // Semakin dekat ke bawah, semakin kuat tarikan ke target slot
-                        let pullStrength = py / 1800; 
-                        vx += (targetX - px) * pullStrength;
+                        // Pantulan Realistis sesuai sudut tabrakan
+                        const angle = Math.atan2(dy, dx);
+                        const force = speed === 'turbo' ? 5 : 3.8;
+                        
+                        // Dorong bola menjauh dari paku
+                        vx = Math.cos(angle) * force + (Math.random() - 0.5);
+                        vy = Math.abs(Math.sin(angle) * force * 0.7); 
+
+                        // Paksa bola tetap turun (mencegah nyangkut/memantul terus di atas)
+                        if (vy < 1.5) vy = 2;
+
+                        // Tarikan halus ke target slot (Sistematis)
+                        let pull = py / 2200; 
+                        vx += (targetX - px) * pull;
 
                         p.el.classList.add('hit'); 
                         setTimeout(() => p.el.classList.remove('hit'), 60);
                     }
                 });
 
-                // Dinding
-                if (px < 10 || px > board.offsetWidth - 10) vx *= -0.5;
+                // Dinding board
+                if (px < 10 || px > board.offsetWidth - 10) {
+                    vx *= -0.6;
+                    px = px < 10 ? 10 : board.offsetWidth - 10;
+                }
 
                 ball.style.left = px + 'px';
                 ball.style.top = py + 'px';
 
+                // Batas bawah board
                 if (py < 370) {
                     requestAnimationFrame(animate);
                 } else {
