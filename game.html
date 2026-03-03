@@ -174,18 +174,14 @@
 
     <script src="global.js"></script>
     <script>
-        // --- BAGIAN YANG DIPERBAIKI: SAFETY GUARD UNTUK API_URL ---
-        if (typeof API_URL === 'undefined') {
-            console.warn("PERINGATAN: global.js tidak terbaca atau API_URL belum didefinisikan!");
-            var API_URL = "https://script.google.com/macros/s/xxxx/exec"; // Pastikan ini sesuai dengan URL Deployment Anda
-        }
-        // ---------------------------------------------------------
-
         const board = document.getElementById('game-board');
         const betList = [400, 800, 1000, 1200, 1600, 1800, 2000, 4000, 8000, 10000, 12000, 16000, 18000, 20000];
         const multipliers = [5, 2, 1.2, 0.5, 0.2, 0.5, 1.2, 2, 5];
         let betIdx = 0, pegLocs = [], speed = 'normal', isAuto = false, autoInt;
         let isProcessing = false;
+
+        // Gunakan SCRIPT_URL dari global.js
+        const API_URL = typeof SCRIPT_URL !== 'undefined' ? SCRIPT_URL : "";
 
         function playSound(type) {
             const s = document.getElementById('snd-' + type);
@@ -202,24 +198,6 @@
         function closeModal() {
             playSound('click');
             document.getElementById('neon-modal').style.display = 'none';
-        }
-
-        function updateSaldoUI(customSaldo = null) {
-            const s = customSaldo !== null ? customSaldo : (localStorage.getItem('user_saldo') || 0);
-            document.getElementById('display-saldo').innerText = "IDR " + Number(s).toLocaleString();
-        }
-
-        async function syncUserFromServer() {
-            const user = localStorage.getItem('username');
-            if(!user || !API_URL) return;
-            try {
-                const response = await fetch(`${API_URL}?action=getUserData&username=${user}`);
-                const res = await response.json();
-                if(res.result === "SUCCESS") {
-                    localStorage.setItem('user_saldo', res.saldo);
-                    updateSaldoUI(res.saldo);
-                }
-            } catch (e) { console.warn("Sync Server Failed"); }
         }
 
         function init() {
@@ -271,7 +249,6 @@
 
         async function handlePlay() {
             if (isProcessing) return;
-            
             const bet = betList[betIdx];
             const btn = document.getElementById("main-btn-play");
 
@@ -282,28 +259,19 @@
                 return showModal("Saldo Habis!", 'var(--pink)'); 
             }
 
-            if (isNaN(bet) || bet < 200) {
-                showModal("Minimal Bet IDR 200");
-                return;
-            }
-
             isProcessing = true;
             btn.disabled = true;
             btn.innerText = "PROCESSING...";
 
-            try {
-                const user = localStorage.getItem('username');
-                // Pengecekan API_URL sebelum fetch
-                if (!API_URL || API_URL.includes("xxxx")) {
-                    throw new Error("API_URL belum dikonfigurasi di global.js");
-                }
+            // NEW: Panggil startSession dari global.js untuk Reset Timer "Gacor"
+            if (typeof startSession === 'function') startSession();
 
+            try {
                 const response = await fetch(API_URL, {
                     method: "POST",
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         action: "game_play",
-                        username: user,
+                        username: localStorage.getItem('username'),
                         bet: bet
                     })
                 });
@@ -312,7 +280,7 @@
 
                 if (result.result === "SUCCESS") {
                     localStorage.setItem('user_saldo', result.newSaldo);
-                    updateSaldoUI(result.newSaldo);
+                    if (typeof updateUI === 'function') updateUI({saldo: result.newSaldo});
                     dropBall(bet, result.target_multiplier);
                     
                     setTimeout(() => {
@@ -321,20 +289,17 @@
                         btn.innerText = "PLAY BALL";
                     }, speed === 'turbo' ? 100 : 800);
                 } else {
-                    showModal(result.message || "Gagal Memulai Permainan");
+                    showModal(result.message || "Gagal");
                     isProcessing = false;
                     btn.disabled = false;
                     btn.innerText = "PLAY BALL";
                     if(isAuto) toggleAuto();
                 }
-
             } catch (e) {
-                console.error("DEBUG ERROR:", e); 
                 isProcessing = false;
                 btn.disabled = false;
                 btn.innerText = "PLAY BALL";
-                showModal("Koneksi Error: " + e.message); 
-                if(typeof isAuto !== 'undefined' && isAuto) toggleAuto();
+                showModal("Koneksi Error");
             }
         }
 
@@ -342,14 +307,12 @@
             const ball = document.createElement('div');
             ball.className = 'ball';
             board.appendChild(ball);
-            
             let px = board.offsetWidth / 2, py = 10, vx = (Math.random() - 0.5) * 2, vy = 0;
             const targetIdx = multipliers.indexOf(targetMult);
             const targetX = (targetIdx + 0.5) * (board.offsetWidth / multipliers.length);
 
             function animate() {
                 vy += 0.8; px += vx; py += vy;
-                
                 pegLocs.forEach(p => {
                     const dx = px - p.x, dy = py - p.y, dist = Math.sqrt(dx*dx + dy*dy);
                     if (dist < 11) {
@@ -359,48 +322,32 @@
                         p.el.classList.add('hit'); setTimeout(() => p.el.classList.remove('hit'), 80);
                     }
                 });
-
                 if (px < 15 || px > board.offsetWidth - 15) vx *= -0.7;
                 ball.style.left = px + 'px'; ball.style.top = py + 'px';
-
-                if (py < 375) {
-                    requestAnimationFrame(animate);
-                } else {
-                    ball.remove();
-                    finish(bet, targetMult);
-                }
+                if (py < 375) requestAnimationFrame(animate);
+                else { ball.remove(); finish(bet, targetMult); }
             }
             requestAnimationFrame(animate);
-        }
-
-        function updateScoreBoard(winAmount, mult) {
-            const list = document.getElementById('score-list');
-            const entry = document.createElement('div');
-            entry.className = 'score-entry';
-            entry.innerHTML = `<span style="color:var(--yellow)">${mult}x</span> | IDR ${winAmount.toLocaleString()}`;
-            list.prepend(entry);
-            if(list.children.length > 5) list.removeChild(list.lastChild);
         }
 
         function finish(bet, targetMult) {
             const win = Math.floor(bet * targetMult);
             const idx = multipliers.indexOf(targetMult);
             if(targetMult >= 1.2) playSound('win');
-            
             const slots = document.querySelectorAll('.slot');
-            const s = slots[idx];
-            if(s) {
-                s.classList.add('active'); 
-                setTimeout(() => s.classList.remove('active'), 400);
+            if(slots[idx]) {
+                slots[idx].classList.add('active'); 
+                setTimeout(() => slots[idx].classList.remove('active'), 400);
             }
-            updateScoreBoard(win, targetMult);
+            const list = document.getElementById('score-list');
+            const entry = document.createElement('div');
+            entry.className = 'score-entry';
+            entry.innerHTML = `<span style="color:var(--yellow)">${targetMult}x</span> | IDR ${win.toLocaleString()}`;
+            list.prepend(entry);
+            if(list.children.length > 5) list.removeChild(list.lastChild);
         }
 
-        window.onload = () => { 
-            init(); 
-            updateSaldoUI(); 
-            syncUserFromServer(); 
-        };
+        window.onload = init;
         window.onresize = init;
     </script>
 </body>
