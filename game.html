@@ -176,7 +176,9 @@
         const betList = [400, 800, 1000, 1200, 1600, 1800, 2000, 4000, 8000, 10000, 12000, 16000, 18000, 20000];
         const multipliers = [5, 2, 1.2, 0.5, 0.2, 0.5, 1.2, 2, 5];
         let betIdx = 0, pegLocs = [], speed = 'normal', isAuto = false, autoInt;
-        let isProcessing = false;
+        
+        // Lock flag dihilangkan agar bisa spam bola secara paralel
+        let isProcessing = false; 
 
         const API_URL = typeof SCRIPT_URL !== 'undefined' ? SCRIPT_URL : "";
 
@@ -225,7 +227,7 @@
             document.getElementById('m-turbo').classList.toggle('active', m === 'turbo');
             if(isAuto) { 
                 clearInterval(autoInt); 
-                let interval = speed === 'turbo' ? 250 : 800;
+                let interval = speed === 'turbo' ? 200 : 700;
                 autoInt = setInterval(handlePlay, interval); 
             }
         }
@@ -241,7 +243,7 @@
             document.getElementById('plus-bet').style.opacity = opacity;
 
             if(isAuto) {
-                let interval = speed === 'turbo' ? 250 : 800;
+                let interval = speed === 'turbo' ? 200 : 700;
                 autoInt = setInterval(handlePlay, interval);
             } else {
                 clearInterval(autoInt);
@@ -256,8 +258,7 @@
         }
 
         async function handlePlay() {
-            if (isProcessing && speed !== 'turbo') return;
-            
+            // Kita izinkan multi-thread, tidak menggunakan return jika isProcessing true
             const bet = betList[betIdx];
             let saldoLokal = Number(localStorage.getItem('user_saldo') || 0);
 
@@ -267,15 +268,15 @@
                 return showModal("Saldo Habis!", 'var(--pink)'); 
             }
 
-            isProcessing = true;
+            // PERBAIKAN: Saldo langsung dipotong di sisi klien agar UI real-time
+            saldoLokal -= bet;
+            localStorage.setItem('user_saldo', saldoLokal);
+            if (typeof updateUI === 'function') updateUI({saldo: saldoLokal});
             
             try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-                const response = await fetch(API_URL, {
+                // Request ke Sheet untuk sinkronisasi kemenangan/kekalahan
+                const response = fetch(API_URL, {
                     method: "POST",
-                    signal: controller.signal,
                     body: JSON.stringify({
                         action: "game_play",
                         username: localStorage.getItem('username'),
@@ -283,24 +284,26 @@
                     })
                 });
                 
-                clearTimeout(timeoutId);
-                const result = await response.json();
-
-                if (result.result === "SUCCESS") {
-                    localStorage.setItem('user_saldo', result.newSaldo);
-                    if (typeof updateUI === 'function') updateUI({saldo: result.newSaldo});
-                    
-                    dropBall(bet, result.target_multiplier);
-                    setTimeout(() => { isProcessing = false; }, 100);
-                } else {
-                    if(result.message && !result.message.includes("Akses")) {
-                        showModal(result.message);
+                // Bola langsung turun tanpa menunggu respon fetch selesai (Async)
+                // Kita asumsikan respon sukses, jika gagal saldo akan dikoreksi saat respon tiba
+                response.then(res => res.json()).then(result => {
+                    if (result.result === "SUCCESS") {
+                        // Update saldo final dari sheet
+                        localStorage.setItem('user_saldo', result.newSaldo);
+                        if (typeof updateUI === 'function') updateUI({saldo: result.newSaldo});
+                        
+                        // Jalankan animasi bola berdasarkan multiplier dari sistem
+                        dropBall(bet, result.target_multiplier);
+                    } else {
+                        // Jika gagal, kembalikan saldo atau tampilkan error
+                        if(!result.message.includes("Akses")) showModal(result.message);
+                        if(isAuto) toggleAuto();
                     }
-                    isProcessing = false;
-                    if(isAuto) toggleAuto();
-                }
+                }).catch(e => {
+                    console.log("Fetch error:", e);
+                });
+
             } catch (e) {
-                isProcessing = false;
                 console.log("Play error:", e);
             }
         }
@@ -310,20 +313,17 @@
             ball.className = 'ball';
             board.appendChild(ball);
             
-            // PERBAIKAN: Posisi awal lebih tinggi dan langsung meluncur (tanpa delay)
             let px = board.offsetWidth / 2;
-            let py = -15; 
-            // Memencar: Variasi awal lebih dinamis
+            let py = -20; // Langsung muncul dari atas tanpa delay
             let vx = (Math.random() - 0.5) * 6; 
-            let vy = speed === 'turbo' ? 4 : 2.5; 
+            let vy = speed === 'turbo' ? 4.5 : 3.0; 
             
             const targetIdx = multipliers.indexOf(targetMult);
             const slotWidth = board.offsetWidth / multipliers.length;
             const targetX = (targetIdx * slotWidth) + (slotWidth / 2);
 
             function animate() {
-                // HUKUM FISIKA: Gravitasi & Gesekan Udara
-                let gravity = speed === 'turbo' ? 0.4 : 0.25;
+                let gravity = speed === 'turbo' ? 0.45 : 0.3;
                 let friction = 0.985; 
 
                 vy += gravity;
@@ -331,28 +331,22 @@
                 px += vx; 
                 py += vy;
 
-                // Tabrakan Paku (Peg)
                 pegLocs.forEach(p => {
                     const dx = px - p.x;
                     const dy = py - p.y;
                     const dist = Math.sqrt(dx*dx + dy*dy);
                     
-                    if (dist < 11) { // Jarak tabrakan
+                    if (dist < 11) { 
                         playSound('hit');
-                        
-                        // Pantulan Realistis sesuai sudut tabrakan
                         const angle = Math.atan2(dy, dx);
-                        const force = speed === 'turbo' ? 5 : 3.8;
+                        const force = speed === 'turbo' ? 5.2 : 4.0;
                         
-                        // Dorong bola menjauh dari paku
                         vx = Math.cos(angle) * force + (Math.random() - 0.5);
                         vy = Math.abs(Math.sin(angle) * force * 0.7); 
 
-                        // Paksa bola tetap turun (mencegah nyangkut/memantul terus di atas)
-                        if (vy < 1.5) vy = 2;
+                        if (vy < 2) vy = 2.5; // Pastikan bola selalu punya dorongan ke bawah
 
-                        // Tarikan halus ke target slot (Sistematis)
-                        let pull = py / 2200; 
+                        let pull = py / 2000; 
                         vx += (targetX - px) * pull;
 
                         p.el.classList.add('hit'); 
@@ -360,7 +354,6 @@
                     }
                 });
 
-                // Dinding board
                 if (px < 10 || px > board.offsetWidth - 10) {
                     vx *= -0.6;
                     px = px < 10 ? 10 : board.offsetWidth - 10;
@@ -369,8 +362,7 @@
                 ball.style.left = px + 'px';
                 ball.style.top = py + 'px';
 
-                // Batas bawah board
-                if (py < 370) {
+                if (py < 375) {
                     requestAnimationFrame(animate);
                 } else {
                     ball.remove();
