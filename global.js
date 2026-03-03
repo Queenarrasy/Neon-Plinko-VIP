@@ -15,11 +15,6 @@ function checkSession() {
     }
 }
 
-/**
- * NEW: START SESSION LOGIC
- * Fungsi ini memicu reset waktu "StartTime" di Kolom R Sheet
- * Panggil fungsi ini saat tombol "PLAY" di game di-klik atau saat login sukses.
- */
 async function startSession() {
     if (!user) return;
     try {
@@ -39,7 +34,6 @@ async function startSession() {
 async function syncUserData() {
     if (!user) return;
     try {
-        // Menggunakan POST agar lebih aman dan sesuai dengan route getUserData di GAS
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
             body: JSON.stringify({ action: 'getUserData', username: user })
@@ -68,6 +62,22 @@ function updateUI(data) {
     }
     if (tierEl) tierEl.innerText = data.tier || "BRONZE";
     if (nameEl) nameEl.innerText = data.fullname || user;
+}
+
+/**
+ * NEW: FUNGSI RIWAYAT (Agar riwayat tidak hilang)
+ * Panggil fungsi ini di halaman deposit.html atau withdraw.html
+ */
+async function fetchHistory(type) { // type: 'deposit' atau 'withdraw'
+    if (!user) return [];
+    try {
+        const response = await fetch(`${SCRIPT_URL}?action=getHistory&username=${user}&type=${type}`);
+        const res = await response.json();
+        return res; // Mengembalikan array data riwayat
+    } catch (e) {
+        console.error("History Error:", e);
+        return [];
+    }
 }
 
 /**
@@ -100,84 +110,9 @@ async function submitWithdraw(amount) {
     }
 }
 
-/**
- * 4. DEPOSIT SYSTEM
- */
-async function submitDeposit(method, amount) {
-    if (method === "QRIS" && amount < 20000) {
-        alert("Minimal Deposit QRIS IDR 20.000");
-        return;
-    }
-    if (method === "USDT" && amount < 10) {
-        alert("Minimal Deposit USDT $10");
-        return;
-    }
+// ... (Gunakan sisa fungsi deposit, claimDaily, inbox dari kode Anda sebelumnya)
 
-    try {
-        const response = await fetch(SCRIPT_URL, {
-            method: 'POST',
-            body: JSON.stringify({
-                action: 'deposit',
-                username: user,
-                method: method,
-                amount: amount
-            })
-        });
-        const res = await response.json();
-        if (res.result === "SUCCESS") {
-            alert("Tiket Deposit Berhasil Dibuat.");
-        } else {
-            alert("Gagal: " + res.message);
-        }
-    } catch (e) {
-        alert("Gagal menghubungi server.");
-    }
-}
-
-/**
- * 5. REWARD & INBOX SYSTEM
- */
-async function claimDaily() {
-    try {
-        const response = await fetch(SCRIPT_URL, {
-            method: 'POST',
-            body: JSON.stringify({ action: 'claimDaily', username: user })
-        });
-        const res = await response.json();
-        if (res.result === "SUCCESS") {
-            alert("Selamat! Bonus Harian IDR " + res.bonus + " masuk.");
-            syncUserData();
-        } else {
-            alert(res.message);
-        }
-    } catch (e) { console.log(e); }
-}
-
-async function fetchInbox() {
-    try {
-        const response = await fetch(SCRIPT_URL + "?action=getInbox&username=" + user);
-        const res = await response.json();
-        return res; 
-    } catch (e) { return []; }
-}
-
-async function claimInboxBonus(msgId) {
-    try {
-        const response = await fetch(SCRIPT_URL, {
-            method: 'POST',
-            body: JSON.stringify({ action: 'claimInbox', username: user, id: msgId })
-        });
-        const res = await response.json();
-        if (res.result === "SUCCESS") {
-            alert("Bonus Inbox Berhasil diklaim!");
-            syncUserData();
-        }
-    } catch (e) { console.log(e); }
-}
-
-// Jalankan otomatis saat halaman dimuat
+// Jalankan otomatis
 checkSession();
 syncUserData();
-
-// Interval update saldo tiap 10 detik
 setInterval(syncUserData, 10000);
