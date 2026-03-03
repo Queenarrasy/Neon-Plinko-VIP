@@ -45,7 +45,7 @@
         .saldo-label { font-size: 9px; color: var(--white); text-shadow: var(--neon-white); font-weight: bold; }
         #display-saldo { font-size: 18px; font-weight: bold; color: var(--white); }
 
-        #game-board { position: relative; width: 100%; height: 360px; overflow: visible; }
+        #game-board { position: relative; width: 100%; height: 360px; overflow: visible; margin-top: 10px; }
         .peg {
             position: absolute; width: 6px; height: 6px; background: var(--white);
             border-radius: 50%; box-shadow: var(--neon-white); transform: translate(-50%, -50%);
@@ -227,8 +227,7 @@
             document.getElementById('m-turbo').classList.toggle('active', m === 'turbo');
             if(isAuto) { 
                 clearInterval(autoInt); 
-                // JEDA AUTO DIPERKETAT: Normal 450ms, Turbo 150ms
-                autoInt = setInterval(handlePlay, speed === 'turbo' ? 150 : 450); 
+                autoInt = setInterval(handlePlay, speed === 'turbo' ? 200 : 600); 
             }
         }
 
@@ -237,7 +236,7 @@
             isAuto = !isAuto;
             document.getElementById('m-auto').innerText = isAuto ? "AUTO: ON" : "AUTO: OFF";
             document.getElementById('m-auto').classList.toggle('active', isAuto);
-            if(isAuto) autoInt = setInterval(handlePlay, speed === 'turbo' ? 150 : 450);
+            if(isAuto) autoInt = setInterval(handlePlay, speed === 'turbo' ? 200 : 600);
             else clearInterval(autoInt);
         }
 
@@ -248,7 +247,6 @@
         }
 
         async function handlePlay() {
-            // Perbolehkan overlap tipis jika mode turbo agar bola rapat
             if (isProcessing && speed !== 'turbo') return;
             
             const bet = betList[betIdx];
@@ -264,7 +262,6 @@
             if (typeof startSession === 'function') startSession();
 
             try {
-                // FETCH DATA DIBELAKANG LAYAR
                 const apiPromise = fetch(API_URL, {
                     method: "POST",
                     body: JSON.stringify({
@@ -274,17 +271,15 @@
                     })
                 }).then(res => res.json());
 
-                // BOLA LANGSUNG MUNCUL TANPA MENUNGGU FETCH SELESAI
                 const result = await apiPromise;
 
                 if (result.result === "SUCCESS") {
                     localStorage.setItem('user_saldo', result.newSaldo);
                     if (typeof updateUI === 'function') updateUI({saldo: result.newSaldo});
                     
-                    // JALANKAN BOLA SECARA INSTAN
+                    // BOLA TURUN INSTAN SETELAH RESPON
                     dropBall(bet, result.target_multiplier);
                     
-                    // Lock singkat saja agar responsif
                     setTimeout(() => { isProcessing = false; }, speed === 'turbo' ? 50 : 200);
                 } else {
                     showModal(result.message || "Gagal");
@@ -303,22 +298,26 @@
             ball.className = 'ball';
             board.appendChild(ball);
             
+            // Perbaikan posisi awal: py = 0 agar bola langsung terlihat meluncur dari atas
             let px = board.offsetWidth / 2;
-            let py = 0; // Mulai lebih atas agar instan terlihat meluncur
-            let vx = (Math.random() - 0.5) * 5; 
-            let vy = 2; // Kecepatan awal turun ditingkatkan
+            let py = -10; 
+            let vx = (Math.random() - 0.5) * 6; // Variasi rute lebih lebar
+            let vy = 3; // Kecepatan awal langsung turun (tidak melayang)
             
+            // Penentuan target X yang presisi berdasarkan index multiplier
             const targetIdx = multipliers.indexOf(targetMult);
             const slotWidth = board.offsetWidth / multipliers.length;
+            // TargetX dihitung agar bola mendarat tepat di tengah kotak slot yang benar
             const targetX = (targetIdx * slotWidth) + (slotWidth / 2);
 
             function animate() {
-                // GRAVITASI DIUBAH: Mode normal 0.6, Turbo 0.9 agar lebih dinamis
-                let gravity = speed === 'turbo' ? 0.9 : 0.65;
+                // Fisika gravitasi yang lebih berat agar bola tidak melayang
+                let gravity = speed === 'turbo' ? 1.0 : 0.8;
                 vy += gravity; 
                 px += vx; 
                 py += vy;
 
+                // Cek Tabrakan Peg
                 pegLocs.forEach(p => {
                     const dx = px - p.x;
                     const dy = py - p.y;
@@ -326,12 +325,13 @@
                     
                     if (dist < 11) {
                         playSound('hit');
-                        vx = (dx / dist) * (speed === 'turbo' ? 4 : 3);
-                        vy = (dy / dist) * 2.5;
+                        // Pantulan yang responsif
+                        vx = (dx / dist) * (speed === 'turbo' ? 5 : 4);
+                        vy = (dy / dist) * 2;
                         
-                        // MAGNET LOGIK: Menarik halus ke target slot
-                        if (py > 40) {
-                            vx += (targetX - px) * 0.15;
+                        // Sistem Magnetis: Menarik bola ke target secara natural tapi pasti
+                        if (py > 50) {
+                            vx += (targetX - px) * 0.18; // Kekuatan tarikan ditingkatkan agar presisi
                         }
 
                         p.el.classList.add('hit'); 
@@ -339,30 +339,32 @@
                     }
                 });
 
-                if (px < 12 || px > board.offsetWidth - 12) vx *= -0.8;
+                // Pantulan dinding samping
+                if (px < 10 || px > board.offsetWidth - 10) vx *= -0.7;
 
                 ball.style.left = px + 'px';
                 ball.style.top = py + 'px';
 
-                if (py < 375) {
+                // Jika bola melewati batas bawah board
+                if (py < 370) {
                     requestAnimationFrame(animate);
                 } else {
                     ball.remove();
-                    finish(bet, targetMult);
+                    finish(bet, targetMult, targetIdx);
                 }
             }
             requestAnimationFrame(animate);
         }
 
-        function finish(bet, targetMult) {
+        function finish(bet, targetMult, targetIdx) {
             const win = Math.floor(bet * targetMult);
-            const idx = multipliers.indexOf(targetMult);
             if(targetMult >= 1.2) playSound('win');
             
+            // Kedipan kotak slot yang presisi menggunakan index target
             const slots = document.querySelectorAll('.slot');
-            if(slots[idx]) {
-                slots[idx].classList.add('active'); 
-                setTimeout(() => slots[idx].classList.remove('active'), 300);
+            if(slots[targetIdx]) {
+                slots[targetIdx].classList.add('active'); 
+                setTimeout(() => slots[targetIdx].classList.remove('active'), 400);
             }
 
             const list = document.getElementById('score-list');
