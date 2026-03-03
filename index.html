@@ -185,7 +185,7 @@
 
     <script>
         let isLogin = false;
-        // URL SCRIPT ANDA
+        // URL SCRIPT ANDA (PASTIKAN SUDAH VERSI TERBARU)
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
 
         function playClick() { document.getElementById('snd-click').currentTime = 0; document.getElementById('snd-click').play(); }
@@ -235,7 +235,6 @@
             return p.length >= 6 && hasLetter && hasNumber;
         }
 
-        // --- FUNGSI BARU UNTUK RESET WAKTU GACOR ---
         async function startSession(user) {
             try {
                 await fetch(SCRIPT_URL, {
@@ -260,7 +259,7 @@
 
             if (!isValidPassword(pass)) {
                 playError();
-                showNeonAlert("PASSWORD HARUS MINIMAL 6 KARAKTER DAN MERUPAKAN GABUNGAN HURUF DAN ANGKA!", "VALIDASI GAGAL");
+                showNeonAlert("PASSWORD MINIMAL 6 KARAKTER (HURUF & ANGKA)!", "VALIDASI GAGAL");
                 return;
             }
 
@@ -268,14 +267,14 @@
             btn.disabled = true;
 
             try {
-                // Gunakan getUserData untuk login agar data password divalidasi langsung dari server
+                // PAYLOAD SINKRON DENGAN GAS VIP V6.8
                 let payload = { 
-                    action: isLogin ? 'getUserData' : 'register', 
-                    username: user
+                    action: isLogin ? 'login' : 'register', 
+                    username: user,
+                    password: pass 
                 };
                 
                 if (!isLogin) {
-                    payload.password = pass;
                     payload.phone = document.getElementById('phone').value.trim();
                     payload.fullname = document.getElementById('fullname').value.trim();
                     payload.bank = document.getElementById('bank').value;
@@ -298,34 +297,14 @@
 
                 const result = await response.json();
                 
-                // Jika login, lakukan verifikasi password dari data server
-                if (isLogin) {
-                    if (result.result === "SUCCESS") {
-                        if (result.password === pass) {
-                            // Password Benar
-                        } else {
-                            loader.style.display = 'none';
-                            btn.disabled = false;
-                            playError();
-                            showNeonAlert("Password Salah!", "GAGAL LOGIN");
-                            return;
-                        }
-                    } else {
-                        loader.style.display = 'none';
-                        btn.disabled = false;
-                        playError();
-                        showNeonAlert("Username tidak ditemukan!", "GAGAL LOGIN");
-                        return;
-                    }
-                }
-
+                // CEK HASIL RESPONS DARI SERVER
                 if (result.result === "SUCCESS") {
                     playSuccess();
                     
-                    // Reset Session Gacor (Menit Gacor dimulai saat login sukses)
+                    // Reset Session Gacor (Mulai hitung menit gacor)
                     await startSession(user);
 
-                    // SINKRONISASI DATA
+                    // SINKRONISASI KE LOCAL STORAGE
                     localStorage.setItem('user_session', user); 
                     localStorage.setItem('username', user);
                     localStorage.setItem('user_fullname', result.fullname || user);
@@ -343,8 +322,13 @@
                     loader.style.display = 'none';
                     btn.disabled = false;
                     playError();
+                    
+                    // Pesan error spesifik sesuai script GAS
                     let errMsg = result.message || "Terjadi kesalahan.";
+                    if(result.result === "WRONG_PASSWORD") errMsg = "Password yang Anda masukkan salah!";
+                    if(result.result === "NOT_FOUND") errMsg = "Username tidak terdaftar!";
                     if(result.result === "EXISTS") errMsg = "Username sudah digunakan!";
+                    
                     showNeonAlert(errMsg, "GAGAL");
                 }
 
@@ -352,7 +336,7 @@
                 loader.style.display = 'none';
                 btn.disabled = false;
                 playError();
-                showNeonAlert("Koneksi Error. Pastikan internet stabil.");
+                showNeonAlert("Koneksi Error. Pastikan URL Script benar dan internet stabil.");
                 console.error("Auth Error:", error);
             }
         }
