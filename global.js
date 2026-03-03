@@ -16,12 +16,12 @@ function checkSession() {
 }
 
 /**
- * START SESSION LOGIC
+ * START SESSION LOGIC (Optimized)
  */
 async function startSession() {
     if (!user) return;
     try {
-        fetch(SCRIPT_URL, {
+        await fetch(SCRIPT_URL, {
             method: 'POST',
             body: JSON.stringify({ action: 'reset_session', username: user })
         });
@@ -32,7 +32,7 @@ async function startSession() {
 }
 
 /**
- * 2. SYNC SALDO & PROFILE
+ * 2. SYNC SALDO & PROFILE (Updated for speed & accuracy)
  */
 async function syncUserData() {
     if (!user) return;
@@ -44,9 +44,12 @@ async function syncUserData() {
         const res = await response.json();
         
         if (res.result === "SUCCESS") {
+            // Update LocalStorage
             localStorage.setItem('user_saldo', res.saldo);
             localStorage.setItem('user_tier', res.tier);
             localStorage.setItem('user_fullname', res.fullname);
+            
+            // Update UI secara menyeluruh
             updateUI(res);
         }
     } catch (e) {
@@ -61,6 +64,7 @@ function updateUI(data) {
 
     if (saldoEl) {
         const val = Number(data.saldo);
+        // Format Rupiah sesuai permintaan Anda
         saldoEl.innerText = isNaN(val) ? "IDR 0" : "IDR " + val.toLocaleString('id-ID');
     }
     if (tierEl) tierEl.innerText = data.tier || "BRONZE";
@@ -107,7 +111,9 @@ async function claimInboxBonus(msgId) {
     } catch (e) { console.log(e); }
 }
 
-// Jalankan otomatis saat halaman dimuat
+// Menjalankan inisialisasi awal
 checkSession();
 syncUserData();
+
+// Menjalankan sinkronisasi rutin setiap 15 detik
 setInterval(syncUserData, 15000);
