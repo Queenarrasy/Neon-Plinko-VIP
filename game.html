@@ -1,394 +1,586 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEON PLINKO VIP - ULTIMATE</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <style>
-        :root {
-            --pink: #ff0077; --blue: #0044ff; --yellow: #fbff00; --white: #ffffff; --bg: #03040a;
-            --neon-pink: 0 0 12px rgba(255, 0, 119, 0.7);
-            --neon-blue: 0 0 12px rgba(0, 68, 255, 0.7);
-            --neon-white: 0 0 8px rgba(255, 255, 255, 0.4);
-            --neon-yellow: 0 0 12px rgba(251, 255, 0, 0.7);
-        }
-        body {
-            background: var(--bg); color: white; font-family: 'Segoe UI', Roboto, sans-serif;
-            margin: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>NEON PLINKO VIP</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pink:#ff0077;--blue:#0055ff;--yellow:#f5e642;--bg:#02030d;
+  --gp:0 0 8px rgba(255,0,119,.6),0 0 22px rgba(255,0,119,.2);
+  --gb:0 0 8px rgba(0,85,255,.6),0 0 22px rgba(0,85,255,.2);
+  --gy:0 0 8px rgba(245,230,66,.6),0 0 22px rgba(245,230,66,.2);
+  --bp:rgba(255,0,119,.32);--bb:rgba(0,85,255,.32);--by:rgba(245,230,66,.32);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{
+  background:var(--bg);
+  background-image:
+    radial-gradient(ellipse 70% 40% at 10% 0%,rgba(0,55,255,.08) 0%,transparent 65%),
+    radial-gradient(ellipse 50% 40% at 90% 100%,rgba(255,0,119,.07) 0%,transparent 65%);
+  color:#dde0f0;font-family:'Outfit',sans-serif;
+  height:100dvh;overflow:hidden;display:flex;flex-direction:column;
+}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.015) 3px,rgba(0,0,0,.015) 4px);}
 
-        #neon-modal {
-            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: #0a0b1e; border: 2px solid var(--pink); border-radius: 15px;
-            box-shadow: var(--neon-pink); z-index: 9999; padding: 20px; text-align: center;
-            min-width: 280px; animation: modalIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        @keyframes modalIn { from { opacity: 0; transform: translate(-50%, -60%) scale(0.8); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
-        
-        .modal-btn {
-            margin-top: 15px; padding: 10px 25px; border-radius: 8px; cursor: pointer;
-            border: 1px solid var(--yellow); background: transparent; color: var(--yellow); font-weight: bold; text-transform: uppercase;
-        }
+/* ── MODAL ─────────────────────────────────────────────── */
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);z-index:9998;}
+#neon-modal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:linear-gradient(160deg,#07091d,#0b0d24);border-radius:22px;z-index:9999;
+  padding:26px 22px;text-align:center;min-width:270px;max-width:310px;width:86%;
+  animation:mpop .3s cubic-bezier(.34,1.56,.64,1) both;}
+#neon-modal.m-pink{border:1px solid var(--bp);box-shadow:var(--gp);}
+#neon-modal.m-blue{border:1px solid var(--bb);box-shadow:var(--gb);}
+#neon-modal.m-yellow{border:1px solid var(--by);box-shadow:var(--gy);}
+@keyframes mpop{from{opacity:0;transform:translate(-50%,-50%) scale(.7)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+#modal-title{font-family:'Cinzel Decorative',serif;font-size:11px;font-weight:700;letter-spacing:1.5px;margin-bottom:8px;}
+.m-pink #modal-title{color:var(--pink);}
+.m-blue #modal-title{color:#7799ff;}
+.m-yellow #modal-title{color:var(--yellow);}
+#modal-msg{font-size:12px;color:rgba(220,220,240,.65);line-height:1.65;}
+.modal-btn{margin-top:15px;padding:9px 24px;border-radius:50px;cursor:pointer;
+  font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;background:transparent;transition:.25s;}
+.m-pink .modal-btn{border:1px solid var(--bp);color:var(--pink);}
+.m-blue .modal-btn{border:1px solid var(--bb);color:#7799ff;}
+.m-yellow .modal-btn{border:1px solid var(--by);color:var(--yellow);}
 
-        .header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 12px 15px; background: rgba(0, 0, 0, 0.95); border-bottom: 2px solid var(--blue);
-        }
-        .header-item { text-align: center; cursor: pointer; min-width: 60px; transition: 0.2s; }
-        .header-item:active { transform: scale(0.9); }
-        .header-item i { font-size: 28px; display: block; margin-bottom: 2px; }
-        .header-item span { font-size: 10px; font-weight: 900; letter-spacing: 1px; }
+/* ── HEADER ────────────────────────────────────────────── */
+.header{
+  position:relative;z-index:10;
+  padding:10px 14px;
+  background:rgba(2,3,13,.95);
+  border-bottom:1px solid var(--bb);
+  backdrop-filter:blur(20px);
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 2px 24px rgba(0,85,255,.12);
+  flex-shrink:0;
+}
+.header-item{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  cursor:pointer;min-width:52px;transition:.2s;text-decoration:none;
+}
+.header-item:active{transform:scale(.88);}
+.header-item i{font-size:24px;display:block;margin-bottom:2px;}
+.header-item span{font-size:9px;font-weight:700;letter-spacing:1px;}
 
-        .balance-box {
-            background: #000; border: 2px solid var(--pink); border-radius: 20px;
-            padding: 6px 20px; box-shadow: var(--neon-pink); text-align: center;
-            flex-grow: 1; margin: 0 15px;
-        }
-        .saldo-label { font-size: 9px; color: var(--white); opacity: 0.8; font-weight: bold; margin-bottom: 2px; }
-        #display-saldo { font-size: 18px; font-weight: bold; color: var(--white); font-family: monospace; }
+.balance-box{
+  background:rgba(0,0,0,.6);
+  border:1px solid var(--bp);
+  border-radius:20px;
+  padding:6px 18px;
+  box-shadow:var(--gp);
+  text-align:center;
+  flex:1;margin:0 10px;
+}
+.saldo-label{font-size:8px;font-weight:600;letter-spacing:2px;color:rgba(255,255,255,.4);margin-bottom:2px;}
+#display-saldo{
+  font-family:'Cinzel Decorative',serif;
+  font-size:16px;font-weight:900;color:#fff;
+  text-shadow:var(--gp);
+}
 
-        #game-board { position: relative; width: 100%; height: 380px; overflow: visible; margin-top: 15px; }
-        .peg {
-            position: absolute; width: 6px; height: 6px; background: var(--white);
-            border-radius: 50%; box-shadow: var(--neon-white); transform: translate(-50%, -50%);
-            transition: background 0.1s, transform 0.1s;
-        }
-        .peg.hit { background: var(--yellow); box-shadow: var(--neon-yellow); transform: translate(-50%, -50%) scale(1.8); }
-        
-        .ball {
-            position: absolute; width: 12px; height: 12px; background: radial-gradient(circle at 30% 30%, var(--pink), #600);
-            border-radius: 50%; box-shadow: var(--neon-pink); transform: translate(-50%, -50%); z-index: 10;
-            will-change: transform;
-        }
-        
-        .multiplier-row { display: flex; justify-content: center; gap: 4px; padding: 0 10px; margin: 10px 0; }
-        .slot {
-            flex: 1; height: 35px; display: flex; align-items: center; justify-content: center;
-            font-size: 10px; font-weight: 900; border-radius: 6px; color: #000; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .slot.active { transform: translateY(-8px); filter: brightness(1.5); box-shadow: 0 0 20px var(--white); }
-        .s-high { background: var(--pink); } .s-mid { background: var(--yellow); } .s-low { background: var(--blue); color: white !important; }
+/* ── BOARD ─────────────────────────────────────────────── */
+#game-board{
+  position:relative;width:100%;flex:1;min-height:0;overflow:visible;
+  margin-top:8px;
+}
+.peg{
+  position:absolute;width:7px;height:7px;background:rgba(255,255,255,.7);
+  border-radius:50%;box-shadow:0 0 4px rgba(255,255,255,.3);transform:translate(-50%,-50%);
+  transition:background .08s,transform .08s;
+}
+.peg.hit{background:var(--yellow);box-shadow:var(--gy);transform:translate(-50%,-50%) scale(2);}
+.ball{
+  position:absolute;width:13px;height:13px;
+  background:radial-gradient(circle at 35% 30%,var(--pink),#880022);
+  border-radius:50%;box-shadow:var(--gp);transform:translate(-50%,-50%);z-index:10;
+  will-change:transform;
+}
 
-        #floating-score {
-            position: fixed; top: 110px; right: 10px; background: rgba(0,0,0,0.8);
-            border: 1px solid var(--blue); border-radius: 10px; padding: 6px;
-            z-index: 1000; box-shadow: var(--neon-blue); min-width: 90px;
-        }
-        .score-entry { font-size: 10px; font-weight: bold; color: var(--yellow); border-bottom: 1px solid rgba(255,255,255,0.1); padding: 3px 0; text-align: center; }
+/* SLOT ROW */
+.multiplier-row{
+  display:flex;justify-content:center;gap:3px;
+  padding:0 8px;margin:6px 0;flex-shrink:0;
+}
+.slot{
+  flex:1;height:32px;display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:900;border-radius:8px;color:#000;
+  transition:.3s cubic-bezier(.175,.885,.32,1.275);letter-spacing:.5px;
+}
+.slot.active{transform:translateY(-8px);filter:brightness(1.6);box-shadow:0 0 18px rgba(255,255,255,.4);}
+.s-high{background:linear-gradient(135deg,var(--pink),#cc0055);}
+.s-mid{background:linear-gradient(135deg,var(--yellow),#c8b800);}
+.s-low{background:linear-gradient(135deg,var(--blue),#0033cc);color:rgba(255,255,255,.9)!important;}
 
-        .controls { padding: 15px; background: #050714; border-top: 2px solid var(--blue); }
-        .mode-row { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; }
-        .btn-mode { background: transparent; padding: 10px 18px; border-radius: 12px; font-size: 11px; font-weight: 900; cursor: pointer; transition: 0.3s; }
-        
-        #m-normal { border: 1px solid var(--pink); color: var(--pink); }
-        #m-normal.active { background: var(--pink); color: white; box-shadow: var(--neon-pink); }
-        #m-turbo { border: 1px solid var(--blue); color: var(--blue); }
-        #m-turbo.active { background: var(--blue); color: white; box-shadow: var(--neon-blue); }
-        #m-auto { border: 1px solid var(--yellow); color: var(--yellow); }
-        #m-auto.active { background: var(--yellow); color: black; box-shadow: var(--neon-yellow); }
+/* FLOATING SCORE */
+#floating-score{
+  position:absolute;top:8px;right:8px;
+  background:rgba(2,3,13,.88);
+  border:1px solid var(--bb);border-radius:12px;
+  padding:6px 8px;z-index:100;
+  box-shadow:var(--gb);min-width:88px;
+}
+.score-entry{
+  font-size:9.5px;font-weight:700;color:var(--yellow);
+  border-bottom:1px solid rgba(255,255,255,.07);
+  padding:3px 0;text-align:center;
+}
+.score-entry:last-child{border-bottom:none;}
 
-        .btn-play {
-            width: 100%; padding: 18px; border-radius: 50px; background: linear-gradient(135deg, #ff0077, #0044ff);
-            color: white; font-weight: 900; border: 2px solid var(--yellow); text-transform: uppercase; cursor: pointer; transition: 0.2s;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        }
-        .btn-play:active { transform: scale(0.96); }
-        .btn-play:disabled { opacity: 0.5; cursor: not-allowed; }
-        
-        .nav-bottom { display: grid; grid-template-columns: repeat(3, 1fr); background: #000; padding: 12px 5px; gap: 10px; border-top: 2px solid var(--blue); }
-        .nav-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 0; border-radius: 12px; text-decoration: none; border: 1px solid; font-weight: 900; }
-        .nav-btn i { font-size: 22px; margin-bottom: 4px; }
-        .nav-btn span { font-size: 10px; }
+/* ── CONTROLS ─────────────────────────────────────────── */
+.controls{
+  padding:10px 14px 10px;
+  background:rgba(2,3,13,.97);
+  border-top:1px solid var(--bb);
+  flex-shrink:0;
+  position:relative;z-index:10;
+}
 
-        .btn-withdraw { border-color: var(--yellow); color: var(--yellow); }
-        .btn-deposit { border-color: var(--pink); color: var(--pink); }
-        .btn-reward { border-color: var(--blue); color: var(--blue); }
-    </style>
+/* MODE BUTTONS */
+.mode-row{display:flex;justify-content:center;gap:8px;margin-bottom:10px;}
+.btn-mode{
+  background:transparent;padding:8px 16px;border-radius:12px;
+  font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;
+  cursor:pointer;transition:.25s;letter-spacing:.5px;
+}
+#m-normal{border:1px solid var(--bp);color:var(--pink);}
+#m-normal.active{background:rgba(255,0,119,.2);color:var(--pink);box-shadow:var(--gp);}
+#m-turbo{border:1px solid var(--bb);color:#7799ff;}
+#m-turbo.active{background:rgba(0,85,255,.2);color:#7799ff;box-shadow:var(--gb);}
+#m-auto{border:1px solid var(--by);color:var(--yellow);}
+#m-auto.active{background:rgba(245,230,66,.15);color:var(--yellow);box-shadow:var(--gy);}
+
+/* BET ROW */
+.bet-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:0 6px;margin-bottom:10px;
+}
+.bet-btn{
+  width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:26px;cursor:pointer;transition:.2s;background:transparent;border:none;
+}
+.bet-btn:active{transform:scale(.85);}
+.bet-minus{color:var(--pink);border:1px solid var(--bp);}
+.bet-minus:hover{background:rgba(255,0,119,.1);box-shadow:var(--gp);}
+.bet-plus{color:#7799ff;border:1px solid var(--bb);}
+.bet-plus:hover{background:rgba(0,85,255,.1);box-shadow:var(--gb);}
+.bet-center{text-align:center;}
+.bet-label{font-size:8.5px;font-weight:600;letter-spacing:2px;color:rgba(255,255,255,.35);margin-bottom:3px;}
+#current-bet{
+  font-family:'Cinzel Decorative',serif;
+  font-size:22px;font-weight:900;
+  color:var(--yellow);text-shadow:var(--gy);
+  letter-spacing:1px;
+}
+
+/* PLAY BUTTON */
+.btn-play{
+  width:100%;padding:15px;border-radius:50px;cursor:pointer;
+  font-family:'Cinzel Decorative',serif;font-size:13px;font-weight:900;
+  letter-spacing:2px;text-transform:uppercase;transition:.2s;
+  background:linear-gradient(90deg,rgba(255,0,119,.7),rgba(0,85,255,.7));
+  color:#fff;border:1px solid var(--by);
+  box-shadow:var(--gp),var(--gb);
+}
+.btn-play:active{transform:scale(.97);}
+.btn-play:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+
+/* ── BOTTOM NAV ────────────────────────────────────────── */
+.nav-bottom{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  background:rgba(2,3,13,.97);
+  padding:8px 10px 10px;gap:8px;
+  border-top:1px solid var(--bb);
+  flex-shrink:0;
+}
+.nav-btn{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:9px 0;border-radius:14px;text-decoration:none;
+  font-family:'Outfit',sans-serif;font-weight:700;transition:.2s;
+}
+.nav-btn:active{transform:scale(.93);}
+.nav-btn i{font-size:20px;margin-bottom:3px;}
+.nav-btn span{font-size:9px;letter-spacing:.5px;}
+.btn-withdraw{border:1px solid var(--by);color:var(--yellow);background:rgba(245,230,66,.04);}
+.btn-withdraw:hover{background:rgba(245,230,66,.1);box-shadow:var(--gy);}
+.btn-deposit{border:1px solid var(--bp);color:var(--pink);background:rgba(255,0,119,.04);}
+.btn-deposit:hover{background:rgba(255,0,119,.1);box-shadow:var(--gp);}
+.btn-reward{border:1px solid var(--bb);color:#7799ff;background:rgba(0,85,255,.04);}
+.btn-reward:hover{background:rgba(0,85,255,.1);box-shadow:var(--gb);}
+</style>
 </head>
 <body>
 
-    <audio id="snd-click" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3"></audio>
-    <audio id="snd-hit" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
-    <audio id="snd-win" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3"></audio>
-    <audio id="snd-error" src="https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3"></audio>
+<audio id="snd-click" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3" preload="none"></audio>
+<audio id="snd-hit"   src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3" preload="none"></audio>
+<audio id="snd-win"   src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3" preload="none"></audio>
+<audio id="snd-error" src="https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3" preload="none"></audio>
 
-    <div id="neon-modal">
-        <h3 id="modal-title" style="margin: 0;">NOTIFIKASI</h3>
-        <p id="modal-msg" style="color: white; font-size: 14px; margin: 15px 0;"></p>
-        <button class="modal-btn" onclick="closeModal()">OK</button>
+<!-- MODAL -->
+<div id="modal-overlay" onclick="closeModal()"></div>
+<div id="neon-modal" class="m-pink">
+  <div id="modal-title">NOTIFIKASI</div>
+  <div id="modal-msg"></div>
+  <button class="modal-btn" onclick="closeModal()">OK</button>
+</div>
+
+<!-- HEADER -->
+<div class="header" style="position:relative;z-index:10;">
+  <div class="header-item" onclick="playSound('click');location.href='profil.html'">
+    <i class="fa-solid fa-circle-user" style="color:var(--yellow);text-shadow:var(--gy);"></i>
+    <span style="color:var(--yellow);">PROFIL</span>
+  </div>
+  <div class="balance-box">
+    <div class="saldo-label">SALDO UTAMA</div>
+    <div id="display-saldo">IDR 0</div>
+  </div>
+  <div class="header-item" style="visibility:hidden;min-width:52px;"></div>
+</div>
+
+<!-- BOARD AREA -->
+<div style="position:relative;flex:1;min-height:0;">
+  <div id="game-board"></div>
+  <div id="floating-score">
+    <div id="score-list">
+      <div class="score-entry" style="opacity:.3;">Ready...</div>
     </div>
+  </div>
+</div>
 
-    <div id="floating-score">
-        <div id="score-list">
-            <div class="score-entry" style="opacity:0.3">Ready...</div>
-        </div>
+<!-- SLOT ROW -->
+<div class="multiplier-row" id="slot-row"></div>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <div class="mode-row">
+    <button class="btn-mode active" id="m-normal" onclick="setSpeed('normal')">NORMAL</button>
+    <button class="btn-mode"        id="m-turbo"  onclick="setSpeed('turbo')">TURBO</button>
+    <button class="btn-mode"        id="m-auto"   onclick="toggleAuto()">AUTO: OFF</button>
+  </div>
+  <div class="bet-row">
+    <div class="bet-btn bet-minus" id="minus-bet" onclick="changeBet(-1)">
+      <i class="fa-solid fa-circle-minus"></i>
     </div>
-
-    <div class="header">
-        <div class="header-item" onclick="playSound('click'); location.href='profil.html'">
-            <i class="fa-solid fa-circle-user" style="color: var(--yellow); text-shadow: var(--neon-yellow);"></i>
-            <span style="color: var(--yellow);">PROFIL</span>
-        </div>
-        <div class="balance-box">
-            <div class="saldo-label">SALDO UTAMA</div>
-            <div id="display-saldo">IDR 0</div>
-        </div>
-        <div class="header-item" style="visibility: hidden;"></div>
+    <div class="bet-center">
+      <div class="bet-label">TARUHAN</div>
+      <div id="current-bet">400</div>
     </div>
-
-    <div id="game-board"></div>
-    <div class="multiplier-row" id="slot-row"></div>
-
-    <div class="controls">
-        <div class="mode-row">
-            <button class="btn-mode active" id="m-normal" onclick="setSpeed('normal')">NORMAL</button>
-            <button class="btn-mode" id="m-turbo" onclick="setSpeed('turbo')">TURBO</button>
-            <button class="btn-mode" id="m-auto" onclick="toggleAuto()">AUTO: OFF</button>
-        </div>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; padding: 0 10px;">
-            <i class="fa-solid fa-circle-minus" onclick="changeBet(-1)" id="minus-bet" style="color:var(--pink); font-size: 32px; cursor:pointer;"></i>
-            <div style="text-align: center;">
-                <div style="font-size: 10px; color: #888; font-weight: bold; margin-bottom: 4px;">TARUHAN</div>
-                <span id="current-bet" style="color:var(--yellow); font-size:24px; font-weight:bold; letter-spacing:1px;">400</span>
-            </div>
-            <i class="fa-solid fa-circle-plus" onclick="changeBet(1)" id="plus-bet" style="color:var(--blue); font-size: 32px; cursor:pointer;"></i>
-        </div>
-        <button class="btn-play" id="main-btn-play" onclick="handlePlay()">PLAY BALL</button>
+    <div class="bet-btn bet-plus" id="plus-bet" onclick="changeBet(1)">
+      <i class="fa-solid fa-circle-plus"></i>
     </div>
+  </div>
+  <button class="btn-play" id="main-btn-play" onclick="handlePlay()">
+    <i class="fa-solid fa-play"></i> &nbsp;PLAY BALL
+  </button>
+</div>
 
-    <div class="nav-bottom">
-        <a href="withdraw.html" class="nav-btn btn-withdraw" onclick="playSound('click')">
-            <i class="fa-solid fa-money-bill-transfer"></i><span>WITHDRAW</span>
-        </a>
-        <a href="deposit.html" class="nav-btn btn-deposit" onclick="playSound('click')">
-            <i class="fa-solid fa-wallet"></i><span>DEPOSIT</span>
-        </a>
-        <a href="reward.html" class="nav-btn btn-reward" onclick="playSound('click')">
-            <i class="fa-solid fa-gift"></i><span>REWARD</span>
-        </a>
-    </div>
+<!-- BOTTOM NAV -->
+<div class="nav-bottom">
+  <a href="withdraw.html" class="nav-btn btn-withdraw" onclick="playSound('click')">
+    <i class="fa-solid fa-money-bill-transfer"></i><span>WITHDRAW</span>
+  </a>
+  <a href="deposit.html" class="nav-btn btn-deposit" onclick="playSound('click')">
+    <i class="fa-solid fa-wallet"></i><span>DEPOSIT</span>
+  </a>
+  <a href="reward.html" class="nav-btn btn-reward" onclick="playSound('click')">
+    <i class="fa-solid fa-gift"></i><span>REWARD</span>
+  </a>
+</div>
 
-    <script src="global.js"></script>
-    <script>
-        const board = document.getElementById('game-board');
-        const betList = [400, 800, 1000, 1200, 1600, 1800, 2000, 4000, 8000, 10000, 12000, 16000, 18000, 20000];
-        const multipliers = [5, 2, 1.2, 0.5, 0.2, 0.5, 1.2, 2, 5];
-        let betIdx = 0, pegLocs = [], speed = 'normal', isAuto = false, autoInt;
-        
-        const API_URL = typeof SCRIPT_URL !== 'undefined' ? SCRIPT_URL : "";
+<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
 
-        function playSound(type) {
-            const s = document.getElementById('snd-' + type);
-            if(s) { s.currentTime = 0; s.play().catch(e => {}); }
-        }
+// ── STATE ──────────────────────────────────────────────────
+const betList     = [400,800,1000,1200,1600,1800,2000,4000,8000,10000,12000,16000,18000,20000];
+const multipliers = [5, 2, 1.2, 0.5, 0.2, 0.5, 1.2, 2, 5];
+let betIdx = 0, pegLocs = [], speed = 'normal', isAuto = false, autoInt;
+let _syncInterval;
 
-        function showModal(msg, color = 'var(--pink)') {
-            document.getElementById('modal-msg').innerText = msg;
-            document.getElementById('neon-modal').style.borderColor = color;
-            document.getElementById('modal-title').style.color = color;
-            document.getElementById('neon-modal').style.display = 'block';
-        }
+// ── HELPERS ────────────────────────────────────────────────
+function getUsername() { return localStorage.getItem('username'); }
+function getSaldo()    { return parseFloat(localStorage.getItem('user_saldo') || 0); }
+function setSaldo(v)   {
+  const val = parseFloat(v) || 0;
+  localStorage.setItem('user_saldo', val);
+  document.getElementById('display-saldo').textContent = 'IDR ' + Math.floor(val).toLocaleString('id-ID');
+}
+function fmtIDR(v) { return 'IDR ' + Math.floor(v).toLocaleString('id-ID'); }
 
-        function closeModal() {
-            playSound('click');
-            document.getElementById('neon-modal').style.display = 'none';
-        }
+function playSound(type) {
+  const s = document.getElementById('snd-' + type);
+  if (s) { s.currentTime = 0; s.play().catch(()=>{}); }
+}
 
-        function init() {
-            board.innerHTML = ''; pegLocs = [];
-            const rows = 9, centerX = board.offsetWidth / 2;
-            if(centerX === 0) return setTimeout(init, 100);
-            
-            for (let r = 2; r <= rows; r++) {
-                for (let i = 0; i < r; i++) {
-                    const x = centerX + (i - (r - 1) / 2) * 38;
-                    const y = r * 35;
-                    const p = document.createElement('div');
-                    p.className = 'peg'; p.style.left = x + 'px'; p.style.top = y + 'px';
-                    board.appendChild(p); pegLocs.push({ x, y, el: p });
-                }
-            }
-            const row = document.getElementById('slot-row'); row.innerHTML = '';
-            multipliers.forEach((m, idx) => {
-                const s = document.createElement('div');
-                s.className = `slot ${m >= 2 ? 's-high' : m >= 1 ? 's-mid' : 's-low'}`;
-                s.id = "slot-" + idx; // Penting untuk akurasi visual
-                s.innerText = m + 'x'; row.appendChild(s);
-            });
-        }
+// ── MODAL ──────────────────────────────────────────────────
+function showModal(msg, colorType) {
+  // colorType: 'pink' | 'blue' | 'yellow'
+  const type = colorType || 'pink';
+  const m = document.getElementById('neon-modal');
+  m.className = 'm-' + type;
+  document.getElementById('modal-msg').textContent = msg;
+  document.getElementById('modal-title').textContent =
+    type === 'yellow' ? '✨ MENANG!' : type === 'blue' ? 'ℹ️ INFO' : '⚠️ PERHATIAN';
+  document.getElementById('modal-overlay').style.display = 'block';
+  m.style.display = 'block';
+}
+function closeModal() {
+  playSound('click');
+  document.getElementById('neon-modal').style.display = 'none';
+  document.getElementById('modal-overlay').style.display = 'none';
+}
 
-        function setSpeed(m) {
-            playSound('click');
-            speed = m;
-            document.getElementById('m-normal').classList.toggle('active', m === 'normal');
-            document.getElementById('m-turbo').classList.toggle('active', m === 'turbo');
-            if(isAuto) { 
-                clearInterval(autoInt); 
-                let interval = speed === 'turbo' ? 250 : 800;
-                autoInt = setInterval(handlePlay, interval); 
-            }
-        }
+// ── API ────────────────────────────────────────────────────
+async function apiCall(payload) {
+  try {
+    const url = SCRIPT_URL + '?data=' + encodeURIComponent(JSON.stringify(payload));
+    const r = await fetch(url, { redirect:'follow' });
+    const j = JSON.parse(await r.text());
+    if (j && j.result !== undefined) return j;
+  } catch(e) {}
+  try {
+    const r2 = await fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify(payload) });
+    return JSON.parse(await r2.text());
+  } catch(e) { return { result:'ERROR' }; }
+}
 
-        function toggleAuto() {
-            playSound('click');
-            isAuto = !isAuto;
-            document.getElementById('m-auto').innerText = isAuto ? "AUTO: ON" : "AUTO: OFF";
-            document.getElementById('m-auto').classList.toggle('active', isAuto);
-            
-            if(isAuto) {
-                let interval = speed === 'turbo' ? 250 : 800;
-                autoInt = setInterval(handlePlay, interval);
-            } else {
-                clearInterval(autoInt);
-            }
-        }
+// ── SYNC SALDO ─────────────────────────────────────────────
+function startSync() {
+  if (_syncInterval) clearInterval(_syncInterval);
+  _syncInterval = setInterval(async () => {
+    const u = getUsername();
+    if (!u) return;
+    try {
+      const res = await apiCall({ action:'get_saldo', username:u });
+      if (res.result === 'SUCCESS') setSaldo(res.saldo);
+    } catch(e) {}
+  }, 8000);
+}
 
-        function changeBet(d) {
-            if(isAuto) return;
-            playSound('click');
-            betIdx = Math.max(0, Math.min(betList.length - 1, betIdx + d));
-            document.getElementById('current-bet').innerText = betList[betIdx].toLocaleString();
-        }
+// ── BOARD INIT ─────────────────────────────────────────────
+function init() {
+  const board = document.getElementById('game-board');
+  board.innerHTML = ''; pegLocs = [];
+  const rows = 9;
+  const boardW = board.offsetWidth;
+  const boardH = board.offsetHeight || 280;
+  const centerX = boardW / 2;
+  if (centerX === 0) return setTimeout(init, 80);
 
-        // FUNGSI PLAY BALL (INSTAN TANPA DELAY)
-        function handlePlay() {
-            const bet = betList[betIdx];
-            let saldoLokal = Number(localStorage.getItem('user_saldo') || 0);
+  const spacingX = Math.min(38, (boardW - 40) / (rows + 1));
+  const spacingY = (boardH - 20) / (rows + 1);
 
-            if (saldoLokal < bet) { 
-                playSound('error');
-                if(isAuto) toggleAuto(); 
-                return showModal("Saldo Tidak Cukup!", 'var(--pink)'); 
-            }
+  for (let r = 2; r <= rows; r++) {
+    for (let i = 0; i < r; i++) {
+      const x = centerX + (i - (r - 1) / 2) * spacingX;
+      const y = r * spacingY;
+      const p = document.createElement('div');
+      p.className = 'peg';
+      p.style.left = x + 'px';
+      p.style.top  = y + 'px';
+      board.appendChild(p);
+      pegLocs.push({ x, y, el: p });
+    }
+  }
 
-            // 1. POTONG SALDO INSTAN
-            saldoLokal -= bet;
-            localStorage.setItem('user_saldo', saldoLokal);
-            const display = document.getElementById('display-saldo');
-            display.innerText = "IDR " + saldoLokal.toLocaleString();
-            if (window.updateUI) updateUI({saldo: saldoLokal});
+  const row = document.getElementById('slot-row');
+  row.innerHTML = '';
+  multipliers.forEach((m, idx) => {
+    const s = document.createElement('div');
+    s.className = `slot ${m >= 2 ? 's-high' : m >= 1 ? 's-mid' : 's-low'}`;
+    s.id = 'slot-' + idx;
+    s.textContent = m + 'x';
+    row.appendChild(s);
+  });
+}
 
-            // 2. MUNCULKAN BOLA INSTAN TANPA MENUNGGU FETCH
-            // Kirim request di background
-            const playReq = fetch(API_URL, {
-                method: "POST",
-                body: JSON.stringify({
-                    action: "game_play",
-                    username: localStorage.getItem('username'),
-                    bet: bet
-                })
-            }).then(res => res.json());
+// ── MODE & SPEED ───────────────────────────────────────────
+function setSpeed(m) {
+  playSound('click');
+  speed = m;
+  document.getElementById('m-normal').classList.toggle('active', m === 'normal');
+  document.getElementById('m-turbo').classList.toggle('active',  m === 'turbo');
+  if (isAuto) {
+    clearInterval(autoInt);
+    autoInt = setInterval(handlePlay, speed === 'turbo' ? 250 : 800);
+  }
+}
 
-            // 3. JALANKAN ANIMASI SEGERA
-            // Kita tunggu resolusi request sebentar saja atau langsung tebak jika server lemot
-            playReq.then(result => {
-                if (result.result === "SUCCESS") {
-                    localStorage.setItem('user_saldo', result.newSaldo);
-                    if (window.updateUI) updateUI({saldo: result.newSaldo});
-                    dropBall(bet, result.target_multiplier);
-                } else {
-                    if(isAuto) toggleAuto();
-                    showModal(result.message);
-                }
-            }).catch(e => {
-                // Fallback jika error koneksi agar bola tetap turun
-                dropBall(bet, multipliers[Math.floor(Math.random() * multipliers.length)]);
-            });
-        }
+function toggleAuto() {
+  playSound('click');
+  if (isAuto) {
+    isAuto = false;
+    clearInterval(autoInt);
+    document.getElementById('m-auto').textContent = 'AUTO: OFF';
+    document.getElementById('m-auto').classList.remove('active');
+  } else {
+    isAuto = true;
+    document.getElementById('m-auto').textContent = 'AUTO: ON';
+    document.getElementById('m-auto').classList.add('active');
+    autoInt = setInterval(handlePlay, speed === 'turbo' ? 250 : 800);
+  }
+}
 
-        function dropBall(bet, targetMult) {
-            const ball = document.createElement('div');
-            ball.className = 'ball';
-            board.appendChild(ball);
-            
-            let px = (board.offsetWidth / 2) + (Math.random() * 6 - 3);
-            let py = 0;
-            let vx = (Math.random() - 0.5) * 2; 
-            let vy = 0; 
-            
-            // CARI SEMUA INDEKS YANG SESUAI DENGAN MULTIPLIER (Menghindari salah nyala)
-            const possibleIndices = [];
-            multipliers.forEach((m, i) => { if(m === targetMult) possibleIndices.push(i); });
-            // Pilih satu indeks secara acak jika ada lebih dari satu multiplier yang sama
-            const targetIdx = possibleIndices[Math.floor(Math.random() * possibleIndices.length)];
-            
-            const slotWidth = board.offsetWidth / multipliers.length;
-            const targetX = (targetIdx * slotWidth) + (slotWidth / 2);
+function changeBet(d) {
+  if (isAuto) return;
+  playSound('click');
+  betIdx = Math.max(0, Math.min(betList.length - 1, betIdx + d));
+  document.getElementById('current-bet').textContent = betList[betIdx].toLocaleString('id-ID');
+}
 
-            const config = {
-                normal: { gravity: 0.22, bounce: 0.45, friction: 0.985 },
-                turbo: { gravity: 0.40, bounce: 0.35, friction: 0.98 }
-            }[speed];
+// ── HANDLE PLAY ────────────────────────────────────────────
+function handlePlay() {
+  const bet = betList[betIdx];
+  let saldo = getSaldo();
 
-            function animate() {
-                vy += config.gravity;
-                vx *= config.friction;
-                px += vx;
-                py += vy;
+  if (saldo < bet) {
+    playSound('error');
+    if (isAuto) toggleAuto();
+    return showModal('Saldo tidak cukup untuk taruhan ini!', 'pink');
+  }
 
-                pegLocs.forEach(p => {
-                    const dx = px - p.x;
-                    const dy = py - p.y;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    if (dist < 10) { 
-                        playSound('hit');
-                        const angle = Math.atan2(dy, dx);
-                        const force = speed === 'turbo' ? 4.5 : 3.8;
-                        vx = Math.cos(angle) * force + (Math.random() - 0.5);
-                        vy = Math.abs(Math.sin(angle) * force * 0.6); 
-                        
-                        // Tarik bola ke targetX secara perlahan
-                        let pull = py / 400; 
-                        vx += (targetX - px) * (pull * 0.12);
-                        p.el.classList.add('hit'); 
-                        setTimeout(() => p.el.classList.remove('hit'), 60);
-                    }
-                });
+  // Potong saldo lokal instan
+  saldo -= bet;
+  setSaldo(saldo);
 
-                if (px < 10 || px > board.offsetWidth - 10) {
-                    vx *= -0.5;
-                    px = px < 10 ? 10 : board.offsetWidth - 10;
-                }
+  // Kirim ke server di background
+  const req = fetch(SCRIPT_URL + '?data=' + encodeURIComponent(JSON.stringify({
+    action: 'game_play',
+    username: getUsername(),
+    bet: bet
+  })), { redirect: 'follow' })
+  .then(r => r.json())
+  .catch(() => null);
 
-                ball.style.transform = `translate(${px}px, ${py}px)`;
+  req.then(result => {
+    if (result && result.result === 'SUCCESS') {
+      setSaldo(result.newSaldo);
+      dropBall(bet, result.target_multiplier);
+    } else {
+      // Fallback: jalankan bola dengan multiplier acak
+      dropBall(bet, multipliers[Math.floor(Math.random() * multipliers.length)]);
+    }
+  }).catch(() => {
+    dropBall(bet, multipliers[Math.floor(Math.random() * multipliers.length)]);
+  });
+}
 
-                if (py < 380) {
-                    requestAnimationFrame(animate);
-                } else {
-                    ball.remove();
-                    finish(bet, targetMult, targetIdx);
-                }
-            }
-            requestAnimationFrame(animate);
-        }
+// ── DROP BALL ──────────────────────────────────────────────
+function dropBall(bet, targetMult) {
+  const board = document.getElementById('game-board');
+  const ball  = document.createElement('div');
+  ball.className = 'ball';
+  board.appendChild(ball);
 
-        function finish(bet, targetMult, targetIdx) {
-            const win = Math.floor(bet * targetMult);
-            if(targetMult >= 1.2) playSound('win');
-            
-            // NYALAKAN SLOT YANG TEPAT (BERDASARKAN ID)
-            const targetSlot = document.getElementById("slot-" + targetIdx);
-            if(targetSlot) {
-                targetSlot.classList.add('active'); 
-                setTimeout(() => targetSlot.classList.remove('active'), 600);
-            }
+  const boardW = board.offsetWidth;
+  const boardH = board.offsetHeight || 280;
+  let px = boardW / 2 + (Math.random() * 6 - 3);
+  let py = 0;
+  let vx = (Math.random() - 0.5) * 1.5;
+  let vy = 0;
 
-            // PAPAN SKOR (MAKSIMAL 3 BARIS)
-            const list = document.getElementById('score-list');
-            const entry = document.createElement('div');
-            entry.className = 'score-entry';
-            entry.innerHTML = `<span style="color:var(--yellow)">${targetMult}x</span> | IDR ${win.toLocaleString()}`;
-            list.prepend(entry);
-            
-            // Hapus baris lama jika lebih dari 3
-            while(list.children.length > 3) {
-                list.removeChild(list.lastChild);
-            }
-        }
+  // Cari semua slot yang cocok
+  const possibleIdx = [];
+  multipliers.forEach((m, i) => { if (m === targetMult) possibleIdx.push(i); });
+  const targetIdx  = possibleIdx[Math.floor(Math.random() * possibleIdx.length)];
+  const slotWidth  = boardW / multipliers.length;
+  const targetX    = targetIdx * slotWidth + slotWidth / 2;
 
-        window.onload = init;
-        window.onresize = init;
-    </script>
+  const cfg = speed === 'turbo'
+    ? { gravity: 0.38, bounce: 0.36, friction: 0.981 }
+    : { gravity: 0.21, bounce: 0.44, friction: 0.986 };
+
+  function animate() {
+    vy += cfg.gravity;
+    vx *= cfg.friction;
+    px += vx;
+    py += vy;
+
+    pegLocs.forEach(p => {
+      const dx = px - p.x, dy = py - p.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < 11) {
+        playSound('hit');
+        const angle = Math.atan2(dy, dx);
+        const force = speed === 'turbo' ? 4.4 : 3.7;
+        vx = Math.cos(angle) * force + (Math.random() - 0.5) * 0.6;
+        vy = Math.abs(Math.sin(angle) * force * 0.6);
+        const pull = (py / boardH) * 0.13;
+        vx += (targetX - px) * pull;
+        p.el.classList.add('hit');
+        setTimeout(() => p.el.classList.remove('hit'), 65);
+      }
+    });
+
+    if (px < 10)           { vx = Math.abs(vx); px = 10; }
+    if (px > boardW - 10)  { vx = -Math.abs(vx); px = boardW - 10; }
+
+    ball.style.transform = `translate(${px}px, ${py}px)`;
+
+    if (py < boardH) {
+      requestAnimationFrame(animate);
+    } else {
+      ball.remove();
+      finish(bet, targetMult, targetIdx);
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+// ── FINISH ─────────────────────────────────────────────────
+function finish(bet, targetMult, targetIdx) {
+  const win = Math.floor(bet * targetMult);
+  if (targetMult >= 1.2) playSound('win');
+
+  const slot = document.getElementById('slot-' + targetIdx);
+  if (slot) {
+    slot.classList.add('active');
+    setTimeout(() => slot.classList.remove('active'), 650);
+  }
+
+  // Score board (max 3)
+  const list  = document.getElementById('score-list');
+  const entry = document.createElement('div');
+  entry.className = 'score-entry';
+  const color = targetMult >= 2 ? 'var(--pink)' : targetMult >= 1.2 ? 'var(--yellow)' : '#7799ff';
+  entry.innerHTML = `<span style="color:${color}">${targetMult}x</span> · ${fmtIDR(win)}`;
+  list.prepend(entry);
+  while (list.children.length > 3) list.removeChild(list.lastChild);
+}
+
+// ── INIT ──────────────────────────────────────────────────
+window.addEventListener('load', async () => {
+  if (!getUsername()) { location.href = 'index.html'; return; }
+
+  init();
+  window.addEventListener('resize', init);
+
+  setSaldo(getSaldo()); // render saldo dari cache
+
+  // Fetch config game dari server
+  try {
+    const res = await apiCall({ action: 'get_game_config', username: getUsername() });
+    if (res.result === 'SUCCESS') setSaldo(res.saldo);
+  } catch(e) {}
+
+  // Set status online + sync saldo
+  try { await fetch(SCRIPT_URL + '?data=' + encodeURIComponent(JSON.stringify({
+    action: 'set_status', username: getUsername(), status: 'ONLINE'
+  })), { redirect: 'follow' }); } catch(e) {}
+
+  startSync();
+});
+
+window.addEventListener('beforeunload', () => {
+  const u = getUsername();
+  if (!u) return;
+  navigator.sendBeacon(SCRIPT_URL + '?data=' + encodeURIComponent(JSON.stringify({
+    action: 'set_status', username: u, status: 'OFFLINE'
+  })));
+  if (_syncInterval) clearInterval(_syncInterval);
+});
+</script>
 </body>
 </html>
