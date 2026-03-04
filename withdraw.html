@@ -250,47 +250,23 @@ cursor:pointer;
 
 <script src="global.js"></script>
 <script>
-// ── Semua logika ditangani global.js ──
-// Fungsi berikut hanya sebagai jembatan agar tombol HTML tetap berfungsi
+/**
+ * withdraw.html — semua logika server ditangani global.js (v11.0)
+ * File ini HANYA berisi override closeModal agar gaya warna konsisten,
+ * dan guard login. Tidak ada fungsi duplikat yang bisa bentrok.
+ */
 
-// closeModal sudah ada di global.js, didefinisikan ulang agar konsisten gaya WD
+// Override closeModal agar tombol OK di modal ini tetap berfungsi
 function closeModal() {
   document.getElementById("neon-modal").style.display = "none";
 }
 
-// Deteksi notif BERHASIL saat polling riwayat
-let _lastWdStatus = null;
-const _origLoadWdHistory = loadWithdrawHistory;
-async function loadWithdrawHistory() {
-  await _origLoadWdHistory();
-
-  // Cek apakah transaksi terbaru baru saja berubah jadi BERHASIL
-  try {
-    const result = await gasPost({
-      action: "get_wd_history",
-      username: localStorage.getItem("username")
-    });
-    if (result.result === "SUCCESS" && result.data.length > 0) {
-      const latest = result.data[0];
-      const st = String(latest.status).toUpperCase();
-      if (st === "BERHASIL" && _lastWdStatus !== "BERHASIL") {
-        _showWdModal(
-          "APPROVED ✅",
-          "Withdraw kamu telah disetujui! Saldo segera dikirim.",
-          "var(--blue)", "0 0 20px var(--blue)"
-        );
-      }
-      _lastWdStatus = st;
-    }
-  } catch (e) { /* silent */ }
-}
-
-// Jalankan saat halaman siap (window.onload di sini agar tidak bentrok dengan DOMContentLoaded di global.js)
-window.addEventListener("load", () => {
-  if (!localStorage.getItem("username")) {
+// Guard: pastikan sudah login sebelum halaman dimuat
+// (DOMContentLoaded di global.js sudah handle initWithdraw otomatis)
+window.addEventListener("load", function() {
+  if (!getUsername()) {
     location.href = "index.html";
   }
-  // initWithdraw() sudah dipanggil otomatis oleh global.js via DOMContentLoaded
 });
 </script>
 
