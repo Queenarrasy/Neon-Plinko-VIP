@@ -571,40 +571,38 @@ function physics(){
 }
 
 // ══════════════════════════════════════════════════════════
-// ON BALL LAND — gunakan hasil dari server (sudah dihitung)
+// ON BALL LAND
+// Saldo TIDAK dihitung di sini — semua dari server.
+// Fungsi ini hanya urus: visual slot, suara, score list.
 // ══════════════════════════════════════════════════════════
 function onBallLand(b){
-  // Jika server sudah membalas, gunakan multiplier dari server
-  // b.serverMult sudah di-set oleh spawnBall setelah API response
-  const mult = b.serverMult !== undefined ? b.serverMult
-               : MULTS[Math.min(MULTS.length-1, Math.max(0, Math.floor(b.x / slotW)))];
+  const mult = (b.serverMult !== undefined)
+    ? b.serverMult
+    : MULTS[Math.min(MULTS.length-1, Math.max(0, Math.floor(b.x / slotW)))];
 
-  // FIX RUMUS: Saldo Akhir = (Saldo Awal - Taruhan) + (Taruhan × Multiplier)
-  // Saldo Awal sudah dikurangi taruhan di spawnBall (optimistic UI)
-  // Jadi di sini kita hanya tambahkan (Taruhan × Multiplier)
+  // winAmount hanya untuk tampilan score list
   const winAmount = Math.floor(b.bet * mult);
 
   if(mult >= 1.5) snd('win');
 
-  // Highlight slot yang aktif
-  const col = Math.min(MULTS.length-1, Math.max(0, MULTS.indexOf(mult) >= 0
-    ? (() => {
-        // cari slot yang paling dekat dengan posisi bola
-        const colByPos = Math.floor(b.x / slotW);
-        // jika slot di posisi itu memiliki mult yang sama, pakai itu
-        if(MULTS[colByPos] === mult) return colByPos;
-        // fallback: pakai indeks pertama yang cocok
-        const idx = MULTS.indexOf(mult);
-        return idx >= 0 ? idx : colByPos;
-      })()
-    : Math.floor(b.x / slotW)));
-  const el = document.getElementById('slot-'+col);
+  // Highlight slot
+  let slotIdx = Math.floor(b.x / slotW);
+  if(b.serverMult !== undefined){
+    const opts = [];
+    MULTS.forEach((m,i) => { if(m === b.serverMult) opts.push(i); });
+    if(opts.length > 0){
+      opts.sort((a,z) => Math.abs(a - slotIdx) - Math.abs(z - slotIdx));
+      slotIdx = opts[0];
+    }
+  }
+  slotIdx = Math.min(MULTS.length-1, Math.max(0, slotIdx));
+  const el = document.getElementById('slot-'+slotIdx);
   if(el){ el.classList.add('active'); setTimeout(()=>el.classList.remove('active'), 650); }
 
   const list = document.getElementById('score-list');
   const e    = document.createElement('div');
   e.className = 'score-entry';
-  const c2   = mult>=3?'var(--pink)':mult>=1?'var(--yellow)':'#7799ff';
+  const c2 = mult>=3?'var(--pink)':mult>=1?'var(--yellow)':'#7799ff';
   e.innerHTML = `<span style="color:${c2}">${mult}x</span> · ${fmtIDR(winAmount)}`;
   list.prepend(e);
   while(list.children.length > 4) list.removeChild(list.lastChild);
@@ -612,12 +610,16 @@ function onBallLand(b){
 
 // ══════════════════════════════════════════════════════════
 // SPAWN BALL
+// Alur saldo:
+//  1. Optimistic: tampilkan saldo - bet (agar UI responsif)
+//  2. API call ke server → server hitung newSaldo yang BENAR
+//  3. setS(newSaldo) → saldo resmi dari server, bukan dari client
+//  4. Error/timeout → refund bet ke pemain
 // ══════════════════════════════════════════════════════════
 function spawnBall(){
-  const bet    = BETS[betIdx];
+  const bet       = BETS[betIdx];
   const saldoAwal = getS();
 
-  // Cek saldo cukup
   if(saldoAwal < bet){
     snd('error');
     if(isAuto) stopAuto();
@@ -626,10 +628,8 @@ function spawnBall(){
     return;
   }
 
-  // FIX RUMUS: Kurangi taruhan dulu dari saldo (optimistic UI)
-  // Saldo setelah taruhan dipotong = Saldo Awal - Taruhan
-  const saldoSetelahBet = saldoAwal - bet;
-  setS(saldoSetelahBet);
+  // Optimistic UI: tampilkan seolah bet sudah dipotong
+  setS(saldoAwal - bet);
 
   const sx = BW/2 + (Math.random()-.5)*10;
   const ti = Math.floor(Math.random() * MULTS.length);
@@ -638,42 +638,40 @@ function spawnBall(){
   const ball = {
     x:sx, y:-BALL_R*1.5,
     vx:(Math.random()-.5)*1.0, vy:0.4,
-    bet,
-    saldoAwal,        // simpan saldo awal untuk kalkulasi yang benar
-    tx,
+    bet, saldoAwal, tx,
     spd:speedMode,
     done:false,
-    serverMult: undefined  // akan diisi dari server
+    serverMult:  undefined,
+    serverSaldo: undefined
   };
   balls.push(ball);
 
-  // Kirim ke server: server menghitung winrate & multiplier
-  // Server menerima saldo SEBELUM bet dipotong (saldoAwal)
-  // agar kalkulasi server konsisten
   api({ action:'game_play', username:getU(), bet, saldoAwal })
   .then(r => {
     if(r && r.result==='SUCCESS'){
-      // FIX RUMUS: gunakan newSaldo dari server sebagai sumber kebenaran
-      // Server sudah menghitung: newSaldo = (saldoAwal - bet) + (bet × multiplier)
-      const serverMult = r.target_multiplier;
-      ball.serverMult  = serverMult;
+      ball.serverMult  = r.target_multiplier;
+      ball.serverSaldo = r.newSaldo;
 
-      // Update saldo dari server (ini adalah nilai yang benar)
+      // SATU-SATUNYA update saldo — dari server
+      // Server hitung: newSaldo = (saldoAwal - bet) + (bet × multiplier)
       setS(r.newSaldo);
 
-      // Arahkan bola ke slot yang sesuai dengan multiplier dari server
+      // Arahkan bola ke slot multiplier dari server
       const opts = [];
-      MULTS.forEach((m,i) => { if(m === serverMult) opts.push(i); });
+      MULTS.forEach((m,i) => { if(m === r.target_multiplier) opts.push(i); });
       if(opts.length > 0){
-        const ti2 = opts[Math.floor(Math.random()*opts.length)];
-        ball.tx = (ti2 + 0.5) * slotW;
+        ball.tx = (opts[Math.floor(Math.random()*opts.length)] + 0.5) * slotW;
       }
+    } else {
+      // Server tolak → refund bet
+      setS(saldoAwal);
     }
-  }).catch(()=>{
-    // Jika server error, bola tetap jatuh normal
-    // saldo sudah dikurangi bet — tidak ada koreksi (saldo sudah pessimistik)
+  }).catch(() => {
+    // Network error → refund bet agar pemain tidak rugi
+    setS(saldoAwal);
   });
 }
+
 
 // ══════════════════════════════════════════════════════════
 // MODE CONTROLS
