@@ -12,7 +12,7 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwqQWXIJuVnkIxLvdu3k
 // ── Konstanta Deposit ────────────────────────────────────────
 const KURS_USDT_GLOBAL = 16800;
 const FEE_USDT_GLOBAL  = 2;
-const WA_ADMIN         = "6281234567890"; // ← Ganti nomor WA admin
+const WA_ADMIN         = "6289510249551"; // ← Ganti nomor WA admin
 
 // ============================================================
 //  UTILITY
