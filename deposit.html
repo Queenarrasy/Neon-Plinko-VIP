@@ -5,830 +5,853 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>DEPOSIT - NEON PLINKO VIP</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Outfit:wght@300;400;500;600;700&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+
 <style>
-:root{
-  --pink:#ff0077;
-  --blue:#0044ff;
-  --yellow:#fbff00;
-  --bg:#03040a;
-  --neon-pink:0 0 15px rgba(255,0,119,0.9);
-  --neon-blue:0 0 15px rgba(0,68,255,0.9);
-  --neon-yellow:0 0 15px rgba(251,255,0,0.9);
+:root {
+  --pink:   #ff0077;
+  --blue:   #0055ff;
+  --yellow: #f5e642;
+  --green:  #26a17b;
+  --bg:     #02030d;
+  --card:   rgba(255,255,255,0.025);
+
+  --glow-pink:   0 0 6px rgba(255,0,119,0.45),  0 0 18px rgba(255,0,119,0.12);
+  --glow-blue:   0 0 6px rgba(0,85,255,0.45),   0 0 18px rgba(0,85,255,0.12);
+  --glow-yellow: 0 0 6px rgba(245,230,66,0.45),  0 0 18px rgba(245,230,66,0.1);
+  --glow-green:  0 0 6px rgba(38,161,123,0.45),  0 0 18px rgba(38,161,123,0.1);
+
+  --b-pink:   rgba(255,0,119,0.3);
+  --b-blue:   rgba(0,85,255,0.3);
+  --b-yellow: rgba(245,230,66,0.3);
+  --b-green:  rgba(38,161,123,0.3);
 }
 
-body{
-  margin:0;
-  background:linear-gradient(180deg,#02030a,#05071a);
-  font-family:'Segoe UI',Tahoma,Verdana,sans-serif;
-  color:white;
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  background-image:
+    radial-gradient(ellipse 70% 50% at 10% 5%,  rgba(0,55,255,0.055) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 40% at 90% 95%, rgba(255,0,119,0.045) 0%, transparent 70%);
+  color: #dde0f0;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 400;
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 
-/* HEADER */
-.header{
-  padding:20px;
-  background:rgba(0,0,0,0.9);
-  border-bottom:2px solid var(--blue);
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  box-shadow:var(--neon-blue);
-}
-.btn-back{color:white;font-size:20px;text-decoration:none;}
-
-.container{
-  padding:20px;
-  max-width:520px;
-  margin:auto;
+body::after {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background: repeating-linear-gradient(0deg,
+    transparent, transparent 3px,
+    rgba(0,0,0,0.018) 3px, rgba(0,0,0,0.018) 4px);
 }
 
-/* CARD */
-.card{
-  background:rgba(0,0,0,0.6);
-  border:2px solid var(--blue);
-  border-radius:18px;
-  padding:20px;
-  margin-bottom:25px;
-  box-shadow:var(--neon-blue);
+/* ═══ HEADER ═══ */
+.header {
+  position: sticky; top: 0; z-index: 200;
+  padding: 13px 18px;
+  background: rgba(2,3,13,0.93);
+  border-bottom: 1px solid var(--b-blue);
+  backdrop-filter: blur(18px);
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: 0 1px 20px rgba(0,85,255,0.1);
+}
+.btn-back {
+  color: rgba(255,255,255,0.6); font-size: 15px; text-decoration: none;
+  width: 32px; height: 32px;
+  border: 1px solid var(--b-blue); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  transition: 0.3s;
+}
+.btn-back:hover { color: white; border-color: var(--blue); box-shadow: var(--glow-blue); }
+.header-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 11px; font-weight: 700; letter-spacing: 2px;
+  background: linear-gradient(90deg, var(--pink), #dd66ff 40%, var(--yellow));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
 
-/* LABEL */
-.label{
-  font-size:11px;
-  color:var(--pink);
-  font-weight:bold;
-  letter-spacing:1px;
-  margin-bottom:8px;
-  display:block;
+/* ═══ MODAL ═══ */
+#modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); z-index: 9998;
+}
+#neon-modal {
+  display: none;
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  background: linear-gradient(160deg, #07091d, #0b0d24);
+  border-radius: 22px; z-index: 9999;
+  padding: 30px 24px; text-align: center;
+  min-width: 280px; max-width: 330px; width: 88%;
+  animation: modalPop 0.32s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+#neon-modal.m-success { border: 1px solid var(--b-yellow); box-shadow: var(--glow-yellow), inset 0 0 28px rgba(245,230,66,0.04); }
+#neon-modal.m-error   { border: 1px solid var(--b-pink);   box-shadow: var(--glow-pink),   inset 0 0 28px rgba(255,0,119,0.04); }
+#neon-modal.m-info    { border: 1px solid var(--b-blue);   box-shadow: var(--glow-blue),   inset 0 0 28px rgba(0,85,255,0.04); }
+
+@keyframes modalPop {
+  from { opacity:0; transform:translate(-50%,-50%) scale(0.72); }
+  to   { opacity:1; transform:translate(-50%,-50%) scale(1); }
+}
+.modal-ico-ring {
+  width: 58px; height: 58px; border-radius: 50%;
+  margin: 0 auto 14px;
+  display: flex; align-items: center; justify-content: center; font-size: 26px;
+}
+.m-success .modal-ico-ring { background: rgba(245,230,66,0.09); border: 1px solid var(--b-yellow); }
+.m-error   .modal-ico-ring { background: rgba(255,0,119,0.09);  border: 1px solid var(--b-pink); }
+.m-info    .modal-ico-ring { background: rgba(0,85,255,0.09);   border: 1px solid var(--b-blue); }
+
+#modal-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 12px; font-weight: 700; letter-spacing: 1px; margin-bottom: 9px;
+}
+.m-success #modal-title { color: var(--yellow); text-shadow: var(--glow-yellow); }
+.m-error   #modal-title { color: #ff4499; text-shadow: var(--glow-pink); }
+.m-info    #modal-title { color: #7799ff; text-shadow: var(--glow-blue); }
+
+#modal-msg { font-size: 13px; font-weight: 400; color: rgba(220,220,240,0.65); line-height: 1.7; }
+.modal-btn {
+  margin-top: 20px; padding: 10px 28px; border-radius: 50px;
+  cursor: pointer; font-family: 'Outfit', sans-serif;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.8px;
+  transition: all 0.25s; background: transparent;
+}
+.m-success .modal-btn { border: 1px solid var(--b-yellow); color: var(--yellow); }
+.m-success .modal-btn:hover { background: rgba(245,230,66,0.1); box-shadow: var(--glow-yellow); }
+.m-error   .modal-btn { border: 1px solid var(--b-pink);   color: #ff4499; }
+.m-error   .modal-btn:hover { background: rgba(255,0,119,0.09); box-shadow: var(--glow-pink); }
+.m-info    .modal-btn { border: 1px solid var(--b-blue);   color: #7799ff; }
+.m-info    .modal-btn:hover { background: rgba(0,85,255,0.09); box-shadow: var(--glow-blue); }
+
+/* ═══ CONTAINER ═══ */
+.container {
+  padding: 16px; max-width: 520px; margin: auto;
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column; gap: 14px;
 }
 
-/* INPUT */
-input[type="number"]{
-  width:100%;
-  padding:14px;
-  background:#000;
-  border:1px solid var(--pink);
-  border-radius:10px;
-  color:white;
-  font-size:16px;
-  margin-bottom:10px;
-  outline:none;
-  box-sizing:border-box;
+/* ═══ SECTION LABEL ═══ */
+.sec-lbl {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 9px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase;
+  opacity: 0.55;
+}
+.sec-lbl::after {
+  content:''; flex:1; height:1px;
+  background: linear-gradient(90deg, currentColor, transparent); opacity: 0.4;
 }
 
-/* QUICK AMOUNT */
-.amount-grid{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:10px;
-  margin-top:15px;
+/* ═══ METHOD CARDS ═══ */
+.method-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  animation: fadeUp 0.35s ease both;
 }
-.amount-item{
-  border:1px solid var(--blue);
-  border-radius:10px;
-  padding:12px 5px;
-  text-align:center;
-  cursor:pointer;
-  font-weight:bold;
-  color:var(--blue);
-  transition:0.3s;
+.method-card {
+  background: var(--card);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px; padding: 14px 12px;
+  display: flex; align-items: center; gap: 10px;
+  cursor: pointer; transition: all 0.25s; position: relative; overflow: hidden;
 }
-.amount-item:hover{
-  background:var(--blue);
-  color:white;
-  box-shadow:var(--neon-blue);
+.method-card:hover:not(.active-qris):not(.active-usdt) {
+  border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.04);
+}
+.method-card.active-qris {
+  border-color: var(--b-pink); box-shadow: var(--glow-pink);
+  background: rgba(255,0,119,0.05);
+}
+.method-card.active-usdt {
+  border-color: var(--b-green); box-shadow: var(--glow-green);
+  background: rgba(38,161,123,0.05);
+}
+.method-ico {
+  width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 17px;
+}
+.method-ico.pk { background: rgba(255,0,119,0.1); border: 1px solid var(--b-pink); color: var(--pink); }
+.method-ico.gr { background: rgba(38,161,123,0.1); border: 1px solid var(--b-green); color: var(--green); }
+.method-name { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.85); margin-bottom: 2px; }
+.method-sub  { font-size: 9px; font-weight: 300; color: rgba(255,255,255,0.35); }
+
+/* ═══ NOMINAL CARD ═══ */
+.nominal-card {
+  background: var(--card);
+  border: 1px solid var(--b-blue);
+  border-radius: 20px; padding: 18px;
+  box-shadow: var(--glow-blue);
+  animation: fadeUp 0.4s ease both 0.05s;
+}
+.nominal-lbl {
+  font-size: 9px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase;
+  color: rgba(255,255,255,0.35); margin-bottom: 10px;
 }
 
-/* USDT QUICK AMOUNT */
-.usdt-grid{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:10px;
-  margin-top:15px;
-}
-.usdt-item{
-  border:1px solid #26a17b;
-  border-radius:10px;
-  padding:12px 5px;
-  text-align:center;
-  cursor:pointer;
-  font-weight:bold;
-  color:#26a17b;
-  transition:0.3s;
-}
-.usdt-item:hover{
-  background:#26a17b;
-  color:white;
-  box-shadow:0 0 15px rgba(38,161,123,0.7);
+/* kurs badge */
+#kurs-badge {
+  display: none;
+  font-size: 10.5px; font-weight: 500;
+  color: var(--green); background: rgba(38,161,123,0.07);
+  border: 1px solid var(--b-green); border-radius: 8px;
+  padding: 7px 12px; margin-bottom: 12px;
+  box-shadow: var(--glow-green);
 }
 
-/* METHOD */
-.method-item{
-  display:flex;
-  align-items:center;
-  gap:15px;
-  padding:14px;
-  border:1px solid #222;
-  border-radius:12px;
-  margin-bottom:12px;
-  cursor:pointer;
-  transition:0.3s;
-  background:rgba(255,255,255,0.02);
+/* input */
+.depo-input {
+  width: 100%; padding: 14px 16px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  color: white; font-family: 'Outfit', sans-serif;
+  font-size: 18px; font-weight: 600;
+  outline: none; transition: 0.3s; margin-bottom: 12px;
 }
-.method-item.active{
-  border:2px solid var(--yellow);
-  box-shadow:var(--neon-yellow);
-  background:rgba(251,255,0,0.05);
+.depo-input:focus { border-color: var(--b-blue); box-shadow: var(--glow-blue); }
+.depo-input::placeholder { font-size: 13px; font-weight: 300; color: rgba(255,255,255,0.2); }
+
+/* quick amounts */
+.amt-grid {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 4px;
+}
+.amt-chip {
+  padding: 9px 4px; border-radius: 10px; text-align: center;
+  font-size: 11px; font-weight: 600; cursor: pointer;
+  transition: all 0.2s; border: 1px solid;
+}
+.amt-chip.idr { border-color: var(--b-blue); color: #7799ff; background: rgba(0,85,255,0.05); }
+.amt-chip.idr:hover { background: rgba(0,85,255,0.14); box-shadow: var(--glow-blue); transform: scale(1.04); }
+.amt-chip.usd { border-color: var(--b-green); color: var(--green); background: rgba(38,161,123,0.05); }
+.amt-chip.usd:hover { background: rgba(38,161,123,0.14); box-shadow: var(--glow-green); transform: scale(1.04); }
+
+/* QRIS box */
+#qris-container {
+  display: none; margin-top: 14px;
+  background: white; border-radius: 14px;
+  padding: 14px 14px 10px; text-align: center;
+  box-shadow: var(--glow-yellow);
+}
+#qris-container img {
+  width: 100%; max-width: 210px; border-radius: 8px;
+  display: block; margin: 0 auto 8px;
+}
+.qris-lbl { font-size: 10px; color: #2a2a2a; font-weight: 700; }
+
+/* USDT calc box */
+#usdt-info {
+  display: none; margin-top: 14px;
+  background: rgba(38,161,123,0.04);
+  border: 1px solid var(--b-green);
+  border-radius: 14px; padding: 14px;
+  box-shadow: var(--glow-green);
+}
+.calc-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 0; border-bottom: 1px solid rgba(38,161,123,0.1);
+  font-size: 12px;
+}
+.calc-row:last-child { border-bottom: none; }
+.calc-lbl { font-weight: 300; color: rgba(255,255,255,0.4); }
+.calc-val { font-weight: 600; color: white; }
+.calc-val.g { color: var(--green); }
+.calc-val.p { color: var(--pink); }
+.calc-val.y { color: var(--yellow); }
+
+/* WhatsApp button */
+.btn-wa {
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  width: 100%; margin-top: 14px; padding: 13px;
+  border-radius: 50px; text-decoration: none;
+  background: rgba(37,211,102,0.1);
+  border: 1px solid rgba(37,211,102,0.32);
+  color: #25d366;
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.4px;
+  transition: all 0.25s;
+  box-shadow: 0 0 8px rgba(37,211,102,0.15);
+}
+.btn-wa:hover {
+  background: rgba(37,211,102,0.18);
+  box-shadow: 0 0 18px rgba(37,211,102,0.28);
+  transform: translateY(-1px);
+}
+.btn-wa i { font-size: 19px; }
+
+/* ═══ SUBMIT ═══ */
+.btn-submit {
+  width: 100%; padding: 15px; border-radius: 50px;
+  background: linear-gradient(90deg, rgba(255,0,119,0.65), rgba(0,85,255,0.55));
+  border: 1px solid rgba(255,255,255,0.1);
+  color: white; font-family: 'Outfit', sans-serif;
+  font-size: 13px; font-weight: 700; letter-spacing: 1px;
+  cursor: pointer; transition: all 0.3s;
+  box-shadow: var(--glow-pink);
+  animation: fadeUp 0.4s ease both 0.1s;
+}
+.btn-submit:hover { transform: translateY(-2px); box-shadow: 0 0 22px rgba(255,0,119,0.38); }
+.btn-submit:active { transform: translateY(0); }
+
+/* ═══ HISTORY CARD ═══ */
+.history-card {
+  background: var(--card);
+  border: 1px solid var(--b-yellow);
+  border-radius: 20px; padding: 18px;
+  box-shadow: var(--glow-yellow);
+  animation: fadeUp 0.45s ease both 0.15s;
+}
+.history-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 14px;
+}
+.history-head-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 10px; font-weight: 700; letter-spacing: 1px;
+  color: rgba(255,255,255,0.8);
+}
+.hist-list {
+  display: flex; flex-direction: column; gap: 9px;
+  max-height: 340px; overflow-y: auto;
+  padding-right: 2px;
+}
+.hist-list::-webkit-scrollbar { width: 3px; }
+.hist-list::-webkit-scrollbar-thumb { background: rgba(245,230,66,0.3); border-radius: 10px; }
+
+/* history items */
+.hist-item {
+  border-radius: 14px; padding: 13px 14px;
+  position: relative; overflow: hidden;
+  transition: transform 0.2s;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+.hist-item::before {
+  content:''; position:absolute; left:0; top:0; bottom:0; width:3px;
+}
+.hist-item.qris  { background: rgba(255,0,119,0.04); }
+.hist-item.qris::before  { background: linear-gradient(180deg, var(--pink), #880040); }
+.hist-item.usdt  { background: rgba(38,161,123,0.04); }
+.hist-item.usdt::before  { background: linear-gradient(180deg, var(--green), #0f4d35); }
+.hist-item:hover { transform: translateX(3px); }
+
+@keyframes latestPulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(255,0,119,0.1); }
+  50%      { box-shadow: 0 0 0 5px rgba(0,85,255,0.08); }
+}
+.hist-item.is-latest { animation: latestPulse 2.2s ease infinite; }
+
+.badge-baru {
+  position: absolute; top: 0; right: 12px;
+  font-size: 7.5px; font-weight: 700; letter-spacing: 1px;
+  background: var(--pink); color: white;
+  padding: 2px 8px; border-radius: 0 0 8px 8px;
+  box-shadow: var(--glow-pink);
 }
 
-/* QRIS */
-#qris-container{
-  display:none;
-  text-align:center;
-  padding:15px;
-  background:white;
-  border-radius:12px;
-  margin-top:15px;
-  box-shadow:var(--neon-yellow);
+.hist-row-top {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 7px;
 }
-#qris-container img{
-  width:100%;
-  max-width:250px;
-  border-radius:8px;
-  display:block;
-  margin:0 auto;
+.hist-amount { font-size: 17px; font-weight: 700; color: white; }
+
+.hist-status {
+  font-size: 8.5px; font-weight: 700; padding: 3px 10px; border-radius: 50px;
+  letter-spacing: 0.5px;
+}
+.s-proses   { background: rgba(245,230,66,0.1); color: var(--yellow); border: 1px solid var(--b-yellow); }
+.s-berhasil { background: rgba(0,220,100,0.1);  color: #00dc66;       border: 1px solid rgba(0,220,100,0.28); }
+.s-gagal    { background: rgba(255,60,60,0.1);  color: #ff5555;       border: 1px solid rgba(255,60,60,0.28); }
+
+.hist-method-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 9px; font-weight: 600; letter-spacing: 0.6px;
+  padding: 3px 9px; border-radius: 50px; margin-bottom: 6px;
+}
+.m-qris { background: rgba(255,0,119,0.1); color: var(--pink); border: 1px solid var(--b-pink); }
+.m-usdt { background: rgba(38,161,123,0.1); color: var(--green); border: 1px solid var(--b-green); }
+
+.hist-time {
+  font-size: 10px; font-weight: 300; color: rgba(255,255,255,0.28);
+  display: flex; align-items: center; gap: 5px;
 }
 
-/* CRYPTO INFO BOX */
-.crypto-info-box{
-  display:none;
-  margin-top:15px;
-  background:rgba(38,161,123,0.08);
-  border:1px solid #26a17b;
-  border-radius:12px;
-  padding:14px;
-}
-.crypto-rate-line{
-  font-size:13px;
-  color:#26a17b;
-  font-weight:bold;
-  margin-bottom:6px;
-}
-.crypto-calc-line{
-  font-size:12px;
-  color:var(--yellow);
-  line-height:1.8;
-}
-.crypto-wallet{
-  margin-top:10px;
-  font-size:11px;
-  color:#aaa;
-  border-top:1px solid #333;
-  padding-top:10px;
-  word-break:break-all;
-}
-.wallet-addr{
-  color:#26a17b;
-  font-weight:bold;
-  font-size:12px;
-  letter-spacing:0.5px;
+.hist-empty { text-align: center; padding: 28px 10px; }
+.hist-empty i { font-size: 28px; color: #1e1e2e; display: block; margin-bottom: 9px; }
+.hist-empty p { font-size: 11.5px; font-weight: 300; color: #2e2e44; }
+
+/* footer */
+.footer-note {
+  font-size: 10px; font-weight: 300; color: rgba(255,255,255,0.18);
+  text-align: center; line-height: 1.9; padding-bottom: 20px;
 }
 
-/* BUTTON */
-.btn-submit{
-  width:100%;
-  padding:18px;
-  border-radius:50px;
-  background:linear-gradient(90deg,var(--pink),var(--blue));
-  color:white;
-  font-weight:900;
-  border:2px solid var(--yellow);
-  cursor:pointer;
-  box-shadow:var(--neon-pink);
-  letter-spacing:1px;
-  transition:0.3s;
-  font-size:15px;
-}
-.btn-submit:hover{
-  box-shadow:var(--neon-blue);
-}
-
-/* ═══════════════════════════════════════════
-   HISTORY SECTION — sama persis gaya withdraw
-   ═══════════════════════════════════════════ */
-.history-title{
-  font-weight:900;
-  color:var(--yellow);
-  margin-bottom:10px;
-  display:flex;
-  gap:10px;
-  align-items:center;
-}
-
-.history-wrapper{
-  border:2px solid var(--yellow);
-  border-radius:15px;
-  padding:15px;
-  box-shadow:var(--neon-yellow);
-  max-height:300px;
-  overflow-y:auto;
-  background:rgba(251,255,0,0.03);
-  margin-bottom:20px;
-}
-
-.history-wrapper::-webkit-scrollbar{width:6px;}
-.history-wrapper::-webkit-scrollbar-thumb{
-  background:var(--pink);
-  border-radius:10px;
-  box-shadow:var(--neon-pink);
-}
-
-.history-item{
-  border:1px solid var(--blue);
-  border-radius:10px;
-  padding:12px;
-  margin-bottom:10px;
-  background:rgba(0,0,0,0.5);
-  position:relative;
-}
-
-/* Glow terbaru */
-@keyframes glowPulse{
-  0%{box-shadow:0 0 5px var(--pink);}
-  50%{box-shadow:0 0 20px var(--blue);}
-  100%{box-shadow:0 0 5px var(--pink);}
-}
-.latest{
-  animation:glowPulse 1.5s infinite;
-}
-
-.badge-new{
-  position:absolute;
-  top:-8px;
-  right:-8px;
-  background:var(--pink);
-  color:white;
-  font-size:9px;
-  padding:4px 6px;
-  border-radius:10px;
-  font-weight:bold;
-  box-shadow:var(--neon-pink);
-}
-
-.status-badge{
-  padding:2px 8px;
-  border-radius:4px;
-  font-size:9px;
-  font-weight:bold;
-}
-.status-proses{background:rgba(251,255,0,0.2);color:var(--yellow);border:1px solid var(--yellow);}
-.status-sukses{background:rgba(0,255,0,0.2);color:#00ff00;border:1px solid #00ff00;}
-.status-gagal{background:rgba(255,0,0,0.2);color:#ff4444;border:1px solid #ff4444;}
-
-.hist-top{display:flex;justify-content:space-between;align-items:center;font-weight:bold;margin-bottom:4px;}
-.hist-time{font-size:10px;color:#aaa;margin-top:4px;}
-.hist-method-badge{
-  font-size:10px;
-  padding:2px 8px;
-  border-radius:4px;
-  font-weight:bold;
-  margin-top:4px;
-  display:inline-block;
-}
-.method-qris{background:rgba(255,0,119,0.15);color:var(--pink);border:1px solid var(--pink);}
-.method-usdt{background:rgba(38,161,123,0.15);color:#26a17b;border:1px solid #26a17b;}
-.method-bank{background:rgba(251,255,0,0.15);color:var(--yellow);border:1px solid var(--yellow);}
-
-/* MODAL */
-#neon-modal{
-  display:none;
-  position:fixed;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  background:#0a0b1e;
-  border:2px solid var(--pink);
-  border-radius:20px;
-  box-shadow:var(--neon-pink);
-  z-index:9999;
-  padding:25px;
-  text-align:center;
-  min-width:280px;
-  animation:fadeIn 0.3s ease;
-}
-@keyframes fadeIn{
-  from{opacity:0;scale:0.8;}
-  to{opacity:1;scale:1;}
-}
-.modal-btn{
-  margin-top:20px;
-  padding:10px 25px;
-  border-radius:50px;
-  border:2px solid var(--yellow);
-  background:transparent;
-  color:var(--yellow);
-  font-weight:bold;
-  cursor:pointer;
-}
-
-/* FOOTER */
-.footer-note{
-  font-size:10px;
-  color:#555;
-  text-align:center;
-  margin-top:20px;
-  line-height:1.5;
-}
-
-/* KURS BADGE */
-#kurs-badge{
-  display:none;
-  background:rgba(38,161,123,0.1);
-  border:1px solid #26a17b;
-  border-radius:8px;
-  padding:8px 12px;
-  font-size:11px;
-  color:#26a17b;
-  margin-bottom:10px;
-  text-align:center;
+/* animations */
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(14px); }
+  to   { opacity:1; transform:translateY(0); }
 }
 </style>
 </head>
-
 <body>
 
-<div id="neon-modal">
-  <h3 id="modal-title" style="color:var(--pink);margin:0;">SISTEM DEPOSIT</h3>
-  <p id="modal-msg" style="margin-top:10px;font-size:13px;"></p>
-  <button class="modal-btn" onclick="closeModal()">MENGERTI</button>
+<div id="modal-overlay" onclick="closeModal()"></div>
+
+<!-- ═══ MODAL ═══ -->
+<div id="neon-modal" class="m-success">
+  <div class="modal-ico-ring"><span id="modal-icon">💳</span></div>
+  <div id="modal-title">DEPOSIT</div>
+  <div id="modal-msg"></div>
+  <button class="modal-btn" onclick="closeModal()">Oke, Mengerti</button>
 </div>
 
+<!-- ═══ HEADER ═══ -->
 <div class="header">
-  <a href="game.html" class="btn-back"><i class="fa-solid fa-arrow-left"></i></a>
-  <div style="font-weight:900;letter-spacing:2px;">DEPOSIT SALDO</div>
-  <div style="width:20px;"></div>
+  <a href="game.html" class="btn-back"><i class="fa-solid fa-chevron-left"></i></a>
+  <div class="header-title">Deposit Saldo</div>
+  <div style="width:32px;"></div>
 </div>
 
 <div class="container">
 
-  <!-- METODE PILIH -->
-  <div class="card">
-    <span class="label">PILIH METODE</span>
+  <!-- PILIH METODE -->
+  <div class="sec-lbl" style="color:var(--blue);">
+    <i class="fa-solid fa-wallet"></i> Pilih Metode
+  </div>
 
-    <div class="method-item active" id="method-qris" onclick="selectMethod(this,'QRIS')">
-      <i class="fa-solid fa-qrcode" style="color:var(--pink);font-size:22px;"></i>
+  <div class="method-row">
+    <div class="method-card active-qris" id="method-qris" onclick="selectMethod('QRIS')">
+      <div class="method-ico pk"><i class="fa-solid fa-qrcode"></i></div>
       <div>
-        <div style="font-weight:bold;">QRIS ALL PAYMENT</div>
-        <div style="font-size:11px;color:#888;">Scan & Bayar Otomatis · Min. IDR 20.000</div>
+        <div class="method-name">QRIS</div>
+        <div class="method-sub">Min. IDR 20.000</div>
       </div>
     </div>
 
-    <div class="method-item" id="method-usdt" onclick="selectMethod(this,'USDT')">
-      <i class="fa-brands fa-ethereum" style="color:#26a17b;font-size:22px;"></i>
+    <div class="method-card" id="method-usdt" onclick="selectMethod('USDT')">
+      <div class="method-ico gr"><i class="fa-brands fa-ethereum"></i></div>
       <div>
-        <div style="font-weight:bold;">USDT / CRYPTO (TRC20)</div>
-        <div style="font-size:11px;color:#888;">Minimal Deposit $10</div>
-      </div>
-    </div>
-
-    <div class="method-item" id="method-bank" onclick="selectMethod(this,'BANK')">
-      <i class="fa-solid fa-building-columns" style="color:var(--yellow);font-size:22px;"></i>
-      <div>
-        <div style="font-weight:bold;">TRANSFER BANK / WALLET</div>
-        <div style="font-size:11px;color:#888;">BCA / MANDIRI / DANA</div>
+        <div class="method-name">USDT / Crypto</div>
+        <div class="method-sub">Min. $10 · Fee $2</div>
       </div>
     </div>
   </div>
 
   <!-- NOMINAL -->
-  <div class="card">
-    <span class="label" id="label-nominal">NOMINAL DEPOSIT (IDR)</span>
+  <div class="nominal-card">
+    <div class="nominal-lbl" id="label-nominal">Nominal Deposit (IDR)</div>
 
-    <!-- Kurs badge untuk USDT -->
+    <!-- Kurs live -->
     <div id="kurs-badge">
-      <i class="fa-solid fa-spinner fa-spin"></i> Mengambil kurs terkini...
+      <i class="fa-solid fa-circle-check"></i>&nbsp;
+      Kurs Live: <strong id="kurs-val">Memuat...</strong>
     </div>
 
-    <input type="number" id="depo-amount" placeholder="Min. 20.000" oninput="onAmountInput()">
+    <input type="number" class="depo-input" id="depo-amount"
+           placeholder="Masukkan nominal" oninput="onAmountInput()">
 
-    <!-- IDR Quick amounts -->
-    <div class="amount-grid" id="idr-grid">
-      <div class="amount-item" onclick="setAmount(20000)">20K</div>
-      <div class="amount-item" onclick="setAmount(50000)">50K</div>
-      <div class="amount-item" onclick="setAmount(100000)">100K</div>
-      <div class="amount-item" onclick="setAmount(250000)">250K</div>
-      <div class="amount-item" onclick="setAmount(500000)">500K</div>
-      <div class="amount-item" onclick="setAmount(1000000)">1M</div>
+    <!-- IDR cepat -->
+    <div class="amt-grid" id="idr-grid">
+      <div class="amt-chip idr" onclick="setAmount(20000)">20 RB</div>
+      <div class="amt-chip idr" onclick="setAmount(50000)">50 RB</div>
+      <div class="amt-chip idr" onclick="setAmount(100000)">100 RB</div>
+      <div class="amt-chip idr" onclick="setAmount(250000)">250 RB</div>
+      <div class="amt-chip idr" onclick="setAmount(500000)">500 RB</div>
+      <div class="amt-chip idr" onclick="setAmount(1000000)">1 JT</div>
     </div>
 
-    <!-- USDT Quick amounts -->
-    <div class="usdt-grid" id="usdt-grid" style="display:none;">
-      <div class="usdt-item" onclick="setUSDT(10)">$10</div>
-      <div class="usdt-item" onclick="setUSDT(20)">$20</div>
-      <div class="usdt-item" onclick="setUSDT(50)">$50</div>
-      <div class="usdt-item" onclick="setUSDT(100)">$100</div>
-      <div class="usdt-item" onclick="setUSDT(200)">$200</div>
-      <div class="usdt-item" onclick="setUSDT(500)">$500</div>
+    <!-- USDT cepat -->
+    <div class="amt-grid" id="usdt-grid" style="display:none;">
+      <div class="amt-chip usd" onclick="setUSDT(10)">$10</div>
+      <div class="amt-chip usd" onclick="setUSDT(20)">$20</div>
+      <div class="amt-chip usd" onclick="setUSDT(50)">$50</div>
+      <div class="amt-chip usd" onclick="setUSDT(100)">$100</div>
+      <div class="amt-chip usd" onclick="setUSDT(200)">$200</div>
+      <div class="amt-chip usd" onclick="setUSDT(500)">$500</div>
     </div>
 
-    <!-- QRIS container -->
+    <!-- QRIS -->
     <div id="qris-container">
-      <img src="https://i.ibb.co/C3YnN4p/25989.png" alt="QRIS Code" onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=QRIS-ARRASHY-STORE'">
-      <div style="color:black;font-size:10px;margin-top:5px;font-weight:bold;">
-        ARRASHY STORE — NMID: ID1024357689073
-      </div>
+      <img src="https://i.ibb.co/C3YnN4p/25989.png" alt="QRIS"
+           onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=210x210&data=QRIS-ARRASHY-STORE'">
+      <div class="qris-lbl">ARRASHY STORE · NMID: ID1024357689073</div>
     </div>
 
-    <!-- USDT Crypto info -->
-    <div class="crypto-info-box" id="usdt-info">
-      <div class="crypto-rate-line">
-        <i class="fa-solid fa-chart-line"></i>
-        Kurs: <span id="kurs-live">Memuat...</span>
+    <!-- USDT kalkulasi -->
+    <div id="usdt-info">
+      <div class="calc-row">
+        <span class="calc-lbl">Jumlah masuk</span>
+        <span class="calc-val" id="calc-in">—</span>
       </div>
-      <div class="crypto-calc-line" id="usdt-calc-detail">
-        Masukkan jumlah USDT di atas untuk melihat perhitungan.
+      <div class="calc-row">
+        <span class="calc-lbl">Potongan fee</span>
+        <span class="calc-val p" id="calc-fee">− $2</span>
       </div>
-      <div class="crypto-wallet">
-        <span style="color:#888;">Kirim ke alamat TRC20:</span><br>
-        <span class="wallet-addr">TYourWalletAddressHere123456789ABCDEF</span><br>
-        <span style="color:#ff4444;font-size:10px;">⚠ Hanya jaringan TRC20! Jaringan lain = dana hangus.</span>
+      <div class="calc-row">
+        <span class="calc-lbl">Diterima (net)</span>
+        <span class="calc-val g" id="calc-net">—</span>
       </div>
+      <div class="calc-row">
+        <span class="calc-lbl">Setara Rupiah</span>
+        <span class="calc-val y" id="calc-idr">—</span>
+      </div>
+
+      <!-- WhatsApp ke Admin -->
+      <a id="btn-wa" class="btn-wa" href="https://wa.me/6289510249551" target="_blank" rel="noopener">
+        <i class="fa-brands fa-whatsapp"></i>
+        Konfirmasi Deposit via WhatsApp Admin
+      </a>
     </div>
   </div>
 
+  <!-- SUBMIT -->
   <button class="btn-submit" onclick="processDeposit()">
-    <i class="fa-solid fa-paper-plane"></i> AJUKAN DEPOSIT
+    <i class="fa-solid fa-paper-plane"></i>&nbsp; Ajukan Deposit
   </button>
 
-  <!-- HISTORY -->
-  <div style="margin-top:30px;">
-    <div class="history-title">
-      <i class="fa-solid fa-clock-rotate-left"></i> RIWAYAT DEPOSIT
+  <!-- RIWAYAT -->
+  <div class="sec-lbl" style="color:var(--yellow);">
+    <i class="fa-solid fa-clock-rotate-left"></i> Riwayat Deposit
+  </div>
+
+  <div class="history-card">
+    <div class="history-head">
+      <div class="history-head-title">Transaksi Terakhir</div>
+      <span style="font-size:9px;color:rgba(255,255,255,0.22);font-weight:300;">
+        <i class="fa-solid fa-rotate"></i> auto 6 dtk
+      </span>
     </div>
-    <div class="history-wrapper" id="depo-history-list">
-      <div style="text-align:center;color:#555;padding:20px;font-size:12px;">
-        Belum ada riwayat transaksi.
+    <div class="hist-list" id="depo-history-list">
+      <div class="hist-empty">
+        <i class="fa-regular fa-rectangle-list"></i>
+        <p>Belum ada riwayat transaksi.</p>
       </div>
     </div>
   </div>
 
   <div class="footer-note">
-    *Pastikan nominal transfer sesuai dengan tagihan.<br>
-    *Deposit USDT wajib menggunakan jaringan <strong>TRC20</strong>.<br>
-    *Saldo masuk otomatis setelah verifikasi admin.
+    * Pastikan nominal transfer sesuai tagihan.<br>
+    * Deposit USDT — konfirmasi ke Admin via WhatsApp.<br>
+    * Saldo masuk setelah verifikasi admin.
   </div>
 
-</div>
+</div><!-- /container -->
 
 <script src="global.js"></script>
 <script>
-/* ─────────────────────────────────────────────────
-   DEPOSIT PAGE — FULL LOGIC (standalone, no global.js needed for core logic)
-   ───────────────────────────────────────────────── */
+/* ══════════════════════════════════════════
+   DEPOSIT — Logic (tema Cinzel + Outfit)
+   ══════════════════════════════════════════ */
 
-// ── CONSTANTS & STATE ──
-const SHEET_URL    = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec"; // Ganti YOUR_SCRIPT_ID
-const QRIS_MIN_IDR = 20000;
-const USDT_MIN_USD = 10;
-const USDT_FEE_USD = 2;
+const SHEET_URL = (typeof GLOBAL_SHEET_URL !== "undefined")
+  ? GLOBAL_SHEET_URL
+  : "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";
+
+const QRIS_MIN = 20000;
+const USDT_MIN = 10;
+const USDT_FEE = 2;
+const WA_ADMIN = "6289510249551";
 
 let currentMethod = "QRIS";
-let usdtRate       = 0;      // kurs 1 USDT → IDR (live)
-let usdtRateLoaded = false;
-let pollTimer      = null;
-let lastHistHash   = "";
+let usdtRate      = 0;
+let usdtLoaded    = false;
+let pollTimer     = null;
+let lastHash      = "";
 
-// ── UTILITIES ──
-function getUsername(){ return localStorage.getItem("username") || ""; }
-function getNamaLengkap(){ return localStorage.getItem("namaLengkap") || localStorage.getItem("nama") || getUsername(); }
-function fmtIDR(n){ return "IDR " + Number(n).toLocaleString("id-ID"); }
-function fmtDate(d){
+/* ── helpers ── */
+const getUsername = () => localStorage.getItem("username") || "";
+const getNama     = () => localStorage.getItem("namaLengkap") || localStorage.getItem("nama") || getUsername();
+const fmtIDR      = n  => "IDR " + Number(n).toLocaleString("id-ID");
+const fmtDate     = d  => {
   const dt = d ? new Date(d) : new Date();
-  return dt.toLocaleString("id-ID",{
-    day:"2-digit",month:"short",year:"numeric",
-    hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false
+  return dt.toLocaleString("id-ID", {
+    day:"2-digit", month:"short", year:"numeric",
+    hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:false
   });
-}
-function showModal(title, msg, color){
+};
+
+/* ── modal ── */
+function showModal(icon, title, msg, type) {
+  const m = document.getElementById("neon-modal");
+  m.className = "m-" + (type || "success");
+  document.getElementById("modal-icon").textContent  = icon;
   document.getElementById("modal-title").textContent = title;
-  document.getElementById("modal-title").style.color = color||"var(--pink)";
   document.getElementById("modal-msg").textContent   = msg;
-  document.getElementById("neon-modal").style.display = "block";
+  m.style.display = "block";
+  document.getElementById("modal-overlay").style.display = "block";
 }
-function closeModal(){
-  document.getElementById("neon-modal").style.display = "none";
+function closeModal() {
+  document.getElementById("neon-modal").style.display   = "none";
+  document.getElementById("modal-overlay").style.display = "none";
 }
 
-// ── FETCH KURS LIVE ──
-async function fetchKurs(){
-  try{
+/* ── kurs live ── */
+async function fetchKurs() {
+  try {
     const r = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=idr");
     const d = await r.json();
     usdtRate = d.tether.idr;
-    usdtRateLoaded = true;
-  } catch(e){
-    usdtRate = 16800; // fallback
-    usdtRateLoaded = true;
-  }
-  updateKursBadge();
+  } catch(e) { usdtRate = 16800; }
+  usdtLoaded = true;
+  const badge = document.getElementById("kurs-badge");
+  const val   = document.getElementById("kurs-val");
+  if (badge && currentMethod === "USDT") badge.style.display = "block";
+  if (val) val.textContent = "1 USDT = " + fmtIDR(usdtRate);
   onAmountInput();
 }
 
-function updateKursBadge(){
-  const badge = document.getElementById("kurs-badge");
-  const kursEl = document.getElementById("kurs-live");
-  if(usdtRate){
-    badge.innerHTML = `<i class="fa-solid fa-circle-check"></i> Kurs Live: <strong>1 USDT = ${fmtIDR(usdtRate)}</strong>`;
-    if(kursEl) kursEl.textContent = "1 USDT = " + fmtIDR(usdtRate);
-  }
-}
-
-// ── METHOD SELECTION ──
-function selectMethod(el, method){
-  document.querySelectorAll(".method-item").forEach(m => m.classList.remove("active"));
-  el.classList.add("active");
+/* ── method select ── */
+function selectMethod(method) {
   currentMethod = method;
 
-  const qris     = document.getElementById("qris-container");
-  const idrGrid  = document.getElementById("idr-grid");
-  const usdtGrid = document.getElementById("usdt-grid");
-  const usdtInfo = document.getElementById("usdt-info");
-  const kursBadge= document.getElementById("kurs-badge");
-  const labelN   = document.getElementById("label-nominal");
-  const inputA   = document.getElementById("depo-amount");
+  document.getElementById("method-qris").className = "method-card";
+  document.getElementById("method-usdt").className = "method-card";
 
-  // Reset semua
+  const qris      = document.getElementById("qris-container");
+  const idrGrid   = document.getElementById("idr-grid");
+  const usdtGrid  = document.getElementById("usdt-grid");
+  const usdtInfo  = document.getElementById("usdt-info");
+  const kursBadge = document.getElementById("kurs-badge");
+  const labelN    = document.getElementById("label-nominal");
+  const inputA    = document.getElementById("depo-amount");
+
   qris.style.display     = "none";
   idrGrid.style.display  = "none";
   usdtGrid.style.display = "none";
   usdtInfo.style.display = "none";
   kursBadge.style.display= "none";
+  inputA.value = "";
 
-  if(method === "QRIS"){
+  if (method === "QRIS") {
+    document.getElementById("method-qris").classList.add("active-qris");
     qris.style.display    = "block";
     idrGrid.style.display = "grid";
-    labelN.textContent    = "NOMINAL DEPOSIT (IDR)";
-    inputA.placeholder    = "Min. 20.000";
-  } else if(method === "USDT"){
+    labelN.textContent    = "Nominal Deposit (IDR)";
+    inputA.placeholder    = "Min. Rp 20.000";
+  } else {
+    document.getElementById("method-usdt").classList.add("active-usdt");
     usdtGrid.style.display = "grid";
     usdtInfo.style.display = "block";
-    kursBadge.style.display= "block";
-    labelN.textContent     = "JUMLAH USDT ($)";
+    labelN.textContent     = "Jumlah USDT ($)";
     inputA.placeholder     = "Min. $10";
-    if(!usdtRateLoaded) fetchKurs();
-    else updateKursBadge();
-  } else {
-    idrGrid.style.display = "grid";
-    labelN.textContent    = "NOMINAL DEPOSIT (IDR)";
-    inputA.placeholder    = "Min. 50.000";
+    if (!usdtLoaded) fetchKurs();
+    else { kursBadge.style.display = "block"; onAmountInput(); }
+    refreshWALink(0, 0, 0);
   }
-  inputA.value = "";
-  document.getElementById("usdt-calc-detail").textContent = "Masukkan jumlah USDT di atas untuk melihat perhitungan.";
 }
 
-// ── SET AMOUNT HELPERS ──
-function setAmount(val){
-  document.getElementById("depo-amount").value = val;
-  onAmountInput();
-}
-function setUSDT(val){
-  document.getElementById("depo-amount").value = val;
-  onAmountInput();
-}
+/* ── amount ── */
+function setAmount(v) { document.getElementById("depo-amount").value = v; onAmountInput(); }
+function setUSDT(v)   { document.getElementById("depo-amount").value = v; onAmountInput(); }
 
-// ── KALKULASI USDT ──
-function onAmountInput(){
-  if(currentMethod !== "USDT") return;
+/* ── kalkul USDT ── */
+function onAmountInput() {
+  if (currentMethod !== "USDT") return;
   const raw = parseFloat(document.getElementById("depo-amount").value) || 0;
-  const el  = document.getElementById("usdt-calc-detail");
-  if(!raw){ el.textContent = "Masukkan jumlah USDT di atas."; return; }
-  if(!usdtRate){ el.textContent = "Memuat kurs..."; return; }
+  const net = raw > 0 ? raw - USDT_FEE : 0;
+  const idr = net > 0 ? Math.round(net * usdtRate) : 0;
 
-  const afterFee  = raw - USDT_FEE_USD;          // USDT setelah potong fee
-  const idrResult = Math.round(afterFee * usdtRate);
+  setText("calc-in",  raw > 0 ? `$${raw.toFixed(2)}` : "—");
+  setText("calc-fee", `− $${USDT_FEE}`);
+  setText("calc-net", net > 0 ? `$${net.toFixed(2)}` : "—");
+  setText("calc-idr", idr > 0 ? fmtIDR(idr) : "—");
 
-  if(afterFee <= 0){
-    el.innerHTML = `<span style="color:var(--pink);">Jumlah terlalu kecil setelah fee $${USDT_FEE_USD}.</span>`;
-    return;
-  }
+  refreshWALink(raw, net, idr);
+}
+function setText(id, v) { const e = document.getElementById(id); if(e) e.textContent = v; }
 
-  el.innerHTML =
-    `Deposit: <strong>$${raw.toFixed(2)}</strong><br>` +
-    `Potongan Fee: <strong style="color:var(--pink);">- $${USDT_FEE_USD}</strong><br>` +
-    `Diterima (Net): <strong style="color:#26a17b;">$${afterFee.toFixed(2)}</strong><br>` +
-    `<span style="color:var(--yellow);">≈ ${fmtIDR(idrResult)}</span> <small>(kurs: ${fmtIDR(usdtRate)}/USDT)</small>`;
+/* ── update WA link ── */
+function refreshWALink(raw, net, idr) {
+  const username = getUsername();
+  const btn = document.getElementById("btn-wa");
+  if (!btn) return;
+  const rawStr = raw > 0 ? `$${Number(raw).toFixed(2)}` : "...";
+  const netStr = net > 0 ? `$${Number(net).toFixed(2)}` : "...";
+  const idrStr = idr > 0 ? fmtIDR(idr) : "...";
+  const msg = encodeURIComponent(
+    `Halo Admin, saya ingin konfirmasi deposit USDT.\n` +
+    `Username: ${username}\n` +
+    `Jumlah USDT: ${rawStr}\n` +
+    `Net diterima: ${netStr} ≈ ${idrStr}\n` +
+    `Mohon dikonfirmasi, terima kasih.`
+  );
+  btn.href = `https://wa.me/${WA_ADMIN}?text=${msg}`;
 }
 
-// ── PROCESS DEPOSIT ──
-async function processDeposit(){
-  const username   = getUsername();
-  const namaLengkap= getNamaLengkap();
-  const rawVal     = parseFloat(document.getElementById("depo-amount").value) || 0;
-  const method     = currentMethod;
+/* ── process deposit ── */
+async function processDeposit() {
+  const username = getUsername();
+  const nama     = getNama();
+  const raw      = parseFloat(document.getElementById("depo-amount").value) || 0;
+  const method   = currentMethod;
 
-  if(!username){ location.href="index.html"; return; }
+  if (!username) { location.href = "index.html"; return; }
 
-  // VALIDASI MINIMUM
-  if(method === "QRIS"){
-    if(!rawVal || rawVal < QRIS_MIN_IDR){
-      showModal("DITOLAK ❌", `Minimal deposit QRIS adalah IDR ${QRIS_MIN_IDR.toLocaleString("id-ID")}. Transaksi tidak dapat dilanjutkan.`, "var(--pink)");
-      return;
-    }
-  } else if(method === "USDT"){
-    if(!rawVal || rawVal < USDT_MIN_USD){
-      showModal("DITOLAK ❌", `Minimal deposit USDT adalah $${USDT_MIN_USD}. Transaksi tidak dapat dilanjutkan.`, "var(--pink)");
-      return;
-    }
-    if(!usdtRate){
-      showModal("TUNGGU", "Kurs belum tersedia, coba beberapa saat lagi.", "var(--yellow)");
-      return;
+  if (method === "QRIS") {
+    if (!raw || raw < QRIS_MIN) {
+      showModal("🚫","Ditolak",
+        `Minimal deposit QRIS adalah IDR ${QRIS_MIN.toLocaleString("id-ID")}. Silakan sesuaikan nominal.`,
+        "error"); return;
     }
   } else {
-    if(!rawVal || rawVal < 50000){
-      showModal("DITOLAK ❌", "Minimal deposit Bank/E-Wallet adalah IDR 50.000.", "var(--pink)");
-      return;
+    if (!raw || raw < USDT_MIN) {
+      showModal("🚫","Ditolak",
+        `Minimal deposit USDT adalah $${USDT_MIN}. Silakan sesuaikan nominal.`,
+        "error"); return;
+    }
+    if (!usdtRate) {
+      showModal("⏳","Tunggu","Kurs belum tersedia, coba beberapa saat lagi.", "info"); return;
     }
   }
 
-  // HITUNG NOMINAL
   let nominalIDR    = 0;
-  let nominalCrypto = "";  // untuk kolom E sheet
-  let displayAmount = "";  // tampil di riwayat
+  let nominalCrypto = "";
+  let displayAmt    = "";
 
-  if(method === "QRIS"){
-    nominalIDR    = rawVal;
-    displayAmount = fmtIDR(nominalIDR);
-  } else if(method === "USDT"){
-    const afterFee    = rawVal - USDT_FEE_USD;
-    const idrResult   = Math.round(afterFee * usdtRate);
-    nominalIDR        = idrResult;
-    nominalCrypto     = `${idrResult} (${afterFee.toFixed(2)})`;  // format sheet: "126400 (8)"
-    displayAmount     = `$${afterFee.toFixed(2)}`; // tampil di riwayat dalam dollar
+  if (method === "QRIS") {
+    nominalIDR = raw;
+    displayAmt = fmtIDR(raw);
   } else {
-    nominalIDR    = rawVal;
-    displayAmount = fmtIDR(nominalIDR);
+    const net  = raw - USDT_FEE;
+    const idr  = Math.round(net * usdtRate);
+    nominalIDR     = idr;
+    nominalCrypto  = `${idr} (${net.toFixed(2)})`;
+    displayAmt     = `$${net.toFixed(2)}`;
   }
 
-  const waktu = new Date();
-  const tanggal = fmtDate(waktu);
-
-  // SIMPAN KE LOCALSTORAGE DULU (optimistik)
-  const entry = {
-    id: "D" + Date.now(),
-    tanggal,
-    username,
-    namaLengkap,
-    method,
-    nominalIDR,
-    nominalCrypto,
-    displayAmount,
-    status: "PROSES",
-    isNew: true
+  const tanggal = fmtDate(new Date());
+  const entry   = {
+    id: "D" + Date.now(), tanggal, username, nama,
+    method, nominalIDR, nominalCrypto, displayAmt,
+    status: "PROSES", isNew: true
   };
-  saveToLocal(entry);
+
+  saveLocal(entry);
+  lastHash = "";
   renderHistory();
   document.getElementById("depo-amount").value = "";
 
-  showModal("PENGAJUAN DIKIRIM ✅",
-    `Deposit ${method} ${displayAmount} sedang diproses. Tunggu konfirmasi admin.`,
-    "var(--yellow)");
+  showModal("✅","Pengajuan Dikirim",
+    `Deposit ${method} ${displayAmt} sedang diproses. Tunggu konfirmasi admin.`,
+    "success");
 
-  // KIRIM KE GOOGLE SHEET
-  try{
-    const params = new URLSearchParams({
-      action      : "deposit",
-      tanggal,
-      username,
-      namaLengkap,
-      nominalIDR  : method === "USDT" ? "" : nominalIDR,
+  try {
+    const p = new URLSearchParams({
+      action:"deposit", tanggal, username, namaLengkap: nama,
+      nominalIDR: method === "USDT" ? "" : nominalIDR,
       nominalCrypto: method === "USDT" ? nominalCrypto : "",
-      method,
-      status      : "PROSES",
-      entryId     : entry.id
+      method, status:"PROSES", entryId: entry.id
     });
-    await fetch(SHEET_URL + "?" + params.toString(), {mode:"no-cors"});
-  } catch(e){
-    console.warn("Sheet error:", e);
-  }
+    await fetch(SHEET_URL + "?" + p.toString(), { mode:"no-cors" });
+  } catch(e) { console.warn("sheet:", e); }
 }
 
-// ── LOCAL STORAGE HELPERS ──
-function getHistory(){
-  try{ return JSON.parse(localStorage.getItem("depoHistory_" + getUsername()) || "[]"); }
-  catch(e){ return []; }
+/* ── local storage ── */
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem("depoHistory_" + getUsername()) || "[]"); }
+  catch(e) { return []; }
 }
-function saveToLocal(entry){
-  const hist = getHistory();
-  hist.unshift(entry);
-  if(hist.length > 50) hist.pop();
-  localStorage.setItem("depoHistory_" + getUsername(), JSON.stringify(hist));
-}
-function updateStatusLocal(entryId, status, saldo){
-  const hist = getHistory();
-  const idx  = hist.findIndex(h => h.id === entryId);
-  if(idx > -1){
-    hist[idx].status = status;
-    localStorage.setItem("depoHistory_" + getUsername(), JSON.stringify(hist));
-  }
+function saveLocal(entry) {
+  const h = getHistory();
+  h.unshift(entry);
+  if (h.length > 50) h.pop();
+  localStorage.setItem("depoHistory_" + getUsername(), JSON.stringify(h));
 }
 
-// ── RENDER HISTORY ──
-function renderHistory(){
+/* ── render history ── */
+function renderHistory() {
   const hist = getHistory();
   const box  = document.getElementById("depo-history-list");
-  if(!hist.length){
-    box.innerHTML = `<div style="text-align:center;color:#555;padding:20px;font-size:12px;">Belum ada riwayat transaksi.</div>`;
+
+  if (!hist.length) {
+    box.innerHTML = `
+      <div class="hist-empty">
+        <i class="fa-regular fa-rectangle-list"></i>
+        <p>Belum ada riwayat transaksi.</p>
+      </div>`;
     return;
   }
 
-  // Hash untuk deteksi perubahan
-  const hash = JSON.stringify(hist.map(h=>h.status+h.id));
-  if(hash === lastHistHash) return;
-  lastHistHash = hash;
+  const hash = hist.map(h => h.status + h.id).join("|");
+  if (hash === lastHash) return;
+  lastHash = hash;
 
   box.innerHTML = hist.map((h, i) => {
-    const statusClass = h.status === "BERHASIL" ? "status-sukses" :
-                        h.status === "GAGAL"    ? "status-gagal" : "status-proses";
-    const methodClass = h.method === "QRIS"   ? "method-qris" :
-                        h.method === "USDT"   ? "method-usdt" : "method-bank";
-    const methodLabel = h.method === "USDT" ? "USDT CRYPTO" : h.method;
-    const isLatest    = i === 0 && h.isNew;
-    const glowClass   = isLatest ? "latest" : "";
+    const stClass = h.status === "BERHASIL" ? "s-berhasil"
+                  : h.status === "GAGAL"    ? "s-gagal" : "s-proses";
+    const isUsdt  = h.method === "USDT";
+    const mClass  = isUsdt ? "usdt" : "qris";
+    const mChip   = isUsdt ? "m-usdt" : "m-qris";
+    const mIcon   = isUsdt ? "fa-brands fa-ethereum" : "fa-solid fa-qrcode";
+    const mLabel  = isUsdt ? "USDT Crypto" : "QRIS";
+    const isNew   = i === 0 && h.isNew;
+    const amt     = h.displayAmt || h.displayAmount || fmtIDR(h.nominalIDR);
 
     return `
-      <div class="history-item ${glowClass}" id="hist-${h.id}">
-        ${isLatest ? `<div class="badge-new">BARU</div>` : ""}
-        <div class="hist-top">
-          <span style="color:white;font-size:13px;">${h.displayAmount}</span>
-          <span class="status-badge ${statusClass}">${h.status}</span>
+      <div class="hist-item ${mClass}${isNew ? " is-latest" : ""}" id="hist-${h.id}">
+        ${isNew ? `<div class="badge-baru">BARU</div>` : ""}
+        <div class="hist-row-top">
+          <span class="hist-amount">${amt}</span>
+          <span class="hist-status ${stClass}">${h.status}</span>
         </div>
-        <div>
-          <span class="hist-method-badge ${methodClass}">${methodLabel}</span>
+        <span class="hist-method-chip ${mChip}">
+          <i class="${mIcon}" style="font-size:9px;"></i> ${mLabel}
+        </span>
+        <div class="hist-time">
+          <i class="fa-regular fa-clock"></i> ${h.tanggal}
         </div>
-        <div class="hist-time"><i class="fa-regular fa-clock"></i> ${h.tanggal}</div>
-      </div>
-    `;
+      </div>`;
   }).join("");
 }
 
-// ── POLLING: Cek status dari sheet setiap 6 detik ──
-async function pollStatus(){
+/* ── polling ── */
+async function pollStatus() {
   const username = getUsername();
-  if(!username) return;
-  try{
-    const r = await fetch(SHEET_URL + "?action=getDeposit&username=" + encodeURIComponent(username));
+  if (!username) return;
+  try {
+    const r    = await fetch(SHEET_URL + "?action=getDeposit&username=" + encodeURIComponent(username));
     const rows = await r.json();
-    if(!Array.isArray(rows)) return;
+    if (!Array.isArray(rows)) return;
 
     let changed = false;
     const hist  = getHistory();
 
     rows.forEach(row => {
-      // row: { entryId, status, nominalIDR }
       const idx = hist.findIndex(h => h.id === row.entryId);
-      if(idx > -1 && hist[idx].status !== row.status){
+      if (idx > -1 && hist[idx].status !== row.status) {
         hist[idx].status = row.status;
         hist[idx].isNew  = false;
         changed = true;
 
-        // Tambah saldo jika BERHASIL
-        if(row.status === "BERHASIL"){
-          const currentSaldo = parseInt(localStorage.getItem("saldo_" + username) || "0");
-          const tambah       = parseInt(hist[idx].nominalIDR) || 0;
-          const newSaldo     = currentSaldo + tambah;
-          localStorage.setItem("saldo_" + username, newSaldo);
-
-          // Sinkron ke sheet
-          fetch(SHEET_URL + "?action=updateSaldo&username=" + encodeURIComponent(username) + "&saldo=" + newSaldo, {mode:"no-cors"});
+        if (row.status === "BERHASIL") {
+          const cur    = parseInt(localStorage.getItem("saldo_" + username) || "0");
+          const tambah = parseInt(hist[idx].nominalIDR) || 0;
+          const baru   = cur + tambah;
+          localStorage.setItem("saldo_" + username, baru);
+          fetch(SHEET_URL + "?action=updateSaldo&username=" + encodeURIComponent(username) + "&saldo=" + baru, { mode:"no-cors" });
         }
       }
     });
 
-    if(changed){
+    if (changed) {
       localStorage.setItem("depoHistory_" + username, JSON.stringify(hist));
-      lastHistHash = ""; // force re-render
+      lastHash = "";
       renderHistory();
     }
-  } catch(e){
-    // silent fail — offline / CORS
-  }
+  } catch(e) {}
 }
 
-// ── INIT ──
+/* ── init ── */
 window.addEventListener("load", () => {
-  const username = getUsername();
-  if(!username){ location.href = "index.html"; return; }
-
-  // Default: QRIS + tampilkan QRIS container
-  const qris = document.getElementById("qris-container");
-  if(qris) qris.style.display = "block";
+  if (!getUsername()) { location.href = "index.html"; return; }
+  document.getElementById("qris-container").style.display = "block";
   document.getElementById("idr-grid").style.display = "grid";
-
   fetchKurs();
   renderHistory();
   pollTimer = setInterval(() => { pollStatus(); renderHistory(); }, 6000);
 });
 
-window.addEventListener("unload", () => { if(pollTimer) clearInterval(pollTimer); });
+window.addEventListener("unload", () => { if (pollTimer) clearInterval(pollTimer); });
 </script>
 </body>
 </html>
