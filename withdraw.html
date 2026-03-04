@@ -12,6 +12,7 @@
 --blue:#0044ff;
 --yellow:#fbff00;
 --bg:#03040a;
+
 --neon-pink:0 0 15px rgba(255,0,119,0.9);
 --neon-blue:0 0 15px rgba(0,68,255,0.9);
 --neon-yellow:0 0 15px rgba(251,255,0,0.9);
@@ -24,6 +25,7 @@ font-family:'Segoe UI',Tahoma;
 color:white;
 }
 
+/* HEADER */
 .header{
 padding:20px;
 background:rgba(0,0,0,0.9);
@@ -34,8 +36,10 @@ align-items:center;
 }
 .btn-back{color:white;font-size:20px;text-decoration:none;}
 
+/* CONTAINER */
 .container{padding:20px;}
 
+/* BALANCE */
 .balance-card{
 border:2px solid var(--pink);
 border-radius:15px;
@@ -52,6 +56,7 @@ color:var(--yellow);
 text-shadow:var(--neon-yellow);
 }
 
+/* CARD */
 .card{
 border:2px solid var(--blue);
 border-radius:15px;
@@ -78,7 +83,6 @@ border:1px solid var(--blue);
 border-radius:8px;
 color:white;
 margin-bottom:15px;
-box-sizing:border-box;
 }
 input:read-only{
 opacity:0.7;
@@ -95,12 +99,9 @@ font-weight:900;
 border:2px solid var(--yellow);
 cursor:pointer;
 box-shadow:var(--neon-pink);
-font-size:14px;
-letter-spacing:1px;
-transition:opacity 0.2s;
 }
-.btn-withdraw:disabled{opacity:0.5;cursor:not-allowed;}
 
+/* HISTORY */
 .history-title{
 font-weight:900;
 color:var(--yellow);
@@ -136,12 +137,15 @@ background:rgba(0,0,0,0.5);
 position:relative;
 }
 
+/* Glow terbaru */
 @keyframes glowPulse{
 0%{box-shadow:0 0 5px var(--pink);}
 50%{box-shadow:0 0 20px var(--blue);}
 100%{box-shadow:0 0 5px var(--pink);}
 }
-.latest{animation:glowPulse 1.5s infinite;}
+.latest{
+animation:glowPulse 1.5s infinite;
+}
 
 .badge-new{
 position:absolute;
@@ -157,30 +161,18 @@ box-shadow:var(--neon-pink);
 }
 
 .status-badge{
-padding:3px 8px;
+padding:2px 8px;
 border-radius:4px;
 font-size:9px;
-font-weight:bold;
 }
-.status-proses{background:rgba(251,255,0,0.15);color:var(--yellow);border:1px solid var(--yellow);}
-.status-sukses{background:rgba(0,255,0,0.15);color:#00ff00;border:1px solid #00ff00;}
-.status-gagal{background:rgba(255,0,0,0.15);color:#ff4444;border:1px solid #ff4444;}
+.status-proses{background:rgba(251,255,0,0.2);color:var(--yellow);}
+.status-sukses{background:rgba(0,255,0,0.2);color:#00ff00;}
+.status-gagal{background:rgba(255,0,0,0.2);color:#ff4444;}
 
-.hist-top{display:flex;justify-content:space-between;align-items:center;font-weight:bold;}
-.hist-time{font-size:10px;color:#aaa;margin-top:5px;}
+.hist-top{display:flex;justify-content:space-between;font-weight:bold;}
+.hist-time{font-size:10px;color:#aaa;}
 
-/* LOADING DOTS */
-.loading-dots::after{
-content:"...";
-animation:dots 1.2s steps(3,end) infinite;
-}
-@keyframes dots{
-0%{content:".";}
-33%{content:"..";}
-66%{content:"...";}
-}
-
-/* MODAL */
+/* NEON MODAL */
 #neon-modal{
 display:none;
 position:fixed;
@@ -196,6 +188,7 @@ min-width:280px;
 animation:fadeIn 0.3s ease;
 }
 @keyframes fadeIn{from{opacity:0;scale:0.8;}to{opacity:1;scale:1;}}
+
 .modal-btn{
 margin-top:15px;
 padding:10px 25px;
@@ -204,300 +197,102 @@ border:2px solid var(--yellow);
 background:transparent;
 color:var(--yellow);
 cursor:pointer;
-font-weight:bold;
 }
+
 </style>
 </head>
 <body>
 
 <div id="neon-modal">
-  <h3 id="modal-title" style="margin:0;"></h3>
-  <p id="modal-msg" style="margin-top:10px;font-size:13px;line-height:1.6;white-space:pre-line;"></p>
-  <button class="modal-btn" onclick="closeModal()">OK</button>
+<h3 id="modal-title"></h3>
+<p id="modal-msg"></p>
+<button class="modal-btn" onclick="closeModal()">OK</button>
 </div>
 
 <div class="header">
-  <a href="game.html" class="btn-back"><i class="fa-solid fa-circle-chevron-left"></i></a>
-  <div style="font-weight:900;letter-spacing:2px;">PENARIKAN DANA</div>
-  <div style="width:20px;"></div>
+<a href="game.html" class="btn-back"><i class="fa-solid fa-circle-chevron-left"></i></a>
+<div style="font-weight:900;letter-spacing:2px;">PENARIKAN DANA</div>
+<div style="width:20px;"></div>
 </div>
 
 <div class="container">
 
-  <div class="balance-card">
-    <div style="font-size:11px;letter-spacing:1px;opacity:0.8;margin-bottom:6px;">SALDO DAPAT DITARIK</div>
-    <div class="bal-value" id="wd-balance">IDR 0</div>
-  </div>
+<div class="balance-card">
+<div>SALDO DAPAT DITARIK</div>
+<div class="bal-value" id="wd-balance">IDR 0</div>
+</div>
 
-  <div class="card">
-    <span class="label">NAMA LENGKAP</span>
-    <input type="text" id="wd-account-name" readonly placeholder="Memuat...">
+<div class="card">
+<span class="label">NAMA LENGKAP</span>
+<input type="text" id="wd-account-name" readonly>
 
-    <span class="label">NOMOR REKENING</span>
-    <input type="text" id="wd-account-num" readonly placeholder="Memuat...">
+<span class="label">NOMOR REKENING</span>
+<input type="text" id="wd-account-num" readonly>
 
-    <span class="label">BANK / E-WALLET</span>
-    <input type="text" id="wd-method" readonly placeholder="Memuat...">
+<span class="label">BANK / E-WALLET</span>
+<input type="text" id="wd-method" readonly>
 
-    <span class="label">NOMINAL PENARIKAN (IDR)</span>
-    <input type="number" id="wd-amount" placeholder="Minimal 50.000">
+<span class="label">NOMINAL PENARIKAN (IDR)</span>
+<input type="number" id="wd-amount" placeholder="Minimal 50,000">
 
-    <button class="btn-withdraw" id="btn-wd" onclick="submitWithdraw()">AJUKAN PENARIKAN</button>
-  </div>
+<button class="btn-withdraw" onclick="processWithdraw()">AJUKAN PENARIKAN</button>
+</div>
 
-  <div class="history-title">
-    <i class="fa-solid fa-clock-rotate-left"></i> RIWAYAT PENARIKAN
-  </div>
+<div class="history-title">
+<i class="fa-solid fa-clock-rotate-left"></i> RIWAYAT PENARIKAN
+</div>
 
-  <div class="history-wrapper" id="wd-history">
-    <div style="text-align:center;color:#777;padding:20px;font-size:12px;">
-      <span class="loading-dots">Memuat riwayat</span>
-    </div>
-  </div>
+<div class="history-wrapper" id="wd-history">
+<div style="text-align:center;color:#555;padding:20px;">Belum ada riwayat transaksi</div>
+</div>
 
 </div>
 
 <script src="global.js"></script>
 <script>
+// ── Semua logika ditangani global.js ──
+// Fungsi berikut hanya sebagai jembatan agar tombol HTML tetap berfungsi
 
-// ── Ambil SCRIPT_URL dari global.js ─────────────────────────
-const API_URL = (typeof SCRIPT_URL !== "undefined") ? SCRIPT_URL : "";
-
-let _prevTopStatus = "";  // untuk deteksi perubahan status
-
-// ────────────────────────────────────────────────────────────
-//  MODAL
-// ────────────────────────────────────────────────────────────
-function showModal(title, msg, color, shadow) {
-  document.getElementById("modal-title").innerText = title;
-  document.getElementById("modal-msg").innerText   = msg;
-  const m = document.getElementById("neon-modal");
-  m.style.border    = "2px solid " + (color  || "var(--pink)");
-  m.style.boxShadow = shadow || "0 0 20px var(--pink)";
-  m.style.display   = "block";
-}
+// closeModal sudah ada di global.js, didefinisikan ulang agar konsisten gaya WD
 function closeModal() {
   document.getElementById("neon-modal").style.display = "none";
 }
 
-// ────────────────────────────────────────────────────────────
-//  TAMPILKAN SALDO
-// ────────────────────────────────────────────────────────────
-function renderSaldo(val) {
-  const n = Number(val) || 0;
-  document.getElementById("wd-balance").innerText = "IDR " + n.toLocaleString("id-ID");
-}
+// Deteksi notif BERHASIL saat polling riwayat
+let _lastWdStatus = null;
+const _origLoadWdHistory = loadWithdrawHistory;
+async function loadWithdrawHistory() {
+  await _origLoadWdHistory();
 
-// ────────────────────────────────────────────────────────────
-//  LOAD DATA USER (saldo + rekening) DARI SERVER
-// ────────────────────────────────────────────────────────────
-async function loadUserData() {
-  const username = localStorage.getItem("username");
-  if (!username || !API_URL) return;
-
+  // Cek apakah transaksi terbaru baru saja berubah jadi BERHASIL
   try {
-    const res  = await fetch(API_URL, {
-      method: "POST",
-      body  : JSON.stringify({ action: "getUserData", username: username })
+    const result = await gasPost({
+      action: "get_wd_history",
+      username: localStorage.getItem("username")
     });
-    const data = await res.json();
-
-    if (data.result === "SUCCESS") {
-      localStorage.setItem("user_saldo", data.saldo || 0);
-      renderSaldo(data.saldo);
-      document.getElementById("wd-account-name").value = data.fullname  || "-";
-      document.getElementById("wd-account-num").value  = data.rekening  || "-";
-      document.getElementById("wd-method").value       = data.bank      || "-";
-    }
-  } catch (e) {
-    // Gunakan cache saja
-    renderSaldo(localStorage.getItem("user_saldo") || 0);
-    console.warn("loadUserData:", e);
-  }
-}
-
-// ────────────────────────────────────────────────────────────
-//  RENDER SATU ITEM RIWAYAT
-// ────────────────────────────────────────────────────────────
-function renderHistoryItem(item, idx) {
-  const rawStatus = String(item.status || "PROSES").toUpperCase().trim();
-
-  // Normalisasi status → cocokkan dengan kata dari sheet GAS
-  let displayStatus, stClass;
-  if (rawStatus === "BERHASIL" || rawStatus === "APPROVE" || rawStatus === "SUCCESS") {
-    displayStatus = "BERHASIL";
-    stClass       = "status-sukses";
-  } else if (rawStatus === "GAGAL" || rawStatus === "REJECT" || rawStatus === "DITOLAK") {
-    displayStatus = "GAGAL";
-    stClass       = "status-gagal";
-  } else {
-    displayStatus = "PROSES";
-    stClass       = "status-proses";
-  }
-
-  const isLatest   = idx === 0;
-  const badgeHTML  = isLatest ? '<div class="badge-new">BARU</div>' : "";
-  const latestCls  = isLatest ? "latest" : "";
-  const nominal    = Number(item.amount || 0).toLocaleString("id-ID");
-  const waktu      = item.timestamp || "-";
-
-  return `
-    <div class="history-item ${latestCls}">
-      ${badgeHTML}
-      <div class="hist-top">
-        <span style="font-size:12px;">PENARIKAN DANA</span>
-        <span class="status-badge ${stClass}">${displayStatus}</span>
-      </div>
-      <div style="color:var(--yellow);font-weight:900;font-size:15px;margin:6px 0;">
-        IDR ${nominal}
-      </div>
-      <div class="hist-time">
-        <i class="fa-regular fa-clock" style="margin-right:3px;"></i>${waktu}
-      </div>
-    </div>`;
-}
-
-// ────────────────────────────────────────────────────────────
-//  LOAD RIWAYAT WITHDRAW DARI SHEET
-// ────────────────────────────────────────────────────────────
-async function loadWDHistory() {
-  const username  = localStorage.getItem("username");
-  const container = document.getElementById("wd-history");
-  if (!username || !container || !API_URL) return;
-
-  try {
-    const res    = await fetch(API_URL, {
-      method: "POST",
-      body  : JSON.stringify({ action: "get_wd_history", username: username })
-    });
-    const result = await res.json();
-
-    if (result.result === "SUCCESS" && Array.isArray(result.data) && result.data.length > 0) {
-
-      // Deteksi perubahan status teratas → popup notif
-      const topRaw = String(result.data[0].status || "").toUpperCase().trim();
-      const topNorm = (topRaw === "BERHASIL" || topRaw === "APPROVE") ? "BERHASIL" : topRaw;
-      if (topNorm === "BERHASIL" && _prevTopStatus !== "BERHASIL") {
-        showModal(
-          "WITHDRAW DISETUJUI ✅",
-          "Penarikan kamu telah disetujui!\nSaldo segera dikirim ke rekening.",
-          "var(--blue)", "0 0 25px rgba(0,68,255,0.9)"
+    if (result.result === "SUCCESS" && result.data.length > 0) {
+      const latest = result.data[0];
+      const st = String(latest.status).toUpperCase();
+      if (st === "BERHASIL" && _lastWdStatus !== "BERHASIL") {
+        _showWdModal(
+          "APPROVED ✅",
+          "Withdraw kamu telah disetujui! Saldo segera dikirim.",
+          "var(--blue)", "0 0 20px var(--blue)"
         );
       }
-      _prevTopStatus = topNorm;
-
-      // Render semua item
-      container.innerHTML = result.data.map((item, idx) => renderHistoryItem(item, idx)).join("");
-
-    } else {
-      container.innerHTML = `
-        <div style="text-align:center;color:#555;padding:20px;font-size:12px;">
-          Belum ada riwayat penarikan.
-        </div>`;
+      _lastWdStatus = st;
     }
-
-  } catch (e) {
-    container.innerHTML = `
-      <div style="text-align:center;color:#ff4444;padding:20px;font-size:12px;">
-        ⚠️ Gagal memuat riwayat. Periksa koneksi internet kamu.
-      </div>`;
-    console.warn("loadWDHistory:", e);
-  }
+  } catch (e) { /* silent */ }
 }
 
-// ────────────────────────────────────────────────────────────
-//  PROSES WITHDRAW
-// ────────────────────────────────────────────────────────────
-async function submitWithdraw() {
-  const username = localStorage.getItem("username");
-  const amountEl = document.getElementById("wd-amount");
-  const amount   = Number(amountEl.value);
-  const saldo    = Number(localStorage.getItem("user_saldo") || 0);
-  const btn      = document.getElementById("btn-wd");
-
-  // Validasi
-  if (!amount || amount <= 0) {
-    return showModal("PERHATIAN ⚠️",
-      "Masukkan nominal penarikan terlebih dahulu.",
-      "var(--yellow)", "0 0 20px var(--yellow)");
-  }
-  if (amount < 50000) {
-    return showModal("GAGAL ❌",
-      "Minimal penarikan adalah IDR 50.000.",
-      "var(--pink)", "0 0 20px var(--pink)");
-  }
-  if (amount > saldo) {
-    return showModal("SALDO TIDAK CUKUP ❌",
-      `Saldo kamu IDR ${saldo.toLocaleString("id-ID")} tidak mencukupi\nuntuk penarikan IDR ${amount.toLocaleString("id-ID")}.`,
-      "var(--yellow)", "0 0 20px var(--yellow)");
-  }
-
-  btn.disabled  = true;
-  btn.innerText = "⏳ MEMPROSES...";
-
-  try {
-    const res    = await fetch(API_URL, {
-      method: "POST",
-      body  : JSON.stringify({ action: "withdraw", username: username, amount: amount })
-    });
-    const result = await res.json();
-
-    if (result.result === "SUCCESS") {
-      // Update saldo
-      localStorage.setItem("user_saldo", result.newSaldo);
-      renderSaldo(result.newSaldo);
-
-      amountEl.value = "";
-
-      showModal(
-        "PENGAJUAN BERHASIL ✅",
-        `Penarikan IDR ${amount.toLocaleString("id-ID")} berhasil diajukan.\nSaldo akan dikirim setelah diverifikasi admin.`,
-        "var(--blue)", "0 0 20px var(--blue)"
-      );
-
-      // Refresh riwayat langsung
-      await loadWDHistory();
-
-    } else {
-      showModal("GAGAL ❌",
-        result.message || "Penarikan gagal diproses.",
-        "var(--pink)", "0 0 20px var(--pink)");
-    }
-
-  } catch (e) {
-    showModal("ERROR ❌",
-      "Koneksi ke server gagal.\nPastikan internet kamu stabil.",
-      "var(--pink)", "0 0 20px var(--pink)");
-    console.error("submitWithdraw:", e);
-  } finally {
-    btn.disabled  = false;
-    btn.innerText = "AJUKAN PENARIKAN";
-  }
-}
-
-// ────────────────────────────────────────────────────────────
-//  AUTO REFRESH RIWAYAT SETIAP 6 DETIK
-// ────────────────────────────────────────────────────────────
-setInterval(() => {
-  if (localStorage.getItem("username")) loadWDHistory();
-}, 6000);
-
-// ────────────────────────────────────────────────────────────
-//  INIT
-// ────────────────────────────────────────────────────────────
-window.onload = async () => {
+// Jalankan saat halaman siap (window.onload di sini agar tidak bentrok dengan DOMContentLoaded di global.js)
+window.addEventListener("load", () => {
   if (!localStorage.getItem("username")) {
     location.href = "index.html";
-    return;
   }
-
-  // Tampilkan saldo cache dulu supaya tidak blank
-  renderSaldo(localStorage.getItem("user_saldo") || 0);
-
-  // Muat data fresh dari server secara paralel
-  await Promise.all([ loadUserData(), loadWDHistory() ]);
-};
-
+  // initWithdraw() sudah dipanggil otomatis oleh global.js via DOMContentLoaded
+});
 </script>
+
 </body>
 </html>
