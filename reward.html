@@ -5,17 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>REWARDS - NEON PLINKO VIP</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Outfit:wght@300;400;500;600;700&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
 
 <style>
 :root {
   --pink:   #ff0077;
-  --blue:   #0044ff;
-  --yellow: #fbff00;
-  --bg:     #03040a;
-  --neon-pink:   0 0 20px rgba(255,0,119,0.85), 0 0 40px rgba(255,0,119,0.3);
-  --neon-blue:   0 0 20px rgba(0,68,255,0.85),  0 0 40px rgba(0,68,255,0.3);
-  --neon-yellow: 0 0 20px rgba(251,255,0,0.85),  0 0 40px rgba(251,255,0,0.3);
+  --blue:   #0055ff;
+  --yellow: #f5e642;
+  --bg:     #02030d;
+  --card:   rgba(255,255,255,0.025);
+
+  /* Soft neon — bias halus */
+  --glow-pink:   0 0 6px rgba(255,0,119,0.45),  0 0 18px rgba(255,0,119,0.12);
+  --glow-blue:   0 0 6px rgba(0,85,255,0.45),   0 0 18px rgba(0,85,255,0.12);
+  --glow-yellow: 0 0 6px rgba(245,230,66,0.45),  0 0 18px rgba(245,230,66,0.1);
+
+  --b-pink:   rgba(255,0,119,0.3);
+  --b-blue:   rgba(0,85,255,0.3);
+  --b-yellow: rgba(245,230,66,0.3);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -23,804 +30,626 @@
 body {
   background: var(--bg);
   background-image:
-    radial-gradient(ellipse at 20% 20%, rgba(0,68,255,0.07) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 80%, rgba(255,0,119,0.07) 0%, transparent 60%);
-  color: white;
-  font-family: 'Rajdhani', 'Segoe UI', sans-serif;
+    radial-gradient(ellipse 70% 50% at 10% 5%,  rgba(0,55,255,0.055) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 40% at 90% 95%, rgba(255,0,119,0.045) 0%, transparent 70%);
+  color: #dde0f0;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 400;
   min-height: 100vh;
   overflow-x: hidden;
 }
 
-/* ── SCANLINE TEXTURE ── */
-body::before {
-  content:'';
-  position:fixed; inset:0;
-  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
-  pointer-events:none; z-index:0;
+/* scanline sangat tipis */
+body::after {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background: repeating-linear-gradient(0deg,
+    transparent, transparent 3px,
+    rgba(0,0,0,0.018) 3px, rgba(0,0,0,0.018) 4px);
 }
 
-/* ── HEADER ── */
+/* ═══════════════ HEADER ═══════════════ */
 .header {
-  position: sticky; top: 0; z-index: 100;
-  padding: 16px 20px;
-  background: rgba(3,4,10,0.95);
-  border-bottom: 1px solid rgba(0,68,255,0.5);
-  backdrop-filter: blur(10px);
-  display: flex; align-items: center; justify-content: space-between;
-  box-shadow: 0 2px 30px rgba(0,68,255,0.2);
+  position:sticky; top:0; z-index:200;
+  padding: 13px 18px;
+  background: rgba(2,3,13,0.93);
+  border-bottom: 1px solid var(--b-blue);
+  backdrop-filter: blur(18px);
+  display:flex; align-items:center; justify-content:space-between;
+  box-shadow: 0 1px 20px rgba(0,85,255,0.1);
 }
 .btn-back {
-  color: white; font-size: 20px; text-decoration: none;
-  width: 36px; height: 36px;
-  border: 1px solid rgba(0,68,255,0.4);
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  transition: 0.3s;
+  color: rgba(255,255,255,0.6); font-size:15px; text-decoration:none;
+  width:32px; height:32px; border:1px solid var(--b-blue); border-radius:50%;
+  display:flex; align-items:center; justify-content:center; transition:0.3s;
 }
-.btn-back:hover { border-color: var(--blue); box-shadow: var(--neon-blue); }
+.btn-back:hover { color:white; border-color:var(--blue); box-shadow:var(--glow-blue); }
 
 .header-title {
-  font-family: 'Orbitron', monospace;
-  font-size: 14px; font-weight: 900;
-  letter-spacing: 3px;
-  background: linear-gradient(90deg, var(--pink), var(--yellow));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 11px; font-weight:700; letter-spacing:2px;
+  background: linear-gradient(90deg, var(--pink), #dd66ff 40%, var(--yellow));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
 }
 
-/* ── MODAL ── */
+/* ═══════════════ MODAL OVERLAY ═══════════════ */
+#modal-overlay {
+  display:none; position:fixed; inset:0;
+  background: rgba(0,0,0,0.6); backdrop-filter:blur(5px); z-index:9998;
+}
+
+/* ═══════════════ MODAL ═══════════════ */
 #neon-modal {
-  display: none;
-  position: fixed; top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  background: linear-gradient(135deg, #0a0b1e, #0d0f2a);
-  border: 1px solid var(--pink);
-  border-radius: 20px;
-  box-shadow: var(--neon-pink);
-  z-index: 9999;
-  padding: 30px 25px;
-  text-align: center;
-  min-width: 290px;
-  animation: modalIn 0.35s cubic-bezier(0.175,0.885,0.32,1.275);
+  display:none;
+  position:fixed; top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  background: linear-gradient(160deg, #07091d 0%, #0b0d24 100%);
+  border-radius:22px; z-index:9999;
+  padding:30px 24px; text-align:center;
+  min-width:280px; max-width:330px; width:88%;
+  animation: modalPop 0.32s cubic-bezier(0.34,1.56,0.64,1) both;
 }
-@keyframes modalIn { from { opacity:0; scale:0.6; } to { opacity:1; scale:1; } }
+#neon-modal.m-success { border:1px solid var(--b-yellow); box-shadow:var(--glow-yellow), inset 0 0 28px rgba(245,230,66,0.04); }
+#neon-modal.m-error   { border:1px solid var(--b-pink);   box-shadow:var(--glow-pink),   inset 0 0 28px rgba(255,0,119,0.04); }
+#neon-modal.m-info    { border:1px solid var(--b-blue);   box-shadow:var(--glow-blue),   inset 0 0 28px rgba(0,85,255,0.04); }
 
-.modal-icon { font-size: 40px; margin-bottom: 12px; }
+@keyframes modalPop {
+  from { opacity:0; transform:translate(-50%,-50%) scale(0.72); }
+  to   { opacity:1; transform:translate(-50%,-50%) scale(1); }
+}
+
+.modal-ico-ring {
+  width:58px; height:58px; border-radius:50%;
+  margin:0 auto 14px;
+  display:flex; align-items:center; justify-content:center; font-size:26px;
+}
+.m-success .modal-ico-ring { background:rgba(245,230,66,0.09); border:1px solid var(--b-yellow); }
+.m-error   .modal-ico-ring { background:rgba(255,0,119,0.09);  border:1px solid var(--b-pink); }
+.m-info    .modal-ico-ring { background:rgba(0,85,255,0.09);   border:1px solid var(--b-blue); }
+
 #modal-title {
-  font-family: 'Orbitron', monospace;
-  font-size: 14px; letter-spacing: 2px;
-  color: var(--yellow);
-  text-shadow: var(--neon-yellow);
-  margin-bottom: 10px;
+  font-family:'Cinzel Decorative', serif;
+  font-size:12px; font-weight:700; letter-spacing:1px; margin-bottom:9px;
 }
-#modal-msg { font-size: 13px; color: #ccc; line-height: 1.6; margin-bottom: 5px; }
+.m-success #modal-title { color:var(--yellow); text-shadow:var(--glow-yellow); }
+.m-error   #modal-title { color:#ff4499;       text-shadow:var(--glow-pink); }
+.m-info    #modal-title { color:#7799ff;        text-shadow:var(--glow-blue); }
+
+#modal-msg {
+  font-size:13px; font-weight:400; line-height:1.7;
+  color:rgba(220,220,240,0.65);
+}
+
 .modal-btn {
-  margin-top: 20px;
-  padding: 12px 30px;
-  border-radius: 50px;
-  cursor: pointer;
-  border: 2px solid var(--yellow);
-  background: transparent;
-  color: var(--yellow);
-  font-family: 'Orbitron', monospace;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  transition: 0.3s;
+  margin-top:20px; padding:10px 28px; border-radius:50px;
+  cursor:pointer; font-family:'Outfit', sans-serif;
+  font-size:12px; font-weight:600; letter-spacing:0.8px;
+  transition:all 0.25s; background:transparent;
 }
-.modal-btn:hover { background: var(--yellow); color: black; box-shadow: var(--neon-yellow); }
+.m-success .modal-btn { border:1px solid var(--b-yellow); color:var(--yellow); }
+.m-success .modal-btn:hover { background:rgba(245,230,66,0.1); box-shadow:var(--glow-yellow); }
+.m-error   .modal-btn { border:1px solid var(--b-pink);   color:#ff4499; }
+.m-error   .modal-btn:hover { background:rgba(255,0,119,0.09); box-shadow:var(--glow-pink); }
+.m-info    .modal-btn { border:1px solid var(--b-blue);   color:#7799ff; }
+.m-info    .modal-btn:hover { background:rgba(0,85,255,0.09); box-shadow:var(--glow-blue); }
 
-/* ── CONTAINER ── */
-.container { padding: 20px; max-width: 520px; margin: auto; position: relative; z-index: 1; }
-
-/* ── SALDO CARD (TOP) ── */
-.saldo-banner {
-  background: linear-gradient(135deg, rgba(255,0,119,0.12), rgba(0,68,255,0.12));
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 18px;
-  padding: 18px 20px;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: relative;
-  overflow: hidden;
-}
-.saldo-banner::before {
-  content:'';
-  position: absolute; top:-50%; right:-20%;
-  width: 200px; height: 200px;
-  background: radial-gradient(circle, rgba(255,0,119,0.1), transparent 70%);
-  border-radius: 50%;
-}
-.saldo-label { font-size: 10px; color: #888; letter-spacing: 2px; font-family: 'Orbitron', monospace; }
-.saldo-value {
-  font-size: 22px; font-weight: 900;
-  font-family: 'Orbitron', monospace;
-  color: var(--yellow);
-  text-shadow: var(--neon-yellow);
-}
-.tier-chip {
-  padding: 6px 14px;
-  border-radius: 50px;
-  background: rgba(251,255,0,0.1);
-  border: 1px solid var(--yellow);
-  font-size: 10px;
-  font-family: 'Orbitron', monospace;
-  color: var(--yellow);
-  letter-spacing: 1px;
+/* ═══════════════ CONTAINER ═══════════════ */
+.container {
+  padding:16px; max-width:520px; margin:auto;
+  position:relative; z-index:1;
+  display:flex; flex-direction:column; gap:14px;
 }
 
-/* ── SECTION TITLE ── */
-.sec-title {
-  font-family: 'Orbitron', monospace;
-  font-size: 10px;
-  letter-spacing: 2px;
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+/* ═══════════════ EVENT BANNER ═══════════════ */
+.event-banner {
+  background: linear-gradient(135deg, #08021e 0%, #110636 55%, #09021c 100%);
+  border:1px solid var(--b-yellow);
+  border-radius:22px; padding:20px;
+  position:relative; overflow:hidden;
+  box-shadow: var(--glow-yellow);
+  animation: fadeUp 0.4s ease both;
 }
-.sec-title::after {
-  content:'';
+.event-banner::before {
+  content:''; position:absolute; top:-40%; right:-15%;
+  width:200px; height:200px;
+  background:radial-gradient(circle, rgba(245,230,66,0.07), transparent 70%);
+  border-radius:50%;
+}
+.event-banner::after {
+  content:''; position:absolute; bottom:-35%; left:-10%;
+  width:160px; height:160px;
+  background:radial-gradient(circle, rgba(255,0,119,0.05), transparent 70%);
+  border-radius:50%;
+}
+.ev-tag {
+  display:inline-flex; align-items:center; gap:5px;
+  font-size:8px; font-weight:600; letter-spacing:2px; text-transform:uppercase;
+  color:var(--yellow); background:rgba(245,230,66,0.08);
+  border:1px solid rgba(245,230,66,0.25);
+  padding:4px 11px; border-radius:50px; margin-bottom:11px;
+}
+.ev-tag i { font-size:5px; animation:blink 1.5s infinite; }
+@keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.2;} }
+
+.ev-title {
+  font-family:'Cinzel Decorative', serif;
+  font-size:10px; font-weight:400; letter-spacing:1px;
+  color:rgba(255,255,255,0.65); margin-bottom:7px;
+}
+.ev-prize {
+  font-family:'Cinzel Decorative', serif;
+  font-size:40px; font-weight:900; line-height:1;
+  color:var(--yellow);
+  text-shadow: 0 0 10px rgba(245,230,66,0.45), 0 0 30px rgba(245,230,66,0.12);
+  margin-bottom:8px;
+  animation: prizeGlow 3s ease infinite;
+}
+@keyframes prizeGlow {
+  0%,100% { text-shadow:0 0 10px rgba(245,230,66,0.45),0 0 30px rgba(245,230,66,0.12); }
+  50%     { text-shadow:0 0 16px rgba(245,230,66,0.7), 0 0 40px rgba(245,230,66,0.2); }
+}
+.ev-desc {
+  font-size:11px; font-weight:300; color:rgba(255,255,255,0.4);
+  line-height:1.55; margin-bottom:14px;
+}
+.ev-ranks { display:flex; gap:8px; }
+.ev-rank {
   flex:1;
-  height: 1px;
-  background: linear-gradient(90deg, currentColor, transparent);
-  opacity: 0.3;
+  background:rgba(245,230,66,0.05);
+  border:1px solid rgba(245,230,66,0.15);
+  border-radius:12px; padding:9px 6px; text-align:center;
 }
+.ev-rank-lbl { font-size:9px; color:rgba(245,230,66,0.6); margin-bottom:4px; font-weight:500; }
+.ev-rank-val { font-size:15px; font-weight:700; color:white; }
 
-/* ── GIFT / VOUCHER CARD ── */
-.gift-card {
-  background: linear-gradient(135deg, #0f0418, #170830, #0a0b1e);
-  border: 1px solid var(--pink);
-  border-radius: 20px;
-  padding: 24px 20px;
-  margin-bottom: 20px;
-  box-shadow: inset 0 0 40px rgba(255,0,119,0.06), var(--neon-pink);
-  position: relative;
-  overflow: hidden;
-  animation: fadeUp 0.5s ease both;
+/* ═══════════════ SECTION LABEL ═══════════════ */
+.sec-lbl {
+  display:flex; align-items:center; gap:8px;
+  font-size:9px; font-weight:600; letter-spacing:2px; text-transform:uppercase;
+  opacity:0.55;
 }
-.gift-card::before {
-  content: '';
-  position: absolute; top: -30%; right: -10%;
-  width: 180px; height: 180px;
-  background: radial-gradient(circle, rgba(255,0,119,0.15), transparent 70%);
-  border-radius: 50%;
-}
-.gift-card-header {
-  display: flex; align-items: center; gap: 15px;
-  margin-bottom: 18px;
-}
-.gift-icon-wrap {
-  width: 56px; height: 56px;
-  border-radius: 16px;
-  background: rgba(255,0,119,0.12);
-  border: 1px solid rgba(255,0,119,0.4);
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.gift-icon-wrap i { font-size: 26px; color: var(--pink); filter: drop-shadow(0 0 8px var(--pink)); }
-.gift-card-header h3 {
-  font-family: 'Orbitron', monospace;
-  font-size: 12px; letter-spacing: 1px;
-  color: white; margin-bottom: 4px;
-}
-.gift-card-header p { font-size: 11px; color: #888; line-height: 1.4; }
+.sec-lbl::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,currentColor,transparent); opacity:0.4; }
 
-.gift-input-wrap { position: relative; margin-bottom: 14px; }
-.gift-input {
-  width: 100%;
-  padding: 14px 50px 14px 16px;
-  background: rgba(0,0,0,0.6);
-  border: 1px solid rgba(255,0,119,0.4);
-  border-radius: 12px;
-  color: var(--yellow);
-  font-family: 'Orbitron', monospace;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 3px;
-  text-align: center;
-  outline: none;
-  transition: 0.3s;
-}
-.gift-input:focus { border-color: var(--pink); box-shadow: 0 0 15px rgba(255,0,119,0.3); }
-.gift-input::placeholder { color: #444; font-size: 10px; letter-spacing: 2px; font-weight: 400; }
-
-.btn-redeem {
-  width: 100%;
-  padding: 14px;
-  border-radius: 50px;
-  background: linear-gradient(90deg, var(--pink), #cc0055);
-  color: white;
-  font-family: 'Orbitron', monospace;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  border: none;
-  cursor: pointer;
-  box-shadow: var(--neon-pink);
-  transition: 0.3s;
-  position: relative;
-  overflow: hidden;
-}
-.btn-redeem:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(255,0,119,0.7); }
-.btn-redeem:active { transform: translateY(0); }
-
-/* ── QUICK REWARDS GRID ── */
-.quick-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  margin-bottom: 20px;
-}
-
-.quick-card {
-  background: rgba(0,0,0,0.5);
-  border: 1px solid rgba(0,68,255,0.25);
-  border-radius: 18px;
-  padding: 18px 14px;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-  transition: 0.3s;
-  animation: fadeUp 0.5s ease both;
-}
-.quick-card:hover {
-  border-color: var(--blue);
-  box-shadow: 0 0 20px rgba(0,68,255,0.2);
-  transform: translateY(-2px);
-}
-.quick-card::before {
-  content:'';
-  position:absolute; inset:0;
-  background: linear-gradient(135deg, rgba(0,68,255,0.04), transparent);
-}
-.qc-icon {
-  width: 46px; height: 46px;
-  border-radius: 14px;
-  margin: 0 auto 12px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 20px;
-}
-.qc-icon.pink { background: rgba(255,0,119,0.1); border: 1px solid rgba(255,0,119,0.3); color: var(--pink); }
-.qc-icon.blue { background: rgba(0,68,255,0.1);  border: 1px solid rgba(0,68,255,0.3);  color: #4488ff; }
-.qc-icon.yellow { background: rgba(251,255,0,0.08); border: 1px solid rgba(251,255,0,0.3); color: var(--yellow); }
-.qc-icon.green { background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.3); color: #00ff88; }
-
-.qc-title {
-  font-family: 'Orbitron', monospace;
-  font-size: 9px; letter-spacing: 1px;
-  color: #aaa; margin-bottom: 6px;
-}
-.qc-value {
-  font-family: 'Orbitron', monospace;
-  font-size: 16px; font-weight: 900;
-  color: white; margin-bottom: 12px;
-}
-.qc-value span { font-size: 10px; color: #888; }
-
-.btn-qc {
-  width: 100%;
-  padding: 8px;
-  border-radius: 50px;
-  font-family: 'Orbitron', monospace;
-  font-size: 9px; font-weight: 700;
-  letter-spacing: 1px;
-  cursor: pointer;
-  transition: 0.3s;
-  border: 1px solid;
-}
-.btn-qc.pink  { border-color: var(--pink);   color: var(--pink);   background: rgba(255,0,119,0.08); }
-.btn-qc.blue  { border-color: var(--blue);   color: #4488ff;       background: rgba(0,68,255,0.08); }
-.btn-qc.yellow{ border-color: var(--yellow); color: var(--yellow); background: rgba(251,255,0,0.06); }
-.btn-qc.green { border-color: #00ff88;       color: #00ff88;       background: rgba(0,255,136,0.06); }
-.btn-qc:hover { filter: brightness(1.3); transform: scale(1.03); }
-
-/* ── INBOX SECTION ── */
+/* ═══════════════ INBOX CARD ═══════════════ */
 .inbox-card {
-  background: rgba(0,0,0,0.5);
-  border: 1px solid rgba(251,255,0,0.25);
-  border-radius: 20px;
-  padding: 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 0 30px rgba(251,255,0,0.04);
-  animation: fadeUp 0.6s ease both;
+  background:var(--card);
+  border:1px solid var(--b-blue);
+  border-radius:20px; padding:18px;
+  box-shadow:var(--glow-blue);
+  animation:fadeUp 0.45s ease both 0.07s;
+}
+.inbox-head {
+  display:flex; justify-content:space-between; align-items:center;
+  margin-bottom:14px;
+}
+.inbox-head-title {
+  font-family:'Cinzel Decorative', serif;
+  font-size:10px; font-weight:700; letter-spacing:1px;
+  color:rgba(255,255,255,0.8);
+}
+.badge-once {
+  display:inline-flex; align-items:center; gap:4px;
+  font-size:8px; font-weight:600; letter-spacing:1px;
+  background:rgba(0,85,255,0.1); border:1px solid var(--b-blue);
+  color:#7799ff; padding:3px 10px; border-radius:50px;
 }
 
 .inbox-item {
-  background: rgba(251,255,0,0.03);
-  border: 1px solid rgba(251,255,0,0.12);
-  border-radius: 14px;
-  padding: 14px;
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  transition: 0.3s;
-  position: relative;
-  overflow: hidden;
+  background:rgba(0,85,255,0.03);
+  border:1px solid rgba(0,85,255,0.14);
+  border-radius:14px; padding:13px;
+  margin-bottom:9px;
+  display:flex; align-items:center; gap:11px;
+  transition:all 0.25s; position:relative; overflow:hidden;
 }
-.inbox-item:hover { border-color: rgba(251,255,0,0.3); background: rgba(251,255,0,0.06); }
 .inbox-item::before {
-  content:'';
-  position: absolute; left:0; top:0; bottom:0;
-  width: 3px;
-  background: linear-gradient(180deg, var(--yellow), var(--pink));
-  border-radius: 3px 0 0 3px;
+  content:''; position:absolute; left:0; top:0; bottom:0; width:2px;
+  background:linear-gradient(180deg,var(--blue),var(--pink));
 }
-.inbox-icon {
-  width: 40px; height: 40px;
-  border-radius: 12px;
-  background: rgba(251,255,0,0.1);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 18px;
-  flex-shrink: 0;
-  animation: pulse-yellow 2s infinite;
-}
-@keyframes pulse-yellow {
-  0%,100% { box-shadow: 0 0 0 0 rgba(251,255,0,0.3); }
-  50%      { box-shadow: 0 0 0 8px rgba(251,255,0,0); }
-}
-.inbox-body { flex: 1; min-width: 0; }
-.inbox-msg { font-size: 12px; color: #ccc; margin-bottom: 4px; line-height: 1.4; }
-.inbox-amount {
-  font-family: 'Orbitron', monospace;
-  font-size: 14px; font-weight: 900;
-  color: var(--yellow);
-  text-shadow: 0 0 10px rgba(251,255,0,0.5);
-}
-.btn-inbox-claim {
-  padding: 8px 16px;
-  border-radius: 50px;
-  background: linear-gradient(90deg, var(--yellow), #e6e600);
-  color: black;
-  font-family: 'Orbitron', monospace;
-  font-size: 9px; font-weight: 900;
-  border: none; cursor: pointer;
-  white-space: nowrap;
-  transition: 0.3s;
-  flex-shrink: 0;
-}
-.btn-inbox-claim:hover { transform: scale(1.05); box-shadow: var(--neon-yellow); }
+.inbox-item:hover { border-color:var(--b-blue); background:rgba(0,85,255,0.07); }
 
-.inbox-empty {
-  text-align:center; padding: 30px;
-  color: #444; font-size: 12px;
+.inbox-ico {
+  width:40px; height:40px; border-radius:12px; flex-shrink:0;
+  background:rgba(245,230,66,0.07); border:1px solid rgba(245,230,66,0.2);
+  display:flex; align-items:center; justify-content:center; font-size:17px;
+  animation:softPulse 2.8s ease infinite;
 }
-.inbox-empty i { font-size: 32px; display:block; margin-bottom: 10px; opacity: 0.3; }
+@keyframes softPulse {
+  0%,100% { box-shadow:0 0 0 0 rgba(245,230,66,0.15); }
+  50%     { box-shadow:0 0 0 5px rgba(245,230,66,0); }
+}
+.inbox-body { flex:1; min-width:0; }
+.inbox-msg {
+  font-size:11.5px; font-weight:400; color:rgba(255,255,255,0.55);
+  margin-bottom:5px; line-height:1.4;
+}
+.inbox-amt {
+  font-size:17px; font-weight:700;
+  color:var(--yellow);
+  text-shadow:0 0 7px rgba(245,230,66,0.35);
+}
+.btn-claim-inbox {
+  padding:9px 16px; border-radius:50px; flex-shrink:0;
+  background:rgba(245,230,66,0.09);
+  border:1px solid var(--b-yellow);
+  color:var(--yellow);
+  font-family:'Outfit', sans-serif;
+  font-size:11px; font-weight:600;
+  cursor:pointer; transition:all 0.25s;
+}
+.btn-claim-inbox:hover { background:rgba(245,230,66,0.17); box-shadow:var(--glow-yellow); transform:scale(1.04); }
+.btn-claim-inbox:disabled { opacity:0.35; cursor:not-allowed; transform:none; }
 
-/* ── REFERRAL SECTION ── */
+.inbox-empty { text-align:center; padding:28px 10px; }
+.inbox-empty i { font-size:28px; color:#1e1e30; display:block; margin-bottom:9px; }
+.inbox-empty p { font-size:11.5px; font-weight:300; color:#333344; line-height:1.6; }
+
+/* notif dot */
+.notif-dot {
+  width:7px; height:7px; background:var(--pink); border-radius:50%;
+  box-shadow:var(--glow-pink); display:inline-block; margin-left:5px;
+  animation:blink 1.2s infinite; vertical-align:middle;
+}
+
+/* ═══════════════ QUICK REWARDS ═══════════════ */
+.quick-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:11px;
+  animation:fadeUp 0.5s ease both 0.12s;
+}
+.quick-card {
+  background:var(--card);
+  border-radius:18px; padding:17px 13px; text-align:center;
+  transition:all 0.3s; position:relative; overflow:hidden;
+}
+.quick-card.pk { border:1px solid var(--b-pink); }
+.quick-card.bl { border:1px solid var(--b-blue); }
+.quick-card.pk:hover { box-shadow:var(--glow-pink); transform:translateY(-2px); }
+.quick-card.bl:hover { box-shadow:var(--glow-blue); transform:translateY(-2px); }
+
+.qc-ico {
+  width:42px; height:42px; border-radius:13px;
+  margin:0 auto 11px;
+  display:flex; align-items:center; justify-content:center; font-size:18px;
+}
+.qc-ico.pk { background:rgba(255,0,119,0.07); border:1px solid var(--b-pink); color:var(--pink); }
+.qc-ico.bl { background:rgba(0,85,255,0.07);  border:1px solid var(--b-blue); color:#7799ff; }
+
+.qc-lbl {
+  font-size:8px; font-weight:600; letter-spacing:2px; text-transform:uppercase;
+  color:rgba(255,255,255,0.3); margin-bottom:5px;
+}
+.qc-val {
+  font-size:19px; font-weight:700; color:white; margin-bottom:11px;
+}
+.qc-val small { font-size:10px; font-weight:300; color:rgba(255,255,255,0.35); }
+
+.btn-qc {
+  width:100%; padding:9px 8px; border-radius:50px;
+  font-family:'Outfit', sans-serif; font-size:11px; font-weight:600;
+  cursor:pointer; transition:all 0.25s; border:1px solid; background:transparent;
+}
+.btn-qc.pk { border-color:var(--b-pink); color:var(--pink); }
+.btn-qc.bl { border-color:var(--b-blue); color:#7799ff; }
+.btn-qc.pk:hover { background:rgba(255,0,119,0.09); box-shadow:var(--glow-pink); }
+.btn-qc.bl:hover { background:rgba(0,85,255,0.09);  box-shadow:var(--glow-blue); }
+.btn-qc:disabled { opacity:0.3; cursor:not-allowed; }
+
+.daily-cd {
+  font-size:9.5px; font-weight:300;
+  color:rgba(255,255,255,0.25); margin-top:6px;
+  letter-spacing:0.5px;
+}
+
+/* ═══════════════ REFERRAL CARD ═══════════════ */
 .ref-card {
-  background: rgba(0,0,0,0.5);
-  border: 1px solid rgba(0,68,255,0.3);
-  border-radius: 20px;
-  padding: 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 0 30px rgba(0,68,255,0.06);
-  animation: fadeUp 0.7s ease both;
+  background:var(--card);
+  border:1px solid var(--b-blue);
+  border-radius:20px; padding:18px;
+  animation:fadeUp 0.55s ease both 0.18s;
 }
-
-.ref-header {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 16px;
-}
-.ref-stats {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 10px; margin-bottom: 16px;
-}
+.ref-stats { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-bottom:14px; }
 .ref-stat {
-  background: rgba(0,68,255,0.06);
-  border: 1px solid rgba(0,68,255,0.2);
-  border-radius: 12px;
-  padding: 12px;
-  text-align: center;
+  background:rgba(0,85,255,0.04); border:1px solid rgba(0,85,255,0.13);
+  border-radius:12px; padding:12px; text-align:center;
 }
-.ref-stat-label { font-size: 9px; color: #666; letter-spacing: 1px; font-family: 'Orbitron', monospace; margin-bottom: 6px; }
-.ref-stat-value {
-  font-family: 'Orbitron', monospace;
-  font-size: 13px; font-weight: 900;
+.ref-stat-lbl {
+  font-size:8px; letter-spacing:1.5px; text-transform:uppercase;
+  color:rgba(255,255,255,0.3); margin-bottom:6px;
 }
+.ref-stat-val { font-size:19px; font-weight:700; }
 
-.ref-code-box {
-  background: rgba(0,68,255,0.08);
-  border: 1px dashed rgba(0,68,255,0.4);
-  border-radius: 12px;
-  padding: 12px 16px;
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 16px;
+.ref-code-row {
+  background:rgba(0,85,255,0.04); border:1px dashed rgba(0,85,255,0.25);
+  border-radius:12px; padding:12px 15px;
+  display:flex; justify-content:space-between; align-items:center;
+  margin-bottom:13px;
 }
-.ref-code-label { font-size: 10px; color: #666; font-family: 'Orbitron', monospace; }
-.ref-code-value {
-  font-family: 'Orbitron', monospace;
-  font-size: 16px; font-weight: 900;
-  color: var(--yellow);
-  letter-spacing: 3px;
-  text-shadow: var(--neon-yellow);
+.ref-code-lbl {
+  font-size:8px; letter-spacing:1.5px; text-transform:uppercase;
+  color:rgba(255,255,255,0.25); margin-bottom:4px;
 }
-.btn-copy-ref {
-  padding: 6px 14px;
-  border-radius: 50px;
-  border: 1px solid var(--blue);
-  background: rgba(0,68,255,0.1);
-  color: #4488ff;
-  font-size: 10px; font-weight: 700;
-  cursor: pointer; transition: 0.3s;
+.ref-code-val {
+  font-size:19px; font-weight:700; letter-spacing:3px;
+  color:var(--yellow); text-shadow:0 0 8px rgba(245,230,66,0.25);
 }
-.btn-copy-ref:hover { background: var(--blue); color: white; box-shadow: var(--neon-blue); }
+.btn-copy {
+  padding:7px 15px; border-radius:50px;
+  border:1px solid var(--b-blue); background:rgba(0,85,255,0.07);
+  color:#7799ff; font-size:11px; font-weight:500;
+  cursor:pointer; transition:all 0.25s;
+}
+.btn-copy:hover { background:rgba(0,85,255,0.16); box-shadow:var(--glow-blue); }
 
 .btn-claim-ref {
-  width: 100%;
-  padding: 14px;
-  border-radius: 50px;
-  background: linear-gradient(90deg, var(--blue), #0066ff);
-  color: white;
-  font-family: 'Orbitron', monospace;
-  font-size: 11px; font-weight: 700;
-  letter-spacing: 2px;
-  border: none; cursor: pointer;
-  box-shadow: var(--neon-blue);
-  transition: 0.3s;
-  margin-bottom: 16px;
+  width:100%; padding:14px; border-radius:50px;
+  background:linear-gradient(90deg,rgba(0,50,220,0.55),rgba(0,90,255,0.35));
+  border:1px solid var(--b-blue); color:rgba(255,255,255,0.85);
+  font-family:'Outfit', sans-serif; font-size:12px; font-weight:600; letter-spacing:0.8px;
+  cursor:pointer; transition:all 0.3s; margin-bottom:13px;
+  box-shadow:var(--glow-blue);
 }
-.btn-claim-ref:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(0,68,255,0.7); }
+.btn-claim-ref:hover { transform:translateY(-2px); box-shadow:0 0 18px rgba(0,85,255,0.4); }
 
-/* ── REFERRAL LIST ── */
 .ref-list-wrap {
-  max-height: 180px;
-  overflow-y: auto;
-  border-top: 1px solid rgba(0,68,255,0.15);
-  padding-top: 12px;
+  max-height:165px; overflow-y:auto;
+  border-top:1px solid rgba(0,85,255,0.1); padding-top:11px;
 }
-.ref-list-wrap::-webkit-scrollbar { width: 4px; }
-.ref-list-wrap::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 10px; }
+.ref-list-wrap::-webkit-scrollbar { width:3px; }
+.ref-list-wrap::-webkit-scrollbar-thumb { background:rgba(0,85,255,0.4); border-radius:10px; }
 
-.ref-list-item {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 8px 10px;
-  border-radius: 10px;
-  margin-bottom: 6px;
-  background: rgba(0,68,255,0.04);
-  border: 1px solid rgba(0,68,255,0.1);
+.ref-item {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:8px 10px; border-radius:10px; margin-bottom:5px;
+  background:rgba(0,85,255,0.03); border:1px solid rgba(0,85,255,0.08);
 }
-.ref-uname { font-size: 12px; color: #ccc; }
-.ref-badge {
-  font-size: 9px; font-weight: 700;
-  padding: 3px 10px; border-radius: 50px;
-}
-.ref-valid { background: rgba(0,255,136,0.12); color: #00ff88; border: 1px solid #00ff88; }
-.ref-invalid { background: rgba(255,150,0,0.12); color: #ff9900; border: 1px solid #ff9900; }
+.ref-uname { font-size:12px; font-weight:400; color:rgba(255,255,255,0.55); }
+.ref-badge { font-size:9px; font-weight:600; padding:3px 10px; border-radius:50px; }
+.ref-valid   { background:rgba(0,220,100,0.09); color:#00dc66; border:1px solid rgba(0,220,100,0.25); }
+.ref-invalid { background:rgba(255,150,0,0.09); color:#ffaa33; border:1px solid rgba(255,150,0,0.25); }
 
-/* ── ANIMATIONS ── */
+/* ═══════════════ ANIMATIONS ═══════════════ */
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity:0; transform:translateY(14px); }
+  to   { opacity:1; transform:translateY(0); }
 }
-
-@keyframes shimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position:  200% center; }
-}
-
-/* ── DAILY COOLDOWN TIMER ── */
-.daily-countdown {
-  font-family: 'Orbitron', monospace;
-  font-size: 10px; color: #666;
-  margin-top: 6px;
-  min-height: 14px;
-}
-
-/* ── NOTIFICATION DOT ── */
-.notif-dot {
-  width: 8px; height: 8px;
-  background: var(--pink);
-  border-radius: 50%;
-  box-shadow: var(--neon-pink);
-  animation: blink 1s infinite;
-  display: inline-block;
-  margin-left: 6px;
-}
-@keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
-
 </style>
 </head>
-
 <body>
 
+<div id="modal-overlay" onclick="closeModal()"></div>
+
 <!-- ── MODAL ── -->
-<div id="neon-modal">
-  <div class="modal-icon" id="modal-icon">🎁</div>
-  <h3 id="modal-title">REWARD!</h3>
-  <p id="modal-msg"></p>
-  <button class="modal-btn" onclick="closeModal()">AMBIL</button>
+<div id="neon-modal" class="m-success">
+  <div class="modal-ico-ring"><span id="modal-icon">🎁</span></div>
+  <div id="modal-title">REWARD</div>
+  <div id="modal-msg"></div>
+  <button class="modal-btn" onclick="closeModal()">Oke, Mengerti</button>
 </div>
 
 <!-- ── HEADER ── -->
 <div class="header">
-  <a href="game.html" class="btn-back"><i class="fa-solid fa-arrow-left"></i></a>
-  <div class="header-title">REWARD &amp; GIFT</div>
-  <div style="width:36px;"></div>
+  <a href="game.html" class="btn-back"><i class="fa-solid fa-chevron-left"></i></a>
+  <div class="header-title">Reward &amp; Gift</div>
+  <div style="width:32px;"></div>
 </div>
 
 <div class="container">
 
-  <!-- ── SALDO BANNER ── -->
-  <div class="saldo-banner">
-    <div>
-      <div class="saldo-label">SALDO AKTIF</div>
-      <div class="saldo-value" id="banner-saldo">IDR 0</div>
+  <!-- ── EVENT BANNER ── -->
+  <div class="event-banner">
+    <div class="ev-tag"><i class="fa-solid fa-circle"></i> Event Aktif Bulan Ini</div>
+    <div class="ev-title">Best Reward — Top Referral</div>
+    <div class="ev-prize">$100</div>
+    <div class="ev-desc">
+      Kumpulkan referral terbanyak bulan ini &amp; rebut hadiah utama!<br>
+      Pemenang diumumkan setiap akhir bulan.
     </div>
-    <div>
-      <div class="tier-chip" id="profile-tier-reward">STARTER</div>
-      <div style="font-size:10px;color:#555;margin-top:6px;text-align:right;">
-        <i class="fa-solid fa-crown" style="color:var(--yellow);"></i> VIP MEMBER
+    <div class="ev-ranks">
+      <div class="ev-rank">
+        <div class="ev-rank-lbl">🥇 Rank 1</div>
+        <div class="ev-rank-val">$100</div>
+      </div>
+      <div class="ev-rank">
+        <div class="ev-rank-lbl">🥈 Rank 2</div>
+        <div class="ev-rank-val">$50</div>
+      </div>
+      <div class="ev-rank">
+        <div class="ev-rank-lbl">🥉 Rank 3</div>
+        <div class="ev-rank-val">$25</div>
       </div>
     </div>
   </div>
 
-  <!-- ── GIFT VOUCHER ── -->
-  <div class="sec-title" style="color:var(--pink);">
-    <i class="fa-solid fa-box-open"></i> KODE VOUCHER ADMIN
+  <!-- ── INBOX ── -->
+  <div class="sec-lbl" style="color:var(--blue);">
+    <i class="fa-solid fa-inbox"></i> Inbox Hadiah
   </div>
 
-  <div class="gift-card">
-    <div class="gift-card-header">
-      <div class="gift-icon-wrap">
-        <i class="fa-solid fa-gift"></i>
-      </div>
-      <div>
-        <h3>KOTAK HADIAH ADMIN</h3>
-        <p>Masukkan kode voucher eksklusif dari Admin untuk klaim saldo gratis ke akunmu.</p>
-      </div>
-    </div>
-    <div class="gift-input-wrap">
-      <input type="text" id="gift-code" class="gift-input"
-             placeholder="MASUKKAN KODE VOUCHER"
-             oninput="this.value=this.value.toUpperCase()">
-    </div>
-    <button class="btn-redeem" onclick="redeemGift()">
-      <i class="fa-solid fa-unlock"></i>&nbsp; KLAIM HADIAH
-    </button>
-  </div>
-
-  <!-- ── QUICK REWARDS ── -->
-  <div class="sec-title" style="color:var(--blue);">
-    <i class="fa-solid fa-bolt"></i> KLAIM CEPAT
-  </div>
-
-  <div class="quick-grid">
-
-    <!-- DAILY BONUS -->
-    <div class="quick-card" style="animation-delay:0.1s;">
-      <div class="qc-icon pink"><i class="fa-solid fa-calendar-day"></i></div>
-      <div class="qc-title">DAILY BONUS</div>
-      <div class="qc-value">500 <span>IDR</span></div>
-      <button class="btn-qc pink" onclick="claimType('daily')" id="btn-daily">
-        KLAIM SEKARANG
-      </button>
-      <div class="daily-countdown" id="daily-countdown"></div>
-    </div>
-
-    <!-- REFERRAL SHARE -->
-    <div class="quick-card" style="animation-delay:0.15s;">
-      <div class="qc-icon blue"><i class="fa-solid fa-share-nodes"></i></div>
-      <div class="qc-title">BAGIKAN LINK</div>
-      <div class="qc-value">5K <span>/ TEMAN</span></div>
-      <button class="btn-qc blue" onclick="copyLink()">
-        SALIN LINK
-      </button>
-    </div>
-
-  </div>
-
-  <!-- ── INBOX HADIAH ADMIN ── -->
   <div class="inbox-card">
-    <div class="ref-header">
-      <div class="sec-title" style="color:var(--yellow);margin:0;">
-        <i class="fa-solid fa-envelope-open-text"></i>
-        INBOX HADIAH
+    <div class="inbox-head">
+      <div class="inbox-head-title">
+        Pesan dari Admin
         <span class="notif-dot" id="inbox-notif" style="display:none;"></span>
       </div>
+      <span class="badge-once"><i class="fa-solid fa-lock" style="font-size:7px;"></i> 1× Klaim</span>
     </div>
     <div id="inbox-container">
       <div class="inbox-empty">
-        <i class="fa-solid fa-inbox"></i>
-        Memuat hadiah dari Admin...
+        <i class="fa-regular fa-envelope-open"></i>
+        <p>Memuat hadiah dari Admin...</p>
       </div>
     </div>
   </div>
 
-  <!-- ── REFERRAL PROGRAM ── -->
-  <div class="sec-title" style="color:var(--blue);">
-    <i class="fa-solid fa-users"></i> PROGRAM REFERRAL
+  <!-- ── QUICK REWARDS ── -->
+  <div class="sec-lbl" style="color:rgba(255,255,255,0.3);">
+    <i class="fa-solid fa-bolt"></i> Klaim Cepat
+  </div>
+
+  <div class="quick-grid">
+    <div class="quick-card pk">
+      <div class="qc-ico pk"><i class="fa-solid fa-sun"></i></div>
+      <div class="qc-lbl">Daily Bonus</div>
+      <div class="qc-val">1.000 <small>IDR</small></div>
+      <button class="btn-qc pk" id="btn-daily" onclick="claimDailyBonus()">Klaim Hari Ini</button>
+      <div class="daily-cd" id="daily-countdown"></div>
+    </div>
+
+    <div class="quick-card bl">
+      <div class="qc-ico bl"><i class="fa-solid fa-share-nodes"></i></div>
+      <div class="qc-lbl">Referral Link</div>
+      <div class="qc-val">5K <small>/ teman</small></div>
+      <button class="btn-qc bl" onclick="copyLink()">Salin Link</button>
+    </div>
+  </div>
+
+  <!-- ── REFERRAL ── -->
+  <div class="sec-lbl" style="color:var(--blue);">
+    <i class="fa-solid fa-users"></i> Program Referral
   </div>
 
   <div class="ref-card">
-
     <div class="ref-stats">
       <div class="ref-stat">
-        <div class="ref-stat-label">TEMAN DIUNDANG</div>
-        <div class="ref-stat-value" id="ref-invited-count" style="color:#4488ff;">0</div>
+        <div class="ref-stat-lbl">Teman Diundang</div>
+        <div class="ref-stat-val" id="ref-invited-count" style="color:#7799ff;">0</div>
       </div>
       <div class="ref-stat">
-        <div class="ref-stat-label">BONUS TERSEDIA</div>
-        <div class="ref-stat-value" id="ref-bonus-total" style="color:var(--yellow);">IDR 0</div>
+        <div class="ref-stat-lbl">Bonus Tersedia</div>
+        <div class="ref-stat-val" id="ref-bonus-total" style="color:var(--yellow);">IDR 0</div>
       </div>
     </div>
 
-    <div class="ref-code-box">
+    <div class="ref-code-row">
       <div>
-        <div class="ref-code-label">KODE REFERRALMU</div>
-        <div class="ref-code-value" id="ref-code-display">—</div>
+        <div class="ref-code-lbl">Kode Referralmu</div>
+        <div class="ref-code-val" id="ref-code-display">—</div>
       </div>
-      <button class="btn-copy-ref" onclick="copyLink()">
-        <i class="fa-solid fa-copy"></i> SALIN
+      <button class="btn-copy" onclick="copyLink()">
+        <i class="fa-regular fa-copy"></i> Salin
       </button>
     </div>
 
     <button class="btn-claim-ref" onclick="claimReferral()">
-      <i class="fa-solid fa-hand-holding-dollar"></i>&nbsp; CLAIM BONUS (SETIAP MINGGU)
+      <i class="fa-solid fa-hand-holding-dollar"></i>&nbsp; Klaim Bonus Minggu Ini
     </button>
 
     <div class="ref-list-wrap" id="ref-list-container">
-      <div style="text-align:center;color:#444;font-size:11px;padding:12px;">
-        Memuat daftar undangan...
+      <div style="text-align:center;color:#1e1e30;font-size:11px;padding:14px;">
+        Memuat daftar teman...
       </div>
     </div>
-
   </div>
 
 </div><!-- /container -->
 
 <script src="global.js"></script>
 <script>
-/* ════════════════════════════════════════════════════════
-   REWARD PAGE — Full standalone logic
-   Semua fungsi disesuaikan dengan Apps Script (doGet/doPost)
-   ════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════
+   REWARD PAGE — Full Logic + Web Audio Sound Engine
+   ═══════════════════════════════════════════════════════ */
 
-const SHEET_URL = typeof GLOBAL_SHEET_URL !== "undefined"
+const SHEET_URL = (typeof GLOBAL_SHEET_URL !== "undefined")
   ? GLOBAL_SHEET_URL
-  : "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec"; // Ganti YOUR_SCRIPT_ID
+  : "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";
 
-/* ── HELPERS ── */
-function getUsername()    { return localStorage.getItem("username") || ""; }
-function getSaldo()       { return parseInt(localStorage.getItem("saldo_" + getUsername()) || "0"); }
-function setSaldo(v)      { localStorage.setItem("saldo_" + getUsername(), v); refreshSaldoBanner(); }
-function fmtIDR(n)        { return "IDR " + Number(n).toLocaleString("id-ID"); }
-
-function closeModal() {
-  document.getElementById("neon-modal").style.display = "none";
+/* ────────────────────────────────
+   SOUND ENGINE  (Web Audio API)
+   ──────────────────────────────── */
+let _actx = null;
+function actx() {
+  if (!_actx) _actx = new (window.AudioContext || window.webkitAudioContext)();
+  return _actx;
+}
+function tone(freq, type, vol, dur, delay=0) {
+  try {
+    const c = actx(), o = c.createOscillator(), g = c.createGain();
+    o.connect(g); g.connect(c.destination);
+    o.type = type; o.frequency.value = freq;
+    const t = c.currentTime + delay;
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.start(t); o.stop(t + dur);
+  } catch(e){}
 }
 
-function showModal(icon, title, msg, color) {
-  document.getElementById("modal-icon").textContent  = icon || "🎁";
-  document.getElementById("modal-title").textContent = title;
-  document.getElementById("modal-title").style.color = color || "var(--yellow)";
-  document.getElementById("modal-msg").textContent   = msg;
-  document.getElementById("neon-modal").style.display = "block";
-}
+const SFX = {
+  click()   { tone(600,'sine',0.12,0.07); },
+  success() {
+    tone(440,'sine',0.25,0.11);
+    tone(554,'sine',0.25,0.11,0.11);
+    tone(660,'sine',0.28,0.14,0.22);
+    tone(880,'sine',0.22,0.28,0.36);
+  },
+  error()   { tone(220,'sawtooth',0.18,0.09); tone(180,'sawtooth',0.18,0.16,0.1); },
+  coin() {
+    [0,0.07,0.13,0.19].forEach((d,i) => tone(800+i*130,'sine',0.18,0.09,d));
+  },
+  copy()    { tone(680,'sine',0.15,0.07); tone(880,'sine',0.15,0.1,0.08); },
+  claim() {
+    tone(330,'triangle',0.2,0.09);
+    tone(440,'triangle',0.2,0.09,0.1);
+    tone(550,'triangle',0.2,0.11,0.2);
+    tone(660,'sine',    0.18,0.22,0.31);
+  },
+};
 
-/* ── API CALL (GET dengan param data=JSON) ── */
+/* ────────────────────────────────
+   HELPERS
+   ──────────────────────────────── */
+const getUsername = () => localStorage.getItem("username") || "";
+const getSaldo    = () => parseInt(localStorage.getItem("saldo_" + getUsername()) || "0");
+const setSaldo    = v  => localStorage.setItem("saldo_" + getUsername(), String(v));
+const fmtIDR      = n  => "IDR " + Number(n).toLocaleString("id-ID");
+
 async function api(payload) {
-  const qs = "?data=" + encodeURIComponent(JSON.stringify(payload));
-  const r  = await fetch(SHEET_URL + qs);
+  const r = await fetch(SHEET_URL + "?data=" + encodeURIComponent(JSON.stringify(payload)));
   return r.json();
 }
 
-/* ── REFRESH SALDO BANNER ── */
-function refreshSaldoBanner() {
-  document.getElementById("banner-saldo").textContent = fmtIDR(getSaldo());
+/* ────────────────────────────────
+   MODAL
+   ──────────────────────────────── */
+function showModal(icon, title, msg, type) {
+  /* type: 'success' | 'error' | 'info' */
+  const m = document.getElementById("neon-modal");
+  const o = document.getElementById("modal-overlay");
+  m.className = "m-" + (type || "success");
+  document.getElementById("modal-icon").textContent  = icon;
+  document.getElementById("modal-title").textContent = title;
+  document.getElementById("modal-msg").textContent   = msg;
+  m.style.display = "block";
+  o.style.display = "block";
+  if      (type === "success") SFX.success();
+  else if (type === "error")   SFX.error();
+  else                         SFX.click();
+}
+function closeModal() {
+  document.getElementById("neon-modal").style.display   = "none";
+  document.getElementById("modal-overlay").style.display = "none";
+  SFX.click();
 }
 
-/* ── LOAD TIER ── */
-function loadTier() {
-  const tier = localStorage.getItem("tier") || "STARTER";
-  document.getElementById("profile-tier-reward").textContent = tier;
-}
-
-/* ══════════════════════════════════
-   DAILY BONUS
-══════════════════════════════════ */
-function claimType(type) {
-  if (type === "daily") claimDailyBonus();
-}
-
-async function claimDailyBonus() {
-  const username = getUsername();
-  if (!username) return;
-
-  // Cek cooldown lokal dulu
-  const lastClaim = localStorage.getItem("lastDailyClaim_" + username) || "";
-  const today     = new Date().toLocaleDateString("id-ID");
-  if (lastClaim === today) {
-    showModal("⏰","SUDAH DIKLAIM","Daily bonus sudah diambil hari ini. Kembali besok!", "var(--pink)");
-    return;
-  }
-
-  const btn = document.getElementById("btn-daily");
-  if (btn) { btn.disabled = true; btn.textContent = "MEMPROSES..."; }
-
-  try {
-    const res = await api({ action: "claim_daily", username });
-    if (res.result === "SUCCESS") {
-      setSaldo(res.newSaldo);
-      localStorage.setItem("lastDailyClaim_" + username, today);
-      showModal("🎉","BERHASIL!",`Daily bonus IDR ${Number(res.bonus).toLocaleString("id-ID")} masuk ke saldo!`, "var(--yellow)");
-      startDailyCountdown();
-    } else {
-      showModal("⏰","SUDAH DIKLAIM", res.message || "Coba besok lagi!", "var(--pink)");
-      if (res.message && res.message.includes("sudah")) startDailyCountdown();
-    }
-  } catch(e) {
-    showModal("❌","ERROR","Koneksi gagal. Coba lagi.", "var(--pink)");
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = "KLAIM SEKARANG"; }
-  }
-}
-
-function startDailyCountdown() {
-  const el = document.getElementById("daily-countdown");
-  if (!el) return;
-
-  function tick() {
-    const now      = new Date();
-    const midnight = new Date();
-    midnight.setHours(24,0,0,0);
-    const diff = Math.max(0, midnight - now);
-    if (!diff) { el.textContent = ""; return; }
-    const h = String(Math.floor(diff/3600000)).padStart(2,"0");
-    const m = String(Math.floor((diff%3600000)/60000)).padStart(2,"0");
-    const s = String(Math.floor((diff%60000)/1000)).padStart(2,"0");
-    el.textContent = `Reset: ${h}:${m}:${s}`;
-  }
-  tick();
-  setInterval(tick, 1000);
-}
-
-/* ══════════════════════════════════
-   REDEEM GIFT CODE
-══════════════════════════════════ */
-async function redeemGift() {
-  const username  = getUsername();
-  const gift_code = (document.getElementById("gift-code").value || "").trim().toUpperCase();
-  if (!gift_code) { showModal("⚠️","KOSONG","Masukkan kode voucher terlebih dahulu!", "var(--pink)"); return; }
-
-  try {
-    const res = await api({ action: "redeem_gift", username, gift_code });
-    if (res.result === "SUCCESS") {
-      setSaldo(res.newSaldo);
-      document.getElementById("gift-code").value = "";
-      showModal("🎁","HADIAH DIKLAIM!",
-        `Kode valid! Saldo +${fmtIDR(res.bonus)} berhasil masuk ke akunmu.`, "var(--yellow)");
-    } else {
-      showModal("❌","GAGAL", res.message || "Kode tidak valid atau sudah digunakan.", "var(--pink)");
-    }
-  } catch(e) {
-    showModal("❌","ERROR","Koneksi gagal. Coba lagi.", "var(--pink)");
-  }
-}
-
-/* ══════════════════════════════════
-   INBOX ADMIN
-══════════════════════════════════ */
+/* ────────────────────────────────
+   INBOX
+   ──────────────────────────────── */
 async function loadInbox() {
   const username = getUsername();
   const box      = document.getElementById("inbox-container");
   const notif    = document.getElementById("inbox-notif");
-
   try {
-    const res = await api({ action: "get_inbox", username });
+    const res = await api({ action:"get_inbox", username });
     if (res.result === "SUCCESS" && res.data && res.data.length) {
       notif.style.display = "inline-block";
       box.innerHTML = res.data.map(item => `
         <div class="inbox-item" id="inbox-${item.id}">
-          <div class="inbox-icon">🎁</div>
+          <div class="inbox-ico">🎁</div>
           <div class="inbox-body">
             <div class="inbox-msg">${item.pesan}</div>
-            <div class="inbox-amount">+${fmtIDR(item.saldo)}</div>
+            <div class="inbox-amt">+ ${fmtIDR(item.saldo)}</div>
           </div>
-          <button class="btn-inbox-claim" onclick="claimInboxItem('${item.id}',${item.saldo})">
-            KLAIM
+          <button class="btn-claim-inbox"
+                  onclick="claimInboxItem('${item.id}',${item.saldo},this)">
+            Klaim
           </button>
         </div>
       `).join("");
@@ -828,129 +657,205 @@ async function loadInbox() {
       notif.style.display = "none";
       box.innerHTML = `
         <div class="inbox-empty">
-          <i class="fa-solid fa-inbox"></i>
-          Belum ada hadiah dari Admin. Pantau terus!
+          <i class="fa-regular fa-envelope-open"></i>
+          <p>Belum ada hadiah dari Admin.<br>Pantau terus ya!</p>
         </div>`;
     }
   } catch(e) {
-    box.innerHTML = `<div class="inbox-empty"><i class="fa-solid fa-wifi"></i><br>Gagal memuat inbox.</div>`;
+    box.innerHTML = `
+      <div class="inbox-empty">
+        <i class="fa-solid fa-wifi-exclamation"></i>
+        <p>Gagal memuat. Cek koneksi kamu.</p>
+      </div>`;
   }
 }
 
-async function claimInboxItem(inboxId, saldo) {
+async function claimInboxItem(id, saldo, btn) {
+  SFX.click();
   const username = getUsername();
-  const el = document.getElementById("inbox-" + inboxId);
-  if (el) el.style.opacity = "0.5";
-
+  const el = document.getElementById("inbox-" + id);
+  if (btn) { btn.disabled = true; btn.textContent = "…"; }
   try {
-    const res = await api({ action: "claim_inbox", username, inboxId });
+    const res = await api({ action:"claim_inbox", username, inboxId:id });
     if (res.result === "SUCCESS") {
       setSaldo(res.newSaldo);
-      showModal("🎉","HADIAH DITERIMA!",`+${fmtIDR(res.bonus)} berhasil masuk ke saldo aktifmu!`, "var(--yellow)");
-      loadInbox(); // refresh
+      SFX.coin();
+      if (el) { el.style.transition="opacity 0.4s"; el.style.opacity="0"; setTimeout(()=>el.remove(),420); }
+      showModal("💰","Hadiah Diterima!", `+ ${fmtIDR(res.bonus)} berhasil masuk ke saldo utama kamu!`, "success");
+      setTimeout(loadInbox, 500);
     } else {
-      showModal("❌","GAGAL", res.message || "Hadiah tidak tersedia.", "var(--pink)");
-      if (el) el.style.opacity = "1";
+      showModal("✕","Gagal", res.message || "Hadiah tidak tersedia.", "error");
+      if (btn) { btn.disabled=false; btn.textContent="Klaim"; }
     }
   } catch(e) {
-    showModal("❌","ERROR","Koneksi gagal.", "var(--pink)");
-    if (el) el.style.opacity = "1";
+    showModal("✕","Error","Koneksi gagal, coba lagi.", "error");
+    if (btn) { btn.disabled=false; btn.textContent="Klaim"; }
   }
 }
 
-/* ══════════════════════════════════
-   REFERRAL
-══════════════════════════════════ */
-async function loadRefList() {
+/* ────────────────────────────────
+   DAILY BONUS
+   ──────────────────────────────── */
+async function claimDailyBonus() {
+  SFX.click();
   const username = getUsername();
+  if (!username) return;
+
+  const today     = new Date().toLocaleDateString("id-ID");
+  const lastClaim = localStorage.getItem("lastDailyClaim_" + username) || "";
+
+  if (lastClaim === today) {
+    showModal("⏰","Sudah Diklaim","Bonus harian sudah diambil hari ini. Kembali besok!", "error");
+    return;
+  }
+
+  const btn = document.getElementById("btn-daily");
+  if (btn) { btn.disabled=true; btn.textContent="Memproses…"; }
 
   try {
-    const res = await api({ action: "get_ref_list", username });
+    const res = await api({ action:"claim_daily", username });
+    if (res.result === "SUCCESS") {
+      setSaldo(res.newSaldo);
+      localStorage.setItem("lastDailyClaim_" + username, today);
+      SFX.claim();
+      showModal("🌟","Bonus Harian!",
+        `IDR ${Number(res.bonus || 1000).toLocaleString("id-ID")} berhasil masuk ke saldo!`,
+        "success");
+      if (btn) btn.textContent = "Sudah Diklaim";
+      startDailyCountdown();
+    } else {
+      showModal("⏰","Sudah Diklaim", res.message || "Coba lagi besok!", "error");
+      if (btn) { btn.disabled=false; btn.textContent="Klaim Hari Ini"; }
+      if ((res.message||"").toLowerCase().includes("sudah")) {
+        localStorage.setItem("lastDailyClaim_" + username, today);
+        if (btn) btn.textContent = "Sudah Diklaim";
+        startDailyCountdown();
+      }
+    }
+  } catch(e) {
+    showModal("✕","Error","Koneksi gagal.", "error");
+    if (btn) { btn.disabled=false; btn.textContent="Klaim Hari Ini"; }
+  }
+}
+
+function startDailyCountdown() {
+  const el  = document.getElementById("daily-countdown");
+  const btn = document.getElementById("btn-daily");
+  if (btn) btn.disabled = true;
+  function tick() {
+    const now  = new Date(), next = new Date();
+    next.setHours(24,0,0,0);
+    const diff = Math.max(0, next - now);
+    if (!diff) {
+      if (el) el.textContent = "";
+      if (btn) { btn.disabled=false; btn.textContent="Klaim Hari Ini"; }
+      return;
+    }
+    const h = String(Math.floor(diff/3600000)).padStart(2,"0");
+    const m = String(Math.floor((diff%3600000)/60000)).padStart(2,"0");
+    const s = String(Math.floor((diff%60000)/1000)).padStart(2,"0");
+    if (el) el.textContent = `Reset ${h}:${m}:${s}`;
+  }
+  tick();
+  const iv = setInterval(tick, 1000);
+  // stop timer jam 00:00
+  const msUntilMidnight = new Date().setHours(24,0,0,0) - Date.now();
+  setTimeout(() => clearInterval(iv), msUntilMidnight + 2000);
+}
+
+/* ────────────────────────────────
+   REFERRAL
+   ──────────────────────────────── */
+async function loadRefList() {
+  const username = getUsername();
+  try {
+    const res = await api({ action:"get_ref_list", username });
     if (res.result !== "SUCCESS") return;
 
-    // Kode referral
     document.getElementById("ref-code-display").textContent = res.refCode || "—";
     localStorage.setItem("refCode_" + username, res.refCode || "");
-
-    // Stats
-    const validCount = (res.invited || []).filter(i => i.status === "VALID").length;
     document.getElementById("ref-invited-count").textContent = res.invited ? res.invited.length : 0;
     document.getElementById("ref-bonus-total").textContent   = fmtIDR(res.totalBonus || 0);
 
-    // List
     const listEl = document.getElementById("ref-list-container");
     if (!res.invited || !res.invited.length) {
-      listEl.innerHTML = `<div style="text-align:center;color:#444;font-size:11px;padding:12px;">Belum ada yang daftar pakai kode referralmu.</div>`;
+      listEl.innerHTML = `<div style="text-align:center;color:#1e1e30;font-size:11px;padding:14px;">Belum ada yang mendaftar lewat kode referralmu.</div>`;
       return;
     }
     listEl.innerHTML = res.invited.map(u => `
-      <div class="ref-list-item">
-        <span class="ref-uname"><i class="fa-solid fa-user" style="color:#444;margin-right:6px;"></i>${u.username}</span>
-        <span class="ref-badge ${u.status === 'VALID' ? 'ref-valid' : 'ref-invalid'}">
-          ${u.status === 'VALID' ? '✓ VALID' : 'BELUM DEPOSIT'}
+      <div class="ref-item">
+        <span class="ref-uname">
+          <i class="fa-solid fa-user" style="color:#2a2a4a;margin-right:6px;font-size:10px;"></i>
+          ${u.username}
+        </span>
+        <span class="ref-badge ${u.status==='VALID'?'ref-valid':'ref-invalid'}">
+          ${u.status==='VALID'?'✓ Valid':'Belum Deposit'}
         </span>
       </div>
     `).join("");
-  } catch(e) {
-    console.warn("ref error:", e);
-  }
+  } catch(e) { console.warn("ref:", e); }
 }
 
 async function claimReferral() {
+  SFX.click();
   const username = getUsername();
   try {
-    const res = await api({ action: "claim_referral", username });
+    const res = await api({ action:"claim_referral", username });
     if (res.result === "SUCCESS") {
       setSaldo(res.newSaldo);
-      showModal("💰","BONUS REFERRAL!", res.message || `+${fmtIDR(res.bonus)} berhasil diklaim!`, "var(--yellow)");
+      SFX.coin();
+      showModal("💸","Bonus Referral!", res.message || `+ ${fmtIDR(res.bonus)} berhasil diklaim!`, "success");
       loadRefList();
     } else {
-      showModal("⚠️","BELUM BISA", res.message || "Tidak ada bonus tersedia.", "var(--pink)");
+      showModal("⚠","Belum Bisa", res.message || "Tidak ada bonus yang tersedia.", "error");
     }
   } catch(e) {
-    showModal("❌","ERROR","Koneksi gagal.", "var(--pink)");
+    showModal("✕","Error","Koneksi gagal.", "error");
   }
 }
 
-/* ── COPY REFERRAL LINK ── */
 function copyLink() {
+  SFX.copy();
   const username = getUsername();
   const refCode  = localStorage.getItem("refCode_" + username)
                 || document.getElementById("ref-code-display").textContent;
-  const link = `${location.origin}${location.pathname.replace("reward.html","index.html")}?ref=${refCode}`;
+  const link = location.origin +
+    location.pathname.replace(/reward\.html$/i,"index.html") +
+    "?ref=" + encodeURIComponent(refCode);
 
   if (navigator.clipboard) {
     navigator.clipboard.writeText(link).then(() => {
-      showModal("🔗","LINK DISALIN!",`Link referralmu berhasil disalin. Bagikan ke teman!`, "var(--blue)");
+      showModal("🔗","Link Disalin!","Link referralmu berhasil disalin. Bagikan ke teman sekarang!", "info");
     });
   } else {
     const ta = document.createElement("textarea");
-    ta.value = link; document.body.appendChild(ta);
-    ta.select(); document.execCommand("copy");
-    document.body.removeChild(ta);
-    showModal("🔗","LINK DISALIN!",`Link referralmu berhasil disalin!`, "var(--blue)");
+    ta.value=link; document.body.appendChild(ta);
+    ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
+    showModal("🔗","Link Disalin!","Bagikan ke teman untuk dapat bonus!", "info");
   }
 }
 
-/* ══════════════════════════════════
+/* ────────────────────────────────
    INIT
-══════════════════════════════════ */
+   ──────────────────────────────── */
 window.addEventListener("load", () => {
   const username = getUsername();
-  if (!username) { location.href = "index.html"; return; }
+  if (!username) { location.href="index.html"; return; }
 
-  refreshSaldoBanner();
-  loadTier();
   loadInbox();
   loadRefList();
 
-  // Cek daily claim status
-  const lastClaim = localStorage.getItem("lastDailyClaim_" + username) || "";
+  /* Cek daily */
   const today     = new Date().toLocaleDateString("id-ID");
-  if (lastClaim === today) startDailyCountdown();
+  const lastClaim = localStorage.getItem("lastDailyClaim_" + username) || "";
+  if (lastClaim === today) {
+    const btn = document.getElementById("btn-daily");
+    if (btn) btn.textContent = "Sudah Diklaim";
+    startDailyCountdown();
+  }
 
-  // Polling inbox setiap 30 detik
-  setInterval(loadInbox, 30000);
+  /* Polling inbox tiap 25 detik */
+  setInterval(loadInbox, 25000);
 });
 </script>
 </body>
