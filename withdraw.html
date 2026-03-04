@@ -216,24 +216,23 @@ async function updateData() {
 }
 
 async function loadWithdrawHistory() {
-    const user = localStorage.getItem('username');
+    const user = localStorage.getItem('username'); // <--- PASTIKAN INI ADA
     const container = document.getElementById("wd-history");
     
+    if (!user) return;
+
     try {
-        // Karena App Script Anda memiliki fungsi getHistory(sheetName, username) di bagian bawah,
-        // namun belum diintegrasikan ke doPost, pastikan doPost Anda sudah memanggilnya.
-        // Jika belum, gunakan pemanggilan action 'getHistory' seperti di bawah:
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
             body: JSON.stringify({ 
-                action: 'getHistory', // Memanggil fungsi getHistory di server
+                action: 'getHistory', 
                 sheet: 'Withdraw', 
-                username: user 
+                username: user // <--- PASTIKAN INI TERKIRIM
             })
         });
         const res = await response.json();
 
-        if (res.result === "SUCCESS" && res.data.length > 0) {
+        if (res.result === "SUCCESS" && res.data && res.data.length > 0) {
             container.innerHTML = "";
             // Urutan kolom di sheet Withdraw: 0:Tanggal, 1:User, 2:Nama, 3:Bank, 4:Rek, 5:Nominal, 6:Status
             const history = res.data.reverse(); 
