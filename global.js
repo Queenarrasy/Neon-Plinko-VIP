@@ -1,767 +1,663 @@
 /**
  * ============================================================
- *  GLOBAL.JS — NEON PLINKO VIP v10.0
- *  Sinkron penuh dengan Google Apps Script (Code.gs)
- *  Halaman: profil.html | withdraw.html | deposit.html | reward.html | game.html
+ *  GLOBAL.JS — NEON PLINKO VIP v11.0  (SERVER-FIRST EDITION)
+ * ============================================================
+ *
+ *  PRINSIP ARSITEKTUR:
+ *  ─────────────────────────────────────────────────────────
+ *  ✅ Semua data SENSITIF (saldo, nama, rekening, winrate)
+ *     SELALU diambil dari server (Google Sheet) — bukan localStorage.
+ *
+ *  ✅ localStorage hanya untuk:
+ *     - "username"  → identitas sesi (siapa yang login)
+ *     - "_cache_*"  → cache tampilan sementara saja
+ *
+ *  ✅ Setiap halaman dibuka → fetchUserData() dipanggil dulu
+ *     → data server menimpa cache
+ *
+ *  ✅ Login di device apapun langsung sinkron dengan Sheet.
+ *
+ *  ✅ Jika server gagal → pesan jelas ditampilkan,
+ *     TIDAK pakai data lama yang bisa menyesatkan.
  * ============================================================
  */
 
-// ── URL Google Apps Script (JANGAN UBAH) ────────────────────
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwqQWXIJuVnkIxLvdu3kYiiRDVh7eyrsy-KU6rG1qtQClgfAzmMoclv2ULFZ_hRdE_qUg/exec";
+// ── KONFIGURASI ──────────────────────────────────────────────
+const SCRIPT_URL   = "https://script.google.com/macros/s/AKfycbwqQWXIJuVnkIxLvdu3kYiiRDVh7eyrsy-KU6rG1qtQClgfAzmMoclv2ULFZ_hRdE_qUg/exec";
+const WA_ADMIN     = "6289510249551";   // Ganti nomor WA admin
+const KURS_USDT    = 16800;
+const FEE_USDT     = 2;
+const MIN_WD       = 50000;
+const MIN_DEPO_IDR = 20000;
+const MIN_DEPO_USD = 10;
 
-// ── Konstanta Deposit ────────────────────────────────────────
-const KURS_USDT_GLOBAL = 16800;
-const FEE_USDT_GLOBAL  = 2;
-const WA_ADMIN         = "6289510249551"; // ← Ganti nomor WA admin
+// ── State runtime (bukan localStorage) ──────────────────────
+let _userData            = null;
+let _lastKnownWdStatus   = null;
+var _depoMethod          = "QRIS";
 
 // ============================================================
-//  UTILITY
+//  CORE: KOMUNIKASI GAS
 // ============================================================
 
-/**
- * Kirim POST ke GAS dan kembalikan JSON.
- * Catatan penting GAS:
- *  - Tidak pakai Content-Type header (hindari CORS preflight)
- *  - redirect:"follow" wajib karena GAS redirect ke URL eksekusi
- *  - Response bisa berupa HTML error, divalidasi dulu sebelum di-parse
- */
 async function gasPost(payload) {
+  const controller = new AbortController();
+  const timer      = setTimeout(() => controller.abort(), 20000);
+
   try {
-    const res = await fetch(SCRIPT_URL, {
+    const res  = await fetch(SCRIPT_URL, {
       method  : "POST",
       redirect: "follow",
+      signal  : controller.signal,
       body    : JSON.stringify(payload)
     });
+    clearTimeout(timer);
 
     const text = await res.text();
-
-    // GAS kadang return halaman HTML error bukan JSON
     if (!text || text.trim().startsWith("<")) {
-      console.error("GAS bukan JSON:", text.substring(0, 200));
-      return { result: "ERROR", message: "Respons server tidak valid. Periksa deployment GAS." };
+      console.error("[GAS] Bukan JSON:", text.substring(0, 150));
+      return { result: "ERROR", message: "GAS_HTML" };
     }
-
     return JSON.parse(text);
+
   } catch (err) {
-    console.error("gasPost error:", err.message);
-    throw err;
+    clearTimeout(timer);
+    return { result: "ERROR", message: err.name === "AbortError" ? "TIMEOUT" : "NETWORK_ERROR" };
   }
 }
 
-/** Format angka ke Rupiah */
-function fmtIDR(n) {
-  return "IDR " + Number(n || 0).toLocaleString("id-ID");
-}
-
-/** Ambil username dari localStorage, redirect jika tidak ada */
-function getUser() {
-  const u = localStorage.getItem("username");
-  if (!u) { window.location.href = "index.html"; return null; }
-  return u;
+function errMsg(code) {
+  return {
+    "GAS_HTML"     : "Server belum di-deploy. Hubungi admin.",
+    "TIMEOUT"      : "Server timeout (20 detik). Coba lagi.",
+    "NETWORK_ERROR": "Tidak ada koneksi internet."
+  }[code] || code || "Terjadi kesalahan.";
 }
 
 // ============================================================
-//  1. SINKRON DATA USER DARI SERVER
-//     Dipanggil oleh semua halaman saat onload
+//  SESSION
 // ============================================================
+
+function getUsername()  { return localStorage.getItem("username") || null; }
+
+function requireLogin() {
+  if (!getUsername()) { window.location.href = "index.html"; return false; }
+  return true;
+}
+
+function saveSession(username) {
+  localStorage.setItem("username",     username);
+  localStorage.setItem("user_session", username);
+}
+
+function clearSession() { localStorage.clear(); }
+
+// ============================================================
+//  FETCH USER DATA — SELALU DARI SERVER
+// ============================================================
+
 async function fetchUserData() {
-  const user = getUser();
-  if (!user) return null;
+  const username = getUsername();
+  if (!username) return null;
 
-  try {
-    const data = await gasPost({ action: "getUserData", username: user });
+  const result = await gasPost({ action: "getUserData", username });
 
-    if (data.result === "SUCCESS") {
-      // Simpan ke localStorage sebagai cache
-      localStorage.setItem("user_saldo",        data.saldo       || 0);
-      localStorage.setItem("user_tier",         data.tier        || "STARTER");
-      localStorage.setItem("user_fullname",     data.fullname    || "");
-      localStorage.setItem("user_bank",         data.bank        || "");
-      localStorage.setItem("user_rekening",     data.rekening    || "");
-      localStorage.setItem("user_phone",        data.phone       || "");
-      localStorage.setItem("winrate",           data.winrate     || 50);
-      localStorage.setItem("maxWin",            data.maxWin      || 0);
-      localStorage.setItem("sessionMinutes",    data.sessionMinutes || 0);
-      localStorage.setItem("refCode",           data.refCode     || "");
-
-      // Update semua elemen saldo yang ada di halaman
-      _setEl("display-saldo",   fmtIDR(data.saldo));
-      _setEl("wd-balance",      fmtIDR(data.saldo));
-
-      return data;
-    }
-  } catch (e) {
-    console.warn("fetchUserData gagal:", e);
-    // Gunakan cache localStorage jika server tidak bisa dijangkau
-    const cached = localStorage.getItem("user_saldo");
-    _setEl("display-saldo", fmtIDR(cached));
-    _setEl("wd-balance",    fmtIDR(cached));
+  if (result.result === "SUCCESS") {
+    _userData = result;
+    // Cache tipis untuk UI saja
+    localStorage.setItem("_cache_saldo",    result.saldo    ?? 0);
+    localStorage.setItem("_cache_fullname", result.fullname ?? "");
+    localStorage.setItem("_cache_bank",     result.bank     ?? "");
+    localStorage.setItem("_cache_rekening", result.rekening ?? "");
+    localStorage.setItem("_cache_tier",     result.tier     ?? "STARTER");
+    localStorage.setItem("_cache_refCode",  result.refCode  ?? "");
+    return result;
   }
+
+  console.warn("[fetchUserData]", result.message);
   return null;
 }
 
-/** Helper: set innerText elemen jika ada */
-function _setEl(id, val) {
-  const el = document.getElementById(id);
-  if (el) el.innerText = val;
+// ============================================================
+//  UTILITY UI
+// ============================================================
+
+function fmtIDR(n) { return "IDR " + Number(n || 0).toLocaleString("id-ID"); }
+
+function _setEl(id, val)  { const e = document.getElementById(id); if (e) e.innerText = val; }
+function _setVal(id, val) { const e = document.getElementById(id); if (e) e.value    = val || ""; }
+
+function showModal(title, msg, color) {
+  const m = document.getElementById("neon-modal");
+  if (!m) return;
+  _setEl("modal-title", title);
+  _setEl("modal-msg",   msg);
+  if (color) { m.style.border = "2px solid " + color; m.style.boxShadow = "0 0 20px " + color; }
+  m.style.display = "block";
+}
+
+function closeModal() {
+  const m = document.getElementById("neon-modal");
+  if (m) m.style.display = "none";
+  document.querySelectorAll(".btn-wa-inject").forEach(b => b.remove());
 }
 
 // ============================================================
-//  2. INISIALISASI HALAMAN PROFIL  →  profil.html
+//  PROFIL
 // ============================================================
+
 async function initProfile() {
+  if (!requireLogin()) return;
+  _setEl("profile-username", getUsername());
+
   const data = await fetchUserData();
-  if (!data) return;
+  if (!data) {
+    showModal("GAGAL MEMUAT ❌", "Data profil tidak bisa diambil dari server.\nRefresh halaman.", "var(--pink)");
+    return;
+  }
 
   _setEl("profile-username", data.username  || "-");
   _setEl("profile-tier",    (data.tier || "STARTER") + " MEMBER");
-  _setEl("display-saldo",   fmtIDR(data.saldo));
+  _setEl("display-saldo",    fmtIDR(data.saldo));
   _setEl("profile-fullname", data.fullname  || "-");
   _setEl("profile-bank",     data.bank      || "-");
   _setEl("profile-rek",      data.rekening  || "-");
-  _setEl("total-depo",      fmtIDR(data.totalDepo));
-  _setEl("total-wd",        fmtIDR(data.totalWD));
+  _setEl("total-depo",       fmtIDR(data.totalDepo));
+  _setEl("total-wd",         fmtIDR(data.totalWD));
   _setEl("profile-refcode",  data.refCode   || "-");
+  _setEl("profile-phone",    data.phone     || "-");
 }
 
 // ============================================================
-//  3. INISIALISASI HALAMAN WITHDRAW  →  withdraw.html
+//  WITHDRAW
 // ============================================================
-async function initWithdraw() {
-  // Isi dulu dari cache localStorage agar langsung tampil
-  const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || "-"; };
-  setVal("wd-account-name", localStorage.getItem("user_fullname"));
-  setVal("wd-account-num",  localStorage.getItem("user_rekening"));
-  setVal("wd-method",       localStorage.getItem("user_bank"));
-  _setEl("wd-balance",      fmtIDR(localStorage.getItem("user_saldo")));
 
-  // Sync dari server
-  try {
-    const data = await fetchUserData();
-    if (data) {
-      setVal("wd-account-name", data.fullname);
-      setVal("wd-account-num",  data.rekening);
-      setVal("wd-method",       data.bank);
-      _setEl("wd-balance",      fmtIDR(data.saldo));
-    }
-  } catch (e) {
-    console.warn("initWithdraw sync gagal, pakai cache:", e.message);
+async function initWithdraw() {
+  if (!requireLogin()) return;
+  _setEl("wd-balance", "Memuat...");
+
+  const data = await fetchUserData();
+  if (!data) {
+    _setEl("wd-balance", "GAGAL");
+    showModal("SERVER TIDAK MERESPONS ❌",
+      "Data tidak bisa diambil. Periksa koneksi internet lalu refresh.", "var(--pink)");
+    return;
   }
 
-  // Muat riwayat (tidak block UI jika gagal)
+  _setEl("wd-balance",       fmtIDR(data.saldo));
+  _setVal("wd-account-name", data.fullname);
+  _setVal("wd-account-num",  data.rekening);
+  _setVal("wd-method",       data.bank);
+
   await loadWithdrawHistory();
 }
 
-/** Muat & render riwayat withdraw dari sheet */
 async function loadWithdrawHistory() {
-  const user      = getUser();
   const container = document.getElementById("wd-history");
   if (!container) return;
 
-  try {
-    const result = await gasPost({ action: "get_wd_history", username: user });
+  container.innerHTML = `<div style="text-align:center;color:#777;padding:15px;font-size:11px;">
+    <i class="fa-solid fa-spinner fa-spin"></i> Memuat riwayat...</div>`;
 
-    if (result.result === "SUCCESS" && result.data.length > 0) {
-      container.innerHTML = "";
-      result.data.slice(0, 10).forEach((item, idx) => {
-        const st     = String(item.status || "").toUpperCase();
-        const stClass = st === "BERHASIL" ? "status-sukses" : st === "GAGAL" ? "status-gagal" : "status-proses";
-        const isNew  = idx === 0;
-        container.innerHTML += `
-          <div class="history-item ${isNew ? "latest" : ""}">
-            ${isNew ? '<div class="badge-new">BARU</div>' : ""}
-            <div class="hist-top">
-              <span style="font-weight:bold;">PENARIKAN DANA</span>
-              <span class="status-badge ${stClass}">${item.status}</span>
-            </div>
-            <div style="color:var(--yellow);font-weight:bold;font-size:14px;margin:4px 0;">
-              ${fmtIDR(item.amount)}
-            </div>
-            <div class="hist-time" style="font-size:10px;color:#aaa;">${item.timestamp}</div>
-          </div>`;
-      });
-    } else {
-      container.innerHTML = `<div style="text-align:center;color:#555;padding:20px;">Belum ada riwayat transaksi</div>`;
+  const result = await gasPost({ action: "get_wd_history", username: getUsername() });
+
+  if (result.result !== "SUCCESS") {
+    container.innerHTML = `<div style="text-align:center;color:#888;padding:20px;font-size:11px;">
+      ⚠️ ${errMsg(result.message)}<br><small style="color:#555;">Refresh untuk coba lagi.</small></div>`;
+    return;
+  }
+
+  if (!result.data || result.data.length === 0) {
+    container.innerHTML = `<div style="text-align:center;color:#555;padding:20px;font-size:11px;">
+      Belum ada riwayat penarikan.</div>`;
+    return;
+  }
+
+  container.innerHTML = "";
+  result.data.forEach((item, idx) => {
+    const st      = String(item.status || "PROSES").toUpperCase();
+    const stClass = st === "BERHASIL" ? "status-sukses" : st === "GAGAL" ? "status-gagal" : "status-proses";
+    const isNew   = idx === 0;
+
+    if (isNew && st === "BERHASIL" && _lastKnownWdStatus !== "BERHASIL") {
+      showModal("APPROVED ✅", "Withdraw kamu telah disetujui! Saldo segera dikirim.", "var(--blue)");
     }
-  } catch (e) {
-    console.warn("loadWithdrawHistory gagal:", e);
-    if (container) {
-      container.innerHTML = `<div style="text-align:center;color:#888;padding:20px;font-size:11px;">
-        <i class="fa-solid fa-circle-exclamation" style="color:var(--yellow);"></i><br><br>
-        Gagal memuat riwayat. Server sedang tidak merespons.<br>
-        <small style="color:#555;">Coba refresh halaman ini.</small>
+    if (isNew) _lastKnownWdStatus = st;
+
+    container.innerHTML += `
+      <div class="history-item ${isNew ? "latest" : ""}">
+        ${isNew ? '<div class="badge-new">BARU</div>' : ""}
+        <div class="hist-top">
+          <span style="font-weight:bold;">PENARIKAN DANA</span>
+          <span class="status-badge ${stClass}">${item.status}</span>
+        </div>
+        <div style="color:var(--yellow);font-weight:bold;font-size:14px;margin:4px 0;">
+          ${fmtIDR(item.amount)}
+        </div>
+        <div class="hist-time" style="font-size:10px;color:#aaa;">${item.timestamp}</div>
       </div>`;
-    }
-  }
+  });
 }
 
-/**
- * Proses Withdraw — dipanggil dari tombol di withdraw.html
- * Validasi di sisi client lalu kirim ke server.
- * Saldo dipotong di server, lalu localStorage diperbarui.
- */
 async function processWithdraw() {
-  const user   = getUser();
+  if (!requireLogin()) return;
+
   const amtEl  = document.getElementById("wd-amount");
-  const amount = Number(amtEl ? amtEl.value : 0);
-  const saldo  = Number(localStorage.getItem("user_saldo") || 0);
+  const amount = Number(amtEl?.value || 0);
 
-  // Validasi minimal
-  if (amount < 50000) {
-    _showWdModal("GAGAL ❌", "Minimal penarikan IDR 50.000", "var(--pink)", "0 0 20px var(--pink)");
-    return;
+  if (!amount || amount <= 0) {
+    showModal("GAGAL ❌", "Masukkan nominal penarikan.", "var(--pink)"); return;
   }
-  if (amount > saldo) {
-    _showWdModal("SALDO KURANG ❌", "Saldo tidak mencukupi untuk penarikan ini.", "var(--yellow)", "0 0 20px var(--yellow)");
-    return;
+  if (amount < MIN_WD) {
+    showModal("GAGAL ❌", `Minimal penarikan ${fmtIDR(MIN_WD)}.`, "var(--pink)"); return;
   }
 
-  _showWdModal("MEMPROSES ⏳", "Harap tunggu...", "var(--blue)", "0 0 20px var(--blue)");
+  // Verifikasi saldo dari server dulu sebelum potong
+  showModal("MENGECEK ⏳", "Memverifikasi saldo ke server...", "var(--blue)");
 
-  try {
-    const result = await gasPost({ action: "withdraw", username: user, amount: amount });
+  const cek = await gasPost({ action: "sync_balance", username: getUsername() });
+  if (cek.result !== "SUCCESS") {
+    showModal("GAGAL ❌", "Tidak bisa verifikasi saldo: " + errMsg(cek.message), "var(--pink)"); return;
+  }
 
-    if (result.result === "SUCCESS") {
-      localStorage.setItem("user_saldo", result.newSaldo);
-      _setEl("wd-balance", fmtIDR(result.newSaldo));
-      _setEl("display-saldo", fmtIDR(result.newSaldo));
-      if (amtEl) amtEl.value = "";
-      _showWdModal("BERHASIL DIAJUKAN ✅",
-        `Penarikan ${fmtIDR(amount)} sedang diproses admin.`,
-        "var(--blue)", "0 0 20px var(--blue)");
-      await loadWithdrawHistory();
-    } else {
-      _showWdModal("GAGAL ❌", result.message || "Penarikan gagal.", "var(--pink)", "0 0 20px var(--pink)");
-    }
-  } catch (e) {
-    console.error("processWithdraw error:", e);
-    _showWdModal(
-      "KONEKSI GAGAL ❌",
-      "Tidak dapat terhubung ke server.\n\nPastikan:\n1. URL GAS sudah benar\n2. GAS sudah di-deploy ulang (Manage Deployments)\n3. Akses: Anyone",
-      "var(--pink)", "0 0 20px var(--pink)"
-    );
+  const saldoServer = Number(cek.saldo || 0);
+  _setEl("wd-balance", fmtIDR(saldoServer));
+
+  if (amount > saldoServer) {
+    showModal("SALDO TIDAK CUKUP ❌",
+      `Saldo kamu: ${fmtIDR(saldoServer)}\nNominal WD : ${fmtIDR(amount)}\n\nSaldo tidak mencukupi.`,
+      "var(--yellow)");
+    return;
+  }
+
+  showModal("MEMPROSES ⏳", "Mengirim permintaan ke server...", "var(--blue)");
+
+  const result = await gasPost({ action: "withdraw", username: getUsername(), amount });
+
+  if (result.result === "SUCCESS") {
+    _setEl("wd-balance",    fmtIDR(result.newSaldo));
+    _setEl("display-saldo", fmtIDR(result.newSaldo));
+    localStorage.setItem("_cache_saldo", result.newSaldo);
+    if (amtEl) amtEl.value = "";
+    showModal("BERHASIL DIAJUKAN ✅",
+      `Penarikan ${fmtIDR(amount)} berhasil diajukan.\nSaldo baru: ${fmtIDR(result.newSaldo)}\n\nMenunggu approval admin.`,
+      "var(--blue)");
+    await loadWithdrawHistory();
+  } else {
+    showModal("GAGAL ❌", result.message || errMsg(result.message), "var(--pink)");
   }
 }
 
-function _showWdModal(title, msg, color, shadow) {
-  const m = document.getElementById("neon-modal");
-  if (!m) return;
-  document.getElementById("modal-title").innerText = title;
-  document.getElementById("modal-msg").innerText   = msg;
-  m.style.border    = "2px solid " + color;
-  m.style.boxShadow = shadow;
-  m.style.display   = "block";
-}
+// Polling WD: sync saldo + refresh riwayat setiap 8 detik
+setInterval(async () => {
+  if (!document.getElementById("wd-history") || !getUsername()) return;
+  const r = await gasPost({ action: "sync_balance", username: getUsername() });
+  if (r.result === "SUCCESS") {
+    _setEl("wd-balance",    fmtIDR(r.saldo));
+    _setEl("display-saldo", fmtIDR(r.saldo));
+    localStorage.setItem("_cache_saldo", r.saldo);
+  }
+  await loadWithdrawHistory();
+}, 8000);
 
 // ============================================================
-//  4. INISIALISASI HALAMAN DEPOSIT  →  deposit.html
+//  DEPOSIT
 // ============================================================
 
-// Variabel state deposit (dipakai inline di deposit.html)
-var _depoMethod = "QRIS";
-
-function initDeposit() {
-  if (!getUser()) return;
-  loadDepositHistory();
-  // Tampilkan QRIS default
+async function initDeposit() {
+  if (!requireLogin()) return;
   const qris = document.getElementById("qris-container");
   if (qris) qris.style.display = "block";
+  await loadDepositHistory();
 }
 
-/** Pilih metode deposit — dipanggil dari onclick di deposit.html */
 function selectMethod(el, method) {
   _depoMethod = method;
-
-  // Reset semua method-item
   document.querySelectorAll(".method-item").forEach(m => m.classList.remove("active"));
   el.classList.add("active");
 
-  // Kontrol QRIS box
   const qris    = document.getElementById("qris-container");
   const usdtBox = document.getElementById("usdt-calc");
   const idrGrid = document.getElementById("idr-grid");
   const labelEl = document.getElementById("label-nominal");
 
   if (method === "QRIS") {
-    if (qris)    { qris.style.display    = "block"; }
-    if (usdtBox) { usdtBox.style.display = "none";  }
-    if (idrGrid) { idrGrid.style.display = "grid";  }
-    if (labelEl)   labelEl.innerText = "NOMINAL DEPOSIT (IDR)";
+    if (qris)    qris.style.display    = "block";
+    if (usdtBox) usdtBox.style.display = "none";
+    if (idrGrid) idrGrid.style.display = "grid";
+    if (labelEl) labelEl.innerText     = "NOMINAL DEPOSIT (IDR)";
   } else if (method === "USDT") {
-    if (qris)    { qris.style.display    = "none";  }
-    if (usdtBox) { usdtBox.style.display = "block"; }
-    if (idrGrid) { idrGrid.style.display = "none";  }
-    if (labelEl)   labelEl.innerText = "NOMINAL DEPOSIT (USDT / $)";
+    if (qris)    qris.style.display    = "none";
+    if (usdtBox) usdtBox.style.display = "block";
+    if (idrGrid) idrGrid.style.display = "none";
+    if (labelEl) labelEl.innerText     = "NOMINAL DEPOSIT (USDT / $)";
     calculateUSDT();
   } else {
-    // BANK
-    if (qris)    { qris.style.display    = "none";  }
-    if (usdtBox) { usdtBox.style.display = "none";  }
-    if (idrGrid) { idrGrid.style.display = "grid";  }
-    if (labelEl)   labelEl.innerText = "NOMINAL DEPOSIT (IDR)";
+    if (qris)    qris.style.display    = "none";
+    if (usdtBox) usdtBox.style.display = "none";
+    if (idrGrid) idrGrid.style.display = "grid";
+    if (labelEl) labelEl.innerText     = "NOMINAL DEPOSIT (IDR)";
   }
 }
 
-/** Hitung estimasi USDT → IDR (dipanggil oninput) */
 function calculateUSDT() {
   if (_depoMethod !== "USDT") return;
-  const amt     = Number(document.getElementById("depo-amount")?.value || 0);
-  const diterima = amt > FEE_USDT_GLOBAL ? (amt - FEE_USDT_GLOBAL) * KURS_USDT_GLOBAL : 0;
-  const el       = document.getElementById("usdt-to-idr");
-  if (el) el.innerText = fmtIDR(diterima);
+  const amt      = Number(document.getElementById("depo-amount")?.value || 0);
+  const diterima = amt > FEE_USDT ? (amt - FEE_USDT) * KURS_USDT : 0;
+  _setEl("usdt-to-idr", fmtIDR(diterima));
 }
 
-/** Set nominal cepat */
 function setAmount(val) {
   const el = document.getElementById("depo-amount");
   if (el) { el.value = val; calculateUSDT(); }
 }
 
-/**
- * Proses Deposit — dipanggil tombol AJUKAN DEPOSIT
- * Validasi → kirim ke GAS → tampilkan modal
- */
 async function processDeposit() {
-  const user   = getUser();
+  if (!requireLogin()) return;
+
   const amount = Number(document.getElementById("depo-amount")?.value || 0);
 
-  // Validasi
-  if (_depoMethod === "QRIS" || _depoMethod === "BANK") {
-    if (amount < 20000) {
-      _showDepoModal("GAGAL ❌", "Minimal deposit QRIS / Bank adalah IDR 20.000.");
-      return;
-    }
+  if (!amount || amount <= 0) {
+    showModal("GAGAL ❌", "Masukkan nominal deposit.", "var(--pink)"); return;
   }
-  if (_depoMethod === "USDT") {
-    if (amount < 10) {
-      _showDepoModal("GAGAL ❌", "Minimal deposit USDT adalah $10.");
-      return;
-    }
+  if ((_depoMethod === "QRIS" || _depoMethod === "BANK") && amount < MIN_DEPO_IDR) {
+    showModal("GAGAL ❌", `Minimal deposit ${_depoMethod} adalah ${fmtIDR(MIN_DEPO_IDR)}.`, "var(--pink)"); return;
+  }
+  if (_depoMethod === "USDT" && amount < MIN_DEPO_USD) {
+    showModal("GAGAL ❌", `Minimal deposit USDT adalah $${MIN_DEPO_USD}.`, "var(--pink)"); return;
   }
 
-  _showDepoModal("MEMPROSES ⏳", "Mengirim permintaan ke server...");
+  showModal("MEMPROSES ⏳", "Mengirim ke server...", "var(--blue)");
 
-  try {
-    const result = await gasPost({
-      action  : "deposit",
-      username: user,
-      method  : _depoMethod,
-      amount  : amount
-    });
+  const result = await gasPost({ action: "deposit", username: getUsername(), method: _depoMethod, amount });
 
-    if (result.result === "SUCCESS") {
-      if (_depoMethod === "USDT") {
-        const diterima = (amount - FEE_USDT_GLOBAL) * KURS_USDT_GLOBAL;
-        _showDepoModal(
-          "DEPOSIT USDT DIAJUKAN ✅",
-          `Estimasi diterima: ${fmtIDR(diterima)}\n` +
-          `(Kurs: Rp ${KURS_USDT_GLOBAL.toLocaleString("id-ID")} | Fee: $${FEE_USDT_GLOBAL})\n\n` +
-          `Silakan konfirmasi wallet address ke Admin WhatsApp.`
-        );
-        // Tombol WA muncul di modal (inject)
-        setTimeout(() => {
-          const msgWA  = encodeURIComponent(
-            `Halo Admin, saya ${user} ingin konfirmasi deposit USDT $${amount}. ` +
-            `Estimasi diterima: ${fmtIDR(diterima)}. Mohon info wallet address TRC20.`
+  if (result.result === "SUCCESS") {
+    if (_depoMethod === "USDT") {
+      const diterima = (amount - FEE_USDT) * KURS_USDT;
+      showModal("DEPOSIT USDT DIAJUKAN ✅",
+        `Nominal: $${amount}\nEstimasi diterima: ${fmtIDR(diterima)}\n(Kurs: Rp ${KURS_USDT.toLocaleString("id-ID")} | Fee: $${FEE_USDT})\n\nSilakan konfirmasi ke admin.`,
+        "var(--blue)");
+      // Inject tombol WA
+      setTimeout(() => {
+        const modal = document.getElementById("neon-modal");
+        if (modal && !modal.querySelector(".btn-wa-inject")) {
+          const msgWA = encodeURIComponent(
+            `Halo Admin, saya *${getUsername()}* ingin deposit USDT $${amount}. Estimasi diterima: ${fmtIDR((amount - FEE_USDT) * KURS_USDT)}. Mohon info wallet TRC20.`
           );
-          const waUrl  = `https://wa.me/${WA_ADMIN}?text=${msgWA}`;
-          const modal  = document.getElementById("neon-modal");
-          if (modal && !modal.querySelector(".btn-wa")) {
-            const btnWA = document.createElement("button");
-            btnWA.className   = "modal-btn btn-wa";
-            btnWA.style.cssText = "margin-top:10px;background:#25d366;border-color:#25d366;color:white;";
-            btnWA.innerText   = "📱 KONFIRMASI KE ADMIN";
-            btnWA.onclick     = () => window.open(waUrl, "_blank");
-            modal.appendChild(btnWA);
-          }
-        }, 100);
-      } else {
-        _showDepoModal(
-          "DEPOSIT DIAJUKAN ✅",
-          `Permintaan deposit ${fmtIDR(amount)} via ${_depoMethod} sedang diproses. ` +
-          `Saldo akan masuk setelah admin verifikasi.`
-        );
-      }
-      // Reset input & refresh riwayat
-      const inp = document.getElementById("depo-amount");
-      if (inp) inp.value = "";
-      await loadDepositHistory();
-
+          const btn = document.createElement("button");
+          btn.className   = "modal-btn btn-wa-inject";
+          btn.style.cssText = "margin-top:8px;background:#25d366;border-color:#25d366;color:white;display:block;width:100%;";
+          btn.innerText   = "📱 KONFIRMASI KE ADMIN (WA)";
+          btn.onclick     = () => window.open(`https://wa.me/${WA_ADMIN}?text=${msgWA}`, "_blank");
+          modal.appendChild(btn);
+        }
+      }, 100);
     } else {
-      _showDepoModal("GAGAL ❌", result.message || "Deposit gagal diproses.");
+      showModal("DEPOSIT DIAJUKAN ✅",
+        `Deposit ${fmtIDR(amount)} via ${_depoMethod} berhasil diajukan.\nSaldo masuk setelah admin verifikasi.`,
+        "var(--blue)");
     }
-  } catch (e) {
-    _showDepoModal("ERROR ❌", "Koneksi ke server gagal. Pastikan internet stabil.");
+
+    const inp = document.getElementById("depo-amount");
+    if (inp) inp.value = "";
+    await loadDepositHistory();
+  } else {
+    showModal("GAGAL ❌", result.message || errMsg(result.message), "var(--pink)");
   }
 }
 
-function _showDepoModal(title, msg) {
-  const t = document.getElementById("modal-title");
-  const m = document.getElementById("modal-msg");
-  const d = document.getElementById("neon-modal");
-  if (t) t.innerText = title;
-  if (m) m.innerText = msg;
-  if (d) d.style.display = "block";
-}
-
-function closeModal() {
-  const d = document.getElementById("neon-modal");
-  if (d) d.style.display = "none";
-  // Hapus tombol WA yang mungkin di-inject
-  document.querySelectorAll(".btn-wa").forEach(b => b.remove());
-}
-
-/** Muat & render riwayat deposit */
 async function loadDepositHistory() {
-  const user      = getUser();
   const container = document.getElementById("depo-history-list");
   if (!container) return;
 
-  try {
-    const result = await gasPost({ action: "get_deposit_history", username: user });
+  container.innerHTML = `<div style="text-align:center;color:#777;padding:15px;font-size:11px;">
+    <i class="fa-solid fa-spinner fa-spin"></i> Memuat riwayat...</div>`;
 
-    if (result.result === "SUCCESS" && result.data.length > 0) {
-      container.innerHTML = "";
-      result.data.slice(0, 10).forEach(item => {
-        const isCrypto  = !!item.nominalCrypto;
-        const st        = String(item.status || "").toUpperCase();
-        const stClass   = st === "BERHASIL" ? "status-sukses" : "status-proses";
-        const method    = isCrypto ? "USDT CRYPTO" : "QRIS / BANK";
-        // Di halaman riwayat tampilkan nominal dollar jika USDT
-        let displayAmt;
-        if (isCrypto) {
-          // Format di sheet: "126400 (10)" → tampilkan "$10"
-          const match = String(item.nominalCrypto).match(/\((\d+)\)/);
-          displayAmt = match ? "$" + match[1] : item.nominalCrypto;
-        } else {
-          displayAmt = fmtIDR(item.nominalIDR);
-        }
+  const result = await gasPost({ action: "get_deposit_history", username: getUsername() });
 
-        container.innerHTML += `
-          <div class="history-item">
-            <div class="hist-method">${method}</div>
-            <div class="hist-date">${item.timestamp}</div>
-            <div class="hist-amount">${displayAmt}</div>
-            <div class="hist-status ${stClass}">${item.status}</div>
-          </div>`;
-      });
-    } else {
-      container.innerHTML = `<div style="text-align:center;color:#444;font-size:11px;padding:20px;">Belum ada riwayat transaksi.</div>`;
-    }
-  } catch (e) {
-    console.warn("loadDepositHistory gagal:", e);
-    if (container) {
-      container.innerHTML = `<div style="text-align:center;color:#888;padding:20px;font-size:11px;">
-        <i class="fa-solid fa-circle-exclamation" style="color:var(--yellow);"></i><br><br>
-        Gagal memuat riwayat. Server sedang tidak merespons.<br>
-        <small style="color:#555;">Coba refresh halaman ini.</small>
-      </div>`;
-    }
+  if (result.result !== "SUCCESS") {
+    container.innerHTML = `<div style="text-align:center;color:#888;padding:20px;font-size:11px;">
+      ⚠️ ${errMsg(result.message)}<br><small style="color:#555;">Refresh untuk coba lagi.</small></div>`;
+    return;
   }
+
+  if (!result.data || result.data.length === 0) {
+    container.innerHTML = `<div style="text-align:center;color:#444;font-size:11px;padding:20px;">
+      Belum ada riwayat transaksi.</div>`;
+    return;
+  }
+
+  container.innerHTML = "";
+  result.data.forEach(item => {
+    const isCrypto  = !!item.nominalCrypto;
+    const st        = String(item.status || "PROSES").toUpperCase();
+    const stClass   = st === "BERHASIL" ? "status-sukses" : "status-proses";
+    const methodLbl = isCrypto ? "USDT CRYPTO" : "QRIS / BANK";
+    let displayAmt;
+    if (isCrypto) {
+      const match = String(item.nominalCrypto).match(/\((\d+)\)/);
+      displayAmt  = match ? `$${match[1]}` : item.nominalCrypto;
+    } else {
+      displayAmt = fmtIDR(item.nominalIDR);
+    }
+    container.innerHTML += `
+      <div class="history-item">
+        <div class="hist-method">${methodLbl}</div>
+        <div class="hist-date">${item.timestamp}</div>
+        <div class="hist-amount">${displayAmt}</div>
+        <div class="hist-status ${stClass}">${item.status}</div>
+      </div>`;
+  });
 }
 
-// ── Auto-refresh deposit history setiap 8 detik ─────────────
+// Polling deposit history setiap 8 detik
 setInterval(() => {
-  if (document.getElementById("depo-history-list") && getUser()) {
-    loadDepositHistory();
-  }
+  if (document.getElementById("depo-history-list") && getUsername()) loadDepositHistory();
 }, 8000);
 
 // ============================================================
-//  5. INISIALISASI HALAMAN REWARD  →  reward.html
+//  REWARD
 // ============================================================
+
 async function initReward() {
+  if (!requireLogin()) return;
   const data = await fetchUserData();
-  if (!data) return;
-
-  // Tampilkan tier di VIP card
-  const vipEl = document.querySelector(".vip-info h4");
-  if (vipEl) vipEl.innerText = (data.tier || "STARTER") + " MEMBER";
-
-  // Tampilkan ref code
-  const refCodeEl = document.getElementById("ref-code-display");
-  if (refCodeEl) refCodeEl.innerText = data.refCode || "-";
-
-  // Muat inbox & referral
+  if (data) {
+    const vipEl = document.querySelector(".vip-info h4");
+    if (vipEl) vipEl.innerText = (data.tier || "STARTER") + " MEMBER";
+    _setEl("ref-code-display", data.refCode || "-");
+  }
   await loadInbox();
   await loadRefList();
 }
 
-/** Claim Daily Bonus */
 async function claimDailyReward() {
-  const user = getUser();
-  try {
-    const result = await gasPost({ action: "claim_daily", username: user });
-    if (result.result === "SUCCESS") {
-      localStorage.setItem("user_saldo", result.newSaldo);
-      _showRewardModal(
-        "DAILY BONUS ✅",
-        `Selamat! Bonus harian IDR ${Number(result.bonus).toLocaleString("id-ID")} berhasil diklaim.`
-      );
-    } else {
-      _showRewardModal("INFO ℹ️", result.message || "Sudah klaim hari ini.");
-    }
-  } catch (e) {
-    _showRewardModal("ERROR ❌", "Gagal terhubung ke server.");
+  if (!requireLogin()) return;
+  const result = await gasPost({ action: "claim_daily", username: getUsername() });
+  if (result.result === "SUCCESS") {
+    _setEl("display-saldo", fmtIDR(result.newSaldo));
+    localStorage.setItem("_cache_saldo", result.newSaldo);
+    showModal("DAILY BONUS ✅",
+      `Bonus harian ${fmtIDR(result.bonus)} berhasil diklaim!\nSaldo baru: ${fmtIDR(result.newSaldo)}`,
+      "var(--yellow)");
+  } else {
+    showModal("INFO ℹ️", result.message || "Sudah klaim hari ini.", "var(--blue)");
   }
 }
 
-/** Klaim hadiah dari INBOX (dipanggil dari tombol di kartu inbox) */
+function claimType(type) { if (type === "daily") claimDailyReward(); }
+
 async function claimInboxItem(inboxId) {
-  const user = getUser();
-  try {
-    const result = await gasPost({ action: "claim_inbox", username: user, inboxId: inboxId });
-    if (result.result === "SUCCESS") {
-      localStorage.setItem("user_saldo", result.newSaldo);
-      _showRewardModal(
-        "HADIAH DIKLAIM ✅",
-        `Saldo IDR ${Number(result.bonus).toLocaleString("id-ID")} berhasil masuk ke akun Anda!`
-      );
-      await loadInbox(); // refresh kotak hadiah
-    } else {
-      _showRewardModal("GAGAL ❌", result.message || "Klaim gagal.");
-    }
-  } catch (e) {
-    _showRewardModal("ERROR ❌", "Gagal terhubung ke server.");
+  if (!requireLogin()) return;
+  const result = await gasPost({ action: "claim_inbox", username: getUsername(), inboxId });
+  if (result.result === "SUCCESS") {
+    _setEl("display-saldo", fmtIDR(result.newSaldo));
+    localStorage.setItem("_cache_saldo", result.newSaldo);
+    showModal("HADIAH DIKLAIM ✅",
+      `${fmtIDR(result.bonus)} masuk ke saldo!\nSaldo baru: ${fmtIDR(result.newSaldo)}`, "var(--yellow)");
+    await loadInbox();
+  } else {
+    showModal("GAGAL ❌", result.message || "Klaim gagal.", "var(--pink)");
   }
 }
 
-/** Redeem kode gift dari admin */
 async function redeemGift() {
-  const user    = getUser();
-  const codeEl  = document.getElementById("gift-code");
-  const code    = codeEl ? codeEl.value.trim() : "";
-  if (!code) { _showRewardModal("INFO ℹ️", "Harap masukkan kode hadiah terlebih dahulu."); return; }
+  if (!requireLogin()) return;
+  const codeEl = document.getElementById("gift-code");
+  const code   = codeEl?.value.trim() || "";
+  if (!code) { showModal("INFO ℹ️", "Masukkan kode hadiah.", "var(--blue)"); return; }
 
   const btn = document.querySelector(".btn-redeem");
   if (btn) { btn.disabled = true; btn.innerText = "MENGECEK..."; }
 
-  try {
-    const result = await gasPost({ action: "redeem_gift", username: user, gift_code: code });
-    if (result.result === "SUCCESS") {
-      localStorage.setItem("user_saldo", result.newSaldo);
-      if (codeEl) codeEl.value = "";
-      _showRewardModal(
-        "GIFT DIKLAIM ✅",
-        `Saldo IDR ${Number(result.bonus).toLocaleString("id-ID")} berhasil masuk ke akun Anda!`
-      );
-    } else {
-      _showRewardModal("GAGAL ❌", result.message || "Kode tidak valid atau sudah digunakan.");
-    }
-  } catch (e) {
-    _showRewardModal("ERROR ❌", "Gagal terhubung ke server.");
-  } finally {
-    if (btn) { btn.disabled = false; btn.innerText = "KLAIM HADIAH"; }
+  const result = await gasPost({ action: "redeem_gift", username: getUsername(), gift_code: code });
+
+  if (result.result === "SUCCESS") {
+    _setEl("display-saldo", fmtIDR(result.newSaldo));
+    localStorage.setItem("_cache_saldo", result.newSaldo);
+    if (codeEl) codeEl.value = "";
+    showModal("GIFT DIKLAIM ✅",
+      `${fmtIDR(result.bonus)} masuk ke saldo!\nSaldo baru: ${fmtIDR(result.newSaldo)}`, "var(--yellow)");
+  } else {
+    showModal("GAGAL ❌", result.message || "Kode tidak valid atau sudah digunakan.", "var(--pink)");
   }
+
+  if (btn) { btn.disabled = false; btn.innerText = "KLAIM HADIAH"; }
 }
 
-/** Claim bonus referral (hanya hari Minggu) */
 async function claimReferral() {
-  const user = getUser();
-  try {
-    const result = await gasPost({ action: "claim_referral", username: user });
-    if (result.result === "SUCCESS") {
-      localStorage.setItem("user_saldo", result.newSaldo);
-      _showRewardModal("REFERRAL BONUS ✅", result.message);
-      await loadRefList();
-    } else {
-      _showRewardModal("INFO ℹ️", result.message || "Belum bisa klaim.");
-    }
-  } catch (e) {
-    _showRewardModal("ERROR ❌", "Gagal terhubung ke server.");
+  if (!requireLogin()) return;
+  const result = await gasPost({ action: "claim_referral", username: getUsername() });
+  if (result.result === "SUCCESS") {
+    _setEl("display-saldo", fmtIDR(result.newSaldo));
+    localStorage.setItem("_cache_saldo", result.newSaldo);
+    showModal("BONUS REFERRAL ✅", result.message, "var(--yellow)");
+    await loadRefList();
+  } else {
+    showModal("INFO ℹ️", result.message || "Belum bisa klaim.", "var(--blue)");
   }
 }
 
-/** Salin link referral ke clipboard */
 function copyRefLink() {
-  const user    = localStorage.getItem("username") || "player";
-  const refCode = localStorage.getItem("refCode")  || user;
+  const refCode = localStorage.getItem("_cache_refCode") || getUsername();
   const link    = `https://neonplinko.vip/reg?ref=${refCode}`;
-  navigator.clipboard.writeText(link).then(() => {
-    _showRewardModal("DISALIN ✅", `Link referral berhasil disalin:\n${link}`);
-  }).catch(() => {
-    _showRewardModal("LINK REFERRAL", link);
+  navigator.clipboard.writeText(link)
+    .then(()  => showModal("DISALIN ✅", `Link: ${link}`, "var(--blue)"))
+    .catch(()  => showModal("LINK REFERRAL", link, "var(--blue)"));
+}
+
+function copyLink() { copyRefLink(); }
+
+async function loadInbox() {
+  const box = document.getElementById("inbox-container");
+  if (!box) return;
+
+  box.innerHTML = `<div style="text-align:center;color:#777;padding:12px;font-size:11px;">
+    <i class="fa-solid fa-spinner fa-spin"></i> Memuat hadiah...</div>`;
+
+  const result = await gasPost({ action: "get_inbox", username: getUsername() });
+
+  if (result.result !== "SUCCESS" || !result.data || result.data.length === 0) {
+    box.innerHTML = `<div style="text-align:center;color:#555;padding:15px;font-size:12px;">Tidak ada hadiah saat ini.</div>`;
+    return;
+  }
+
+  box.innerHTML = "";
+  result.data.forEach(item => {
+    box.innerHTML += `
+      <div style="background:rgba(255,0,119,0.07);border:1px solid var(--pink);border-radius:12px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:12px;color:#ccc;margin-bottom:6px;">${item.pesan}</div>
+        <div style="color:var(--yellow);font-weight:900;font-size:16px;margin-bottom:10px;">+ ${fmtIDR(item.saldo)}</div>
+        <button onclick="claimInboxItem('${item.id}')"
+          style="width:100%;padding:10px;border-radius:50px;background:var(--pink);color:white;font-weight:900;border:none;cursor:pointer;font-size:12px;">
+          KLAIM HADIAH
+        </button>
+      </div>`;
   });
 }
 
-/** Muat pesan inbox dari sheet Inbox */
-async function loadInbox() {
-  const user = getUser();
-  const box  = document.getElementById("inbox-container");
-  if (!box) return;
-
-  try {
-    const result = await gasPost({ action: "get_inbox", username: user });
-    if (result.result === "SUCCESS" && result.data.length > 0) {
-      box.innerHTML = "";
-      result.data.forEach(item => {
-        box.innerHTML += `
-          <div style="background:rgba(255,0,119,0.08);border:1px solid var(--pink);
-                      border-radius:12px;padding:14px;margin-bottom:12px;">
-            <div style="font-size:12px;color:#ccc;margin-bottom:6px;">${item.pesan}</div>
-            <div style="color:var(--yellow);font-weight:900;font-size:16px;margin-bottom:10px;">
-              + IDR ${Number(item.saldo).toLocaleString("id-ID")}
-            </div>
-            <button onclick="claimInboxItem('${item.id}')"
-              style="width:100%;padding:10px;border-radius:50px;background:var(--pink);
-                     color:white;font-weight:900;border:none;cursor:pointer;">
-              KLAIM HADIAH
-            </button>
-          </div>`;
-      });
-    } else {
-      box.innerHTML = `<div style="text-align:center;color:#555;padding:15px;font-size:12px;">
-                         Tidak ada hadiah saat ini.</div>`;
-    }
-  } catch (e) {
-    console.warn("loadInbox gagal:", e);
-  }
-}
-
-/** Muat daftar undangan referral */
 async function loadRefList() {
-  const user   = getUser();
   const refBox = document.getElementById("ref-list-container");
   if (!refBox) return;
 
-  try {
-    const result = await gasPost({ action: "get_ref_list", username: user });
-    if (result.result !== "SUCCESS") return;
+  refBox.innerHTML = `<div style="text-align:center;color:#777;padding:10px;font-size:11px;">
+    <i class="fa-solid fa-spinner fa-spin"></i> Memuat...</div>`;
 
-    const { invited, totalBonus, refCode } = result;
-
-    // Update ref code display
-    localStorage.setItem("refCode", refCode || "");
-    if (document.getElementById("ref-code-display"))
-      document.getElementById("ref-code-display").innerText = refCode || "-";
-
-    // Update total bonus
-    if (document.getElementById("ref-bonus-total"))
-      document.getElementById("ref-bonus-total").innerText = fmtIDR(totalBonus);
-
-    if (invited.length === 0) {
-      refBox.innerHTML = `<div style="text-align:center;color:#555;font-size:11px;padding:10px;">
-                            Belum ada teman yang diundang.</div>`;
-      return;
-    }
-
-    refBox.innerHTML = "";
-    invited.forEach(inv => {
-      const isValid = inv.status === "VALID";
-      refBox.innerHTML += `
-        <div style="display:flex;justify-content:space-between;align-items:center;
-                    padding:10px;border-bottom:1px solid #222;">
-          <span style="font-size:12px;">${inv.username}</span>
-          <span style="font-size:10px;font-weight:bold;padding:3px 8px;border-radius:6px;
-                background:${isValid ? "rgba(0,255,0,0.15)" : "rgba(255,200,0,0.1)"};
-                color:${isValid ? "#00ff00" : "#ffcc00"};">${inv.status}</span>
-        </div>`;
-    });
-
-  } catch (e) {
-    console.warn("loadRefList gagal:", e);
+  const result = await gasPost({ action: "get_ref_list", username: getUsername() });
+  if (result.result !== "SUCCESS") {
+    refBox.innerHTML = `<div style="text-align:center;color:#555;font-size:11px;padding:8px;">Gagal memuat data referral.</div>`;
+    return;
   }
-}
 
-function _showRewardModal(title, msg) {
-  const t = document.getElementById("modal-title");
-  const m = document.getElementById("modal-msg");
-  const d = document.getElementById("neon-modal");
-  if (t) t.innerText = title;
-  if (m) m.innerText = msg;
-  if (d) d.style.display = "block";
-}
+  const { invited, totalBonus, refCode } = result;
+  localStorage.setItem("_cache_refCode", refCode || "");
+  _setEl("ref-code-display", refCode || "-");
+  _setEl("ref-bonus-total",  fmtIDR(totalBonus));
 
-// ── Alias agar reward.html tombol lama tetap berfungsi ──────
-function claimType(type) {
-  if (type === "daily") claimDailyReward();
-  else _showRewardModal("INFO", "Fitur ini belum tersedia.");
+  if (!invited || invited.length === 0) {
+    refBox.innerHTML = `<div style="text-align:center;color:#555;font-size:11px;padding:10px;">Belum ada teman yang diundang.</div>`;
+    return;
+  }
+
+  refBox.innerHTML = "";
+  invited.forEach(inv => {
+    const ok = inv.status === "VALID";
+    refBox.innerHTML += `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border-bottom:1px solid #1a1a2e;">
+        <span style="font-size:12px;">${inv.username}</span>
+        <span style="font-size:10px;font-weight:bold;padding:3px 8px;border-radius:6px;
+              background:${ok ? "rgba(0,255,0,0.12)" : "rgba(255,200,0,0.1)"};
+              color:${ok ? "#00ff88" : "#ffcc00"};">${inv.status}</span>
+      </div>`;
+  });
 }
-function copyLink() { copyRefLink(); }
 
 // ============================================================
-//  6. GAME ENGINE — dipanggil dari game.html
+//  GAME
 // ============================================================
 
-/**
- * Kirim satu putaran ke server, dapatkan multiplier & saldo baru.
- * Server yang menentukan apakah menang / kalah sesuai winrate admin.
- * @param {number} betAmount
- * @returns {{ multiplier: number, newSaldo: number } | null}
- */
 async function playPlinkoGame(betAmount) {
-  const user       = getUser();
-  const curSaldo   = Number(localStorage.getItem("user_saldo") || 0);
+  if (!requireLogin()) return null;
+  const result = await gasPost({ action: "game_play", username: getUsername(), bet: betAmount });
+  if (result.result === "SUCCESS") {
+    _setEl("display-saldo", fmtIDR(result.newSaldo));
+    localStorage.setItem("_cache_saldo", result.newSaldo);
+    return { multiplier: result.target_multiplier, newSaldo: result.newSaldo };
+  }
+  return null;
+}
 
-  if (betAmount > curSaldo) return null; // sudah dicek di game.html
-
-  try {
-    const result = await gasPost({
-      action  : "game_play",
-      username: user,
-      bet     : betAmount
-    });
-
-    if (result.result === "SUCCESS") {
-      localStorage.setItem("user_saldo", result.newSaldo);
-      return {
-        multiplier: result.target_multiplier,
-        newSaldo  : result.newSaldo
-      };
-    } else {
-      return null;
-    }
-  } catch (e) {
-    console.error("playPlinkoGame error:", e);
-    return null;
+async function syncSaldo() {
+  if (!getUsername()) return;
+  const r = await gasPost({ action: "sync_balance", username: getUsername() });
+  if (r.result === "SUCCESS") {
+    _setEl("display-saldo", fmtIDR(r.saldo));
+    localStorage.setItem("_cache_saldo", r.saldo);
   }
 }
 
-/** Sync saldo dari server (polling ringan untuk game.html) */
-async function syncSaldo() {
-  const user = localStorage.getItem("username");
-  if (!user) return;
-  try {
-    const r = await gasPost({ action: "sync_balance", username: user });
-    if (r.result === "SUCCESS") {
-      localStorage.setItem("user_saldo", r.saldo);
-      _setEl("display-saldo", fmtIDR(r.saldo));
-    }
-  } catch (e) { /* silent */ }
-}
+// ============================================================
+//  LOGOUT
+// ============================================================
 
-// ============================================================
-//  7. LOGOUT
-// ============================================================
 function userLogout() {
-  localStorage.clear();
+  if (getUsername()) gasPost({ action: "logout", username: getUsername() }).catch(() => {});
+  clearSession();
   window.location.href = "index.html";
 }
 
 // ============================================================
-//  AUTO-INIT  — sesuai halaman yang sedang dibuka
+//  AUTO-INIT
 // ============================================================
+
 document.addEventListener("DOMContentLoaded", () => {
-  const path = window.location.pathname.split("/").pop() || "";
+  const page = window.location.pathname.split("/").pop() || "index.html";
+  if (page === "index.html" || page === "") return;
+  if (!requireLogin()) return;
 
-  if (!localStorage.getItem("username") && path !== "index.html") {
-    window.location.href = "index.html";
-    return;
-  }
-
-  if (path === "profil.html")   { initProfile();  return; }
-  if (path === "withdraw.html") { initWithdraw(); return; }
-  if (path === "deposit.html" || path === "deposit__1_.html") { initDeposit();  return; }
-  if (path === "reward.html")   { initReward();   return; }
-
-  // game.html — cukup fetchUserData saja
-  if (path === "game.html") { fetchUserData(); }
+  if (page === "profil.html")                               { initProfile();  return; }
+  if (page === "withdraw.html")                             { initWithdraw(); return; }
+  if (page === "deposit.html" || page === "deposit__1_.html") { initDeposit();  return; }
+  if (page === "reward.html")                               { initReward();   return; }
+  if (page === "game.html")                                 { fetchUserData(); return; }
 });
-
-// ── Polling saldo setiap 6 detik di halaman withdraw ────────
-setInterval(() => {
-  if (document.getElementById("wd-history") && localStorage.getItem("username")) {
-    loadWithdrawHistory();
-    syncSaldo();
-  }
-}, 6000);
