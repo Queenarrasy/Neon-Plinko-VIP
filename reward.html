@@ -103,8 +103,18 @@
         <div class="vip-status-card">
             <i class="fa-solid fa-crown vip-icon"></i>
             <div class="vip-info">
-                <h4>VIP PLATINUM STATUS</h4>
-                <p>Nikmati limit withdraw lebih tinggi & prioritas klaim.</p>
+                <h4 id="profile-tier-reward">VIP MEMBER</h4>
+                <p>Nikmati limit withdraw lebih tinggi &amp; prioritas klaim.</p>
+            </div>
+        </div>
+
+        <!-- KOTAK HADIAH INBOX ADMIN -->
+        <div style="margin-bottom:20px;">
+            <div style="font-weight:900;color:var(--pink);margin-bottom:10px;font-size:13px;letter-spacing:1px;">
+                <i class="fa-solid fa-envelope-open-text"></i> HADIAH &amp; PESAN ADMIN
+            </div>
+            <div id="inbox-container">
+                <div style="text-align:center;color:#555;padding:15px;font-size:12px;">Memuat hadiah...</div>
             </div>
         </div>
 
@@ -120,74 +130,53 @@
                 <button class="btn-claim-small" onclick="copyLink()" style="border-color: var(--pink); color: var(--pink);">SALIN LINK</button>
             </div>
         </div>
+
+        <!-- REFERRAL INFO -->
+        <div style="margin-top:20px;border:1px solid var(--blue);border-radius:15px;padding:15px;background:rgba(0,68,255,0.05);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <div style="font-size:12px;font-weight:900;color:var(--yellow);">
+                    <i class="fa-solid fa-users"></i> PROGRAM REFERRAL
+                </div>
+                <button onclick="claimReferral()"
+                    style="padding:6px 14px;border-radius:50px;background:var(--blue);color:white;
+                           font-size:10px;font-weight:900;border:none;cursor:pointer;">
+                    CLAIM (MINGGU)
+                </button>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:8px;color:#aaa;">
+                <span>Kode Referral Kamu:</span>
+                <span id="ref-code-display" style="color:var(--yellow);font-weight:bold;">-</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:12px;color:#aaa;">
+                <span>Total Bonus Tersedia:</span>
+                <span id="ref-bonus-total" style="color:#00ff88;font-weight:bold;">IDR 0</span>
+            </div>
+            <div id="ref-list-container"
+                style="max-height:160px;overflow-y:auto;border-top:1px solid #222;padding-top:8px;">
+                <div style="text-align:center;color:#555;font-size:11px;padding:8px;">
+                    Memuat daftar undangan...
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="global.js"></script>
     <script>
-        const API_URL = typeof SCRIPT_URL !== 'undefined' ? SCRIPT_URL : "";
+        // ── Semua fungsi inti ada di global.js ──
+        // redeemGift(), claimDailyReward(), claimReferral(), copyRefLink(),
+        // loadInbox(), loadRefList(), claimType(), copyLink() → semua dari global.js
 
-        function showModal(msg, title = "REWARD") {
-            document.getElementById('modal-title').innerText = title;
-            document.getElementById('modal-msg').innerText = msg;
-            document.getElementById('neon-modal').style.display = 'block';
-        }
-
+        // closeModal didefinisikan ulang agar konsisten dengan style reward.html
         function closeModal() {
             document.getElementById('neon-modal').style.display = 'none';
         }
 
-        async function redeemGift() {
-            const code = document.getElementById('gift-code').value.trim();
-            const username = localStorage.getItem('username');
-
-            if (!code) return showModal("Harap masukkan kode hadiah!");
-            
-            const btn = document.querySelector('.btn-redeem');
-            btn.disabled = true;
-            btn.innerText = "MENGECEK...";
-
-            try {
-                const response = await fetch(API_URL, {
-                    method: "POST",
-                    body: JSON.stringify({
-                        action: "redeem_gift",
-                        username: username,
-                        gift_code: code
-                    })
-                });
-
-                const result = await response.json();
-
-                if (result.result === "SUCCESS") {
-                    // Update Saldo Utama
-                    localStorage.setItem('user_saldo', result.newSaldo);
-                    showModal(`Selamat! Kode berhasil diklaim. Saldo IDR ${result.bonus.toLocaleString()} masuk ke akun anda.`, "GIFT SUCCESS");
-                    document.getElementById('gift-code').value = "";
-                } else {
-                    showModal(result.message || "Kode hadiah salah atau sudah kadaluarsa.", "GAGAL");
-                }
-            } catch (e) {
-                showModal("Gagal terhubung ke server.");
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "KLAIM HADIAH";
+        window.addEventListener("load", () => {
+            if (!localStorage.getItem('username')) {
+                location.href = 'index.html';
             }
-        }
-
-        function copyLink() {
-            const user = localStorage.getItem('username') || 'player';
-            navigator.clipboard.writeText(`https://neonplinko.vip/reg?ref=${user}`);
-            showModal("Link referral berhasil disalin!", "INFO");
-        }
-
-        async function claimType(type) {
-            // Logika klaim harian (Daily) mirip dengan redeemGift
-            showModal("Fitur Daily Bonus sedang diproses oleh sistem.");
-        }
-
-        window.onload = () => {
-            if(!localStorage.getItem('username')) location.href = 'login.html';
-        };
+            // initReward() dipanggil otomatis oleh global.js via DOMContentLoaded
+        });
     </script>
 </body>
 </html>
