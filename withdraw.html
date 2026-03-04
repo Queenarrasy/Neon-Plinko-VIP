@@ -309,7 +309,56 @@ async function processWithdraw() {
 }
 
 // Sinkronisasi otomatis setiap 10 detik
-setInterval(loadWithdrawHistory, 10000);
+async function loadWithdrawHistory() {
+    const user = localStorage.getItem('username');
+    const container = document.getElementById("wd-history");
+    
+    try {
+        const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ 
+                action: 'getHistory', 
+                sheet: 'Withdraw', 
+                username: user 
+            })
+        });
+        const res = await response.json();
+
+        if (res.result === "SUCCESS" && res.data.length > 0) {
+            container.innerHTML = "";
+            // Membalikkan data agar yang terbaru di atas
+            const history = res.data.reverse(); 
+
+            history.forEach((item) => {
+                // SESUAIKAN INDEKS DI BAWAH INI JIKA KOLOM BERBEDA
+                let tanggal = item[0]; // Kolom A
+                let jumlah  = item[5]; // Kolom F
+                let status  = item[6] ? item[6].toLowerCase() : "proses"; // Kolom G
+                
+                let statusClass = status.includes('berhasil') || status.includes('approve') ? 'status-sukses' : 
+                                 status.includes('gagal') || status.includes('reject') ? 'status-gagal' : 'status-proses';
+
+                container.innerHTML += `
+                    <div class="history-item">
+                        <div class="hist-top">
+                            <span>WITHDRAW</span>
+                            <span class="status-badge ${statusClass}">${status.toUpperCase()}</span>
+                        </div>
+                        <div style="color:var(--yellow);font-weight:bold;font-size:15px;margin:5px 0;">
+                            IDR ${Number(jumlah).toLocaleString()}
+                        </div>
+                        <div class="hist-time">${tanggal}</div>
+                    </div>`;
+            });
+        } else {
+            container.innerHTML = '<div style="text-align:center;color:#555;padding:20px;">Belum ada riwayat withdraw</div>';
+        }
+    } catch (e) {
+        console.error(e);
+        container.innerHTML = '<div style="text-align:center;color:red;padding:20px;">Gagal memuat riwayat</div>';
+    }
+}
+
 
 window.onload = () => {
     if (!localStorage.getItem('username')) {
