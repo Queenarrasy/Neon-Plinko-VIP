@@ -74,6 +74,7 @@ color:white;
 font-size:16px;
 margin-bottom:10px;
 outline:none;
+box-sizing: border-box;
 }
 
 /* QUICK AMOUNT */
@@ -161,6 +162,7 @@ transition:0.3s;
 .btn-submit:hover{
 box-shadow:var(--neon-blue);
 }
+.btn-submit:disabled{ opacity: 0.6; cursor: not-allowed; }
 
 /* HISTORY BOX */
 .history-section{
@@ -198,6 +200,7 @@ position:relative;
 font-weight:bold;
 color:var(--pink);
 font-size:13px;
+text-transform: uppercase;
 }
 .hist-date{
 font-size:10px;
@@ -217,6 +220,7 @@ font-size:10px;
 font-weight:bold;
 padding:4px 8px;
 border-radius:6px;
+text-transform: uppercase;
 }
 .status-proses{
 background:rgba(251,255,0,0.1);
@@ -227,6 +231,11 @@ border:1px solid var(--yellow);
 background:rgba(0,255,0,0.1);
 color:#00ff00;
 border:1px solid #00ff00;
+}
+.status-gagal{
+background:rgba(255,0,0,0.1);
+color:#ff4444;
+border:1px solid #ff4444;
 }
 
 /* MODAL NEON */
@@ -288,7 +297,6 @@ line-height:1.5;
 
 <div class="container">
 
-<!-- NOMINAL -->
 <div class="card">
 <span class="label" id="label-nominal">NOMINAL DEPOSIT (IDR)</span>
 <input type="number" id="depo-amount" placeholder="Min. 20,000 / $10" oninput="calculateUSDT()">
@@ -308,7 +316,6 @@ Total Penerimaan: <strong id="usdt-to-idr">IDR 0</strong><br>
 </div>
 </div>
 
-<!-- METODE -->
 <div class="card">
 <span class="label">PILIH METODE</span>
 
@@ -320,7 +327,7 @@ Total Penerimaan: <strong id="usdt-to-idr">IDR 0</strong><br>
 </div>
 </div>
 
-<div id="qris-container">
+<div id="qris-container" style="display:block;">
 <img src="https://i.ibb.co/C3YnN4p/25989.png">
 <div style="color:black;font-size:10px;margin-top:5px;font-weight:bold;">
 ARRASHY STORE - NMID: ID1024357689073
@@ -345,9 +352,8 @@ ARRASHY STORE - NMID: ID1024357689073
 
 </div>
 
-<button class="btn-submit" onclick="processDeposit()">AJUKAN DEPOSIT</button>
+<button class="btn-submit" id="btn-submit-depo" onclick="processDeposit()">AJUKAN DEPOSIT</button>
 
-<!-- HISTORY -->
 <div class="history-section">
 <div style="font-weight:bold;color:var(--yellow);margin-bottom:10px;">
 <i class="fa-solid fa-clock-rotate-left"></i> RIWAYAT DEPOSIT
@@ -355,7 +361,7 @@ ARRASHY STORE - NMID: ID1024357689073
 
 <div class="history-box" id="depo-history-list">
 <div style="text-align:center;color:#444;font-size:11px;padding:20px;">
-Belum ada riwayat transaksi.
+Memuat riwayat...
 </div>
 </div>
 </div>
@@ -370,13 +376,133 @@ Belum ada riwayat transaksi.
 
 <script src="global.js"></script>
 <script>
-/* ⚠️ SEMUA SCRIPT ASLI TIDAK DIUBAH */
 let selectedMethod = 'QRIS';
-const KURS_USDT = 16800;
-const FEE_USDT = 2;
-const API_URL = typeof SCRIPT_URL !== 'undefined' ? SCRIPT_URL : "";
+const KURS_USDT = 16800; // Sesuai App Script
+const FEE_USDT = 2; // Sesuai App Script
 
-/* Seluruh JavaScript kamu tetap sama persis */
+function showModal(title, msg) {
+    document.getElementById("modal-title").innerText = title;
+    document.getElementById("modal-msg").innerText = msg;
+    document.getElementById("neon-modal").style.display = "block";
+}
+
+function closeModal() {
+    document.getElementById("neon-modal").style.display = "none";
+}
+
+function selectMethod(el, method) {
+    selectedMethod = method;
+    document.querySelectorAll('.method-item').forEach(m => m.classList.remove('active'));
+    el.classList.add('active');
+
+    // Toggle Tampilan QRIS
+    document.getElementById('qris-container').style.display = (method === 'QRIS') ? 'block' : 'none';
+    
+    // Toggle Kalkulasi USDT
+    const isUSDT = (method === 'USDT');
+    document.getElementById('usdt-calc').style.display = isUSDT ? 'block' : 'none';
+    document.getElementById('idr-grid').style.display = isUSDT ? 'none' : 'grid';
+    document.getElementById('label-nominal').innerText = isUSDT ? 'NOMINAL DEPOSIT (USDT)' : 'NOMINAL DEPOSIT (IDR)';
+    
+    document.getElementById('depo-amount').value = '';
+    calculateUSDT();
+}
+
+function setAmount(val) {
+    document.getElementById('depo-amount').value = val;
+    calculateUSDT();
+}
+
+function calculateUSDT() {
+    if (selectedMethod !== 'USDT') return;
+    const amount = Number(document.getElementById('depo-amount').value);
+    const idrResult = (amount > FEE_USDT) ? (amount - FEE_USDT) * KURS_USDT : 0;
+    document.getElementById('usdt-to-idr').innerText = "IDR " + idrResult.toLocaleString('id-ID');
+}
+
+// FUNGSI SINKRON KE GLOBAL DAN APP SCRIPT
+async function processDeposit() {
+    const amount = Number(document.getElementById('depo-amount').value);
+    
+    if (selectedMethod === 'USDT' && amount < 10) {
+        return showModal("GAGAL", "Minimal deposit USDT adalah $10");
+    }
+    if (selectedMethod !== 'USDT' && amount < 20000) {
+        return showModal("GAGAL", "Minimal deposit adalah IDR 20.000");
+    }
+
+    const btn = document.getElementById('btn-submit-depo');
+    btn.disabled = true;
+    btn.innerText = "MEMPROSES...";
+
+    // Panggil fungsi inti dari global.js yang sudah terhubung ke App Script
+    try {
+        await submitDeposit(selectedMethod, amount);
+        // Jika submitDeposit di global.js sukses, halaman akan reload otomatis
+    } catch (e) {
+        showModal("ERROR", "Gagal terhubung ke server.");
+        btn.disabled = false;
+        btn.innerText = "AJUKAN DEPOSIT";
+    }
+}
+
+/* LOAD RIWAYAT DARI SHEET DEPOSIT */
+async function loadDepositHistory() {
+    const user = localStorage.getItem('username');
+    const container = document.getElementById("depo-history-list");
+
+    try {
+        // Karena App Script doPost menangani action secara spesifik, 
+        // kita tambahkan action getHistory di server atau gunakan sinkronisasi saldo
+        const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'getUserData', username: user }) 
+        });
+        const data = await response.json();
+
+        // Mengambil riwayat deposit dari data user (jika server mengirimkannya)
+        // Jika server belum menyediakan history di getUserData, kita gunakan dummy atau fetch khusus
+        // Di sini saya mengasumsikan Anda ingin riwayat terbaru tampil:
+        
+        // Panggilan khusus history jika didukung App Script:
+        const historyResp = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'getHistory', sheet: 'Deposit', username: user })
+        });
+        const historyData = await historyResp.json();
+
+        if (historyData.result === "SUCCESS" && historyData.data.length > 0) {
+            container.innerHTML = "";
+            // Tampilkan 5 terakhir (index 0: Tanggal, 3: IDR, 4: Crypto Info, 5: Status)
+            historyData.data.reverse().slice(0, 5).forEach(item => {
+                let amountText = item[3] !== "-" ? "IDR " + Number(item[3]).toLocaleString() : item[4];
+                let statusClass = item[5].toLowerCase() === 'sukses' ? 'status-sukses' : (item[5].toLowerCase() === 'proses' ? 'status-proses' : 'status-gagal');
+                
+                container.innerHTML += `
+                    <div class="history-item">
+                        <div class="hist-method">DEPOSIT ${selectedMethod}</div>
+                        <div class="hist-date">${item[0]}</div>
+                        <div class="hist-amount">${amountText}</div>
+                        <div class="hist-status ${statusClass}">${item[5]}</div>
+                    </div>
+                `;
+            });
+        } else {
+            container.innerHTML = `<div style="text-align:center;color:#444;font-size:11px;padding:20px;">Belum ada riwayat transaksi.</div>`;
+        }
+    } catch (e) {
+        container.innerHTML = `<div style="text-align:center;color:#ff4444;font-size:11px;padding:20px;">Gagal memuat riwayat.</div>`;
+    }
+}
+
+// Jalankan saat load
+window.onload = () => {
+    if (!localStorage.getItem('username')) {
+        location.href = "index.html";
+    } else {
+        loadDepositHistory();
+    }
+};
 </script>
 
 </body>
