@@ -23,7 +23,7 @@
  */
 
 // ── KONFIGURASI ──────────────────────────────────────────────
-const SCRIPT_URL   = "https://script.google.com/macros/s/AKfycbwqQWXIJuVnkIxLvdu3kYiiRDVh7eyrsy-KU6rG1qtQClgfAzmMoclv2ULFZ_hRdE_qUg/exec";
+const SCRIPT_URL   = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
 const WA_ADMIN     = "6281234567890";   // Ganti nomor WA admin
 const KURS_USDT    = 16800;
 const FEE_USDT     = 2;
