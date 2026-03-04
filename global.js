@@ -24,7 +24,7 @@
 
 // ── KONFIGURASI ──────────────────────────────────────────────
 const SCRIPT_URL   = "https://script.google.com/macros/s/AKfycbwqQWXIJuVnkIxLvdu3kYiiRDVh7eyrsy-KU6rG1qtQClgfAzmMoclv2ULFZ_hRdE_qUg/exec";
-const WA_ADMIN     = "6289510249551";   // Ganti nomor WA admin
+const WA_ADMIN     = "6281234567890";   // Ganti nomor WA admin
 const KURS_USDT    = 16800;
 const FEE_USDT     = 2;
 const MIN_WD       = 50000;
@@ -40,37 +40,58 @@ var _depoMethod          = "QRIS";
 //  CORE: KOMUNIKASI GAS
 // ============================================================
 
+/**
+ * gasPost — kompatibel WebView Android & browser biasa.
+ *
+ * Masalah WebView Android dengan GAS:
+ * 1. fetch() + redirect:"follow" ke GAS sering diblokir WebView
+ *    karena cross-origin redirect (script.google.com → googleusercontent.com)
+ * 2. AbortController kadang memicu false abort di WebView lama
+ *
+ * Solusi:
+ * - Encode payload sebagai query param → kirim via GET (lebih kompatibel)
+ * - Fallback ke POST jika GET gagal
+ * - Timeout manual tanpa AbortController
+ */
 async function gasPost(payload) {
-  const controller = new AbortController();
-  const timer      = setTimeout(() => controller.abort(), 20000);
+  // ── Coba GET dulu (paling kompatibel di WebView Android) ──
+  const url = SCRIPT_URL + "?data=" + encodeURIComponent(JSON.stringify(payload));
 
-  try {
-    const res  = await fetch(SCRIPT_URL, {
-      method  : "POST",
-      redirect: "follow",
-      signal  : controller.signal,
-      body    : JSON.stringify(payload)
-    });
-    clearTimeout(timer);
+  const result = await _gasFetch("GET", url, null);
+  if (result) return result;
 
-    const text = await res.text();
-    if (!text || text.trim().startsWith("<")) {
-      console.error("[GAS] Bukan JSON:", text.substring(0, 150));
-      return { result: "ERROR", message: "GAS_HTML" };
-    }
-    return JSON.parse(text);
+  // ── Fallback: POST biasa ───────────────────────────────────
+  const result2 = await _gasFetch("POST", SCRIPT_URL, JSON.stringify(payload));
+  if (result2) return result2;
 
-  } catch (err) {
-    clearTimeout(timer);
-    return { result: "ERROR", message: err.name === "AbortError" ? "TIMEOUT" : "NETWORK_ERROR" };
-  }
+  // ── Kedua cara gagal ──────────────────────────────────────
+  return { result: "ERROR", message: "NETWORK_ERROR" };
+}
+
+async function _gasFetch(method, url, body) {
+  return new Promise((resolve) => {
+    const timeout = setTimeout(() => resolve(null), 25000);
+
+    const opts = { method, redirect: "follow" };
+    if (body) opts.body = body;
+
+    fetch(url, opts)
+      .then(res => res.text())
+      .then(text => {
+        clearTimeout(timeout);
+        if (!text || text.trim().startsWith("<")) { resolve(null); return; }
+        try { resolve(JSON.parse(text)); }
+        catch (e) { resolve(null); }
+      })
+      .catch(() => { clearTimeout(timeout); resolve(null); });
+  });
 }
 
 function errMsg(code) {
   return {
     "GAS_HTML"     : "Server belum di-deploy. Hubungi admin.",
     "TIMEOUT"      : "Server timeout (20 detik). Coba lagi.",
-    "NETWORK_ERROR": "Tidak ada koneksi internet."
+    "NETWORK_ERROR": "Koneksi ke server gagal. Pastikan internet aktif & coba refresh."
   }[code] || code || "Terjadi kesalahan.";
 }
 
@@ -199,11 +220,22 @@ async function loadWithdrawHistory() {
   container.innerHTML = `<div style="text-align:center;color:#777;padding:15px;font-size:11px;">
     <i class="fa-solid fa-spinner fa-spin"></i> Memuat riwayat...</div>`;
 
-  const result = await gasPost({ action: "get_wd_history", username: getUsername() });
+  let result = await gasPost({ action: "get_wd_history", username: getUsername() });
 
-  if (result.result !== "SUCCESS") {
+  // Auto-retry 1x jika gagal (WebView kadang butuh 2 percobaan)
+  if (!result || result.result !== "SUCCESS") {
+    await new Promise(r => setTimeout(r, 1500));
+    result = await gasPost({ action: "get_wd_history", username: getUsername() });
+  }
+
+  if (!result || result.result !== "SUCCESS") {
     container.innerHTML = `<div style="text-align:center;color:#888;padding:20px;font-size:11px;">
-      ⚠️ ${errMsg(result.message)}<br><small style="color:#555;">Refresh untuk coba lagi.</small></div>`;
+      ⚠️ Gagal memuat riwayat.<br>
+      <button onclick="loadWithdrawHistory()" style="margin-top:10px;padding:8px 18px;
+        border-radius:20px;border:1px solid var(--yellow);background:transparent;
+        color:var(--yellow);cursor:pointer;font-size:11px;">
+        🔄 COBA LAGI
+      </button></div>`;
     return;
   }
 
