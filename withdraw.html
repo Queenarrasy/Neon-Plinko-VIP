@@ -128,13 +128,6 @@ background:rgba(0,0,0,0.5);
 position:relative;
 }
 
-.latest{ animation:glowPulse 1.5s infinite; }
-@keyframes glowPulse{
-0%{box-shadow:0 0 5px var(--pink);}
-50%{box-shadow:0 0 15px var(--blue);}
-100%{box-shadow:0 0 5px var(--pink);}
-}
-
 .status-badge{ padding:2px 8px; border-radius:4px; font-size:10px; font-weight: bold; text-transform: uppercase;}
 .status-proses{background:rgba(251,255,0,0.2);color:var(--yellow);}
 .status-sukses{background:rgba(0,255,0,0.2);color:#00ff00;}
@@ -194,8 +187,6 @@ text-align:center; min-width:280px; border:2px solid var(--pink);
 
 <script src="global.js"></script>
 <script>
-let lastApproveStatus = null;
-
 function showModal(title, msg, color = "var(--pink)") {
     document.getElementById("modal-title").innerText = title;
     document.getElementById("modal-msg").innerText = msg;
@@ -208,7 +199,6 @@ async function updateData() {
     const user = localStorage.getItem('username');
     if (!user) return;
     
-    // Ambil data profil (Nama, Bank, Rek) dari global.js / Server
     try {
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
@@ -219,7 +209,7 @@ async function updateData() {
             document.getElementById("wd-account-name").value = res.fullname || "-";
             document.getElementById("wd-account-num").value = res.rekening || "-";
             document.getElementById("wd-method").value = res.bank || "-";
-            document.getElementById('wd-balance').innerText = "IDR " + Number(res.saldo).toLocaleString();
+            document.getElementById('wd-balance').innerText = "IDR " + Number(res.saldo).toLocaleString('id-ID');
             localStorage.setItem('user_saldo', res.saldo);
         }
     } catch (e) { console.error("Gagal sinkron data"); }
@@ -230,34 +220,38 @@ async function loadWithdrawHistory() {
     const container = document.getElementById("wd-history");
     
     try {
+        // Karena App Script Anda memiliki fungsi getHistory(sheetName, username) di bagian bawah,
+        // namun belum diintegrasikan ke doPost, pastikan doPost Anda sudah memanggilnya.
+        // Jika belum, gunakan pemanggilan action 'getHistory' seperti di bawah:
         const response = await fetch(SCRIPT_URL, {
             method: 'POST',
-            body: JSON.stringify({ action: 'getHistory', sheet: 'Withdraw', username: user })
+            body: JSON.stringify({ 
+                action: 'getHistory', // Memanggil fungsi getHistory di server
+                sheet: 'Withdraw', 
+                username: user 
+            })
         });
         const res = await response.json();
 
         if (res.result === "SUCCESS" && res.data.length > 0) {
             container.innerHTML = "";
-            // Urutkan dari yang terbaru (asumsi baris bawah adalah terbaru di Sheet)
-            const history = res.data.reverse().slice(0, 10); 
+            // Urutan kolom di sheet Withdraw: 0:Tanggal, 1:User, 2:Nama, 3:Bank, 4:Rek, 5:Nominal, 6:Status
+            const history = res.data.reverse(); 
 
-            history.forEach((item, index) => {
-                // Indeks kolom berdasarkan App Script Anda (A=0, B=1, ... G=6)
-                // item[0]=Tanggal, item[5]=Jumlah, item[6]=Status
-                let status = item[6].toLowerCase();
-                let statusClass = status.includes('berhasil') || status.includes('approve') ? 'status-sukses' : 
-                                 status.includes('gagal') || status.includes('reject') ? 'status-gagal' : 'status-proses';
-                
-                let latestClass = index === 0 ? 'latest' : '';
+            history.forEach((item) => {
+                let status = (item[6] || "PROSES").toLowerCase();
+                let statusClass = "status-proses";
+                if(status.includes("sukses") || status.includes("berhasil") || status.includes("approve")) statusClass = "status-sukses";
+                if(status.includes("gagal") || status.includes("reject")) statusClass = "status-gagal";
 
                 container.innerHTML += `
-                    <div class="history-item ${latestClass}">
+                    <div class="history-item">
                         <div class="hist-top">
                             <span>WITHDRAW</span>
-                            <span class="status-badge ${statusClass}">${item[6]}</span>
+                            <span class="status-badge ${statusClass}">${status.toUpperCase()}</span>
                         </div>
                         <div style="color:var(--yellow);font-weight:bold;font-size:15px;margin:5px 0;">
-                            IDR ${Number(item[5]).toLocaleString()}
+                            IDR ${Number(item[5]).toLocaleString('id-ID')}
                         </div>
                         <div class="hist-time">${item[0]}</div>
                     </div>`;
@@ -266,7 +260,7 @@ async function loadWithdrawHistory() {
             container.innerHTML = '<div style="text-align:center;color:#555;padding:20px;">Belum ada riwayat transaksi</div>';
         }
     } catch (e) {
-        container.innerHTML = '<div style="text-align:center;color:red;padding:20px;">Gagal memuat riwayat</div>';
+        container.innerHTML = '<div style="text-align:center;color:#ff4444;padding:20px;">Gagal memuat riwayat</div>';
     }
 }
 
@@ -295,8 +289,8 @@ async function processWithdraw() {
         if (res.result === "SUCCESS") {
             showModal("BERHASIL ✅", "Permintaan penarikan dikirim!", "var(--blue)");
             document.getElementById("wd-amount").value = "";
-            await updateData();
-            await loadWithdrawHistory();
+            updateData();
+            loadWithdrawHistory();
         } else {
             showModal("GAGAL ❌", res.message || "Terjadi kesalahan");
         }
@@ -308,58 +302,6 @@ async function processWithdraw() {
     }
 }
 
-// Sinkronisasi otomatis setiap 10 detik
-async function loadWithdrawHistory() {
-    const user = localStorage.getItem('username');
-    const container = document.getElementById("wd-history");
-    
-    try {
-        const response = await fetch(SCRIPT_URL, {
-            method: 'POST',
-            body: JSON.stringify({ 
-                action: 'getHistory', 
-                sheet: 'Withdraw', 
-                username: user 
-            })
-        });
-        const res = await response.json();
-
-        if (res.result === "SUCCESS" && res.data.length > 0) {
-            container.innerHTML = "";
-            // Membalikkan data agar yang terbaru di atas
-            const history = res.data.reverse(); 
-
-            history.forEach((item) => {
-                // SESUAIKAN INDEKS DI BAWAH INI JIKA KOLOM BERBEDA
-                let tanggal = item[0]; // Kolom A
-                let jumlah  = item[5]; // Kolom F
-                let status  = item[6] ? item[6].toLowerCase() : "proses"; // Kolom G
-                
-                let statusClass = status.includes('berhasil') || status.includes('approve') ? 'status-sukses' : 
-                                 status.includes('gagal') || status.includes('reject') ? 'status-gagal' : 'status-proses';
-
-                container.innerHTML += `
-                    <div class="history-item">
-                        <div class="hist-top">
-                            <span>WITHDRAW</span>
-                            <span class="status-badge ${statusClass}">${status.toUpperCase()}</span>
-                        </div>
-                        <div style="color:var(--yellow);font-weight:bold;font-size:15px;margin:5px 0;">
-                            IDR ${Number(jumlah).toLocaleString()}
-                        </div>
-                        <div class="hist-time">${tanggal}</div>
-                    </div>`;
-            });
-        } else {
-            container.innerHTML = '<div style="text-align:center;color:#555;padding:20px;">Belum ada riwayat withdraw</div>';
-        }
-    } catch (e) {
-        console.error(e);
-        container.innerHTML = '<div style="text-align:center;color:red;padding:20px;">Gagal memuat riwayat</div>';
-    }
-}
-
-
 window.onload = () => {
     if (!localStorage.getItem('username')) {
         location.href = "index.html";
@@ -368,6 +310,9 @@ window.onload = () => {
         loadWithdrawHistory();
     }
 };
+
+// Auto refresh riwayat setiap 30 detik
+setInterval(loadWithdrawHistory, 30000);
 </script>
 </body>
 </html>
