@@ -1,182 +1,957 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>REWARDS - NEON PLINKO VIP</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <style>
-        :root {
-            --pink: #ff0077; --blue: #0044ff; --yellow: #fbff00; --white: #ffffff; --bg: #03040a;
-            --neon-pink: 0 0 15px rgba(255, 0, 119, 0.7);
-            --neon-blue: 0 0 15px rgba(0, 68, 255, 0.7);
-            --neon-yellow: 0 0 15px rgba(251, 255, 0, 0.7);
-        }
-        body {
-            background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif;
-            margin: 0; padding: 0; min-height: 100vh;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>REWARDS - NEON PLINKO VIP</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
 
-        #neon-modal {
-            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: #0a0b1e; border: 2px solid var(--pink); border-radius: 15px;
-            box-shadow: var(--neon-pink); z-index: 9999; padding: 25px; text-align: center;
-            min-width: 280px; animation: modalIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        @keyframes modalIn { from { opacity: 0; scale: 0.5; } to { opacity: 1; scale: 1; } }
-        .modal-btn {
-            margin-top: 20px; padding: 10px 25px; border-radius: 50px; cursor: pointer;
-            border: 1px solid var(--yellow); background: var(--yellow); color: black; font-weight: bold;
-        }
+<style>
+:root {
+  --pink:   #ff0077;
+  --blue:   #0044ff;
+  --yellow: #fbff00;
+  --bg:     #03040a;
+  --neon-pink:   0 0 20px rgba(255,0,119,0.85), 0 0 40px rgba(255,0,119,0.3);
+  --neon-blue:   0 0 20px rgba(0,68,255,0.85),  0 0 40px rgba(0,68,255,0.3);
+  --neon-yellow: 0 0 20px rgba(251,255,0,0.85),  0 0 40px rgba(251,255,0,0.3);
+}
 
-        .header {
-            padding: 20px; background: rgba(0, 0, 0, 0.9); border-bottom: 2px solid var(--blue);
-            display: flex; align-items: center; justify-content: space-between;
-        }
-        .btn-back { color: var(--white); font-size: 20px; text-decoration: none; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .container { padding: 20px; }
+body {
+  background: var(--bg);
+  background-image:
+    radial-gradient(ellipse at 20% 20%, rgba(0,68,255,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 80%, rgba(255,0,119,0.07) 0%, transparent 60%);
+  color: white;
+  font-family: 'Rajdhani', 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
 
-        /* KOTAK HADIAH / GIFT BOX */
-        .gift-box-card {
-            background: linear-gradient(135deg, #0f0c29, #302b63);
-            border: 2px solid var(--pink); border-radius: 20px; padding: 20px;
-            margin-bottom: 25px; box-shadow: var(--neon-pink); text-align: center;
-        }
-        .gift-box-card i { font-size: 50px; color: var(--pink); text-shadow: var(--neon-pink); margin-bottom: 15px; }
-        .gift-input {
-            width: 100%; padding: 12px; background: #000; border: 1px solid var(--yellow);
-            border-radius: 10px; color: var(--yellow); text-align: center; font-weight: bold;
-            font-size: 16px; margin-bottom: 15px; outline: none; box-sizing: border-box;
-        }
-        .btn-redeem {
-            width: 100%; padding: 12px; border-radius: 50px; background: var(--pink);
-            color: white; font-weight: 900; border: none; cursor: pointer; text-transform: uppercase;
-        }
+/* ── SCANLINE TEXTURE ── */
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+  pointer-events:none; z-index:0;
+}
 
-        /* VIP Card */
-        .vip-status-card {
-            background: rgba(255, 255, 255, 0.05); border: 1px solid var(--blue);
-            border-radius: 15px; padding: 15px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px;
-        }
-        .vip-icon { font-size: 30px; color: var(--yellow); }
-        .vip-info h4 { margin: 0; font-size: 14px; color: var(--yellow); }
-        .vip-info p { margin: 0; font-size: 11px; opacity: 0.7; }
+/* ── HEADER ── */
+.header {
+  position: sticky; top: 0; z-index: 100;
+  padding: 16px 20px;
+  background: rgba(3,4,10,0.95);
+  border-bottom: 1px solid rgba(0,68,255,0.5);
+  backdrop-filter: blur(10px);
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: 0 2px 30px rgba(0,68,255,0.2);
+}
+.btn-back {
+  color: white; font-size: 20px; text-decoration: none;
+  width: 36px; height: 36px;
+  border: 1px solid rgba(0,68,255,0.4);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  transition: 0.3s;
+}
+.btn-back:hover { border-color: var(--blue); box-shadow: var(--neon-blue); }
 
-        /* Reward Grid */
-        .reward-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .reward-item {
-            background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(0, 68, 255, 0.3);
-            border-radius: 15px; padding: 15px; text-align: center;
-        }
-        .reward-item i { font-size: 24px; color: var(--blue); margin-bottom: 10px; display: block; }
-        .reward-item h5 { margin: 5px 0; font-size: 12px; }
-        .btn-claim-small {
-            background: transparent; border: 1px solid var(--blue); color: var(--blue);
-            padding: 5px 10px; border-radius: 50px; font-size: 10px; font-weight: bold; cursor: pointer;
-        }
-    </style>
+.header-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 14px; font-weight: 900;
+  letter-spacing: 3px;
+  background: linear-gradient(90deg, var(--pink), var(--yellow));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+
+/* ── MODAL ── */
+#neon-modal {
+  display: none;
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(135deg, #0a0b1e, #0d0f2a);
+  border: 1px solid var(--pink);
+  border-radius: 20px;
+  box-shadow: var(--neon-pink);
+  z-index: 9999;
+  padding: 30px 25px;
+  text-align: center;
+  min-width: 290px;
+  animation: modalIn 0.35s cubic-bezier(0.175,0.885,0.32,1.275);
+}
+@keyframes modalIn { from { opacity:0; scale:0.6; } to { opacity:1; scale:1; } }
+
+.modal-icon { font-size: 40px; margin-bottom: 12px; }
+#modal-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 14px; letter-spacing: 2px;
+  color: var(--yellow);
+  text-shadow: var(--neon-yellow);
+  margin-bottom: 10px;
+}
+#modal-msg { font-size: 13px; color: #ccc; line-height: 1.6; margin-bottom: 5px; }
+.modal-btn {
+  margin-top: 20px;
+  padding: 12px 30px;
+  border-radius: 50px;
+  cursor: pointer;
+  border: 2px solid var(--yellow);
+  background: transparent;
+  color: var(--yellow);
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  transition: 0.3s;
+}
+.modal-btn:hover { background: var(--yellow); color: black; box-shadow: var(--neon-yellow); }
+
+/* ── CONTAINER ── */
+.container { padding: 20px; max-width: 520px; margin: auto; position: relative; z-index: 1; }
+
+/* ── SALDO CARD (TOP) ── */
+.saldo-banner {
+  background: linear-gradient(135deg, rgba(255,0,119,0.12), rgba(0,68,255,0.12));
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 18px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+.saldo-banner::before {
+  content:'';
+  position: absolute; top:-50%; right:-20%;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(255,0,119,0.1), transparent 70%);
+  border-radius: 50%;
+}
+.saldo-label { font-size: 10px; color: #888; letter-spacing: 2px; font-family: 'Orbitron', monospace; }
+.saldo-value {
+  font-size: 22px; font-weight: 900;
+  font-family: 'Orbitron', monospace;
+  color: var(--yellow);
+  text-shadow: var(--neon-yellow);
+}
+.tier-chip {
+  padding: 6px 14px;
+  border-radius: 50px;
+  background: rgba(251,255,0,0.1);
+  border: 1px solid var(--yellow);
+  font-size: 10px;
+  font-family: 'Orbitron', monospace;
+  color: var(--yellow);
+  letter-spacing: 1px;
+}
+
+/* ── SECTION TITLE ── */
+.sec-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sec-title::after {
+  content:'';
+  flex:1;
+  height: 1px;
+  background: linear-gradient(90deg, currentColor, transparent);
+  opacity: 0.3;
+}
+
+/* ── GIFT / VOUCHER CARD ── */
+.gift-card {
+  background: linear-gradient(135deg, #0f0418, #170830, #0a0b1e);
+  border: 1px solid var(--pink);
+  border-radius: 20px;
+  padding: 24px 20px;
+  margin-bottom: 20px;
+  box-shadow: inset 0 0 40px rgba(255,0,119,0.06), var(--neon-pink);
+  position: relative;
+  overflow: hidden;
+  animation: fadeUp 0.5s ease both;
+}
+.gift-card::before {
+  content: '';
+  position: absolute; top: -30%; right: -10%;
+  width: 180px; height: 180px;
+  background: radial-gradient(circle, rgba(255,0,119,0.15), transparent 70%);
+  border-radius: 50%;
+}
+.gift-card-header {
+  display: flex; align-items: center; gap: 15px;
+  margin-bottom: 18px;
+}
+.gift-icon-wrap {
+  width: 56px; height: 56px;
+  border-radius: 16px;
+  background: rgba(255,0,119,0.12);
+  border: 1px solid rgba(255,0,119,0.4);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.gift-icon-wrap i { font-size: 26px; color: var(--pink); filter: drop-shadow(0 0 8px var(--pink)); }
+.gift-card-header h3 {
+  font-family: 'Orbitron', monospace;
+  font-size: 12px; letter-spacing: 1px;
+  color: white; margin-bottom: 4px;
+}
+.gift-card-header p { font-size: 11px; color: #888; line-height: 1.4; }
+
+.gift-input-wrap { position: relative; margin-bottom: 14px; }
+.gift-input {
+  width: 100%;
+  padding: 14px 50px 14px 16px;
+  background: rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,0,119,0.4);
+  border-radius: 12px;
+  color: var(--yellow);
+  font-family: 'Orbitron', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-align: center;
+  outline: none;
+  transition: 0.3s;
+}
+.gift-input:focus { border-color: var(--pink); box-shadow: 0 0 15px rgba(255,0,119,0.3); }
+.gift-input::placeholder { color: #444; font-size: 10px; letter-spacing: 2px; font-weight: 400; }
+
+.btn-redeem {
+  width: 100%;
+  padding: 14px;
+  border-radius: 50px;
+  background: linear-gradient(90deg, var(--pink), #cc0055);
+  color: white;
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  border: none;
+  cursor: pointer;
+  box-shadow: var(--neon-pink);
+  transition: 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+.btn-redeem:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(255,0,119,0.7); }
+.btn-redeem:active { transform: translateY(0); }
+
+/* ── QUICK REWARDS GRID ── */
+.quick-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.quick-card {
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(0,68,255,0.25);
+  border-radius: 18px;
+  padding: 18px 14px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: 0.3s;
+  animation: fadeUp 0.5s ease both;
+}
+.quick-card:hover {
+  border-color: var(--blue);
+  box-shadow: 0 0 20px rgba(0,68,255,0.2);
+  transform: translateY(-2px);
+}
+.quick-card::before {
+  content:'';
+  position:absolute; inset:0;
+  background: linear-gradient(135deg, rgba(0,68,255,0.04), transparent);
+}
+.qc-icon {
+  width: 46px; height: 46px;
+  border-radius: 14px;
+  margin: 0 auto 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+}
+.qc-icon.pink { background: rgba(255,0,119,0.1); border: 1px solid rgba(255,0,119,0.3); color: var(--pink); }
+.qc-icon.blue { background: rgba(0,68,255,0.1);  border: 1px solid rgba(0,68,255,0.3);  color: #4488ff; }
+.qc-icon.yellow { background: rgba(251,255,0,0.08); border: 1px solid rgba(251,255,0,0.3); color: var(--yellow); }
+.qc-icon.green { background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.3); color: #00ff88; }
+
+.qc-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 9px; letter-spacing: 1px;
+  color: #aaa; margin-bottom: 6px;
+}
+.qc-value {
+  font-family: 'Orbitron', monospace;
+  font-size: 16px; font-weight: 900;
+  color: white; margin-bottom: 12px;
+}
+.qc-value span { font-size: 10px; color: #888; }
+
+.btn-qc {
+  width: 100%;
+  padding: 8px;
+  border-radius: 50px;
+  font-family: 'Orbitron', monospace;
+  font-size: 9px; font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: 0.3s;
+  border: 1px solid;
+}
+.btn-qc.pink  { border-color: var(--pink);   color: var(--pink);   background: rgba(255,0,119,0.08); }
+.btn-qc.blue  { border-color: var(--blue);   color: #4488ff;       background: rgba(0,68,255,0.08); }
+.btn-qc.yellow{ border-color: var(--yellow); color: var(--yellow); background: rgba(251,255,0,0.06); }
+.btn-qc.green { border-color: #00ff88;       color: #00ff88;       background: rgba(0,255,136,0.06); }
+.btn-qc:hover { filter: brightness(1.3); transform: scale(1.03); }
+
+/* ── INBOX SECTION ── */
+.inbox-card {
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(251,255,0,0.25);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 0 30px rgba(251,255,0,0.04);
+  animation: fadeUp 0.6s ease both;
+}
+
+.inbox-item {
+  background: rgba(251,255,0,0.03);
+  border: 1px solid rgba(251,255,0,0.12);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+.inbox-item:hover { border-color: rgba(251,255,0,0.3); background: rgba(251,255,0,0.06); }
+.inbox-item::before {
+  content:'';
+  position: absolute; left:0; top:0; bottom:0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--yellow), var(--pink));
+  border-radius: 3px 0 0 3px;
+}
+.inbox-icon {
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  background: rgba(251,255,0,0.1);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  animation: pulse-yellow 2s infinite;
+}
+@keyframes pulse-yellow {
+  0%,100% { box-shadow: 0 0 0 0 rgba(251,255,0,0.3); }
+  50%      { box-shadow: 0 0 0 8px rgba(251,255,0,0); }
+}
+.inbox-body { flex: 1; min-width: 0; }
+.inbox-msg { font-size: 12px; color: #ccc; margin-bottom: 4px; line-height: 1.4; }
+.inbox-amount {
+  font-family: 'Orbitron', monospace;
+  font-size: 14px; font-weight: 900;
+  color: var(--yellow);
+  text-shadow: 0 0 10px rgba(251,255,0,0.5);
+}
+.btn-inbox-claim {
+  padding: 8px 16px;
+  border-radius: 50px;
+  background: linear-gradient(90deg, var(--yellow), #e6e600);
+  color: black;
+  font-family: 'Orbitron', monospace;
+  font-size: 9px; font-weight: 900;
+  border: none; cursor: pointer;
+  white-space: nowrap;
+  transition: 0.3s;
+  flex-shrink: 0;
+}
+.btn-inbox-claim:hover { transform: scale(1.05); box-shadow: var(--neon-yellow); }
+
+.inbox-empty {
+  text-align:center; padding: 30px;
+  color: #444; font-size: 12px;
+}
+.inbox-empty i { font-size: 32px; display:block; margin-bottom: 10px; opacity: 0.3; }
+
+/* ── REFERRAL SECTION ── */
+.ref-card {
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(0,68,255,0.3);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 0 30px rgba(0,68,255,0.06);
+  animation: fadeUp 0.7s ease both;
+}
+
+.ref-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px;
+}
+.ref-stats {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px; margin-bottom: 16px;
+}
+.ref-stat {
+  background: rgba(0,68,255,0.06);
+  border: 1px solid rgba(0,68,255,0.2);
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+}
+.ref-stat-label { font-size: 9px; color: #666; letter-spacing: 1px; font-family: 'Orbitron', monospace; margin-bottom: 6px; }
+.ref-stat-value {
+  font-family: 'Orbitron', monospace;
+  font-size: 13px; font-weight: 900;
+}
+
+.ref-code-box {
+  background: rgba(0,68,255,0.08);
+  border: 1px dashed rgba(0,68,255,0.4);
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px;
+}
+.ref-code-label { font-size: 10px; color: #666; font-family: 'Orbitron', monospace; }
+.ref-code-value {
+  font-family: 'Orbitron', monospace;
+  font-size: 16px; font-weight: 900;
+  color: var(--yellow);
+  letter-spacing: 3px;
+  text-shadow: var(--neon-yellow);
+}
+.btn-copy-ref {
+  padding: 6px 14px;
+  border-radius: 50px;
+  border: 1px solid var(--blue);
+  background: rgba(0,68,255,0.1);
+  color: #4488ff;
+  font-size: 10px; font-weight: 700;
+  cursor: pointer; transition: 0.3s;
+}
+.btn-copy-ref:hover { background: var(--blue); color: white; box-shadow: var(--neon-blue); }
+
+.btn-claim-ref {
+  width: 100%;
+  padding: 14px;
+  border-radius: 50px;
+  background: linear-gradient(90deg, var(--blue), #0066ff);
+  color: white;
+  font-family: 'Orbitron', monospace;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 2px;
+  border: none; cursor: pointer;
+  box-shadow: var(--neon-blue);
+  transition: 0.3s;
+  margin-bottom: 16px;
+}
+.btn-claim-ref:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(0,68,255,0.7); }
+
+/* ── REFERRAL LIST ── */
+.ref-list-wrap {
+  max-height: 180px;
+  overflow-y: auto;
+  border-top: 1px solid rgba(0,68,255,0.15);
+  padding-top: 12px;
+}
+.ref-list-wrap::-webkit-scrollbar { width: 4px; }
+.ref-list-wrap::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 10px; }
+
+.ref-list-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 10px;
+  border-radius: 10px;
+  margin-bottom: 6px;
+  background: rgba(0,68,255,0.04);
+  border: 1px solid rgba(0,68,255,0.1);
+}
+.ref-uname { font-size: 12px; color: #ccc; }
+.ref-badge {
+  font-size: 9px; font-weight: 700;
+  padding: 3px 10px; border-radius: 50px;
+}
+.ref-valid { background: rgba(0,255,136,0.12); color: #00ff88; border: 1px solid #00ff88; }
+.ref-invalid { background: rgba(255,150,0,0.12); color: #ff9900; border: 1px solid #ff9900; }
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+/* ── DAILY COOLDOWN TIMER ── */
+.daily-countdown {
+  font-family: 'Orbitron', monospace;
+  font-size: 10px; color: #666;
+  margin-top: 6px;
+  min-height: 14px;
+}
+
+/* ── NOTIFICATION DOT ── */
+.notif-dot {
+  width: 8px; height: 8px;
+  background: var(--pink);
+  border-radius: 50%;
+  box-shadow: var(--neon-pink);
+  animation: blink 1s infinite;
+  display: inline-block;
+  margin-left: 6px;
+}
+@keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+</style>
 </head>
+
 <body>
 
-    <div id="neon-modal">
-        <h3 id="modal-title" style="color: var(--yellow);">REWARD!</h3>
-        <p id="modal-msg"></p>
-        <button class="modal-btn" onclick="closeModal()">AMBIL</button>
+<!-- ── MODAL ── -->
+<div id="neon-modal">
+  <div class="modal-icon" id="modal-icon">🎁</div>
+  <h3 id="modal-title">REWARD!</h3>
+  <p id="modal-msg"></p>
+  <button class="modal-btn" onclick="closeModal()">AMBIL</button>
+</div>
+
+<!-- ── HEADER ── -->
+<div class="header">
+  <a href="game.html" class="btn-back"><i class="fa-solid fa-arrow-left"></i></a>
+  <div class="header-title">REWARD &amp; GIFT</div>
+  <div style="width:36px;"></div>
+</div>
+
+<div class="container">
+
+  <!-- ── SALDO BANNER ── -->
+  <div class="saldo-banner">
+    <div>
+      <div class="saldo-label">SALDO AKTIF</div>
+      <div class="saldo-value" id="banner-saldo">IDR 0</div>
+    </div>
+    <div>
+      <div class="tier-chip" id="profile-tier-reward">STARTER</div>
+      <div style="font-size:10px;color:#555;margin-top:6px;text-align:right;">
+        <i class="fa-solid fa-crown" style="color:var(--yellow);"></i> VIP MEMBER
+      </div>
+    </div>
+  </div>
+
+  <!-- ── GIFT VOUCHER ── -->
+  <div class="sec-title" style="color:var(--pink);">
+    <i class="fa-solid fa-box-open"></i> KODE VOUCHER ADMIN
+  </div>
+
+  <div class="gift-card">
+    <div class="gift-card-header">
+      <div class="gift-icon-wrap">
+        <i class="fa-solid fa-gift"></i>
+      </div>
+      <div>
+        <h3>KOTAK HADIAH ADMIN</h3>
+        <p>Masukkan kode voucher eksklusif dari Admin untuk klaim saldo gratis ke akunmu.</p>
+      </div>
+    </div>
+    <div class="gift-input-wrap">
+      <input type="text" id="gift-code" class="gift-input"
+             placeholder="MASUKKAN KODE VOUCHER"
+             oninput="this.value=this.value.toUpperCase()">
+    </div>
+    <button class="btn-redeem" onclick="redeemGift()">
+      <i class="fa-solid fa-unlock"></i>&nbsp; KLAIM HADIAH
+    </button>
+  </div>
+
+  <!-- ── QUICK REWARDS ── -->
+  <div class="sec-title" style="color:var(--blue);">
+    <i class="fa-solid fa-bolt"></i> KLAIM CEPAT
+  </div>
+
+  <div class="quick-grid">
+
+    <!-- DAILY BONUS -->
+    <div class="quick-card" style="animation-delay:0.1s;">
+      <div class="qc-icon pink"><i class="fa-solid fa-calendar-day"></i></div>
+      <div class="qc-title">DAILY BONUS</div>
+      <div class="qc-value">500 <span>IDR</span></div>
+      <button class="btn-qc pink" onclick="claimType('daily')" id="btn-daily">
+        KLAIM SEKARANG
+      </button>
+      <div class="daily-countdown" id="daily-countdown"></div>
     </div>
 
-    <div class="header">
-        <a href="index.html" class="btn-back"><i class="fa-solid fa-arrow-left"></i></a>
-        <div style="font-weight: 900; letter-spacing: 2px;">REWARD & GIFT</div>
-        <div style="width: 20px;"></div>
+    <!-- REFERRAL SHARE -->
+    <div class="quick-card" style="animation-delay:0.15s;">
+      <div class="qc-icon blue"><i class="fa-solid fa-share-nodes"></i></div>
+      <div class="qc-title">BAGIKAN LINK</div>
+      <div class="qc-value">5K <span>/ TEMAN</span></div>
+      <button class="btn-qc blue" onclick="copyLink()">
+        SALIN LINK
+      </button>
     </div>
 
-    <div class="container">
-        <div class="gift-box-card">
-            <i class="fa-solid fa-box-open"></i>
-            <h3 style="margin: 0 0 10px 0; font-size: 18px; color: var(--white);">KOTAK HADIAH ADMIN</h3>
-            <p style="font-size: 11px; color: #ccc; margin-bottom: 15px;">Masukkan kode voucher dari Admin untuk klaim saldo gratis.</p>
-            <input type="text" id="gift-code" class="gift-input" placeholder="MASUKKAN KODE">
-            <button class="btn-redeem" onclick="redeemGift()">KLAIM HADIAH</button>
-        </div>
+  </div>
 
-        <div class="vip-status-card">
-            <i class="fa-solid fa-crown vip-icon"></i>
-            <div class="vip-info">
-                <h4 id="profile-tier-reward">VIP MEMBER</h4>
-                <p>Nikmati limit withdraw lebih tinggi &amp; prioritas klaim.</p>
-            </div>
-        </div>
+  <!-- ── INBOX HADIAH ADMIN ── -->
+  <div class="inbox-card">
+    <div class="ref-header">
+      <div class="sec-title" style="color:var(--yellow);margin:0;">
+        <i class="fa-solid fa-envelope-open-text"></i>
+        INBOX HADIAH
+        <span class="notif-dot" id="inbox-notif" style="display:none;"></span>
+      </div>
+    </div>
+    <div id="inbox-container">
+      <div class="inbox-empty">
+        <i class="fa-solid fa-inbox"></i>
+        Memuat hadiah dari Admin...
+      </div>
+    </div>
+  </div>
 
-        <!-- KOTAK HADIAH INBOX ADMIN -->
-        <div style="margin-bottom:20px;">
-            <div style="font-weight:900;color:var(--pink);margin-bottom:10px;font-size:13px;letter-spacing:1px;">
-                <i class="fa-solid fa-envelope-open-text"></i> HADIAH &amp; PESAN ADMIN
-            </div>
-            <div id="inbox-container">
-                <div style="text-align:center;color:#555;padding:15px;font-size:12px;">Memuat hadiah...</div>
-            </div>
-        </div>
+  <!-- ── REFERRAL PROGRAM ── -->
+  <div class="sec-title" style="color:var(--blue);">
+    <i class="fa-solid fa-users"></i> PROGRAM REFERRAL
+  </div>
 
-        <div class="reward-grid">
-            <div class="reward-item">
-                <i class="fa-solid fa-calendar-day"></i>
-                <h5>DAILY BONUS</h5>
-                <button class="btn-claim-small" onclick="claimType('daily')">CLAIM 500</button>
-            </div>
-            <div class="reward-item">
-                <i class="fa-solid fa-share-nodes" style="color: var(--pink);"></i>
-                <h5>REFERRAL</h5>
-                <button class="btn-claim-small" onclick="copyLink()" style="border-color: var(--pink); color: var(--pink);">SALIN LINK</button>
-            </div>
-        </div>
+  <div class="ref-card">
 
-        <!-- REFERRAL INFO -->
-        <div style="margin-top:20px;border:1px solid var(--blue);border-radius:15px;padding:15px;background:rgba(0,68,255,0.05);">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                <div style="font-size:12px;font-weight:900;color:var(--yellow);">
-                    <i class="fa-solid fa-users"></i> PROGRAM REFERRAL
-                </div>
-                <button onclick="claimReferral()"
-                    style="padding:6px 14px;border-radius:50px;background:var(--blue);color:white;
-                           font-size:10px;font-weight:900;border:none;cursor:pointer;">
-                    CLAIM (MINGGU)
-                </button>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:8px;color:#aaa;">
-                <span>Kode Referral Kamu:</span>
-                <span id="ref-code-display" style="color:var(--yellow);font-weight:bold;">-</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:12px;color:#aaa;">
-                <span>Total Bonus Tersedia:</span>
-                <span id="ref-bonus-total" style="color:#00ff88;font-weight:bold;">IDR 0</span>
-            </div>
-            <div id="ref-list-container"
-                style="max-height:160px;overflow-y:auto;border-top:1px solid #222;padding-top:8px;">
-                <div style="text-align:center;color:#555;font-size:11px;padding:8px;">
-                    Memuat daftar undangan...
-                </div>
-            </div>
-        </div>
+    <div class="ref-stats">
+      <div class="ref-stat">
+        <div class="ref-stat-label">TEMAN DIUNDANG</div>
+        <div class="ref-stat-value" id="ref-invited-count" style="color:#4488ff;">0</div>
+      </div>
+      <div class="ref-stat">
+        <div class="ref-stat-label">BONUS TERSEDIA</div>
+        <div class="ref-stat-value" id="ref-bonus-total" style="color:var(--yellow);">IDR 0</div>
+      </div>
     </div>
 
-    <script src="global.js"></script>
-    <script>
-        // ── Semua fungsi inti ada di global.js ──
-        // redeemGift(), claimDailyReward(), claimReferral(), copyRefLink(),
-        // loadInbox(), loadRefList(), claimType(), copyLink() → semua dari global.js
+    <div class="ref-code-box">
+      <div>
+        <div class="ref-code-label">KODE REFERRALMU</div>
+        <div class="ref-code-value" id="ref-code-display">—</div>
+      </div>
+      <button class="btn-copy-ref" onclick="copyLink()">
+        <i class="fa-solid fa-copy"></i> SALIN
+      </button>
+    </div>
 
-        // closeModal didefinisikan ulang agar konsisten dengan style reward.html
-        function closeModal() {
-            document.getElementById('neon-modal').style.display = 'none';
-        }
+    <button class="btn-claim-ref" onclick="claimReferral()">
+      <i class="fa-solid fa-hand-holding-dollar"></i>&nbsp; CLAIM BONUS (SETIAP MINGGU)
+    </button>
 
-        window.addEventListener("load", () => {
-            if (!localStorage.getItem('username')) {
-                location.href = 'index.html';
-            }
-            // initReward() dipanggil otomatis oleh global.js via DOMContentLoaded
-        });
-    </script>
+    <div class="ref-list-wrap" id="ref-list-container">
+      <div style="text-align:center;color:#444;font-size:11px;padding:12px;">
+        Memuat daftar undangan...
+      </div>
+    </div>
+
+  </div>
+
+</div><!-- /container -->
+
+<script src="global.js"></script>
+<script>
+/* ════════════════════════════════════════════════════════
+   REWARD PAGE — Full standalone logic
+   Semua fungsi disesuaikan dengan Apps Script (doGet/doPost)
+   ════════════════════════════════════════════════════════ */
+
+const SHEET_URL = typeof GLOBAL_SHEET_URL !== "undefined"
+  ? GLOBAL_SHEET_URL
+  : "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec"; // Ganti YOUR_SCRIPT_ID
+
+/* ── HELPERS ── */
+function getUsername()    { return localStorage.getItem("username") || ""; }
+function getSaldo()       { return parseInt(localStorage.getItem("saldo_" + getUsername()) || "0"); }
+function setSaldo(v)      { localStorage.setItem("saldo_" + getUsername(), v); refreshSaldoBanner(); }
+function fmtIDR(n)        { return "IDR " + Number(n).toLocaleString("id-ID"); }
+
+function closeModal() {
+  document.getElementById("neon-modal").style.display = "none";
+}
+
+function showModal(icon, title, msg, color) {
+  document.getElementById("modal-icon").textContent  = icon || "🎁";
+  document.getElementById("modal-title").textContent = title;
+  document.getElementById("modal-title").style.color = color || "var(--yellow)";
+  document.getElementById("modal-msg").textContent   = msg;
+  document.getElementById("neon-modal").style.display = "block";
+}
+
+/* ── API CALL (GET dengan param data=JSON) ── */
+async function api(payload) {
+  const qs = "?data=" + encodeURIComponent(JSON.stringify(payload));
+  const r  = await fetch(SHEET_URL + qs);
+  return r.json();
+}
+
+/* ── REFRESH SALDO BANNER ── */
+function refreshSaldoBanner() {
+  document.getElementById("banner-saldo").textContent = fmtIDR(getSaldo());
+}
+
+/* ── LOAD TIER ── */
+function loadTier() {
+  const tier = localStorage.getItem("tier") || "STARTER";
+  document.getElementById("profile-tier-reward").textContent = tier;
+}
+
+/* ══════════════════════════════════
+   DAILY BONUS
+══════════════════════════════════ */
+function claimType(type) {
+  if (type === "daily") claimDailyBonus();
+}
+
+async function claimDailyBonus() {
+  const username = getUsername();
+  if (!username) return;
+
+  // Cek cooldown lokal dulu
+  const lastClaim = localStorage.getItem("lastDailyClaim_" + username) || "";
+  const today     = new Date().toLocaleDateString("id-ID");
+  if (lastClaim === today) {
+    showModal("⏰","SUDAH DIKLAIM","Daily bonus sudah diambil hari ini. Kembali besok!", "var(--pink)");
+    return;
+  }
+
+  const btn = document.getElementById("btn-daily");
+  if (btn) { btn.disabled = true; btn.textContent = "MEMPROSES..."; }
+
+  try {
+    const res = await api({ action: "claim_daily", username });
+    if (res.result === "SUCCESS") {
+      setSaldo(res.newSaldo);
+      localStorage.setItem("lastDailyClaim_" + username, today);
+      showModal("🎉","BERHASIL!",`Daily bonus IDR ${Number(res.bonus).toLocaleString("id-ID")} masuk ke saldo!`, "var(--yellow)");
+      startDailyCountdown();
+    } else {
+      showModal("⏰","SUDAH DIKLAIM", res.message || "Coba besok lagi!", "var(--pink)");
+      if (res.message && res.message.includes("sudah")) startDailyCountdown();
+    }
+  } catch(e) {
+    showModal("❌","ERROR","Koneksi gagal. Coba lagi.", "var(--pink)");
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "KLAIM SEKARANG"; }
+  }
+}
+
+function startDailyCountdown() {
+  const el = document.getElementById("daily-countdown");
+  if (!el) return;
+
+  function tick() {
+    const now      = new Date();
+    const midnight = new Date();
+    midnight.setHours(24,0,0,0);
+    const diff = Math.max(0, midnight - now);
+    if (!diff) { el.textContent = ""; return; }
+    const h = String(Math.floor(diff/3600000)).padStart(2,"0");
+    const m = String(Math.floor((diff%3600000)/60000)).padStart(2,"0");
+    const s = String(Math.floor((diff%60000)/1000)).padStart(2,"0");
+    el.textContent = `Reset: ${h}:${m}:${s}`;
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+/* ══════════════════════════════════
+   REDEEM GIFT CODE
+══════════════════════════════════ */
+async function redeemGift() {
+  const username  = getUsername();
+  const gift_code = (document.getElementById("gift-code").value || "").trim().toUpperCase();
+  if (!gift_code) { showModal("⚠️","KOSONG","Masukkan kode voucher terlebih dahulu!", "var(--pink)"); return; }
+
+  try {
+    const res = await api({ action: "redeem_gift", username, gift_code });
+    if (res.result === "SUCCESS") {
+      setSaldo(res.newSaldo);
+      document.getElementById("gift-code").value = "";
+      showModal("🎁","HADIAH DIKLAIM!",
+        `Kode valid! Saldo +${fmtIDR(res.bonus)} berhasil masuk ke akunmu.`, "var(--yellow)");
+    } else {
+      showModal("❌","GAGAL", res.message || "Kode tidak valid atau sudah digunakan.", "var(--pink)");
+    }
+  } catch(e) {
+    showModal("❌","ERROR","Koneksi gagal. Coba lagi.", "var(--pink)");
+  }
+}
+
+/* ══════════════════════════════════
+   INBOX ADMIN
+══════════════════════════════════ */
+async function loadInbox() {
+  const username = getUsername();
+  const box      = document.getElementById("inbox-container");
+  const notif    = document.getElementById("inbox-notif");
+
+  try {
+    const res = await api({ action: "get_inbox", username });
+    if (res.result === "SUCCESS" && res.data && res.data.length) {
+      notif.style.display = "inline-block";
+      box.innerHTML = res.data.map(item => `
+        <div class="inbox-item" id="inbox-${item.id}">
+          <div class="inbox-icon">🎁</div>
+          <div class="inbox-body">
+            <div class="inbox-msg">${item.pesan}</div>
+            <div class="inbox-amount">+${fmtIDR(item.saldo)}</div>
+          </div>
+          <button class="btn-inbox-claim" onclick="claimInboxItem('${item.id}',${item.saldo})">
+            KLAIM
+          </button>
+        </div>
+      `).join("");
+    } else {
+      notif.style.display = "none";
+      box.innerHTML = `
+        <div class="inbox-empty">
+          <i class="fa-solid fa-inbox"></i>
+          Belum ada hadiah dari Admin. Pantau terus!
+        </div>`;
+    }
+  } catch(e) {
+    box.innerHTML = `<div class="inbox-empty"><i class="fa-solid fa-wifi"></i><br>Gagal memuat inbox.</div>`;
+  }
+}
+
+async function claimInboxItem(inboxId, saldo) {
+  const username = getUsername();
+  const el = document.getElementById("inbox-" + inboxId);
+  if (el) el.style.opacity = "0.5";
+
+  try {
+    const res = await api({ action: "claim_inbox", username, inboxId });
+    if (res.result === "SUCCESS") {
+      setSaldo(res.newSaldo);
+      showModal("🎉","HADIAH DITERIMA!",`+${fmtIDR(res.bonus)} berhasil masuk ke saldo aktifmu!`, "var(--yellow)");
+      loadInbox(); // refresh
+    } else {
+      showModal("❌","GAGAL", res.message || "Hadiah tidak tersedia.", "var(--pink)");
+      if (el) el.style.opacity = "1";
+    }
+  } catch(e) {
+    showModal("❌","ERROR","Koneksi gagal.", "var(--pink)");
+    if (el) el.style.opacity = "1";
+  }
+}
+
+/* ══════════════════════════════════
+   REFERRAL
+══════════════════════════════════ */
+async function loadRefList() {
+  const username = getUsername();
+
+  try {
+    const res = await api({ action: "get_ref_list", username });
+    if (res.result !== "SUCCESS") return;
+
+    // Kode referral
+    document.getElementById("ref-code-display").textContent = res.refCode || "—";
+    localStorage.setItem("refCode_" + username, res.refCode || "");
+
+    // Stats
+    const validCount = (res.invited || []).filter(i => i.status === "VALID").length;
+    document.getElementById("ref-invited-count").textContent = res.invited ? res.invited.length : 0;
+    document.getElementById("ref-bonus-total").textContent   = fmtIDR(res.totalBonus || 0);
+
+    // List
+    const listEl = document.getElementById("ref-list-container");
+    if (!res.invited || !res.invited.length) {
+      listEl.innerHTML = `<div style="text-align:center;color:#444;font-size:11px;padding:12px;">Belum ada yang daftar pakai kode referralmu.</div>`;
+      return;
+    }
+    listEl.innerHTML = res.invited.map(u => `
+      <div class="ref-list-item">
+        <span class="ref-uname"><i class="fa-solid fa-user" style="color:#444;margin-right:6px;"></i>${u.username}</span>
+        <span class="ref-badge ${u.status === 'VALID' ? 'ref-valid' : 'ref-invalid'}">
+          ${u.status === 'VALID' ? '✓ VALID' : 'BELUM DEPOSIT'}
+        </span>
+      </div>
+    `).join("");
+  } catch(e) {
+    console.warn("ref error:", e);
+  }
+}
+
+async function claimReferral() {
+  const username = getUsername();
+  try {
+    const res = await api({ action: "claim_referral", username });
+    if (res.result === "SUCCESS") {
+      setSaldo(res.newSaldo);
+      showModal("💰","BONUS REFERRAL!", res.message || `+${fmtIDR(res.bonus)} berhasil diklaim!`, "var(--yellow)");
+      loadRefList();
+    } else {
+      showModal("⚠️","BELUM BISA", res.message || "Tidak ada bonus tersedia.", "var(--pink)");
+    }
+  } catch(e) {
+    showModal("❌","ERROR","Koneksi gagal.", "var(--pink)");
+  }
+}
+
+/* ── COPY REFERRAL LINK ── */
+function copyLink() {
+  const username = getUsername();
+  const refCode  = localStorage.getItem("refCode_" + username)
+                || document.getElementById("ref-code-display").textContent;
+  const link = `${location.origin}${location.pathname.replace("reward.html","index.html")}?ref=${refCode}`;
+
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(link).then(() => {
+      showModal("🔗","LINK DISALIN!",`Link referralmu berhasil disalin. Bagikan ke teman!`, "var(--blue)");
+    });
+  } else {
+    const ta = document.createElement("textarea");
+    ta.value = link; document.body.appendChild(ta);
+    ta.select(); document.execCommand("copy");
+    document.body.removeChild(ta);
+    showModal("🔗","LINK DISALIN!",`Link referralmu berhasil disalin!`, "var(--blue)");
+  }
+}
+
+/* ══════════════════════════════════
+   INIT
+══════════════════════════════════ */
+window.addEventListener("load", () => {
+  const username = getUsername();
+  if (!username) { location.href = "index.html"; return; }
+
+  refreshSaldoBanner();
+  loadTier();
+  loadInbox();
+  loadRefList();
+
+  // Cek daily claim status
+  const lastClaim = localStorage.getItem("lastDailyClaim_" + username) || "";
+  const today     = new Date().toLocaleDateString("id-ID");
+  if (lastClaim === today) startDailyCountdown();
+
+  // Polling inbox setiap 30 detik
+  setInterval(loadInbox, 30000);
+});
+</script>
 </body>
 </html>
