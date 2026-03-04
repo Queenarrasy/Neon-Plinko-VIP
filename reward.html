@@ -452,40 +452,67 @@ function updateDailyUI(claimed) {
 
 // ── REFERRAL ───────────────────────────────────────────────────
 async function loadRefList() {
-  const u         = getUsername();
-  const scroll    = document.getElementById('ref-list-scroll');
-  const bonusEl   = document.getElementById('ref-bonus-total');
-  const countEl   = document.getElementById('ref-valid-count');
-  const totalEl   = document.getElementById('ref-total-count');
-  const hintEl    = document.getElementById('ref-scroll-hint');
+  const u        = getUsername();
+  const scroll   = document.getElementById('ref-list-scroll');
+  const bonusEl  = document.getElementById('ref-bonus-total');
+  const countEl  = document.getElementById('ref-valid-count');
+  const totalEl  = document.getElementById('ref-total-count');
+  const hintEl   = document.getElementById('ref-scroll-hint');
+  const claimBtn = document.getElementById('btn-claim-ref');
+
+  scroll.innerHTML = '<div class="hist-loading"><i class="fa-solid fa-spinner fa-spin"></i> Memuat...</div>';
 
   const res = await apiCall({ action: 'get_referrals', username: u });
 
   if (res.result !== 'SUCCESS' || !res.data || res.data.length === 0) {
-    scroll.innerHTML = '<div class="hist-empty">Belum ada undangan.</div>';
+    scroll.innerHTML = '<div class="hist-empty"><i class="fa-solid fa-user-slash"></i><br>Belum ada undangan.</div>';
     if (totalEl) totalEl.textContent = '0 teman';
+    if (bonusEl) bonusEl.textContent = fmtIDR(0);
+    if (countEl) countEl.innerHTML   = '<b>0</b> teman valid × IDR 5.000';
+    if (claimBtn) claimBtn.disabled  = true;
     return;
   }
 
   const all      = res.data;
-  const valid    = all.filter(x => x.status === 'VALID');
-  const validCnt = valid.length;
+  const validCnt = res.validCount !== undefined ? res.validCount
+                   : all.filter(x => x.status === 'VALID').length;
 
-  // ── Hitung bonus dari sisi klien (count valid × 5000)
-  // Kalau server kirim totalBonus, pakai itu. Kalau tidak, hitung sendiri.
-  const totalBonus = (res.totalBonus !== undefined && res.totalBonus !== null)
-    ? res.totalBonus
-    : validCnt * BONUS_PER_VALID;
+  // totalBonus dari server = (valid baru belum diklaim) × 5000
+  // Server sudah menghitung dengan benar berdasarkan kolom S
+  const totalBonus = (typeof res.totalBonus === 'number') ? res.totalBonus : validCnt * BONUS_PER_VALID;
 
-  if (bonusEl)  bonusEl.textContent  = fmtIDR(totalBonus);
-  if (countEl)  countEl.innerHTML    = `<b>${validCnt}</b> teman valid × IDR 5.000`;
-  if (totalEl)  totalEl.textContent  = all.length + ' teman';
+  // Tampilkan nominal bonus
+  if (bonusEl) bonusEl.textContent = fmtIDR(totalBonus);
 
-  // Tombol klaim: disable jika totalBonus === 0
-  const claimBtn = document.getElementById('btn-claim-ref');
-  if (claimBtn) claimBtn.disabled = (totalBonus <= 0);
+  // Info teman valid
+  if (countEl) {
+    if (totalBonus > 0) {
+      const newValid = res.newValid || Math.round(totalBonus / BONUS_PER_VALID);
+      countEl.innerHTML = `<b>${validCnt}</b> valid · <span style="color:var(--yellow)">${newValid} belum diklaim</span> × IDR 5.000`;
+    } else {
+      countEl.innerHTML = `<b>${validCnt}</b> teman valid × IDR 5.000`;
+    }
+  }
 
-  // Render list
+  if (totalEl) totalEl.textContent = all.length + ' teman';
+
+  // Tombol klaim: aktif hanya jika ada bonus DAN hari Minggu
+  const isSunday = new Date().getDay() === 0;
+  if (claimBtn) {
+    if (totalBonus <= 0) {
+      claimBtn.disabled    = true;
+      claimBtn.textContent = 'Klaim';
+    } else if (!isSunday) {
+      claimBtn.disabled    = true;
+      claimBtn.title       = 'Hanya bisa diklaim hari Minggu';
+      claimBtn.textContent = 'Minggu';
+    } else {
+      claimBtn.disabled    = false;
+      claimBtn.textContent = 'Klaim';
+    }
+  }
+
+  // Render daftar undangan — TETAP tampil semua terlepas dari bonus
   scroll.innerHTML = '';
   all.forEach(item => {
     const isValid = item.status === 'VALID';
@@ -503,7 +530,6 @@ async function loadRefList() {
     scroll.appendChild(div);
   });
 
-  // Tampilkan hint scroll jika lebih dari 3 item
   if (all.length > 3 && hintEl) hintEl.style.display = 'block';
 }
 
@@ -511,36 +537,37 @@ async function claimReferral() {
   const u   = getUsername();
   const now = new Date();
 
+  // Cek hari Minggu
   if (now.getDay() !== 0) {
     return showModal('📅', 'BELUM WAKTUNYA',
       'Bonus referral hanya bisa diklaim setiap hari Minggu.\nBonus kamu aman & tidak hangus.', 'info');
   }
 
   const bonusEl = document.getElementById('ref-bonus-total');
-  const current = parseFloat((bonusEl?.textContent || '0').replace(/[^0-9]/g,'')) || 0;
+  const current = parseInt((bonusEl?.textContent || '0').replace(/[^0-9]/g, '')) || 0;
   if (current <= 0) {
     return showModal('📭', 'TIDAK ADA BONUS',
-      'Belum ada bonus referral yang bisa diklaim.\nAjak temanmu untuk deposit!', 'info');
+      'Belum ada bonus referral yang bisa diklaim.\nAjak temanmu untuk deposit min. IDR 20.000!', 'info');
   }
 
+  const claimBtn = document.getElementById('btn-claim-ref');
+  if (claimBtn) { claimBtn.disabled = true; claimBtn.textContent = 'Memproses...'; }
+
   const res = await apiCall({ action: 'claim_referral', username: u });
+
   if (res.result === 'SUCCESS') {
-    setSaldo(res.newSaldo);
-    // Reset bonus tampilan ke 0, data undangan tetap ada
-    if (bonusEl) bonusEl.textContent = fmtIDR(0);
-    const countEl = document.getElementById('ref-valid-count');
-    if (countEl) countEl.innerHTML = `<b>0</b> teman valid × IDR 5.000 (sudah diklaim)`;
-    const claimBtn = document.getElementById('btn-claim-ref');
-    if (claimBtn) claimBtn.disabled = true;
+    // Update saldo di localStorage agar tampil di halaman lain
+    localStorage.setItem('user_saldo', res.newSaldo);
 
     showModal('🎉', 'REFERRAL DIKLAIM!',
-      fmtIDR(res.bonus || current) + ' masuk ke saldo!\nSaldo: ' + fmtIDR(res.newSaldo) +
+      fmtIDR(res.bonus || current) + ' otomatis masuk ke saldo!\nSaldo: ' + fmtIDR(res.newSaldo) +
       '\n\nDaftar undangan tetap tersimpan.', 'success');
 
-    // Reload list agar badge tetap terlihat, tapi bonus reset dari server
+    // Reload list: bonus jadi 0, list undangan tetap tampil semua
     await loadRefList();
   } else {
     showModal('❌', 'GAGAL', res.message || 'Gagal klaim bonus referral.', 'error');
+    if (claimBtn) { claimBtn.disabled = false; claimBtn.textContent = 'Klaim'; }
   }
 }
 
