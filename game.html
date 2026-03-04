@@ -646,7 +646,7 @@ function spawnBall(){
   };
   balls.push(ball);
 
-  api({ action:'game_play', username:getU(), bet, saldoAwal })
+  api({ action:'game_play', username:getU(), bet })
   .then(r => {
     if(r && r.result==='SUCCESS'){
       ball.serverMult  = r.target_multiplier;
@@ -753,19 +753,18 @@ function onPlayUp(e){
 }
 
 // ── SALDO SYNC ────────────────────────────────────────────────
-// Saldo disinkronkan secara otomatis setiap 8 detik dari server
-// Saat main (ada bola di udara), skip sync agar tidak konflik dengan optimistic update
+// Sync saldo dari server setiap 5 detik, tapi HANYA saat tidak ada bola aktif
+// agar tidak konflik dengan optimistic update saat bermain
 function startSync(){
   if(syncTimer) clearInterval(syncTimer);
   syncTimer = setInterval(async () => {
     const u = getU(); if(!u) return;
-    // Hanya sync jika tidak ada bola aktif (tidak sedang bermain)
-    if(balls.length > 0) return;
+    if(balls.length > 0) return; // tunggu semua bola selesai
     try{
       const r = await api({ action:'get_saldo', username:u });
-      if(r.result==='SUCCESS') setS(r.saldo);
+      if(r && r.result==='SUCCESS' && r.saldo !== undefined) setS(r.saldo);
     }catch(e){}
-  }, 8000);
+  }, 5000);
 }
 
 // ── RESIZE ────────────────────────────────────────────────────
