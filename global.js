@@ -24,7 +24,7 @@
 
 // ── KONFIGURASI ──────────────────────────────────────────────
 const SCRIPT_URL   = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
-const WA_ADMIN     = "6281234567890";   // Ganti nomor WA admin
+const WA_ADMIN     = "6289510249551";   // Ganti nomor WA admin
 const KURS_USDT    = 16800;
 const FEE_USDT     = 2;
 const MIN_WD       = 50000;
