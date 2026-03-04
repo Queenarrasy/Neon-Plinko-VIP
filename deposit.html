@@ -312,67 +312,131 @@ body::after {
   color: rgba(255,255,255,0.8);
 }
 .hist-list {
-  display: flex; flex-direction: column; gap: 9px;
-  max-height: 340px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 10px;
+  max-height: 360px; overflow-y: auto;
   padding-right: 2px;
 }
 .hist-list::-webkit-scrollbar { width: 3px; }
-.hist-list::-webkit-scrollbar-thumb { background: rgba(245,230,66,0.3); border-radius: 10px; }
+.hist-list::-webkit-scrollbar-thumb { background: rgba(245,230,66,0.35); border-radius: 10px; }
 
-/* history items */
+/* ── history item — full colour ── */
 .hist-item {
-  border-radius: 14px; padding: 13px 14px;
+  border-radius: 16px; padding: 14px 16px;
   position: relative; overflow: hidden;
   transition: transform 0.2s;
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 2px solid transparent;
 }
-.hist-item::before {
-  content:''; position:absolute; left:0; top:0; bottom:0; width:3px;
-}
-.hist-item.qris  { background: rgba(255,0,119,0.04); }
-.hist-item.qris::before  { background: linear-gradient(180deg, var(--pink), #880040); }
-.hist-item.usdt  { background: rgba(38,161,123,0.04); }
-.hist-item.usdt::before  { background: linear-gradient(180deg, var(--green), #0f4d35); }
-.hist-item:hover { transform: translateX(3px); }
+.hist-item:hover { transform: translateY(-2px); }
 
-@keyframes latestPulse {
-  0%,100% { box-shadow: 0 0 0 0 rgba(255,0,119,0.1); }
-  50%      { box-shadow: 0 0 0 5px rgba(0,85,255,0.08); }
+/* QRIS — pink full */
+.hist-item.qris {
+  background: linear-gradient(135deg, #1a001a 0%, #200028 60%, #160014 100%);
+  border-color: var(--pink);
+  box-shadow: 0 0 12px rgba(255,0,119,0.35), inset 0 0 20px rgba(255,0,119,0.06);
 }
-.hist-item.is-latest { animation: latestPulse 2.2s ease infinite; }
+/* USDT — green full */
+.hist-item.usdt {
+  background: linear-gradient(135deg, #001a12 0%, #002a1c 60%, #001510 100%);
+  border-color: var(--green);
+  box-shadow: 0 0 12px rgba(38,161,123,0.35), inset 0 0 20px rgba(38,161,123,0.06);
+}
 
+/* Berkedip untuk yang terbaru */
+@keyframes blinkPink {
+  0%,100% { box-shadow: 0 0 12px rgba(255,0,119,0.5), inset 0 0 20px rgba(255,0,119,0.07); border-color: var(--pink); }
+  50%      { box-shadow: 0 0 28px rgba(255,0,119,0.85), 0 0 50px rgba(0,85,255,0.2), inset 0 0 30px rgba(255,0,119,0.12); border-color: #ff44aa; }
+}
+@keyframes blinkGreen {
+  0%,100% { box-shadow: 0 0 12px rgba(38,161,123,0.5), inset 0 0 20px rgba(38,161,123,0.07); border-color: var(--green); }
+  50%      { box-shadow: 0 0 28px rgba(38,161,123,0.85), 0 0 50px rgba(245,230,66,0.15), inset 0 0 30px rgba(38,161,123,0.12); border-color: #40ffbb; }
+}
+.hist-item.qris.is-latest { animation: blinkPink  1.4s ease-in-out infinite; }
+.hist-item.usdt.is-latest { animation: blinkGreen 1.4s ease-in-out infinite; }
+
+/* corner badge BARU */
 .badge-baru {
-  position: absolute; top: 0; right: 12px;
-  font-size: 7.5px; font-weight: 700; letter-spacing: 1px;
-  background: var(--pink); color: white;
-  padding: 2px 8px; border-radius: 0 0 8px 8px;
-  box-shadow: var(--glow-pink);
+  position: absolute; top: -1px; right: 12px;
+  font-size: 7.5px; font-weight: 800; letter-spacing: 1.5px;
+  background: linear-gradient(90deg, var(--pink), #ff44aa);
+  color: white; padding: 3px 10px;
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 0 10px rgba(255,0,119,0.6);
 }
 
+/* top row */
 .hist-row-top {
   display: flex; justify-content: space-between; align-items: flex-start;
-  margin-bottom: 7px;
+  margin-bottom: 8px;
 }
-.hist-amount { font-size: 17px; font-weight: 700; color: white; }
 
+/* judul transaksi */
+.hist-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 9px; font-weight: 700; letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+.hist-item.qris  .hist-title { color: rgba(255,80,150,0.8); }
+.hist-item.usdt  .hist-title { color: rgba(38,200,140,0.8); }
+
+/* nominal besar */
+.hist-amount {
+  font-size: 20px; font-weight: 800;
+  margin-bottom: 8px;
+}
+.hist-item.qris .hist-amount { color: var(--yellow); text-shadow: 0 0 8px rgba(245,230,66,0.4); }
+.hist-item.usdt .hist-amount { color: #a0ffdd;        text-shadow: 0 0 8px rgba(38,200,140,0.4); }
+
+/* status badge */
 .hist-status {
-  font-size: 8.5px; font-weight: 700; padding: 3px 10px; border-radius: 50px;
-  letter-spacing: 0.5px;
+  font-size: 8.5px; font-weight: 800; padding: 4px 11px;
+  border-radius: 50px; letter-spacing: 0.8px; flex-shrink: 0;
 }
-.s-proses   { background: rgba(245,230,66,0.1); color: var(--yellow); border: 1px solid var(--b-yellow); }
-.s-berhasil { background: rgba(0,220,100,0.1);  color: #00dc66;       border: 1px solid rgba(0,220,100,0.28); }
-.s-gagal    { background: rgba(255,60,60,0.1);  color: #ff5555;       border: 1px solid rgba(255,60,60,0.28); }
+.s-proses   {
+  background: rgba(245,230,66,0.15); color: var(--yellow);
+  border: 1px solid var(--b-yellow);
+  box-shadow: 0 0 8px rgba(245,230,66,0.3);
+  animation: blinkStatus 1.5s ease infinite;
+}
+.s-berhasil {
+  background: rgba(0,220,100,0.15); color: #00ff77;
+  border: 1px solid rgba(0,220,100,0.4);
+  box-shadow: 0 0 8px rgba(0,220,100,0.3);
+}
+.s-gagal {
+  background: rgba(255,60,60,0.15); color: #ff6666;
+  border: 1px solid rgba(255,60,60,0.4);
+  box-shadow: 0 0 8px rgba(255,60,60,0.3);
+}
+@keyframes blinkStatus {
+  0%,100% { opacity:1; }
+  50%      { opacity:0.45; }
+}
 
+/* method chip */
 .hist-method-chip {
   display: inline-flex; align-items: center; gap: 5px;
-  font-size: 9px; font-weight: 600; letter-spacing: 0.6px;
-  padding: 3px 9px; border-radius: 50px; margin-bottom: 6px;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.8px;
+  padding: 3px 10px; border-radius: 50px; margin-bottom: 7px;
 }
-.m-qris { background: rgba(255,0,119,0.1); color: var(--pink); border: 1px solid var(--b-pink); }
-.m-usdt { background: rgba(38,161,123,0.1); color: var(--green); border: 1px solid var(--b-green); }
+.m-qris {
+  background: rgba(255,0,119,0.18); color: #ff88cc;
+  border: 1px solid rgba(255,0,119,0.4);
+}
+.m-usdt {
+  background: rgba(38,161,123,0.18); color: #40ffbb;
+  border: 1px solid rgba(38,161,123,0.4);
+}
 
+/* separator line */
+.hist-divider {
+  height: 1px; margin: 7px 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+}
+
+/* time */
 .hist-time {
-  font-size: 10px; font-weight: 300; color: rgba(255,255,255,0.28);
+  font-size: 9.5px; font-weight: 300;
+  color: rgba(255,255,255,0.3);
   display: flex; align-items: center; gap: 5px;
 }
 
@@ -595,9 +659,10 @@ async function fetchKurs() {
   usdtLoaded = true;
   const badge = document.getElementById("kurs-badge");
   const val   = document.getElementById("kurs-val");
-  if (badge && currentMethod === "USDT") badge.style.display = "block";
   if (val) val.textContent = "1 USDT = " + fmtIDR(usdtRate);
-  onAmountInput();
+  // Show badge always when USDT method is active
+  if (badge && currentMethod === "USDT") badge.style.display = "block";
+  if (currentMethod === "USDT") onAmountInput();
 }
 
 /* ── method select ── */
@@ -634,8 +699,12 @@ function selectMethod(method) {
     usdtInfo.style.display = "block";
     labelN.textContent     = "Jumlah USDT ($)";
     inputA.placeholder     = "Min. $10";
-    if (!usdtLoaded) fetchKurs();
-    else { kursBadge.style.display = "block"; onAmountInput(); }
+    if (!usdtLoaded) {
+      fetchKurs(); // fetchKurs will show badge and call onAmountInput when done
+    } else {
+      kursBadge.style.display = "block";
+      onAmountInput();
+    }
     refreshWALink(0, 0, 0);
   }
 }
@@ -786,17 +855,22 @@ function renderHistory() {
     const mLabel  = isUsdt ? "USDT Crypto" : "QRIS";
     const isNew   = i === 0 && h.isNew;
     const amt     = h.displayAmt || h.displayAmount || fmtIDR(h.nominalIDR);
+    const title   = isUsdt ? "DEPOSIT USDT" : "DEPOSIT QRIS";
 
     return `
       <div class="hist-item ${mClass}${isNew ? " is-latest" : ""}" id="hist-${h.id}">
         ${isNew ? `<div class="badge-baru">BARU</div>` : ""}
         <div class="hist-row-top">
-          <span class="hist-amount">${amt}</span>
+          <div>
+            <div class="hist-title">${title}</div>
+            <div class="hist-amount">${amt}</div>
+          </div>
           <span class="hist-status ${stClass}">${h.status}</span>
         </div>
         <span class="hist-method-chip ${mChip}">
           <i class="${mIcon}" style="font-size:9px;"></i> ${mLabel}
         </span>
+        <div class="hist-divider"></div>
         <div class="hist-time">
           <i class="fa-regular fa-clock"></i> ${h.tanggal}
         </div>
