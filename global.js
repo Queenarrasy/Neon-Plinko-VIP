@@ -18,13 +18,34 @@ const WA_ADMIN         = "6289510249551"; // ← Ganti nomor WA admin
 //  UTILITY
 // ============================================================
 
-/** Kirim POST ke GAS dan kembalikan JSON */
+/**
+ * Kirim POST ke GAS dan kembalikan JSON.
+ * Catatan penting GAS:
+ *  - Tidak pakai Content-Type header (hindari CORS preflight)
+ *  - redirect:"follow" wajib karena GAS redirect ke URL eksekusi
+ *  - Response bisa berupa HTML error, divalidasi dulu sebelum di-parse
+ */
 async function gasPost(payload) {
-  const res = await fetch(SCRIPT_URL, {
-    method : "POST",
-    body   : JSON.stringify(payload)
-  });
-  return res.json();
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method  : "POST",
+      redirect: "follow",
+      body    : JSON.stringify(payload)
+    });
+
+    const text = await res.text();
+
+    // GAS kadang return halaman HTML error bukan JSON
+    if (!text || text.trim().startsWith("<")) {
+      console.error("GAS bukan JSON:", text.substring(0, 200));
+      return { result: "ERROR", message: "Respons server tidak valid. Periksa deployment GAS." };
+    }
+
+    return JSON.parse(text);
+  } catch (err) {
+    console.error("gasPost error:", err.message);
+    throw err;
+  }
 }
 
 /** Format angka ke Rupiah */
@@ -107,19 +128,27 @@ async function initProfile() {
 //  3. INISIALISASI HALAMAN WITHDRAW  →  withdraw.html
 // ============================================================
 async function initWithdraw() {
-  const data = await fetchUserData();
-  if (!data) return;
+  // Isi dulu dari cache localStorage agar langsung tampil
+  const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || "-"; };
+  setVal("wd-account-name", localStorage.getItem("user_fullname"));
+  setVal("wd-account-num",  localStorage.getItem("user_rekening"));
+  setVal("wd-method",       localStorage.getItem("user_bank"));
+  _setEl("wd-balance",      fmtIDR(localStorage.getItem("user_saldo")));
 
-  // Isi field rekening otomatis (readonly)
-  const set = (id, val) => {
-    const el = document.getElementById(id);
-    if (el) el.value = val || "-";
-  };
-  set("wd-account-name", data.fullname);
-  set("wd-account-num",  data.rekening);
-  set("wd-method",       data.bank);
+  // Sync dari server
+  try {
+    const data = await fetchUserData();
+    if (data) {
+      setVal("wd-account-name", data.fullname);
+      setVal("wd-account-num",  data.rekening);
+      setVal("wd-method",       data.bank);
+      _setEl("wd-balance",      fmtIDR(data.saldo));
+    }
+  } catch (e) {
+    console.warn("initWithdraw sync gagal, pakai cache:", e.message);
+  }
 
-  // Muat riwayat withdraw
+  // Muat riwayat (tidak block UI jika gagal)
   await loadWithdrawHistory();
 }
 
@@ -156,6 +185,13 @@ async function loadWithdrawHistory() {
     }
   } catch (e) {
     console.warn("loadWithdrawHistory gagal:", e);
+    if (container) {
+      container.innerHTML = `<div style="text-align:center;color:#888;padding:20px;font-size:11px;">
+        <i class="fa-solid fa-circle-exclamation" style="color:var(--yellow);"></i><br><br>
+        Gagal memuat riwayat. Server sedang tidak merespons.<br>
+        <small style="color:#555;">Coba refresh halaman ini.</small>
+      </div>`;
+    }
   }
 }
 
@@ -198,7 +234,12 @@ async function processWithdraw() {
       _showWdModal("GAGAL ❌", result.message || "Penarikan gagal.", "var(--pink)", "0 0 20px var(--pink)");
     }
   } catch (e) {
-    _showWdModal("ERROR ❌", "Koneksi ke server gagal. Coba lagi.", "var(--pink)", "0 0 20px var(--pink)");
+    console.error("processWithdraw error:", e);
+    _showWdModal(
+      "KONEKSI GAGAL ❌",
+      "Tidak dapat terhubung ke server.\n\nPastikan:\n1. URL GAS sudah benar\n2. GAS sudah di-deploy ulang (Manage Deployments)\n3. Akses: Anyone",
+      "var(--pink)", "0 0 20px var(--pink)"
+    );
   }
 }
 
@@ -409,6 +450,13 @@ async function loadDepositHistory() {
     }
   } catch (e) {
     console.warn("loadDepositHistory gagal:", e);
+    if (container) {
+      container.innerHTML = `<div style="text-align:center;color:#888;padding:20px;font-size:11px;">
+        <i class="fa-solid fa-circle-exclamation" style="color:var(--yellow);"></i><br><br>
+        Gagal memuat riwayat. Server sedang tidak merespons.<br>
+        <small style="color:#555;">Coba refresh halaman ini.</small>
+      </div>`;
+    }
   }
 }
 
