@@ -2,273 +2,225 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>WITHDRAW - NEON PLINKO VIP</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
---pink:#ff0077;
---blue:#0044ff;
---yellow:#fbff00;
---bg:#03040a;
-
---neon-pink:0 0 15px rgba(255,0,119,0.9);
---neon-blue:0 0 15px rgba(0,68,255,0.9);
---neon-yellow:0 0 15px rgba(251,255,0,0.9);
+  --pink:#ff0077;--blue:#0055ff;--yellow:#f5e642;--green:#26a17b;--bg:#02030d;
+  --card:rgba(255,255,255,.025);
+  --gp:0 0 8px rgba(255,0,119,.5),0 0 22px rgba(255,0,119,.15);
+  --gb:0 0 8px rgba(0,85,255,.5),0 0 22px rgba(0,85,255,.15);
+  --gy:0 0 8px rgba(245,230,66,.5),0 0 22px rgba(245,230,66,.13);
+  --bp:rgba(255,0,119,.32);--bb:rgba(0,85,255,.32);--by:rgba(245,230,66,.32);
 }
-
+*{box-sizing:border-box;margin:0;padding:0;}
 body{
-margin:0;
-background:linear-gradient(180deg,#02030a,#05071a);
-font-family:'Segoe UI',Tahoma;
-color:white;
+  background:var(--bg);
+  background-image:radial-gradient(ellipse 70% 50% at 10% 5%,rgba(0,55,255,.06) 0%,transparent 70%),
+    radial-gradient(ellipse 50% 40% at 90% 95%,rgba(255,0,119,.05) 0%,transparent 70%);
+  color:#dde0f0;font-family:'Outfit',sans-serif;min-height:100vh;overflow-x:hidden;
 }
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.018) 3px,rgba(0,0,0,.018) 4px);}
 
-/* HEADER */
-.header{
-padding:20px;
-background:rgba(0,0,0,0.9);
-border-bottom:2px solid var(--blue);
-display:flex;
-justify-content:space-between;
-align-items:center;
-}
-.btn-back{color:white;font-size:20px;text-decoration:none;}
+.header{position:sticky;top:0;z-index:200;padding:13px 18px;background:rgba(2,3,13,.93);
+  border-bottom:1px solid var(--bb);backdrop-filter:blur(18px);
+  display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 20px rgba(0,85,255,.1);}
+.btn-back{color:rgba(255,255,255,.6);font-size:15px;text-decoration:none;
+  width:32px;height:32px;border:1px solid var(--bb);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;transition:.3s;}
+.btn-back:hover{color:#fff;border-color:var(--blue);box-shadow:var(--gb);}
+.header-title{font-family:'Cinzel Decorative',serif;font-size:11px;font-weight:700;letter-spacing:2px;
+  background:linear-gradient(90deg,var(--pink),#dd66ff 40%,var(--yellow));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 
-/* CONTAINER */
-.container{padding:20px;}
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(5px);z-index:9998;}
+#neon-modal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:linear-gradient(160deg,#07091d,#0b0d24);border-radius:22px;z-index:9999;
+  padding:28px 24px;text-align:center;min-width:280px;max-width:320px;width:88%;
+  border:1px solid var(--bp);box-shadow:var(--gp);animation:mpop .3s cubic-bezier(.34,1.56,.64,1) both;}
+@keyframes mpop{from{opacity:0;transform:translate(-50%,-50%) scale(.7)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+#modal-title{font-family:'Cinzel Decorative',serif;font-size:11px;font-weight:700;color:var(--yellow);margin-bottom:8px;}
+#modal-msg{font-size:12px;color:rgba(220,220,240,.65);line-height:1.7;white-space:pre-line;}
+.modal-btn{margin-top:16px;padding:9px 26px;border-radius:50px;cursor:pointer;
+  font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;
+  background:transparent;border:1px solid var(--by);color:var(--yellow);transition:.25s;}
+.modal-btn:hover{background:rgba(245,230,66,.1);}
 
-/* BALANCE */
-.balance-card{
-border:2px solid var(--pink);
-border-radius:15px;
-padding:20px;
-text-align:center;
-margin-bottom:20px;
-box-shadow:var(--neon-pink);
-background:rgba(255,0,119,0.05);
-}
-.bal-value{
-font-size:24px;
-font-weight:900;
-color:var(--yellow);
-text-shadow:var(--neon-yellow);
-}
+.container{padding:16px;max-width:520px;margin:auto;position:relative;z-index:1;display:flex;flex-direction:column;gap:14px;}
 
-/* CARD */
-.card{
-border:2px solid var(--blue);
-border-radius:15px;
-padding:20px;
-margin-bottom:20px;
-box-shadow:var(--neon-blue);
-background:rgba(0,68,255,0.05);
-}
+.sec-lbl{display:flex;align-items:center;gap:8px;font-size:9px;font-weight:600;letter-spacing:2px;
+  text-transform:uppercase;opacity:.45;}
+.sec-lbl::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,currentColor,transparent);opacity:.4;}
 
-.label{
-font-size:11px;
-color:var(--pink);
-font-weight:bold;
-display:block;
-margin-bottom:6px;
-letter-spacing:1px;
+/* SALDO */
+.saldo-card{
+  background:linear-gradient(135deg,#08021e 0%,#110636 55%,#09021c 100%);
+  border:1px solid var(--bp);border-radius:20px;padding:20px;text-align:center;
+  box-shadow:var(--gp);animation:fadeUp .35s ease both;
 }
+.saldo-lbl{font-size:9px;font-weight:600;letter-spacing:2px;color:rgba(255,255,255,.4);margin-bottom:8px;}
+.saldo-val{font-family:'Cinzel Decorative',serif;font-size:24px;font-weight:900;
+  color:var(--yellow);text-shadow:var(--gy);}
 
-input{
-width:100%;
-padding:12px;
-background:#000;
-border:1px solid var(--blue);
-border-radius:8px;
-color:white;
-margin-bottom:15px;
+/* FORM CARD */
+.form-card{background:var(--card);border:1px solid var(--bb);border-radius:20px;
+  padding:18px;box-shadow:var(--gb);animation:fadeUp .4s ease both .05s;}
+.flbl{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;
+  color:rgba(255,255,255,.4);display:block;margin-bottom:6px;margin-top:14px;}
+.flbl:first-child{margin-top:0;}
+input[type=text],input[type=number]{
+  width:100%;padding:13px 15px;background:rgba(0,0,0,.4);
+  border:1px solid rgba(0,85,255,.22);border-radius:12px;color:#fff;
+  font-family:'Outfit',sans-serif;font-size:13px;outline:none;transition:.3s;
 }
-input:read-only{
-opacity:0.7;
-border-color:#333;
-}
+input[readonly]{opacity:.55;border-color:rgba(255,255,255,.08)!important;}
+input:focus:not([readonly]){border-color:var(--bp);box-shadow:var(--gp);}
+input::placeholder{color:rgba(255,255,255,.2);font-weight:300;}
 
-.btn-withdraw{
-width:100%;
-padding:15px;
-border-radius:50px;
-background:linear-gradient(90deg,var(--pink),var(--blue));
-color:white;
-font-weight:900;
-border:2px solid var(--yellow);
-cursor:pointer;
-box-shadow:var(--neon-pink);
-}
+/* QUICK AMOUNTS */
+.amt-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px;margin-bottom:14px;}
+.amt-chip{padding:10px 4px;border-radius:10px;text-align:center;
+  font-size:11px;font-weight:600;cursor:pointer;transition:.2s;
+  border:1px solid var(--bb);color:#7799ff;background:rgba(0,85,255,.04);}
+.amt-chip:hover{background:rgba(0,85,255,.16);box-shadow:var(--gb);transform:scale(1.05);}
+
+.btn-submit{width:100%;padding:15px;margin-top:16px;border-radius:50px;cursor:pointer;
+  background:linear-gradient(90deg,rgba(255,0,119,.7),rgba(0,85,255,.6));
+  border:1px solid var(--by);color:#fff;font-family:'Outfit',sans-serif;
+  font-size:13px;font-weight:700;letter-spacing:1px;transition:.3s;
+  box-shadow:var(--gp);text-transform:uppercase;}
+.btn-submit:hover{transform:translateY(-2px);box-shadow:0 0 28px rgba(255,0,119,.45);}
 
 /* HISTORY */
-.history-title{
-font-weight:900;
-color:var(--yellow);
-margin-bottom:10px;
-display:flex;
-gap:10px;
-align-items:center;
-}
+.history-card{background:var(--card);border:1px solid var(--by);border-radius:20px;
+  padding:18px;box-shadow:var(--gy);animation:fadeUp .45s ease both .1s;}
+.history-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.history-head-title{font-family:'Cinzel Decorative',serif;font-size:10px;font-weight:700;
+  letter-spacing:1px;color:rgba(255,255,255,.8);}
+#wd-history{display:flex;flex-direction:column;gap:10px;max-height:380px;overflow-y:auto;padding-right:2px;}
+#wd-history::-webkit-scrollbar{width:3px;}
+#wd-history::-webkit-scrollbar-thumb{background:rgba(245,230,66,.3);border-radius:10px;}
 
-.history-wrapper{
-border:2px solid var(--yellow);
-border-radius:15px;
-padding:15px;
-box-shadow:var(--neon-yellow);
-max-height:260px;
-overflow-y:auto;
-background:rgba(251,255,0,0.05);
+.history-item{border-radius:14px;padding:14px;position:relative;
+  background:linear-gradient(135deg,#0d0025 0%,#160030 55%,#0a001c 100%);
+  border:2px solid var(--pink);
+  box-shadow:0 0 14px rgba(255,0,119,.4),inset 0 0 20px rgba(255,0,119,.05);
+  transition:transform .2s;}
+.history-item:hover{transform:translateY(-2px);}
+.history-item.latest{animation:blinkPink 1.3s ease-in-out infinite;}
+@keyframes blinkPink{
+  0%,100%{border-color:var(--pink);box-shadow:0 0 14px rgba(255,0,119,.4),inset 0 0 20px rgba(255,0,119,.05);}
+  50%{border-color:#ff88cc;box-shadow:0 0 30px rgba(255,0,119,.9),0 0 55px rgba(255,0,119,.3),inset 0 0 35px rgba(255,0,119,.12);}
 }
+.badge-new{position:absolute;top:0;right:10px;font-size:7.5px;font-weight:800;letter-spacing:1.5px;
+  background:linear-gradient(90deg,var(--pink),#ff44aa);color:#fff;
+  padding:3px 10px;border-radius:0 0 8px 8px;box-shadow:0 0 10px rgba(255,0,119,.7);}
+.hist-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.hist-label{font-family:'Cinzel Decorative',serif;font-size:9px;font-weight:700;
+  letter-spacing:1px;color:rgba(255,130,170,.85);}
+.hist-amount{font-size:20px;font-weight:800;color:var(--yellow);
+  text-shadow:0 0 10px rgba(245,230,66,.5);margin-bottom:7px;}
+.hist-time{font-size:9.5px;font-weight:300;color:rgba(255,255,255,.3);display:flex;align-items:center;gap:5px;}
+.status-badge{font-size:8.5px;font-weight:800;padding:4px 10px;border-radius:50px;letter-spacing:.8px;flex-shrink:0;}
+.status-proses{background:rgba(245,230,66,.15);color:var(--yellow);border:1px solid var(--by);
+  box-shadow:0 0 8px rgba(245,230,66,.3);animation:blinkSt 1.4s ease infinite;}
+.status-sukses{background:rgba(0,220,100,.15);color:#00ff77;border:1px solid rgba(0,220,100,.4);box-shadow:0 0 8px rgba(0,220,100,.35);}
+.status-gagal{background:rgba(255,60,60,.15);color:#ff6666;border:1px solid rgba(255,60,60,.4);}
+@keyframes blinkSt{0%,100%{opacity:1;}50%{opacity:.3;}}
+.hist-loading,.hist-empty{text-align:center;padding:24px;font-size:11px;color:rgba(255,255,255,.3);}
+.btn-retry{margin-top:8px;padding:7px 18px;border-radius:20px;border:1px solid var(--by);
+  background:transparent;color:var(--yellow);cursor:pointer;font-size:10px;font-family:'Outfit',sans-serif;}
 
-.history-wrapper::-webkit-scrollbar{width:6px;}
-.history-wrapper::-webkit-scrollbar-thumb{
-background:var(--pink);
-border-radius:10px;
-box-shadow:var(--neon-pink);
-}
-
-.history-item{
-border:1px solid var(--blue);
-border-radius:10px;
-padding:12px;
-margin-bottom:10px;
-background:rgba(0,0,0,0.5);
-position:relative;
-}
-
-/* Glow terbaru */
-@keyframes glowPulse{
-0%{box-shadow:0 0 5px var(--pink);}
-50%{box-shadow:0 0 20px var(--blue);}
-100%{box-shadow:0 0 5px var(--pink);}
-}
-.latest{
-animation:glowPulse 1.5s infinite;
-}
-
-.badge-new{
-position:absolute;
-top:-8px;
-right:-8px;
-background:var(--pink);
-color:white;
-font-size:9px;
-padding:4px 6px;
-border-radius:10px;
-font-weight:bold;
-box-shadow:var(--neon-pink);
-}
-
-.status-badge{
-padding:2px 8px;
-border-radius:4px;
-font-size:9px;
-}
-.status-proses{background:rgba(251,255,0,0.2);color:var(--yellow);}
-.status-sukses{background:rgba(0,255,0,0.2);color:#00ff00;}
-.status-gagal{background:rgba(255,0,0,0.2);color:#ff4444;}
-
-.hist-top{display:flex;justify-content:space-between;font-weight:bold;}
-.hist-time{font-size:10px;color:#aaa;}
-
-/* NEON MODAL */
-#neon-modal{
-display:none;
-position:fixed;
-top:50%;
-left:50%;
-transform:translate(-50%,-50%);
-background:#0a0b1e;
-padding:25px;
-border-radius:15px;
-z-index:9999;
-text-align:center;
-min-width:280px;
-animation:fadeIn 0.3s ease;
-}
-@keyframes fadeIn{from{opacity:0;scale:0.8;}to{opacity:1;scale:1;}}
-
-.modal-btn{
-margin-top:15px;
-padding:10px 25px;
-border-radius:50px;
-border:2px solid var(--yellow);
-background:transparent;
-color:var(--yellow);
-cursor:pointer;
-}
-
+.footer-note{font-size:9.5px;color:rgba(255,255,255,.18);text-align:center;line-height:1.9;padding-bottom:20px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 </style>
 </head>
 <body>
 
+<div id="modal-overlay" onclick="closeModal()"></div>
 <div id="neon-modal">
-<h3 id="modal-title"></h3>
-<p id="modal-msg"></p>
-<button class="modal-btn" onclick="closeModal()">OK</button>
+  <div id="modal-title">INFO</div>
+  <div id="modal-msg"></div>
+  <button class="modal-btn" onclick="closeModal()">Oke, Mengerti</button>
 </div>
 
 <div class="header">
-<a href="game.html" class="btn-back"><i class="fa-solid fa-circle-chevron-left"></i></a>
-<div style="font-weight:900;letter-spacing:2px;">PENARIKAN DANA</div>
-<div style="width:20px;"></div>
+  <a href="game.html" class="btn-back"><i class="fa-solid fa-chevron-left"></i></a>
+  <div class="header-title">Penarikan Dana</div>
+  <div style="width:32px;"></div>
 </div>
 
 <div class="container">
 
-<div class="balance-card">
-<div>SALDO DAPAT DITARIK</div>
-<div class="bal-value" id="wd-balance">IDR 0</div>
-</div>
+  <div class="saldo-card">
+    <div class="saldo-lbl">Saldo Dapat Ditarik</div>
+    <div class="saldo-val" id="wd-balance">IDR 0</div>
+  </div>
 
-<div class="card">
-<span class="label">NAMA LENGKAP</span>
-<input type="text" id="wd-account-name" readonly>
+  <div class="sec-lbl" style="color:var(--blue)"><i class="fa-solid fa-building-columns"></i> Data Rekening</div>
 
-<span class="label">NOMOR REKENING</span>
-<input type="text" id="wd-account-num" readonly>
+  <div class="form-card">
+    <label class="flbl">Nama Lengkap</label>
+    <input type="text" id="wd-account-name" readonly placeholder="Memuat...">
 
-<span class="label">BANK / E-WALLET</span>
-<input type="text" id="wd-method" readonly>
+    <label class="flbl">Nomor Rekening</label>
+    <input type="text" id="wd-account-num" readonly placeholder="Memuat...">
 
-<span class="label">NOMINAL PENARIKAN (IDR)</span>
-<input type="number" id="wd-amount" placeholder="Minimal 50,000">
+    <label class="flbl">Bank / E-Wallet</label>
+    <input type="text" id="wd-method" readonly placeholder="Memuat...">
 
-<button class="btn-withdraw" onclick="processWithdraw()">AJUKAN PENARIKAN</button>
-</div>
+    <label class="flbl">Nominal Penarikan (IDR)</label>
+    <input type="number" id="wd-amount" placeholder="Min. Rp 50.000">
 
-<div class="history-title">
-<i class="fa-solid fa-clock-rotate-left"></i> RIWAYAT PENARIKAN
-</div>
+    <div class="amt-grid">
+      <div class="amt-chip" onclick="setWdAmt(50000)">50 RB</div>
+      <div class="amt-chip" onclick="setWdAmt(100000)">100 RB</div>
+      <div class="amt-chip" onclick="setWdAmt(250000)">250 RB</div>
+      <div class="amt-chip" onclick="setWdAmt(500000)">500 RB</div>
+      <div class="amt-chip" onclick="setWdAmt(1000000)">1 JT</div>
+      <div class="amt-chip" onclick="setWdAmt(2000000)">2 JT</div>
+    </div>
 
-<div class="history-wrapper" id="wd-history">
-<div style="text-align:center;color:#555;padding:20px;">Belum ada riwayat transaksi</div>
-</div>
+    <button class="btn-submit" onclick="processWithdraw()">
+      <i class="fa-solid fa-paper-plane"></i>&nbsp; Ajukan Penarikan
+    </button>
+  </div>
+
+  <div class="sec-lbl" style="color:var(--yellow)"><i class="fa-solid fa-clock-rotate-left"></i> Riwayat Penarikan</div>
+
+  <div class="history-card">
+    <div class="history-head">
+      <div class="history-head-title">Transaksi Terakhir</div>
+      <span style="font-size:9px;color:rgba(255,255,255,.22)"><i class="fa-solid fa-rotate"></i> auto 8 dtk</span>
+    </div>
+    <div id="wd-history">
+      <div class="hist-empty">Belum ada riwayat penarikan.</div>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    * Minimal penarikan IDR 50.000<br>
+    * Penarikan diproses setelah admin approve<br>
+    * Saldo terpotong otomatis saat pengajuan
+  </div>
 
 </div>
 
 <script src="global.js"></script>
 <script>
-/**
- * withdraw.html — semua logika server ditangani global.js (v11.0)
- * File ini HANYA berisi override closeModal agar gaya warna konsisten,
- * dan guard login. Tidak ada fungsi duplikat yang bisa bentrok.
- */
-
-// Override closeModal agar tombol OK di modal ini tetap berfungsi
-function closeModal() {
-  document.getElementById("neon-modal").style.display = "none";
+function closeModal(){
+  document.getElementById('neon-modal').style.display='none';
+  document.getElementById('modal-overlay').style.display='none';
 }
-
-// Guard: pastikan sudah login sebelum halaman dimuat
-// (DOMContentLoaded di global.js sudah handle initWithdraw otomatis)
-window.addEventListener("load", function() {
-  if (!getUsername()) {
-    location.href = "index.html";
-  }
+function setWdAmt(v){
+  document.getElementById('wd-amount').value=v;
+}
+window.addEventListener('load',()=>{
+  if(!getUsername())location.href='index.html';
 });
 </script>
-
 </body>
 </html>
