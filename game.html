@@ -107,6 +107,14 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .s-low {background:linear-gradient(135deg,var(--blue),#0022bb);color:rgba(255,255,255,.95);}
 
 /* ── CONTROLS ───────────────────────────────────────────── */
+/*
+  Layout dari atas ke bawah:
+  1. mode-row   — 3 tombol mode
+  2. bet-row    — kecil, compact
+  3. btn-play   — besar, tegas
+  4. nav-bottom — withdraw/deposit/reward (langsung di bawah play)
+  Semua dalam satu flex column, space terdistribusi.
+*/
 .controls{
   flex:1;
   min-height:0;
@@ -116,9 +124,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   border-top:1px solid rgba(0,85,255,.28);
   display:flex;
   flex-direction:column;
-  gap:8px;
+  gap:8px;           /* jarak seragam antar row */
 }
 
+/* MODE BUTTONS */
 .mode-row{display:flex;gap:8px;}
 .btn-mode{
   flex:1;background:transparent;
@@ -133,6 +142,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 #m-auto  {border:1px solid var(--by);color:var(--yellow);}
 #m-auto.active  {background:rgba(245,230,66,.15);box-shadow:var(--gy);}
 
+/* BET ROW — compact, kecil */
 .bet-row{
   display:flex;align-items:center;gap:10px;
   background:rgba(0,0,0,.35);
@@ -148,6 +158,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   -webkit-tap-highlight-color:transparent;
 }
 .bet-btn:active{transform:scale(.80);}
+/* Disabled state ketika auto aktif */
 .bet-btn.locked{opacity:.25;pointer-events:none;}
 .bet-minus{color:var(--pink);}
 .bet-plus {color:#7799ff;}
@@ -159,12 +170,14 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   color:var(--yellow);text-shadow:var(--gy);
   line-height:1.1;
 }
+/* Lock indicator */
 #bet-lock-hint{
   font-size:8px;color:rgba(245,230,66,.5);
   text-align:center;display:none;
   letter-spacing:.5px;
 }
 
+/* PLAY BUTTON */
 .btn-play{
   flex-shrink:0;
   width:100%;padding:15px;border-radius:50px;cursor:pointer;
@@ -181,11 +194,13 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   border-color:var(--by);box-shadow:var(--gy);color:#000;
 }
 
+/* ── NAV BOTTOM ─────────────────────────────────────────── */
+/* Nav langsung di dalam .controls agar tidak jauh ke bawah */
 .nav-bottom{
   flex-shrink:0;
   display:grid;grid-template-columns:repeat(3,1fr);
   gap:8px;
-  padding:0 0 10px;
+  padding:0 0 10px;      /* padding bawah saja */
   border-top:1px solid rgba(0,85,255,.18);
   padding-top:8px;
 }
@@ -219,6 +234,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   <button class="modal-btn" onclick="closeModal()">OK</button>
 </div>
 
+<!-- HEADER -->
 <div class="header">
   <div class="header-item" onclick="snd('click');location.href='profil.html'">
     <i class="fa-solid fa-circle-user" style="color:var(--yellow);text-shadow:var(--gy);"></i>
@@ -231,6 +247,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   <div class="header-item" style="visibility:hidden;"></div>
 </div>
 
+<!-- BOARD -->
 <div id="board-wrapper">
   <canvas id="plinko-canvas"></canvas>
   <div id="floating-score">
@@ -240,15 +257,20 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   </div>
 </div>
 
+<!-- SLOT ROW -->
 <div class="multiplier-row" id="slot-row"></div>
 
+<!-- CONTROLS: mode + bet + play + nav semua di sini -->
 <div class="controls">
+
+  <!-- 1. MODE BUTTONS -->
   <div class="mode-row">
     <button class="btn-mode active" id="m-normal" onclick="setSpeedMode('normal')">🎯 NORMAL</button>
     <button class="btn-mode"        id="m-turbo"  onclick="setSpeedMode('turbo')">⚡ TURBO</button>
     <button class="btn-mode"        id="m-auto"   onclick="toggleAuto()">🔄 AUTO: OFF</button>
   </div>
 
+  <!-- 2. BET ROW (compact pill) -->
   <div class="bet-row">
     <div class="bet-btn bet-minus" id="btn-minus" onclick="changeBet(-1)">
       <i class="fa-solid fa-circle-minus"></i>
@@ -263,6 +285,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   </div>
   <div id="bet-lock-hint">🔒 Stop AUTO untuk mengubah taruhan</div>
 
+  <!-- 3. PLAY / STOP BUTTON -->
   <button class="btn-play" id="main-btn"
     onpointerdown="onPlayDown(event)"
     onpointerup="onPlayUp(event)"
@@ -271,6 +294,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
     <i class="fa-solid fa-play" id="play-icon"></i>&nbsp;<span id="play-label">PLAY BALL</span>
   </button>
 
+  <!-- 4. NAV BOTTOM — tetap di dalam controls -->
   <div class="nav-bottom">
     <a href="withdraw.html" class="nav-btn btn-withdraw" onclick="snd('click')">
       <i class="fa-solid fa-money-bill-transfer"></i><span>WITHDRAW</span>
@@ -282,13 +306,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
       <i class="fa-solid fa-gift"></i><span>REWARD</span>
     </a>
   </div>
-</div>
+
+</div><!-- end .controls -->
 
 <script>
-/* ════════════════════════════════════════════════════════════
-   NEON PLINKO VIP — Perhitungan Saldo Akurat
-   ════════════════════════════════════════════════════════════ */
-
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
 
 const ROWS   = 10;
@@ -296,10 +317,9 @@ const MULTS  = [10, 3, 1.5, 0.5, 0.2, 0.2, 0.5, 1.5, 3, 10];
 const BETS   = [400,800,1000,1200,1600,2000,4000,8000,10000,20000];
 const BALL_R = 6.5;
 const PEG_R  = 5.0;
-
 const PH = {
-  normal:{ grav:0.22, fric:0.992, bounce:0.42, pegF:2.2, randV:0.28, autoMs:800  },
-  turbo: { grav:0.38, fric:0.985, bounce:0.36, pegF:3.2, randV:0.35, autoMs:220  }
+  normal:{ grav:0.22, fric:0.992, bounce:0.42, pegF:2.2, randV:0.28, autoMs:800 },
+  turbo: { grav:0.38, fric:0.985, bounce:0.36, pegF:3.2, randV:0.35, autoMs:220 }
 };
 
 let canvas, ctx, DPR=1, BW=0, BH=0;
@@ -307,6 +327,10 @@ let pegs=[], balls=[], slotW=0;
 let speedMode='normal', isAuto=false, autoTimer=null;
 let betIdx=0, syncTimer=null, raf=null;
 let holdActive=false, holdRepeat=null, holdTimeout=null;
+
+// ★ Blokir sync selama 20 detik setelah bola terakhir landing
+// Ini mencegah sheet yang belum terupdate menimpa saldo kemenangan
+let lastLandTime = 0;
 
 const getU   = () => localStorage.getItem('username');
 const getS   = () => parseFloat(localStorage.getItem('user_saldo')||0);
@@ -346,9 +370,9 @@ function setupCanvas(){
   DPR    = window.devicePixelRatio || 1;
   BW     = wrap.clientWidth;
   BH     = wrap.clientHeight;
-  canvas.width = BW * DPR;
+  canvas.width  = BW * DPR;
   canvas.height = BH * DPR;
-  canvas.style.width = BW + 'px';
+  canvas.style.width  = BW + 'px';
   canvas.style.height = BH + 'px';
   ctx.scale(DPR, DPR);
   buildPegs();
@@ -357,19 +381,18 @@ function setupCanvas(){
 
 function buildPegs(){
   pegs = [];
-  const margin = Math.max(BW * 0.06, 18);
-  const usableW = BW - margin * 2;
+  const margin   = Math.max(BW * 0.06, 18);
+  const usableW  = BW - margin * 2;
   const spacingX = usableW / ROWS;
-  const topPad = BH * 0.05;
+  const topPad   = BH * 0.05;
   const spacingY = (BH * 0.88) / ROWS;
   for(let row=0; row<ROWS; row++){
-    const count = row + 2;
+    const count  = row + 2;
     const totalW = (count-1) * spacingX;
-    const sx = BW/2 - totalW/2;
-    const y = topPad + row * spacingY;
-    for(let col=0; col<count; col++){
+    const sx     = BW/2 - totalW/2;
+    const y      = topPad + row * spacingY;
+    for(let col=0; col<count; col++)
       pegs.push({ x: sx + col*spacingX, y, glow:0, hue:0 });
-    }
   }
 }
 
@@ -396,34 +419,27 @@ function draw(){
     ctx.save();
     if(p.glow > 0.05){
       const col = p.hue===0?`rgba(255,0,119,${p.glow*0.5})`:`rgba(245,230,66,${p.glow*0.55})`;
-      const g = ctx.createRadialGradient(p.x,p.y,0, p.x,p.y,r*3.2);
-      g.addColorStop(0, col); g.addColorStop(1,'rgba(0,0,0,0)');
+      const g = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*3.2);
+      g.addColorStop(0,col); g.addColorStop(1,'rgba(0,0,0,0)');
       ctx.beginPath(); ctx.arc(p.x,p.y,r*3.2,0,Math.PI*2);
       ctx.fillStyle=g; ctx.fill();
     }
-    const pg = ctx.createRadialGradient(p.x-r*.3,p.y-r*.3,r*.05, p.x,p.y,r);
+    const pg = ctx.createRadialGradient(p.x-r*.3,p.y-r*.3,r*.05,p.x,p.y,r);
     pg.addColorStop(0,'rgba(255,255,255,0.9)');
-    pg.addColorStop(0.35, p.glow>0.05?(p.hue===0?'rgba(255,120,180,1)':'rgba(255,235,80,1)'):'rgba(190,200,255,0.8)');
-    pg.addColorStop(1, p.glow>0.05?(p.hue===0?'rgba(200,0,80,0.9)':'rgba(180,150,0,0.9)'):'rgba(80,90,160,0.7)');
+    pg.addColorStop(0.35,p.glow>0.05?(p.hue===0?'rgba(255,120,180,1)':'rgba(255,235,80,1)'):'rgba(190,200,255,0.8)');
+    pg.addColorStop(1,  p.glow>0.05?(p.hue===0?'rgba(200,0,80,0.9)' :'rgba(180,150,0,0.9)'):'rgba(80,90,160,0.7)');
     ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2);
     ctx.fillStyle=pg;
-    ctx.shadowColor = p.glow>0.05?(p.hue===0?'#ff0077':'#f5e642'):'rgba(120,140,255,0.4)';
-    ctx.shadowBlur = p.glow>0.05?14:4;
-    ctx.fill();
-    ctx.restore();
+    ctx.shadowColor=p.glow>0.05?(p.hue===0?'#ff0077':'#f5e642'):'rgba(120,140,255,0.4)';
+    ctx.shadowBlur=p.glow>0.05?14:4;
+    ctx.fill(); ctx.restore();
   });
-
   balls.forEach(b => {
     ctx.save();
-    const gr = ctx.createRadialGradient(b.x-BALL_R*.32,b.y-BALL_R*.35,BALL_R*.04, b.x,b.y,BALL_R);
-    gr.addColorStop(0,'#ffaacc');
-    gr.addColorStop(0.45,'#ff0077');
-    gr.addColorStop(1,'#440011');
+    const gr = ctx.createRadialGradient(b.x-BALL_R*.32,b.y-BALL_R*.35,BALL_R*.04,b.x,b.y,BALL_R);
+    gr.addColorStop(0,'#ffaacc'); gr.addColorStop(0.45,'#ff0077'); gr.addColorStop(1,'#440011');
     ctx.beginPath(); ctx.arc(b.x,b.y,BALL_R,0,Math.PI*2);
-    ctx.fillStyle=gr;
-    ctx.shadowColor='rgba(255,0,119,0.85)';
-    ctx.shadowBlur=16;
-    ctx.fill();
+    ctx.fillStyle=gr; ctx.shadowColor='rgba(255,0,119,0.85)'; ctx.shadowBlur=16; ctx.fill();
     ctx.restore();
   });
 }
@@ -431,135 +447,128 @@ function draw(){
 function physics(){
   const toRemove = [];
   balls.forEach(b => {
-    const ph = PH[b.spd] || PH.normal;
-    b.vy += ph.grav;
-    b.vx *= ph.fric;
-    b.x += b.vx;
-    b.y += b.vy;
-    const prog = Math.max(0, (b.y - BH*0.35) / (BH*0.65));
+    const ph = PH[b.spd]||PH.normal;
+    b.vy += ph.grav; b.vx *= ph.fric;
+    b.x  += b.vx;   b.y  += b.vy;
+
+    // Steering halus ke slot target — aktif mulai 35% bawah board
+    const prog = Math.max(0,(b.y - BH*0.35)/(BH*0.65));
     if(prog > 0 && b.tx !== undefined) b.vx += (b.tx - b.x) * prog * 0.018;
 
-    for(let i=0; i<pegs.length; i++){
-      const p = pegs[i];
-      const dx = b.x-p.x, dy = b.y-p.y;
-      const d2 = dx*dx + dy*dy;
-      const colDist = BALL_R + PEG_R;
-      if(d2 < colDist*colDist){
+    // Peg collisions
+    for(let i=0;i<pegs.length;i++){
+      const p=pegs[i], dx=b.x-p.x, dy=b.y-p.y;
+      const colDist=BALL_R+PEG_R, d2=dx*dx+dy*dy;
+      if(d2 < colDist*colDist && d2 > 0.001){
         const d=Math.sqrt(d2), nx=dx/d, ny=dy/d;
-        b.x += nx*(colDist-d); b.y += ny*(colDist-d);
-        const dot = b.vx*nx + b.vy*ny;
-        b.vx = (b.vx - 2*dot*nx)*ph.bounce + (Math.random()-.5)*ph.randV;
-        b.vy = (b.vy - 2*dot*ny)*ph.bounce;
-        if(b.vy < 0.2) b.vy = 0.5;
-        p.glow=1; p.hue=(Math.random()>0.45)?1:0;
-        snd('hit');
+        b.x+=nx*(colDist-d); b.y+=ny*(colDist-d);
+        const dot=b.vx*nx+b.vy*ny;
+        b.vx=(b.vx-2*dot*nx)*ph.bounce+(Math.random()-.5)*ph.randV;
+        b.vy=(b.vy-2*dot*ny)*ph.bounce;
+        if(b.vy<0.2) b.vy=0.5;
+        p.glow=1; p.hue=(Math.random()>0.45)?1:0; snd('hit');
       }
     }
-    if(b.x < BALL_R || b.x > BW-BALL_R) b.vx *= -0.5;
-    if(b.y > BH + BALL_R*2 && !b.done){ b.done = true; toRemove.push(b); onBallLand(b); }
+    // Dinding
+    if(b.x<BALL_R)    {b.x=BALL_R;    b.vx= Math.abs(b.vx)*0.4;}
+    if(b.x>BW-BALL_R) {b.x=BW-BALL_R; b.vx=-Math.abs(b.vx)*0.4;}
+
+    // Landing
+    if(b.y > BH+BALL_R*2 && !b.done){
+      b.done=true; toRemove.push(b); onBallLand(b);
+    }
   });
-  balls = balls.filter(b => !toRemove.includes(b));
+  balls = balls.filter(b=>!toRemove.includes(b));
 }
 
-// ── FIX LOGIKA LANDING ──────────────────────────────────────
 function onBallLand(b){
-  // Gunakan multiplier dari server jika sudah ada, jika belum gunakan estimasi posisi visual
-  const finalMult = (b.serverMult !== undefined) ? b.serverMult : MULTS[Math.min(MULTS.length-1, Math.max(0, Math.floor(b.x / slotW)))];
-  
-  // HITUNG SALDO AKURAT: Saldo Sekarang + (Bet * Multiplier)
-  const winAmount = Math.floor(b.bet * finalMult);
-  setS(getS() + winAmount);
-  
-  b.resolved = true;
+  // ★ Catat waktu landing — sync diblokir 20 detik setelahnya
+  lastLandTime = Date.now();
+
+  const finalMult = (b.serverMult !== undefined)
+    ? b.serverMult
+    : MULTS[Math.min(MULTS.length-1, Math.max(0, Math.floor(b.x/slotW)))];
+
+  // ★ Tambah winReturn langsung ke saldo — tidak tunggu server
+  const winReturn = Math.floor(b.bet * finalMult);
+  setS(getS() + winReturn);
+  b.resolved     = true;
   b.resolvedMult = finalMult;
 
   if(finalMult >= 1.5) snd('win');
 
-  // Efek Visual Slot
-  let slotIdx = Math.min(MULTS.length-1, Math.max(0, Math.floor(b.x / slotW)));
+  // Slot berkedip sesuai serverMult
+  let slotIdx = Math.min(MULTS.length-1, Math.max(0, Math.floor(b.x/slotW)));
   if(b.serverMult !== undefined){
-    const opts = [];
-    MULTS.forEach((m,i) => { if(m === b.serverMult) opts.push(i); });
-    if(opts.length > 0){
-      opts.sort((a,z) => Math.abs(a-slotIdx) - Math.abs(z-slotIdx));
-      slotIdx = opts[0];
+    const opts=[];
+    MULTS.forEach((m,i)=>{ if(m===b.serverMult) opts.push(i); });
+    if(opts.length>0){
+      opts.sort((a,z)=>Math.abs(a-slotIdx)-Math.abs(z-slotIdx));
+      slotIdx=opts[0];
     }
   }
-  const el = document.getElementById('slot-'+slotIdx);
+  const el=document.getElementById('slot-'+slotIdx);
   if(el){ el.classList.add('active'); setTimeout(()=>el.classList.remove('active'),700); }
 
-  const list = document.getElementById('score-list');
-  const e = document.createElement('div');
-  e.className = 'score-entry';
-  const c2 = finalMult>=3?'var(--pink)':finalMult>=1?'var(--yellow)':'#7799ff';
-  e.innerHTML = `<span style="color:${c2}">${finalMult}x</span> · ${fmtIDR(winAmount)}`;
+  const list=document.getElementById('score-list');
+  const e=document.createElement('div'); e.className='score-entry';
+  const c2=finalMult>=3?'var(--pink)':finalMult>=1?'var(--yellow)':'#7799ff';
+  e.innerHTML=`<span style="color:${c2}">${finalMult}x</span> · ${fmtIDR(winReturn)}`;
   list.prepend(e);
-  if(list.children.length > 4) list.removeChild(list.lastChild);
+  if(list.children.length>4) list.removeChild(list.lastChild);
 }
 
-// ── FIX LOGIKA SPAWN ────────────────────────────────────────
 function spawnBall(){
-  const betValue = BETS[betIdx];
+  const betValue     = BETS[betIdx];
   const currentSaldo = getS();
 
   if(currentSaldo < betValue){
-    snd('error');
-    if(isAuto) stopAuto();
-    showModal('Saldo tidak cukup!','pink');
-    return;
+    snd('error'); if(isAuto) stopAuto();
+    showModal('Saldo tidak cukup!\nSilakan deposit terlebih dahulu.','pink'); return;
   }
 
-  // 1. POTONG SALDO DI AWAL (Modal keluar)
+  // Potong bet dari display
   setS(currentSaldo - betValue);
 
   const sx = BW/2 + (Math.random()-.5)*10;
   const ball = {
-    x:sx, y:-BALL_R*2,
-    vx:(Math.random()-.5)*1, vy:0.5,
-    bet: betValue, 
-    spd:speedMode,
-    done:false, serverMult:undefined, resolved:false
+    x:sx, y:-BALL_R*2, vx:(Math.random()-.5)*1, vy:0.5,
+    bet:betValue, spd:speedMode,
+    done:false, serverMult:undefined, resolved:false, resolvedMult:undefined
   };
   balls.push(ball);
 
-  // 2. REQUEST HASIL DARI SERVER
   api({ action:'game_play', username:getU(), bet:betValue, saldoAwal:currentSaldo })
   .then(r => {
     if(r && r.result==='SUCCESS'){
       ball.serverMult = r.target_multiplier;
-      // Sinkronkan target slot
-      const opts = [];
-      MULTS.forEach((m,i) => { if(m === r.target_multiplier) opts.push(i); });
-      if(opts.length > 0){
-        const ti = opts[Math.floor(Math.random()*opts.length)];
-        ball.tx = (ti + 0.5) * slotW;
+
+      // Arahkan bola ke slot serverMult terdekat
+      const curCol=Math.floor(ball.x/slotW), opts=[];
+      MULTS.forEach((m,i)=>{ if(m===r.target_multiplier) opts.push(i); });
+      if(opts.length>0){
+        opts.sort((a,z)=>Math.abs(a-curCol)-Math.abs(z-curCol));
+        ball.tx=(opts[0]+0.5)*slotW;
       }
-      
-      // Jika bola terlanjur landing sebelum API balas, koreksi jika ada selisih
+
+      // Bola sudah landing sebelum API balas → koreksi selisih mult
       if(ball.resolved && ball.resolvedMult !== r.target_multiplier){
-         const winSeharusnya = Math.floor(betValue * r.target_multiplier);
-         const winTadi = Math.floor(betValue * ball.resolvedMult);
-         setS(getS() - winTadi + winSeharusnya);
+        const diff = Math.floor(betValue*r.target_multiplier) - Math.floor(betValue*ball.resolvedMult);
+        if(diff!==0) setS(getS()+diff);
       }
     } else {
-      // Jika server gagal, refund modal bet
-      if(!ball.resolved) setS(getS() + betValue);
+      if(!ball.resolved) setS(getS()+betValue); // refund
     }
-  }).catch(() => {
-    if(!ball.resolved) setS(getS() + betValue);
-  });
+  }).catch(()=>{ if(!ball.resolved) setS(getS()+betValue); });
 }
 
 function setSpeedMode(m){
-  snd('click');
-  speedMode = m;
-  document.getElementById('m-normal').classList.toggle('active', m==='normal');
-  document.getElementById('m-turbo').classList.toggle('active', m==='turbo');
-  if(isAuto){ clearInterval(autoTimer); autoTimer = setInterval(spawnBall, PH[speedMode].autoMs); }
+  snd('click'); speedMode=m;
+  document.getElementById('m-normal').classList.toggle('active',m==='normal');
+  document.getElementById('m-turbo').classList.toggle('active',m==='turbo');
+  if(isAuto){ clearInterval(autoTimer); autoTimer=setInterval(spawnBall,PH[speedMode].autoMs); }
 }
-
 function toggleAuto(){ snd('click'); if(isAuto) stopAuto(); else startAuto(); }
-
 function startAuto(){
   isAuto=true;
   document.getElementById('m-auto').textContent='🔄 AUTO: ON';
@@ -570,13 +579,10 @@ function startAuto(){
   document.getElementById('btn-minus').classList.add('locked');
   document.getElementById('btn-plus').classList.add('locked');
   document.getElementById('bet-lock-hint').style.display='block';
-  spawnBall();
-  autoTimer = setInterval(spawnBall, PH[speedMode].autoMs);
+  spawnBall(); autoTimer=setInterval(spawnBall,PH[speedMode].autoMs);
 }
-
 function stopAuto(){
-  isAuto=false;
-  clearInterval(autoTimer); autoTimer=null;
+  isAuto=false; clearInterval(autoTimer); autoTimer=null;
   document.getElementById('m-auto').textContent='🔄 AUTO: OFF';
   document.getElementById('m-auto').classList.remove('active');
   document.getElementById('main-btn').classList.remove('stop-mode');
@@ -586,50 +592,52 @@ function stopAuto(){
   document.getElementById('btn-plus').classList.remove('locked');
   document.getElementById('bet-lock-hint').style.display='none';
 }
-
 function changeBet(d){
-  if(isAuto) return;
-  snd('click');
-  betIdx = Math.max(0, Math.min(BETS.length-1, betIdx+d));
-  document.getElementById('current-bet').textContent = BETS[betIdx].toLocaleString('id-ID');
+  if(isAuto) return; snd('click');
+  betIdx=Math.max(0,Math.min(BETS.length-1,betIdx+d));
+  document.getElementById('current-bet').textContent=BETS[betIdx].toLocaleString('id-ID');
 }
-
 function onPlayDown(e){
-  e.preventDefault();
-  if(isAuto){ stopAuto(); return; }
-  if(holdActive) return;
-  holdActive=true;
-  spawnBall();
-  const delay = speedMode==='turbo'?250:600;
-  holdTimeout = setTimeout(()=>{ holdRepeat=setInterval(spawnBall,delay); },300);
+  e.preventDefault(); if(isAuto){stopAuto();return;} if(holdActive) return;
+  holdActive=true; spawnBall();
+  const delay=speedMode==='turbo'?250:600;
+  holdTimeout=setTimeout(()=>{holdRepeat=setInterval(spawnBall,delay);},300);
 }
 function onPlayUp(e){
-  holdActive=false;
-  clearTimeout(holdTimeout);
-  clearInterval(holdRepeat);
+  holdActive=false; clearTimeout(holdTimeout); clearInterval(holdRepeat);
 }
 
+// ★ SYNC AMAN — tidak jalan selama 20 detik setelah bola landing
+// Mencegah saldo lama dari sheet menimpa kemenangan yang baru masuk
 function startSync(){
   if(syncTimer) clearInterval(syncTimer);
-  syncTimer = setInterval(async () => {
-    if(balls.length > 0) return;
+  syncTimer=setInterval(async()=>{
+    // Blokir jika: ada bola aktif, ATAU belum 20 detik sejak landing terakhir
+    if(balls.length>0) return;
+    if(Date.now()-lastLandTime < 20000) return;
     try{
-      const r = await api({ action:'get_saldo', username:getU() });
-      if(r && r.result==='SUCCESS') setS(r.saldo);
+      const r=await api({action:'get_saldo',username:getU()});
+      if(r && r.result==='SUCCESS' && r.saldo!==undefined) setS(r.saldo);
     }catch(e){}
   }, 8000);
 }
 
-window.addEventListener('load', async () => {
+window.addEventListener('load', async()=>{
   if(!getU()){ location.href='index.html'; return; }
-  setupCanvas();
-  setS(getS());
-  loop();
-  try {
-    const r = await api({ action:'get_game_config', username:getU() });
+  setupCanvas(); setS(getS()); loop();
+  try{
+    const r=await api({action:'get_game_config',username:getU()});
     if(r.result==='SUCCESS') setS(r.saldo);
-  } catch(e){}
+  }catch(e){}
+  try{ await api({action:'set_status',username:getU(),status:'ONLINE'}); }catch(e){}
+  try{ await api({action:'set_session_start',username:getU()}); }catch(e){}
   startSync();
+});
+
+window.addEventListener('beforeunload',()=>{
+  const u=getU();
+  if(u) navigator.sendBeacon(SCRIPT_URL+'?data='+encodeURIComponent(JSON.stringify({action:'set_status',username:u,status:'OFFLINE'})));
+  cancelAnimationFrame(raf); if(syncTimer) clearInterval(syncTimer);
 });
 </script>
 </body>
