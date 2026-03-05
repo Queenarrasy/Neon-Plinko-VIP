@@ -310,8 +310,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 </div><!-- end .controls -->
 
 <script>
-
-<script>
 /* ════════════════════════════════════════════════════════════
    NEON PLINKO VIP — Game Engine v5
    FIXED: Saldo benar, bola natural, slot sinkron dengan hasil
@@ -321,13 +319,11 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaR
 
 // ── CONFIG ───────────────────────────────────────────────────
 const ROWS   = 10;
-// Slot kiri ke kanan: 10 slot sesuai urutan di layar
 const MULTS  = [10, 3, 1.5, 0.5, 0.2, 0.2, 0.5, 1.5, 3, 10];
 const BETS   = [400,800,1000,1200,1600,2000,4000,8000,10000,20000];
 const BALL_R = 6.5;
 const PEG_R  = 5.0;
 
-// Physics — lebih natural, tidak melompat-lompat
 const PH = {
   normal:{ grav:0.22, fric:0.992, bounce:0.42, pegF:2.2, randV:0.28, autoMs:800  },
   turbo: { grav:0.38, fric:0.985, bounce:0.36, pegF:3.2, randV:0.35, autoMs:220  }
@@ -408,10 +404,10 @@ function buildPegs(){
   const topPad   = BH * 0.05;
   const spacingY = (BH * 0.88) / ROWS;
   for(let row=0; row<ROWS; row++){
-    const count = row + 2;
+    const count  = row + 2;
     const totalW = (count-1) * spacingX;
-    const sx = BW/2 - totalW/2;
-    const y  = topPad + row * spacingY;
+    const sx     = BW/2 - totalW/2;
+    const y      = topPad + row * spacingY;
     for(let col=0; col<count; col++){
       pegs.push({ x: sx + col*spacingX, y, glow:0, hue:0 });
     }
@@ -439,14 +435,13 @@ function loop(){ physics(); draw(); raf = requestAnimationFrame(loop); }
 function draw(){
   ctx.clearRect(0, 0, BW, BH);
 
-  // Pegs
   pegs.forEach(p => {
     if(p.glow > 0) p.glow = Math.max(0, p.glow - 0.04);
     const r = PEG_R + p.glow * 2.5;
     ctx.save();
     if(p.glow > 0.05){
       const col = p.hue===0?`rgba(255,0,119,${p.glow*0.5})`:`rgba(245,230,66,${p.glow*0.55})`;
-      const g = ctx.createRadialGradient(p.x,p.y,0, p.x,p.y, r*3.2);
+      const g   = ctx.createRadialGradient(p.x,p.y,0, p.x,p.y,r*3.2);
       g.addColorStop(0, col); g.addColorStop(1,'rgba(0,0,0,0)');
       ctx.beginPath(); ctx.arc(p.x,p.y,r*3.2,0,Math.PI*2);
       ctx.fillStyle=g; ctx.fill();
@@ -463,7 +458,6 @@ function draw(){
     ctx.restore();
   });
 
-  // Balls
   balls.forEach(b => {
     ctx.save();
     const gr = ctx.createRadialGradient(b.x-BALL_R*.32,b.y-BALL_R*.35,BALL_R*.04, b.x,b.y,BALL_R);
@@ -485,49 +479,38 @@ function draw(){
 }
 
 // ══════════════════════════════════════════════════════════
-// PHYSICS
-// Bola bergerak natural: gravitasi halus, pantulan realistis.
-// Bola diarahkan pelan ke slot target (b.tx) mulai dari
-// pertengahan board — tidak terasa "ditarik paksa".
+// PHYSICS — bola natural, steering halus ke slot target
 // ══════════════════════════════════════════════════════════
 function physics(){
   const toRemove = [];
 
   balls.forEach(b => {
     const ph = PH[b.spd] || PH.normal;
-
-    // Gravitasi + friction
     b.vy += ph.grav;
     b.vx *= ph.fric;
     b.x  += b.vx;
     b.y  += b.vy;
 
-    // Steering halus ke target — hanya aktif di 60% bawah board
-    // Kekuatan steering bertambah makin ke bawah (natural funnel effect)
+    // Steering halus ke target — aktif mulai 40% bawah board
     const prog = Math.max(0, (b.y - BH*0.35) / (BH*0.65));
     if(prog > 0 && b.tx !== undefined){
-      const steer = (b.tx - b.x) * prog * 0.018;
-      b.vx += steer;
+      b.vx += (b.tx - b.x) * prog * 0.018;
     }
 
     // Peg collisions
     const colDist = BALL_R + PEG_R + 0.5;
     for(let i=0; i<pegs.length; i++){
       const p  = pegs[i];
-      const dx = b.x - p.x, dy = b.y - p.y;
+      const dx = b.x-p.x, dy = b.y-p.y;
       const d2 = dx*dx + dy*dy;
       if(d2 < colDist*colDist && d2 > 0.001){
-        const d  = Math.sqrt(d2);
-        const nx = dx/d, ny = dy/d;
+        const d=Math.sqrt(d2), nx=dx/d, ny=dy/d;
         b.x += nx*(colDist-d); b.y += ny*(colDist-d);
         const dot = b.vx*nx + b.vy*ny;
-        // Pantulan + noise kecil (lebih natural, tidak random berlebihan)
         b.vx = (b.vx - 2*dot*nx)*ph.bounce + (Math.random()-.5)*ph.randV;
         b.vy = (b.vy - 2*dot*ny)*Math.abs(ph.bounce);
         if(b.vy < 0.2) b.vy = 0.2 + Math.random()*0.15;
-        // Batasi kecepatan horizontal agar tidak terlalu liar
-        const mx = ph.pegF;
-        b.vx = Math.max(-mx, Math.min(mx, b.vx));
+        b.vx = Math.max(-ph.pegF, Math.min(ph.pegF, b.vx));
         p.glow=1; p.hue=(Math.random()>0.45)?1:0;
         snd('hit');
       }
@@ -535,7 +518,7 @@ function physics(){
 
     // Ball–ball collision
     for(let j=0; j<balls.length; j++){
-      const o = balls[j];
+      const o=balls[j];
       if(o===b) continue;
       const dx=b.x-o.x, dy=b.y-o.y;
       const d2=dx*dx+dy*dy, minD=BALL_R*2+0.5;
@@ -559,7 +542,7 @@ function physics(){
     if(b.x > BW-BALL_R) { b.x=BW-BALL_R; b.vx=-Math.abs(b.vx)*0.4; }
     if(b.x < -20 || b.x > BW+20) b.x = BW/2;
 
-    // Landing — bola menyentuh bawah board
+    // Landing
     if(b.y > BH + BALL_R*2 && !b.done){
       b.done = true;
       toRemove.push(b);
@@ -572,50 +555,40 @@ function physics(){
 
 // ══════════════════════════════════════════════════════════
 // ON BALL LAND
-//
-// Slot yang berkedip = slot dari serverMult (hasil server).
-// Saldo langsung diupdate saat landing.
-// Rumus: setS(getS() + bet × mult)
-//        (saldo sudah dikurangi bet saat spawn, jadi tinggal
-//         tambah winReturn = bet × mult)
+// Saldo langsung diupdate saat bola menyentuh bawah.
+// Rumus: getS() + (bet × mult)
+// (bet sudah dipotong saat spawn, tinggal tambah winReturn)
+// Slot berkedip = slot dari serverMult server
 // ══════════════════════════════════════════════════════════
 function onBallLand(b){
-  // Multiplier resmi dari server. Jika server belum balas,
-  // pakai posisi bola sebagai fallback sementara.
   const mult = (b.serverMult !== undefined)
     ? b.serverMult
     : MULTS[Math.min(MULTS.length-1, Math.max(0, Math.floor(b.x / slotW)))];
 
-  // ★ UPDATE SALDO — langsung saat landing, tidak tunggu server
-  // Spawn sudah potong bet, jadi tambahkan bet×mult kembali
+  // ★ Update saldo langsung — tidak tunggu server
   const winReturn = Math.floor(b.bet * mult);
   setS(getS() + winReturn);
-  b.resolved = true;
+  b.resolved     = true;
   b.resolvedMult = mult;
 
   if(mult >= 1.5) snd('win');
 
-  // ★ SLOT BERKEDIP = slot dari serverMult
-  // Cari slot terdekat dengan posisi bola yang punya mult sama
-  let slotIdx = Math.floor(b.x / slotW);
-  slotIdx = Math.min(MULTS.length-1, Math.max(0, slotIdx));
-  // Override ke slot serverMult jika sudah ada
+  // Slot berkedip = serverMult, pilih yang paling dekat posisi bola
+  let slotIdx = Math.min(MULTS.length-1, Math.max(0, Math.floor(b.x / slotW)));
   if(b.serverMult !== undefined){
     const opts = [];
     MULTS.forEach((m,i) => { if(m === b.serverMult) opts.push(i); });
     if(opts.length > 0){
-      // Pilih slot yang paling dekat dengan posisi bola landing
-      opts.sort((a,z) => Math.abs(a - slotIdx) - Math.abs(z - slotIdx));
+      opts.sort((a,z) => Math.abs(a-slotIdx) - Math.abs(z-slotIdx));
       slotIdx = opts[0];
     }
   }
   const el = document.getElementById('slot-'+slotIdx);
   if(el){ el.classList.add('active'); setTimeout(()=>el.classList.remove('active'),700); }
 
-  // Score list
   const list = document.getElementById('score-list');
   const e    = document.createElement('div');
-  e.className='score-entry';
+  e.className = 'score-entry';
   const c2 = mult>=3?'var(--pink)':mult>=1?'var(--yellow)':'#7799ff';
   e.innerHTML = `<span style="color:${c2}">${mult}x</span> · ${fmtIDR(winReturn)}`;
   list.prepend(e);
@@ -624,22 +597,10 @@ function onBallLand(b){
 
 // ══════════════════════════════════════════════════════════
 // SPAWN BALL
-//
-// Alur saldo:
-//   1. Spawn → setS(saldo - bet)          kurangi bet
-//   2. Landing → setS(getS() + winReturn) tambah hasil
-//   Rumus bersih: saldo - bet + (bet×mult) ✅
-//
-// Server dipanggil async untuk:
-//   • Menentukan multiplier (winrate/admin)
-//   • Menyimpan ke sheet
-//   • Mengarahkan bola ke slot yang benar
-//   • Koreksi saldo jika serverMult beda dari fallback
 // ══════════════════════════════════════════════════════════
 function spawnBall(){
   const bet = BETS[betIdx];
   const s   = getS();
-
   if(s < bet){
     snd('error');
     if(isAuto) stopAuto();
@@ -648,54 +609,43 @@ function spawnBall(){
     return;
   }
 
-  // 1. Kurangi bet dari display segera
+  // Potong bet dari display segera
   setS(s - bet);
 
   const sx = BW/2 + (Math.random()-.5)*8;
-
-  // Target awal acak — server akan override setelah balas
   const ti = Math.floor(Math.random() * MULTS.length);
   const tx = (ti + 0.5) * slotW;
 
   const ball = {
-    x: sx, y: -BALL_R*1.5,
-    vx: (Math.random()-.5)*0.6, vy: 0.5,
-    bet, saldoAwal: s,
-    tx, spd: speedMode,
-    done: false,
-    serverMult:  undefined,  // diisi setelah API balas
-    resolved:    false,      // true setelah onBallLand dipanggil
-    resolvedMult: undefined
+    x:sx, y:-BALL_R*1.5,
+    vx:(Math.random()-.5)*0.6, vy:0.5,
+    bet, saldoAwal:s, tx, spd:speedMode,
+    done:false, serverMult:undefined,
+    resolved:false, resolvedMult:undefined
   };
   balls.push(ball);
 
-  // 2. Panggil server — tidak tunggu, bola tetap jalan
-  api({ action:'game_play', username:getU(), bet, saldoAwal: s })
+  api({ action:'game_play', username:getU(), bet, saldoAwal:s })
   .then(r => {
     if(r && r.result==='SUCCESS'){
       ball.serverMult = r.target_multiplier;
 
-      // Arahkan bola ke slot yang sesuai serverMult
-      const opts = [];
+      // Arahkan bola ke slot serverMult terdekat
+      const curCol = Math.floor(ball.x / slotW);
+      const opts   = [];
       MULTS.forEach((m,i) => { if(m === r.target_multiplier) opts.push(i); });
       if(opts.length > 0){
-        // Pilih slot yang paling dekat dengan posisi bola saat ini
-        const curCol = Math.floor(ball.x / slotW);
         opts.sort((a,z) => Math.abs(a-curCol) - Math.abs(z-curCol));
         ball.tx = (opts[0] + 0.5) * slotW;
       }
 
-      // Jika bola SUDAH landing sebelum server balas:
-      // Koreksi saldo — selisih antara mult fallback vs serverMult
+      // Bola sudah landing sebelum server balas → koreksi selisih
       if(ball.resolved && ball.resolvedMult !== r.target_multiplier){
-        const localReturn  = Math.floor(bet * ball.resolvedMult);
-        const serverReturn = Math.floor(bet * r.target_multiplier);
-        const diff = serverReturn - localReturn;
+        const diff = Math.floor(bet * r.target_multiplier) - Math.floor(bet * ball.resolvedMult);
         if(diff !== 0) setS(getS() + diff);
       }
     } else {
-      // Server error → refund bet
-      if(!ball.resolved) setS(getS() + bet);
+      if(!ball.resolved) setS(getS() + bet); // refund
     }
   })
   .catch(() => {
@@ -717,36 +667,35 @@ function setSpeedMode(m){
 function toggleAuto(){ snd('click'); if(isAuto) stopAuto(); else startAuto(); }
 
 function startAuto(){
-  isAuto = true;
-  document.getElementById('m-auto').textContent = '🔄 AUTO: ON';
+  isAuto=true;
+  document.getElementById('m-auto').textContent='🔄 AUTO: ON';
   document.getElementById('m-auto').classList.add('active');
   document.getElementById('main-btn').classList.add('stop-mode');
-  document.getElementById('play-icon').className = 'fa-solid fa-stop';
-  document.getElementById('play-label').textContent = 'STOP AUTO';
+  document.getElementById('play-icon').className='fa-solid fa-stop';
+  document.getElementById('play-label').textContent='STOP AUTO';
   document.getElementById('btn-minus').classList.add('locked');
   document.getElementById('btn-plus').classList.add('locked');
-  document.getElementById('bet-lock-hint').style.display = 'block';
+  document.getElementById('bet-lock-hint').style.display='block';
   spawnBall();
   autoTimer = setInterval(spawnBall, PH[speedMode].autoMs);
 }
 
 function stopAuto(){
-  isAuto = false;
-  clearInterval(autoTimer); autoTimer = null;
-  document.getElementById('m-auto').textContent = '🔄 AUTO: OFF';
+  isAuto=false;
+  clearInterval(autoTimer); autoTimer=null;
+  document.getElementById('m-auto').textContent='🔄 AUTO: OFF';
   document.getElementById('m-auto').classList.remove('active');
   document.getElementById('main-btn').classList.remove('stop-mode');
-  document.getElementById('play-icon').className = 'fa-solid fa-play';
-  document.getElementById('play-label').textContent = 'PLAY BALL';
+  document.getElementById('play-icon').className='fa-solid fa-play';
+  document.getElementById('play-label').textContent='PLAY BALL';
   document.getElementById('btn-minus').classList.remove('locked');
   document.getElementById('btn-plus').classList.remove('locked');
-  document.getElementById('bet-lock-hint').style.display = 'none';
+  document.getElementById('bet-lock-hint').style.display='none';
 }
 
-// ── BET ──────────────────────────────────────────────────────
 function changeBet(d){
   if(isAuto){
-    const h = document.getElementById('bet-lock-hint');
+    const h=document.getElementById('bet-lock-hint');
     h.style.color='#ff0077';
     setTimeout(()=>h.style.color='rgba(245,230,66,.5)',600);
     return;
@@ -756,30 +705,28 @@ function changeBet(d){
   document.getElementById('current-bet').textContent = BETS[betIdx].toLocaleString('id-ID');
 }
 
-// ── PLAY BUTTON ───────────────────────────────────────────────
 function onPlayDown(e){
   e.preventDefault();
   if(isAuto){ stopAuto(); return; }
   if(holdActive) return;
-  holdActive = true;
+  holdActive=true;
   spawnBall();
-  const delay = speedMode==='turbo' ? 220 : 530;
-  holdTimeout = setTimeout(()=>{ holdRepeat = setInterval(spawnBall, delay); }, 300);
+  const delay = speedMode==='turbo'?220:530;
+  holdTimeout = setTimeout(()=>{ holdRepeat=setInterval(spawnBall,delay); },300);
 }
 function onPlayUp(e){
   if(!holdActive) return;
-  holdActive = false;
+  holdActive=false;
   clearTimeout(holdTimeout);
   clearInterval(holdRepeat);
-  holdTimeout = holdRepeat = null;
+  holdTimeout=holdRepeat=null;
 }
 
-// ── SALDO SYNC ────────────────────────────────────────────────
-// Sync dari server hanya saat tidak ada bola aktif
+// ── SALDO SYNC — hanya saat tidak ada bola ──────────────────
 function startSync(){
   if(syncTimer) clearInterval(syncTimer);
   syncTimer = setInterval(async () => {
-    const u = getU(); if(!u) return;
+    const u=getU(); if(!u) return;
     if(balls.length > 0) return;
     try{
       const r = await api({ action:'get_saldo', username:u });
@@ -788,14 +735,12 @@ function startSync(){
   }, 6000);
 }
 
-// ── RESIZE ────────────────────────────────────────────────────
 let _rt;
 window.addEventListener('resize', () => {
   clearTimeout(_rt);
   _rt = setTimeout(()=>{ balls=[]; setupCanvas(); }, 200);
 });
 
-// ── INIT ──────────────────────────────────────────────────────
 window.addEventListener('load', async () => {
   if(!getU()){ location.href='index.html'; return; }
   setupCanvas();
@@ -811,7 +756,7 @@ window.addEventListener('load', async () => {
 });
 
 window.addEventListener('beforeunload', () => {
-  const u = getU();
+  const u=getU();
   if(u) navigator.sendBeacon(
     SCRIPT_URL+'?data='+encodeURIComponent(JSON.stringify({action:'set_status',username:u,status:'OFFLINE'}))
   );
