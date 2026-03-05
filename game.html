@@ -103,7 +103,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   font-size:9px;font-weight:900;border-radius:8px;
   transition:.28s cubic-bezier(.175,.885,.32,1.275);letter-spacing:.5px;
 }
-.slot.active{transform:translateY(-10px);filter:brightness(2.5) saturate(1.5);box-shadow:0 0 25px #fff;}
+.slot.active{transform:translateY(-12px);filter:brightness(3);box-shadow:0 0 30px #fff;z-index:100;}
 .s-high{background:linear-gradient(135deg,var(--pink),#cc0044);color:#fff;}
 .s-mid {background:linear-gradient(135deg,var(--yellow),#b8a800);color:#000;}
 .s-low {background:linear-gradient(135deg,var(--blue),#0022bb);color:rgba(255,255,255,.95);}
@@ -291,27 +291,37 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 const ROWS   = 10;
 const MULTS  = [10, 3, 1.5, 0.5, 0.2, 0.2, 0.5, 1.5, 3, 10];
 const BETS   = [400,800,1000,1200,1600,2000,4000,8000,10000,20000];
-const BALL_R = 6.5;
-const PEG_R  = 5.0;
+const BALL_R = 6.8;
+const PEG_R  = 5.2;
 const PH = {
-  normal:{ grav:0.24, fric:0.99, bounce:0.45, pegF:2.2, randV:0.25, autoMs:800 },
-  turbo: { grav:0.38, fric:0.98, bounce:0.40, pegF:3.2, randV:0.35, autoMs:220 }
+  normal:{ grav:0.26, fric:0.992, bounce:0.46, pegF:2.0, randV:0.28, autoMs:800 },
+  turbo: { grav:0.40, fric:0.985, bounce:0.42, pegF:3.0, randV:0.38, autoMs:220 }
 };
 
 let canvas, ctx, DPR=1, BW=0, BH=0;
 let pegs=[], balls=[], slotW=0;
 let speedMode='normal', isAuto=false, autoTimer=null;
-let betIdx=0, raf=null;
+let betIdx=0;
 let holdActive=false, holdRepeat=null, holdTimeout=null;
+
+// ── SALDO QUEUE SYSTEM (Mencegah Salah Hitung) ──────────
+// Memastikan transaksi saldo diproses satu per satu
+let saldoQueue = Promise.resolve();
+function updateSaldoSafe(amountChange) {
+  saldoQueue = saldoQueue.then(() => {
+    const cur = getSaldo();
+    setSaldo(cur + amountChange);
+  });
+}
 
 const snd = t => { try{ const a=document.getElementById('snd-'+t); a.currentTime=0; a.play().catch(()=>{}); }catch(e){} };
 
-// ── CORE FUNCTIONS ──────────────────────────────────────
+// ── CORE GAMEPLAY ──────────────────────────────────────
 async function spawnBall(){
   const bet = BETS[betIdx];
-  const saldoSkrg = getSaldo();
+  const currentSaldo = getSaldo();
 
-  if(saldoSkrg < bet){
+  if(currentSaldo < bet){
     snd('error');
     if(isAuto) stopAuto();
     else { holdActive=false; clearInterval(holdRepeat); }
@@ -319,20 +329,21 @@ async function spawnBall(){
     return;
   }
 
-  // Potong saldo di awal (Local)
-  setSaldo(saldoSkrg - bet);
+  // 1. Kurangi Saldo Taruhan dengan sistem antri
+  updateSaldoSafe(-bet);
 
   const ball = {
-    x: BW/2 + (Math.random()-0.5)*10,
+    x: BW/2 + (Math.random()-0.5)*12,
     y: -BALL_R*2,
-    vx: (Math.random()-0.5),
+    vx: (Math.random()-0.5)*1.5,
     vy: 0.5,
     bet: bet,
     spd: speedMode,
     done: false,
     serverSlotIdx: null,
     targetX: null,
-    serverNewSaldo: null
+    serverNewSaldo: null,
+    isResolved: false
   };
   balls.push(ball);
 
@@ -341,50 +352,49 @@ async function spawnBall(){
       action:'game_play', 
       username:getUsername(), 
       bet: bet, 
-      saldoAwal: saldoSkrg 
+      saldoAwal: currentSaldo 
     });
 
     if(r && r.result==='SUCCESS'){
         ball.serverNewSaldo = r.newSaldo;
-        // Cari slot mana yang sesuai multiplier dari server
+        // Tentukan index slot server
         const matchingIndices = [];
         MULTS.forEach((m, i) => { if(m === r.target_multiplier) matchingIndices.push(i); });
         
-        // Pilih indeks yang paling logis dari posisi bola saat ini
+        // Pilih slot terdekat dari posisi bola saat ini agar gerakan terlihat alami
         matchingIndices.sort((a,b) => Math.abs(a - (ball.x/slotW)) - Math.abs(b - (ball.x/slotW)));
         ball.serverSlotIdx = matchingIndices[0];
         ball.targetX = (ball.serverSlotIdx + 0.5) * slotW;
     } else {
-        // Jika gagal, kembalikan saldo
         ball.isError = true;
-        setSaldo(getSaldo() + bet);
+        updateSaldoSafe(bet); // Kembalikan taruhan jika server gagal
     }
   } catch(e) {
     ball.isError = true;
-    setSaldo(getSaldo() + bet);
+    updateSaldoSafe(bet);
   }
 }
 
 function physics(){
   balls.forEach(b => {
     if(b.done) return;
-    const ph = PH[b.spd];
+    const ph = PH[speedMode] || PH.normal;
     
-    // Anti-stuck: Dorongan kecil jika kecepatan X terlalu rendah
-    if(Math.abs(b.vx) < 0.01) b.vx += (Math.random()-0.5)*0.1;
+    // Anti-stuck: Jika bola berhenti horizontal, beri dorongan
+    if(Math.abs(b.vx) < 0.05) b.vx += (Math.random()-0.5)*0.15;
 
     b.vy += ph.grav;
     b.vx *= ph.fric;
     b.x += b.vx;
     b.y += b.vy;
 
-    // Guidance ke Target Slot (Magnetisme halus)
-    if(b.targetX !== null && b.y > BH * 0.4){
-        const power = (b.y / BH) * 0.15; // Semakin bawah semakin kuat nariknya
-        b.vx += (b.targetX - b.x) * power;
+    // Magnetisme Halus ke Target Server (hanya aktif setelah melewati tengah papan)
+    if(b.targetX !== null && b.y > BH * 0.35){
+        const pull = (b.y / BH) * 0.18;
+        b.vx += (b.targetX - b.x) * pull;
     }
 
-    // Tabrakan Paku
+    // Deteksi Tabrakan Paku (Pyramid Pegs)
     pegs.forEach(p => {
         const dx = b.x - p.x;
         const dy = b.y - p.y;
@@ -394,7 +404,8 @@ function physics(){
         if(dist < minDist){
             const nx = dx / dist;
             const ny = dy / dist;
-            // Reposisi bola agar tidak nyangkut dalam paku
+            
+            // Reposisi Paksa (Anti-Nyangkut)
             b.x = p.x + nx * minDist;
             b.y = p.y + ny * minDist;
 
@@ -407,44 +418,49 @@ function physics(){
         }
     });
 
-    // Batas Samping
+    // Batas Dinding Samping
     if(b.x < BALL_R) { b.x = BALL_R; b.vx *= -0.5; }
     if(b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx *= -0.5; }
 
-    // Landing
-    if(b.y > BH - 5){
+    // Landing Logic
+    if(b.y > BH - 8){
         b.done = true;
         onBallLand(b);
     }
   });
-  balls = balls.filter(b => b.y < BH + 50);
+  // Bersihkan bola yang sudah keluar layar
+  balls = balls.filter(b => b.y < BH + 60);
 }
 
 function onBallLand(b){
-  if(b.isError) return;
+  if(b.isError || b.isResolved) return;
+  b.isResolved = true;
   
-  // Ambil multiplier asli dari posisi visual atau server
+  // Ambil index slot akhir (prioritas data server)
   let idx = (b.serverSlotIdx !== null) ? b.serverSlotIdx : Math.floor(b.x / slotW);
   idx = Math.max(0, Math.min(MULTS.length-1, idx));
   
   const mult = MULTS[idx];
   const winAmount = Math.floor(b.bet * mult);
 
-  // Update Saldo (Utamakan data saldo dari server agar sinkron)
-  if(b.serverNewSaldo) {
-      setSaldo(b.serverNewSaldo);
+  // Update Saldo dengan sistem antri
+  if(b.serverNewSaldo !== null) {
+      // Gunakan saldo absolut dari server untuk akurasi 100%
+      saldoQueue = saldoQueue.then(() => {
+          setSaldo(b.serverNewSaldo);
+      });
   } else {
-      setSaldo(getSaldo() + winAmount);
+      updateSaldoSafe(winAmount);
   }
 
-  // Efek Kedip Kotak (Akurasi Tinggi)
+  // Efek Kedip Kotak (Highlight)
   const slotEl = document.getElementById('slot-'+idx);
   if(slotEl){
       slotEl.classList.add('active');
       setTimeout(() => slotEl.classList.remove('active'), 600);
   }
 
-  // Floating Score
+  // Record Win List
   const list = document.getElementById('score-list');
   const entry = document.createElement('div');
   entry.className = 'score-entry';
@@ -456,37 +472,38 @@ function onBallLand(b){
   if(mult >= 1.5) snd('win');
 }
 
-// ── UI & RENDER ─────────────────────────────────────────
+// ── RENDERING ───────────────────────────────────────────
 function draw(){
   ctx.clearRect(0,0,BW,BH);
   
-  // Draw Pegs
+  // Paku Putih Terang
   pegs.forEach(p => {
     ctx.beginPath();
     ctx.arc(p.x, p.y, PEG_R, 0, Math.PI*2);
-    ctx.fillStyle = p.glow > 0 ? `rgba(245,230,66,${0.3 + p.glow*0.7})` : '#fff';
-    ctx.shadowBlur = p.glow > 0 ? 15 : 5;
-    ctx.shadowColor = p.glow > 0 ? '#f5e642' : 'rgba(255,255,255,0.3)';
+    ctx.fillStyle = p.glow > 0 ? `rgba(245,230,66,${0.2 + p.glow*0.8})` : '#fff';
+    ctx.shadowBlur = p.glow > 0 ? 18 : 4;
+    ctx.shadowColor = p.glow > 0 ? '#f5e642' : 'rgba(255,255,255,0.4)';
     ctx.fill();
-    if(p.glow > 0) p.glow -= 0.05;
+    if(p.glow > 0) p.glow -= 0.08;
   });
 
-  // Draw Balls
+  // Bola Neon Pink
   balls.forEach(b => {
     ctx.save();
     const grad = ctx.createRadialGradient(b.x-2, b.y-2, 1, b.x, b.y, BALL_R);
-    grad.addColorStop(0, '#ffaacc');
-    grad.addColorStop(1, b.isError ? '#444' : '#ff0077');
+    grad.addColorStop(0, '#fff');
+    grad.addColorStop(0.4, '#ff0077');
+    grad.addColorStop(1, '#330011');
     ctx.beginPath();
     ctx.arc(b.x, b.y, BALL_R, 0, Math.PI*2);
     ctx.fillStyle = grad;
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = b.isError ? '#000' : '#ff0077';
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = '#ff0077';
     ctx.fill();
     ctx.restore();
   });
 
-  raf = requestAnimationFrame(draw);
+  requestAnimationFrame(draw);
 }
 
 function setupCanvas(){
@@ -499,16 +516,17 @@ function setupCanvas(){
   canvas.style.width = BW+'px'; canvas.style.height = BH+'px';
   ctx.scale(DPR, DPR);
   
-  // Re-build pegs
+  // Re-build pyramid pegs
   pegs = [];
-  const spacingX = (BW - 40) / ROWS;
+  const usableW = BW - 40;
+  const spacingX = usableW / ROWS;
   const spacingY = (BH - 60) / ROWS;
   for(let r=0; r<ROWS; r++){
     const count = r+2;
     const rowW = (count-1) * spacingX;
     const startX = (BW - rowW)/2;
     for(let c=0; c<count; c++){
-        pegs.push({ x: startX + c*spacingX, y: 40 + r*spacingY, glow: 0 });
+        pegs.push({ x: startX + c*spacingX, y: 45 + r*spacingY, glow: 0 });
     }
   }
 
@@ -525,7 +543,7 @@ function setupCanvas(){
   });
 }
 
-// ── LISTENERS ───────────────────────────────────────────
+// ── EVENT LISTENERS ─────────────────────────────────────
 function changeBet(d){
   if(isAuto) return; snd('click');
   betIdx = Math.max(0, Math.min(BETS.length-1, betIdx+d));
@@ -545,8 +563,8 @@ function toggleAuto(){
 }
 function startAuto(){
   isAuto = true;
-  const btn = document.getElementById('m-auto');
-  btn.textContent = '🔄 AUTO: ON'; btn.classList.add('active');
+  document.getElementById('m-auto').textContent = '🔄 AUTO: ON';
+  document.getElementById('m-auto').classList.add('active');
   document.getElementById('main-btn').classList.add('stop-mode');
   document.getElementById('play-icon').className = 'fa-solid fa-stop';
   document.getElementById('btn-minus').classList.add('locked');
@@ -557,8 +575,8 @@ function startAuto(){
 }
 function stopAuto(){
   isAuto = false; clearInterval(autoTimer);
-  const btn = document.getElementById('m-auto');
-  btn.textContent = '🔄 AUTO: OFF'; btn.classList.remove('active');
+  document.getElementById('m-auto').textContent = '🔄 AUTO: OFF';
+  document.getElementById('m-auto').classList.remove('active');
   document.getElementById('main-btn').classList.remove('stop-mode');
   document.getElementById('play-icon').className = 'fa-solid fa-play';
   document.getElementById('btn-minus').classList.remove('locked');
@@ -569,7 +587,9 @@ function stopAuto(){
 function onPlayDown(e){
   e.preventDefault(); if(isAuto){ stopAuto(); return; }
   spawnBall();
-  holdTimeout = setTimeout(() => { holdRepeat = setInterval(spawnBall, speedMode==='turbo'?250:600); }, 350);
+  holdTimeout = setTimeout(() => { 
+    holdRepeat = setInterval(spawnBall, speedMode==='turbo'?250:600); 
+  }, 350);
 }
 function onPlayUp(){ clearTimeout(holdTimeout); clearInterval(holdRepeat); }
 
@@ -586,8 +606,9 @@ function closeModal(){
 
 window.addEventListener('load', () => {
   setupCanvas();
-  setInterval(physics, 16);
+  setInterval(physics, 16); // 60 FPS physics
   draw();
+  // Sync saldo tampilan awal
   document.getElementById('display-saldo').textContent = fmtIDR(getSaldo());
 });
 window.addEventListener('resize', setupCanvas);
