@@ -609,16 +609,20 @@ function onBallLand(b){
 }
 
 // ══════════════════════════════════════════════════════════
-// SPAWN BALL
-// Alur saldo:
-//  1. Optimistic: tampilkan saldo - bet (agar UI responsif)
-//  2. API call ke server → server hitung newSaldo yang BENAR
-//  3. setS(newSaldo) → saldo resmi dari server, bukan dari client
-//  4. Error/timeout → refund bet ke pemain
+// SPAWN BALL — MULTI-BOLA BEBAS, SALDO AKURAT
+//
+// Cara kerja:
+// - Bola boleh banyak sekaligus (tidak ada antrian)
+// - Setiap bola kirim saldoAwal ke server = saldo SEBELUM bet
+//   bola ini dikurangi (diambil tepat sebelum setS)
+// - Server simpan newSaldo ke sheet setiap kali
+// - Client update display dari r.newSaldo tiap API balas
+// - Tidak ada race condition karena setiap bola independen
+//   dengan saldoAwal-nya sendiri yang benar
 // ══════════════════════════════════════════════════════════
 function spawnBall(){
   const bet       = BETS[betIdx];
-  const saldoAwal = getS();
+  const saldoAwal = getS();   // snapshot SEBELUM dikurangi
 
   if(saldoAwal < bet){
     snd('error');
@@ -628,7 +632,7 @@ function spawnBall(){
     return;
   }
 
-  // Optimistic UI: tampilkan seolah bet sudah dipotong
+  // Kurangi tampilan segera agar responsif
   setS(saldoAwal - bet);
 
   const sx = BW/2 + (Math.random()-.5)*10;
@@ -646,14 +650,15 @@ function spawnBall(){
   };
   balls.push(ball);
 
-  api({ action:'game_play', username:getU(), bet })
+  // Kirim saldoAwal ke server — server gunakan ini sebagai basis hitung
+  // sehingga tiap bola independen dan tidak saling timpa di sheet
+  api({ action:'game_play', username:getU(), bet, saldoAwal })
   .then(r => {
     if(r && r.result==='SUCCESS'){
       ball.serverMult  = r.target_multiplier;
       ball.serverSaldo = r.newSaldo;
 
-      // SATU-SATUNYA update saldo — dari server
-      // Server hitung: newSaldo = (saldoAwal - bet) + (bet × multiplier)
+      // Update display dari server (nilai yang benar)
       setS(r.newSaldo);
 
       // Arahkan bola ke slot multiplier dari server
@@ -663,12 +668,11 @@ function spawnBall(){
         ball.tx = (opts[Math.floor(Math.random()*opts.length)] + 0.5) * slotW;
       }
     } else {
-      // Server tolak → refund bet
-      setS(saldoAwal);
+      setS(saldoAwal); // server tolak → refund
     }
-  }).catch(() => {
-    // Network error → refund bet agar pemain tidak rugi
-    setS(saldoAwal);
+  })
+  .catch(() => {
+    setS(saldoAwal); // network error → refund
   });
 }
 
