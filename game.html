@@ -1,189 +1,555 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEON PLINKO VIP - GAME</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        /* TEMA ASLI TETAP DIJAGA */
-        :root {
-            --neon-blue: #00d2ff;
-            --neon-pink: #ff0077;
-            --neon-yellow: #f5e642;
-            --bg-dark: #0a0b1e;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>NEON PLINKO VIP</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pink:#ff0077;--blue:#0055ff;--yellow:#f5e642;--bg:#02030d;
+  --gp:0 0 8px rgba(255,0,119,.65),0 0 24px rgba(255,0,119,.22);
+  --gb:0 0 8px rgba(0,85,255,.65),0 0 24px rgba(0,85,255,.22);
+  --gy:0 0 8px rgba(245,230,66,.65),0 0 24px rgba(245,230,66,.22);
+  --bp:rgba(255,0,119,.35);--bb:rgba(0,85,255,.35);--by:rgba(245,230,66,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{
+  width:100%;height:100%;overflow:hidden;
+  display:flex;flex-direction:column;
+  background:var(--bg);
+  background-image:
+    radial-gradient(ellipse 70% 40% at 15% 0%,rgba(0,55,255,.09) 0%,transparent 65%),
+    radial-gradient(ellipse 55% 45% at 85% 100%,rgba(255,0,119,.08) 0%,transparent 65%);
+  color:#dde0f0;font-family:'Outfit',sans-serif;
+}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.014) 3px,rgba(0,0,0,.014) 4px);}
 
-        body {
-            margin: 0; padding: 0;
-            background: var(--bg-dark);
-            color: white;
-            font-family: 'Segoe UI', sans-serif;
-            overflow: hidden;
-            display: flex; flex-direction: column; align-items: center;
-        }
+/* ── MODAL ─────────────────────────────────────────────── */
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);z-index:9998;}
+#neon-modal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:linear-gradient(160deg,#07091d,#0b0d24);border-radius:22px;z-index:9999;
+  padding:26px 22px;text-align:center;min-width:270px;max-width:310px;width:86%;
+  animation:mpop .3s cubic-bezier(.34,1.56,.64,1) both;}
+#neon-modal.m-pink  {border:1px solid var(--bp);box-shadow:var(--gp);}
+#neon-modal.m-blue  {border:1px solid var(--bb);box-shadow:var(--gb);}
+#neon-modal.m-yellow{border:1px solid var(--by);box-shadow:var(--gy);}
+@keyframes mpop{from{opacity:0;transform:translate(-50%,-50%) scale(.7)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+#modal-title{font-family:'Cinzel Decorative',serif;font-size:11px;font-weight:700;letter-spacing:1.5px;margin-bottom:8px;}
+.m-pink #modal-title{color:var(--pink);}
+.m-blue #modal-title{color:#7799ff;}
+.m-yellow #modal-title{color:var(--yellow);}
+#modal-msg{font-size:12px;color:rgba(220,220,240,.65);line-height:1.65;}
+.modal-btn{margin-top:15px;padding:9px 24px;border-radius:50px;cursor:pointer;
+  font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;background:transparent;transition:.25s;}
+.m-pink .modal-btn{border:1px solid var(--bp);color:var(--pink);}
+.m-blue .modal-btn{border:1px solid var(--bb);color:#7799ff;}
+.m-yellow .modal-btn{border:1px solid var(--by);color:var(--yellow);}
 
-        .game-header {
-            width: 100%; padding: 15px;
-            display: flex; justify-content: space-between; align-items: center;
-            background: rgba(255, 255, 255, 0.05);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            box-sizing: border-box;
-        }
+/* ── HEADER ─────────────────────────────────────────────── */
+.header{
+  flex-shrink:0;z-index:10;
+  padding:9px 14px;
+  background:rgba(2,3,13,.96);
+  border-bottom:1px solid rgba(0,85,255,.28);
+  backdrop-filter:blur(20px);
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 2px 20px rgba(0,85,255,.1);
+}
+.header-item{display:flex;flex-direction:column;align-items:center;
+  cursor:pointer;min-width:50px;transition:.2s;text-decoration:none;}
+.header-item:active{transform:scale(.86);}
+.header-item i{font-size:22px;display:block;margin-bottom:2px;}
+.header-item span{font-size:8.5px;font-weight:700;letter-spacing:1px;}
+.balance-box{flex:1;margin:0 10px;background:rgba(0,0,0,.55);
+  border:1px solid var(--bp);border-radius:20px;
+  padding:5px 16px;text-align:center;box-shadow:var(--gp);}
+.saldo-label{font-size:7.5px;font-weight:600;letter-spacing:2px;color:rgba(255,255,255,.38);margin-bottom:1px;}
+#display-saldo{font-family:'Cinzel Decorative',serif;font-size:15px;font-weight:900;color:#fff;text-shadow:var(--gp);}
 
-        .balance-box {
-            background: #000; padding: 8px 15px; border-radius: 20px;
-            border: 1px solid var(--neon-blue);
-            color: var(--neon-yellow); font-weight: bold;
-        }
+/* ── BOARD ──────────────────────────────────────────────── */
+#board-wrapper{
+  flex:0 0 42vh;
+  height:42vh;
+  min-height:180px;
+  max-height:320px;
+  position:relative;
+  overflow:hidden;
+  background:#02030d;
+}
+#plinko-canvas{display:block;width:100%;height:100%;touch-action:none;}
 
-        #game-container {
-            position: relative; width: 100%; max-width: 500px; height: 60vh; margin-top: 10px;
-        }
+/* FLOATING SCORE */
+#floating-score{
+  position:absolute;top:6px;right:7px;
+  background:rgba(2,3,13,.9);border:1px solid var(--bb);
+  border-radius:11px;padding:5px 9px;z-index:50;
+  box-shadow:var(--gb);min-width:88px;
+}
+.score-entry{font-size:9.5px;font-weight:700;color:var(--yellow);
+  border-bottom:1px solid rgba(255,255,255,.07);padding:3px 0;text-align:center;}
+.score-entry:last-child{border-bottom:none;}
 
-        /* MULTIPLIER SLOTS */
-        .multiplier-bar {
-            display: flex; justify-content: center; gap: 4px;
-            width: 100%; max-width: 480px; padding: 0 10px; box-sizing: border-box;
-        }
+/* ── SLOT ROW ───────────────────────────────────────────── */
+.multiplier-row{
+  flex-shrink:0;display:flex;justify-content:center;
+  gap:4px;padding:0 12px;margin:5px 0 3px;
+  min-height:34px;
+}
+.slot{
+  flex:1;height:30px;display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:900;border-radius:8px;
+  transition:.28s cubic-bezier(.175,.885,.32,1.275);letter-spacing:.5px;
+}
+.slot.active{transform:translateY(-8px);filter:brightness(2) saturate(1.5);box-shadow:0 0 25px rgba(255,255,255,0.8);}
+.s-high{background:linear-gradient(135deg,var(--pink),#cc0044);color:#fff;}
+.s-mid {background:linear-gradient(135deg,var(--yellow),#b8a800);color:#000;}
+.s-low {background:linear-gradient(135deg,var(--blue),#0022bb);color:rgba(255,255,255,.95);}
 
-        .m-slot {
-            flex: 1; padding: 10px 0; text-align: center; font-size: 11px; font-weight: 900;
-            border-radius: 4px; background: #1a1b3a; transition: all 0.1s ease;
-            border-bottom: 3px solid rgba(0,0,0,0.5);
-        }
+/* ── CONTROLS ───────────────────────────────────────────── */
+.controls{
+  flex:1;
+  min-height:0;
+  z-index:10;
+  padding:10px 16px 0;
+  background:rgba(2,3,13,.97);
+  border-top:1px solid rgba(0,85,255,.28);
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
 
-        /* CONTROLS */
-        .controls {
-            width: 100%; max-width: 400px; padding: 20px; box-sizing: border-box;
-        }
+.mode-row{display:flex;gap:8px;}
+.btn-mode{
+  flex:1;background:transparent;
+  padding:9px 4px;border-radius:12px;
+  font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;
+  cursor:pointer;transition:.22s;letter-spacing:.4px;
+}
+#m-normal{border:1px solid var(--bp);color:var(--pink);}
+#m-normal.active{background:rgba(255,0,119,.18);box-shadow:var(--gp);}
+#m-turbo {border:1px solid var(--bb);color:#7799ff;}
+#m-turbo.active {background:rgba(0,85,255,.18);box-shadow:var(--gb);}
+#m-auto  {border:1px solid var(--by);color:var(--yellow);}
+#m-auto.active  {background:rgba(245,230,66,.15);box-shadow:var(--gy);}
 
-        .input-group {
-            display: flex; background: #000; border-radius: 10px; padding: 5px;
-            border: 1px solid #333; margin-bottom: 15px;
-        }
+.bet-row{
+  display:flex;align-items:center;gap:10px;
+  background:rgba(0,0,0,.35);
+  border:1px solid rgba(0,85,255,.2);
+  border-radius:50px;
+  padding:5px 10px;
+}
+.bet-btn{
+  width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;cursor:pointer;transition:.15s;
+  background:transparent;border:none;flex-shrink:0;
+}
+.bet-btn:active{transform:scale(.80);}
+.bet-btn.locked{opacity:.25;pointer-events:none;}
+.bet-minus{color:var(--pink);}
+.bet-plus {color:#7799ff;}
+.bet-center{text-align:center;flex:1;}
+.bet-label{font-size:7.5px;font-weight:600;letter-spacing:1.5px;color:rgba(255,255,255,.28);}
+#current-bet{
+  font-family:'Cinzel Decorative',serif;
+  font-size:18px;font-weight:900;
+  color:var(--yellow);text-shadow:var(--gy);
+  line-height:1.1;
+}
+#bet-lock-hint{
+  font-size:8px;color:rgba(245,230,66,.5);
+  text-align:center;display:none;
+  letter-spacing:.5px;
+}
 
-        input {
-            flex: 1; background: transparent; border: none; color: white;
-            padding: 10px; text-align: center; outline: none; font-size: 16px;
-        }
+.btn-play{
+  flex-shrink:0;
+  width:100%;padding:15px;border-radius:50px;cursor:pointer;
+  font-family:'Cinzel Decorative',serif;font-size:13px;font-weight:900;
+  letter-spacing:2px;text-transform:uppercase;transition:.18s;
+  background:linear-gradient(90deg,rgba(255,0,119,.72),rgba(0,85,255,.72));
+  color:#fff;border:1px solid var(--by);
+  box-shadow:var(--gp),var(--gb);
+  user-select:none;-webkit-user-select:none;
+}
+.btn-play:active{transform:scale(.97);}
+.btn-play.stop-mode{
+  background:linear-gradient(90deg,rgba(245,230,66,.65),rgba(190,140,0,.5));
+  border-color:var(--by);box-shadow:var(--gy);color:#000;
+}
 
-        .btn-play {
-            width: 100%; padding: 15px; border-radius: 10px; border: none;
-            background: linear-gradient(45deg, var(--neon-pink), #ff00cc);
-            color: white; font-weight: bold; font-size: 18px; cursor: pointer;
-        }
-    </style>
+.nav-bottom{
+  flex-shrink:0;
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  padding:0 0 10px;
+  border-top:1px solid rgba(0,85,255,.18);
+  padding-top:8px;
+}
+.nav-btn{
+  display:flex;flex-direction:column;align-items:center;
+  padding:9px 0;border-radius:14px;text-decoration:none;
+  font-family:'Outfit',sans-serif;font-weight:700;transition:.18s;
+}
+.nav-btn:active{transform:scale(.91);}
+.nav-btn i{font-size:19px;margin-bottom:3px;}
+.nav-btn span{font-size:8.5px;letter-spacing:.4px;}
+.btn-withdraw{border:1px solid var(--by);color:var(--yellow);background:rgba(245,230,66,.04);}
+.btn-withdraw:hover{background:rgba(245,230,66,.1);box-shadow:var(--gy);}
+.btn-deposit {border:1px solid var(--bp);color:var(--pink);background:rgba(255,0,119,.04);}
+.btn-deposit:hover {background:rgba(255,0,119,.1);box-shadow:var(--gp);}
+.btn-reward  {border:1px solid var(--bb);color:#7799ff;background:rgba(0,85,255,.04);}
+.btn-reward:hover  {background:rgba(0,85,255,.1);box-shadow:var(--gb);}
+</style>
 </head>
 <body>
 
-    <div class="game-header">
-        <div id="user-info"><i class="fa-solid fa-circle-user"></i> <span id="username-display">Loading...</span></div>
-        <div class="balance-box" id="display-saldo">IDR 0</div>
+<audio id="snd-hit"   src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3" preload="none"></audio>
+<audio id="snd-win"   src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3" preload="none"></audio>
+<audio id="snd-error" src="https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3" preload="none"></audio>
+<audio id="snd-click" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3" preload="none"></audio>
+
+<div id="modal-overlay" onclick="closeModal()"></div>
+<div id="neon-modal" class="m-pink">
+  <div id="modal-title">PERHATIAN</div>
+  <div id="modal-msg"></div>
+  <button class="modal-btn" onclick="closeModal()">OK</button>
+</div>
+
+<div class="header">
+  <div class="header-item" onclick="snd('click');location.href='profil.html'">
+    <i class="fa-solid fa-circle-user" style="color:var(--yellow);text-shadow:var(--gy);"></i>
+    <span style="color:var(--yellow);">PROFIL</span>
+  </div>
+  <div class="balance-box">
+    <div class="saldo-label">SALDO UTAMA</div>
+    <div id="display-saldo">IDR 0</div>
+  </div>
+  <div class="header-item" style="visibility:hidden;"></div>
+</div>
+
+<div id="board-wrapper">
+  <canvas id="plinko-canvas"></canvas>
+  <div id="floating-score">
+    <div id="score-list">
+      <div class="score-entry" style="opacity:.28;">Ready...</div>
     </div>
+  </div>
+</div>
 
-    <div id="game-container"></div>
+<div class="multiplier-row" id="slot-row"></div>
 
-    <div class="multiplier-bar">
-        <div class="m-slot" id="slot-0" style="color:#ff0077; border-color:#ff0077;">10x</div>
-        <div class="m-slot" id="slot-1" style="color:#00d2ff; border-color:#00d2ff;">3x</div>
-        <div class="m-slot" id="slot-2" style="color:#f5e642; border-color:#f5e642;">1.5x</div>
-        <div class="m-slot" id="slot-3" style="color:#aaaaaa; border-color:#555555;">0.5x</div>
-        <div class="m-slot" id="slot-4" style="color:#666666; border-color:#333333;">0.2x</div>
-        <div class="m-slot" id="slot-5" style="color:#aaaaaa; border-color:#555555;">0.5x</div>
-        <div class="m-slot" id="slot-6" style="color:#f5e642; border-color:#f5e642;">1.5x</div>
-        <div class="m-slot" id="slot-7" style="color:#00d2ff; border-color:#00d2ff;">3x</div>
-        <div class="m-slot" id="slot-8" style="color:#ff0077; border-color:#ff0077;">10x</div>
+<div class="controls">
+  <div class="mode-row">
+    <button class="btn-mode active" id="m-normal" onclick="setSpeedMode('normal')">🎯 NORMAL</button>
+    <button class="btn-mode"        id="m-turbo"  onclick="setSpeedMode('turbo')">⚡ TURBO</button>
+    <button class="btn-mode"        id="m-auto"   onclick="toggleAuto()">🔄 AUTO: OFF</button>
+  </div>
+
+  <div class="bet-row">
+    <div class="bet-btn bet-minus" id="btn-minus" onclick="changeBet(-1)">
+      <i class="fa-solid fa-circle-minus"></i>
     </div>
-
-    <div class="controls">
-        <div class="input-group">
-            <button style="background:none; border:none; color:var(--neon-blue); cursor:pointer;" onclick="adjustBet(-1000)">-</button>
-            <input type="number" id="bet-amount" value="800">
-            <button style="background:none; border:none; color:var(--neon-blue); cursor:pointer;" onclick="adjustBet(1000)">+</button>
-        </div>
-        <button class="btn-play" id="btn-drop" onclick="dropBall()">LEPAS BOLA</button>
+    <div class="bet-center">
+      <div class="bet-label">TARUHAN</div>
+      <div id="current-bet">400</div>
     </div>
+    <div class="bet-btn bet-plus" id="btn-plus" onclick="changeBet(1)">
+      <i class="fa-solid fa-circle-plus"></i>
+    </div>
+  </div>
+  <div id="bet-lock-hint">🔒 Stop AUTO untuk mengubah taruhan</div>
 
-    <script src="global.js"></script>
+  <button class="btn-play" id="main-btn"
+    onpointerdown="onPlayDown(event)"
+    onpointerup="onPlayUp(event)"
+    onpointerleave="onPlayUp(event)"
+    onpointercancel="onPlayUp(event)">
+    <i class="fa-solid fa-play" id="play-icon"></i>&nbsp;<span id="play-label">PLAY BALL</span>
+  </button>
 
-    <script>
-        const { Engine, Render, Runner, Bodies, Composite, Events } = Matter;
-        const engine = Engine.create();
-        const worldWidth = 500;
-        const worldHeight = 600;
+  <div class="nav-bottom">
+    <a href="withdraw.html" class="nav-btn btn-withdraw" onclick="snd('click')">
+      <i class="fa-solid fa-money-bill-transfer"></i><span>WITHDRAW</span>
+    </a>
+    <a href="deposit.html" class="nav-btn btn-deposit" onclick="snd('click')">
+      <i class="fa-solid fa-wallet"></i><span>DEPOSIT</span>
+    </a>
+    <a href="reward.html" class="nav-btn btn-reward" onclick="snd('click')">
+      <i class="fa-solid fa-gift"></i><span>REWARD</span>
+    </a>
+  </div>
+</div>
 
-        const render = Render.create({
-            element: document.getElementById('game-container'),
-            engine: engine,
-            options: {
-                width: worldWidth, height: worldHeight,
-                wireframes: false, background: 'transparent'
-            }
-        });
+<script src="global.js"></script>
+<script>
+// Canvas & Game Variables
+const ROWS   = 10;
+const MULTS  = [10, 3, 1.5, 0.5, 0.2, 0.2, 0.5, 1.5, 3, 10];
+const BETS   = [400,800,1000,1200,1600,2000,4000,8000,10000,20000];
+const BALL_R = 6.5;
+const PEG_R  = 5.0;
+const PH = {
+  normal:{ grav:0.20, fric:0.992, bounce:0.44, pegF:2.4, randV:0.30, autoMs:800 },
+  turbo: { grav:0.36, fric:0.985, bounce:0.38, pegF:3.4, randV:0.38, autoMs:220 }
+};
 
-        // 1. BUAT PAPAN PAKU PUTIH TERANG
-        function createGrid() {
-            const spacing = 45;
-            const startY = 80;
-            for (let i = 0; i < 9; i++) {
-                const rowCount = i + 3;
-                const rowWidth = (rowCount - 1) * spacing;
-                const startX = (worldWidth - rowWidth) / 2;
-                for (let j = 0; j < rowCount; j++) {
-                    const peg = Bodies.circle(startX + j * spacing, startY + i * spacing, 4, {
-                        isStatic: true,
-                        label: 'peg',
-                        render: { fillStyle: '#FFFFFF' }
-                    });
-                    Composite.add(engine.world, peg);
-                }
-            }
-        }
+let canvas, ctx, DPR=1, BW=0, BH=0;
+let pegs=[], balls=[], slotW=0;
+let speedMode='normal', isAuto=false, autoTimer=null;
+let betIdx=0, syncTimer=null, raf=null;
+let holdActive=false, holdRepeat=null, holdTimeout=null;
+let lastGameActivity = 0;
+const GAME_LOCK_MS = 25000;
 
-        // SENSOR MULTIPLIER
-        const sensors = [];
-        function createSensors() {
-            const width = 45;
-            const startX = (worldWidth - (9 * width)) / 2;
-            for (let i = 0; i < 9; i++) {
-                const sensor = Bodies.rectangle(startX + (i * width) + width/2, worldHeight - 20, width - 5, 40, {
-                    isStatic: true, isSensor: true, render: { fillStyle: 'transparent' }
-                });
-                sensor.mIdx = i;
-                sensors.push(sensor);
-            }
-            Composite.add(engine.world, sensors);
-        }
+// UTILS
+const getU = () => getUsername();
+const snd = t => {
+  try{ const a=document.getElementById('snd-'+t); a.currentTime=0; a.play().catch(()=>{}); }catch(e){}
+};
 
-        // LOGIKA PERHITUNGAN & DROP BOLA
-        async function dropBall() {
-            const bet = parseInt(document.getElementById('bet-amount').value);
-            const saldoAwal = getSaldo();
+function showModal(msg, type='pink'){
+  document.getElementById('neon-modal').className='m-'+type;
+  document.getElementById('modal-title').textContent = type==='yellow'?'✨ SELAMAT!':type==='blue'?'ℹ️ INFO':'⚠️ PERHATIAN';
+  document.getElementById('modal-msg').textContent = msg;
+  document.getElementById('modal-overlay').style.display='block';
+  document.getElementById('neon-modal').style.display='block';
+}
+function closeModal(){
+  document.getElementById('neon-modal').style.display='none';
+  document.getElementById('modal-overlay').style.display='none';
+}
 
-            if (saldoAwal < bet) {
-                alert("Saldo tidak cukup!");
-                return;
-            }
+// 1. PERBAIKAN PERHITUNGAN (Sinkron Apps Script)
+// Mengambil saldo awal sebelum bet dikurangi agar rumus (SaldoAwal - Bet) + (Bet * Mult) di server akurat
+async function spawnBall(){
+  const bet = BETS[betIdx];
+  const saldoSnapshot = getSaldo(); // Ambil saldo dari global.js localStorage
 
-            // Langsung kurangi di lokal agar responsif
-            setSaldo(saldoAwal - bet);
+  if(saldoSnapshot < bet){
+    snd('error');
+    if(isAuto) stopAuto();
+    else{ holdActive=false; clearTimeout(holdTimeout); clearInterval(holdRepeat); }
+    showModal('Saldo tidak cukup!','pink');
+    return;
+  }
 
-            const ball = Bodies.circle(worldWidth/2 + (Math.random()*10-5), 20, 8, {
-                restitution: 0.5, label: 'ball', render: { fillStyle: '#ff0077' }
-            });
-            Composite.add(engine.world, ball);
+  // Update UI & Local Storage Langsung (Saldo - Taruhan)
+  setSaldo(saldoSnapshot - bet);
+  lastGameActivity = Date.now();
 
-            try {
-                const res = await apiCall({
-                    action: 'game_play',
-                    username: getUsername(),
-                    bet: bet,
-                    saldoAwal: saldoAwal // Kirim snapshot saldo awal ke backend
-                });
+  const sx = BW/2+(Math.random()-.5)*10;
+  const ball = {
+    x:sx, y:-BALL_R*1.5,
+    vx:(Math.random()-.5)*1.0, vy:0.4,
+    bet, spd:speedMode, done:false,
+    tx:undefined, serverMult:undefined, resolved:false, refunded:false
+  };
+  balls.push(ball);
 
-                if (res.result === 'SUCCESS') {
-                    ball.serverNewSaldo = res.newSaldo;
-                }
-            } catch (e) { console.error(e); }
+  try {
+    const r = await apiCall({
+      action:'game_play', 
+      username:getU(), 
+      bet: bet, 
+      saldoAwal: saldoSnapshot // Kirim Snapshot Saldo ke Backend
+    });
+
+    if(r && r.result==='SUCCESS'){
+      ball.serverMult = r.target_multiplier;
+      ball.serverNewSaldo = r.newSaldo; // Ambil Saldo Pasti dari Server
+      
+      const opts=[];
+      MULTS.forEach((m,i)=>{ if(m===r.target_multiplier) opts.push(i); });
+      if(opts.length>0){
+        opts.sort((a,z)=>Math.abs(a-(Math.floor(ball.x/slotW)))-Math.abs(z-(Math.floor(ball.x/slotW))));
+        ball.tx=(opts[0]+0.5)*slotW;
+      }
+    } else {
+      ball.refunded=true;
+      setSaldo(getSaldo() + bet);
+    }
+  } catch(e){
+    ball.refunded=true;
+    setSaldo(getSaldo() + bet);
+  }
+}
+
+// 2. PAPAN PAKU PIRAMIDA PUTIH TERANG
+function buildPegs(){
+  pegs = [];
+  const margin = Math.max(BW*0.06,18), usableW = BW-margin*2;
+  const spacingX = usableW/ROWS, topPad = BH*0.04, spacingY = (BH*0.90)/ROWS;
+  for(let row=0; row<ROWS; row++){
+    const count = row+2, totalW = (count-1)*spacingX;
+    const sx = BW/2-totalW/2, y = topPad+row*spacingY;
+    for(let col=0; col<count; col++) pegs.push({
+        x:sx+col*spacingX, y, glow:0, hue:0, 
+        originalColor: '#FFFFFF' // Paku Putih Terang
+    });
+  }
+}
+
+function physics(){
+  const toRemove = [];
+  balls.forEach(b => {
+    const ph = PH[b.spd]||PH.normal;
+    b.vy += ph.grav; b.vx *= ph.fric; b.x += b.vx; b.y += b.vy;
+    if(b.tx !== undefined){
+      const prog = Math.max(0,(b.y-BH*0.40)/(BH*0.60));
+      if(prog > 0) b.vx += (b.tx-b.x)*prog*0.016;
+    }
+    const colDist = BALL_R+PEG_R+0.5;
+    for(let i=0; i<pegs.length; i++){
+      const p=pegs[i], dx=b.x-p.x, dy=b.y-p.y, d2=dx*dx+dy*dy;
+      if(d2 < colDist*colDist && d2 > 0.001){
+        const d=Math.sqrt(d2), nx=dx/d, ny=dy/d;
+        b.x+=nx*(colDist-d); b.y+=ny*(colDist-d);
+        const dot=b.vx*nx+b.vy*ny;
+        b.vx=(b.vx-2*dot*nx)*ph.bounce+(Math.random()-.5)*ph.randV;
+        b.vy=(b.vy-2*dot*ny)*Math.abs(ph.bounce);
+        b.vx=Math.max(-ph.pegF,Math.min(ph.pegF,b.vx));
+        
+        // EFEK PAKU BERUBAH WARNA SAAT TERKENA BOLA
+        p.glow=1; 
+        p.hue=1; // Penanda sedang aktif
+        setTimeout(() => { p.glow = 0; p.hue = 0; }, 150);
+        snd('hit');
+      }
+    }
+    if(b.x<BALL_R)    {b.x=BALL_R;    b.vx= Math.abs(b.vx)*0.45;}
+    if(b.x>BW-BALL_R) {b.x=BW-BALL_R; b.vx=-Math.abs(b.vx)*0.45;}
+    if(b.y>BH+BALL_R*3 && !b.done){ b.done=true; toRemove.push(b); onBallLand(b); }
+  });
+  balls = balls.filter(b=>!toRemove.includes(b));
+}
+
+function draw(){
+  ctx.clearRect(0, 0, BW, BH);
+  pegs.forEach(p => {
+    const r = PEG_R;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r, 0, Math.PI*2);
+    // Warna dasar putih terang, jika kena (glow) jadi kuning neon
+    ctx.fillStyle = p.glow > 0 ? '#f5e642' : '#FFFFFF';
+    ctx.shadowBlur = p.glow > 0 ? 15 : 5;
+    ctx.shadowColor = p.glow > 0 ? '#f5e642' : 'rgba(255,255,255,0.5)';
+    ctx.fill();
+    ctx.restore();
+  });
+  balls.forEach(b => {
+    ctx.save();
+    const gr = ctx.createRadialGradient(b.x-BALL_R*.32,b.y-BALL_R*.35,BALL_R*.04, b.x,b.y,BALL_R);
+    gr.addColorStop(0,'#ffaacc'); gr.addColorStop(0.45, b.refunded ? '#666' : '#ff0077'); gr.addColorStop(1,'#220005');
+    ctx.beginPath(); ctx.arc(b.x,b.y,BALL_R,0,Math.PI*2);
+    ctx.fillStyle=gr; ctx.shadowColor= b.refunded ? '#333' : 'rgba(255,0,119,0.85)'; ctx.shadowBlur=12; ctx.fill();
+    ctx.restore();
+  });
+}
+
+// 3. PAPAN KOTAK MULTIPLIER BERKEDIP SAAT BOLA MASUK
+function onBallLand(b){
+  if(b.refunded) return;
+  const finalMult = (b.serverMult !== undefined) ? b.serverMult : MULTS[Math.min(MULTS.length-1, Math.max(0, Math.floor(b.x/slotW)))];
+  
+  // Update Saldo dari Nilai Server yang sudah dibawa bola
+  if(b.serverNewSaldo) {
+      setSaldo(b.serverNewSaldo);
+  } else {
+      setSaldo(getSaldo() + Math.floor(b.bet * finalMult));
+  }
+
+  // Efek Berkedip Slot
+  let slotIdx = Math.min(MULTS.length-1, Math.max(0, Math.floor(b.x/slotW)));
+  if(b.serverMult !== undefined){
+    const opts=[];
+    MULTS.forEach((m,i)=>{ if(m===b.serverMult) opts.push(i); });
+    if(opts.length>0) slotIdx = opts[0];
+  }
+  
+  const el = document.getElementById('slot-'+slotIdx);
+  if(el){
+    el.classList.add('active');
+    setTimeout(() => el.classList.remove('active'), 600);
+  }
+
+  const list=document.getElementById('score-list');
+  const e=document.createElement('div'); e.className='score-entry';
+  e.innerHTML=`<span style="color:${finalMult>=1.5?'var(--pink)':'#7799ff'}">${finalMult}x</span> · IDR ${Math.floor(b.bet*finalMult).toLocaleString()}`;
+  list.prepend(e);
+  if(list.children.length>4) list.removeChild(list.lastChild);
+  if(finalMult >= 1.5) snd('win');
+}
+
+// SETUP CANVAS & SYSTEM
+function setupCanvas(){
+  const wrap = document.getElementById('board-wrapper');
+  canvas = document.getElementById('plinko-canvas');
+  ctx    = canvas.getContext('2d');
+  DPR    = window.devicePixelRatio || 1;
+  BW = wrap.clientWidth; BH = wrap.clientHeight;
+  canvas.width = BW*DPR; canvas.height = BH*DPR;
+  canvas.style.width = BW+'px'; canvas.style.height = BH+'px';
+  ctx.scale(DPR, DPR);
+  buildPegs(); buildSlots();
+}
+
+function buildSlots(){
+  const row = document.getElementById('slot-row'); row.innerHTML = '';
+  slotW = BW / MULTS.length;
+  MULTS.forEach((m,i) => {
+    const s = document.createElement('div');
+    s.className = `slot ${m>=3?'s-high':m>=1?'s-mid':'s-low'}`;
+    s.id = 'slot-'+i; s.textContent = m+'x'; row.appendChild(s);
+  });
+}
+
+function loop(){ physics(); draw(); raf = requestAnimationFrame(loop); }
+
+function setSpeedMode(m){
+  snd('click'); speedMode=m;
+  document.getElementById('m-normal').classList.toggle('active',m==='normal');
+  document.getElementById('m-turbo').classList.toggle('active',m==='turbo');
+  if(isAuto){ clearInterval(autoTimer); autoTimer=setInterval(spawnBall,PH[speedMode].autoMs); }
+}
+function toggleAuto(){ snd('click'); if(isAuto) stopAuto(); else startAuto(); }
+function startAuto(){
+  isAuto=true; document.getElementById('m-auto').textContent='🔄 AUTO: ON'; document.getElementById('m-auto').classList.add('active');
+  document.getElementById('main-btn').classList.add('stop-mode');
+  document.getElementById('play-icon').className='fa-solid fa-stop';
+  document.getElementById('btn-minus').classList.add('locked'); document.getElementById('btn-plus').classList.add('locked');
+  document.getElementById('bet-lock-hint').style.display='block';
+  spawnBall(); autoTimer=setInterval(spawnBall,PH[speedMode].autoMs);
+}
+function stopAuto(){
+  isAuto=false; clearInterval(autoTimer); autoTimer=null;
+  document.getElementById('m-auto').textContent='🔄 AUTO: OFF'; document.getElementById('m-auto').classList.remove('active');
+  document.getElementById('main-btn').classList.remove('stop-mode');
+  document.getElementById('play-icon').className='fa-solid fa-play';
+  document.getElementById('btn-minus').classList.remove('locked'); document.getElementById('btn-plus').classList.remove('locked');
+  document.getElementById('bet-lock-hint').style.display='none';
+}
+function changeBet(d){
+  if(isAuto) return; snd('click');
+  betIdx=Math.max(0,Math.min(BETS.length-1,betIdx+d));
+  document.getElementById('current-bet').textContent=BETS[betIdx].toLocaleString('id-ID');
+}
+function onPlayDown(e){
+  e.preventDefault(); if(isAuto){stopAuto();return;} if(holdActive) return;
+  holdActive=true; spawnBall();
+  holdTimeout=setTimeout(()=>{ holdRepeat=setInterval(spawnBall,speedMode==='turbo'?250:600); },300);
+}
+function onPlayUp(e){ holdActive=false; clearTimeout(holdTimeout); clearInterval(holdRepeat); }
+
+window.addEventListener('load', ()=>{
+  if(!getU()){ location.href='index.html'; return; }
+  setupCanvas(); loop();
+});
+</script>
+</body>
+</html>
