@@ -294,8 +294,8 @@ const BETS   = [400,800,1000,1200,1600,2000,4000,8000,10000,20000];
 const BALL_R = 6.5;
 const PEG_R  = 5.0;
 const PH = {
-  normal:{ grav:0.20, fric:0.992, bounce:0.44, pegF:2.4, randV:0.30, autoMs:800 },
-  turbo: { grav:0.36, fric:0.985, bounce:0.38, pegF:3.4, randV:0.38, autoMs:220 }
+  normal:{ grav:0.24, fric:0.992, bounce:0.44, pegF:2.4, randV:0.32, autoMs:800 },
+  turbo: { grav:0.38, fric:0.985, bounce:0.40, pegF:3.4, randV:0.40, autoMs:220 }
 };
 
 let canvas, ctx, DPR=1, BW=0, BH=0;
@@ -304,7 +304,6 @@ let speedMode='normal', isAuto=false, autoTimer=null;
 let betIdx=0, syncTimer=null, raf=null;
 let holdActive=false, holdRepeat=null, holdTimeout=null;
 let lastGameActivity = 0;
-const GAME_LOCK_MS = 25000;
 
 // UTILS
 const getU = () => getUsername();
@@ -324,11 +323,9 @@ function closeModal(){
   document.getElementById('modal-overlay').style.display='none';
 }
 
-// 1. PERBAIKAN PERHITUNGAN (Sinkron Apps Script)
-// Mengambil saldo awal sebelum bet dikurangi agar rumus (SaldoAwal - Bet) + (Bet * Mult) di server akurat
 async function spawnBall(){
   const bet = BETS[betIdx];
-  const saldoSnapshot = getSaldo(); // Ambil saldo dari global.js localStorage
+  const saldoSnapshot = getSaldo();
 
   if(saldoSnapshot < bet){
     snd('error');
@@ -338,16 +335,15 @@ async function spawnBall(){
     return;
   }
 
-  // Update UI & Local Storage Langsung (Saldo - Taruhan)
   setSaldo(saldoSnapshot - bet);
   lastGameActivity = Date.now();
 
-  const sx = BW/2+(Math.random()-.5)*10;
+  const sx = BW/2+(Math.random()-.5)*12;
   const ball = {
-    x:sx, y:-BALL_R*1.5,
-    vx:(Math.random()-.5)*1.0, vy:0.4,
+    x:sx, y:-BALL_R*2,
+    vx:(Math.random()-.5)*1.2, vy:0.5,
     bet, spd:speedMode, done:false,
-    tx:undefined, serverMult:undefined, resolved:false, refunded:false
+    tx:undefined, serverMult:undefined, serverSlotIdx:undefined, resolved:false, refunded:false
   };
   balls.push(ball);
 
@@ -356,18 +352,22 @@ async function spawnBall(){
       action:'game_play', 
       username:getU(), 
       bet: bet, 
-      saldoAwal: saldoSnapshot // Kirim Snapshot Saldo ke Backend
+      saldoAwal: saldoSnapshot 
     });
 
     if(r && r.result==='SUCCESS'){
       ball.serverMult = r.target_multiplier;
-      ball.serverNewSaldo = r.newSaldo; // Ambil Saldo Pasti dari Server
+      ball.serverNewSaldo = r.newSaldo;
       
+      // Cari slot yang sesuai dengan multiplier server
       const opts=[];
       MULTS.forEach((m,i)=>{ if(m===r.target_multiplier) opts.push(i); });
+      
       if(opts.length>0){
-        opts.sort((a,z)=>Math.abs(a-(Math.floor(ball.x/slotW)))-Math.abs(z-(Math.floor(ball.x/slotW))));
-        ball.tx=(opts[0]+0.5)*slotW;
+        // Pilih slot terdekat dari posisi X saat ini agar gerakan natural
+        opts.sort((a,z)=>Math.abs(a-(ball.x/slotW)) - Math.abs(z-(ball.x/slotW)));
+        ball.serverSlotIdx = opts[0];
+        ball.tx = (ball.serverSlotIdx + 0.5) * slotW;
       }
     } else {
       ball.refunded=true;
@@ -379,17 +379,15 @@ async function spawnBall(){
   }
 }
 
-// 2. PAPAN PAKU PIRAMIDA PUTIH TERANG
 function buildPegs(){
   pegs = [];
   const margin = Math.max(BW*0.06,18), usableW = BW-margin*2;
-  const spacingX = usableW/ROWS, topPad = BH*0.04, spacingY = (BH*0.90)/ROWS;
+  const spacingX = usableW/ROWS, topPad = BH*0.05, spacingY = (BH*0.88)/ROWS;
   for(let row=0; row<ROWS; row++){
     const count = row+2, totalW = (count-1)*spacingX;
     const sx = BW/2-totalW/2, y = topPad+row*spacingY;
     for(let col=0; col<count; col++) pegs.push({
-        x:sx+col*spacingX, y, glow:0, hue:0, 
-        originalColor: '#FFFFFF' // Paku Putih Terang
+        x:sx+col*spacingX, y, glow:0
     });
   }
 }
@@ -398,32 +396,48 @@ function physics(){
   const toRemove = [];
   balls.forEach(b => {
     const ph = PH[b.spd]||PH.normal;
+    
+    // Anti-stuck: Jika bola hampir berhenti secara horizontal, beri dorongan kecil
+    if(Math.abs(b.vx) < 0.05) b.vx += (Math.random() - 0.5) * 0.1;
+
     b.vy += ph.grav; b.vx *= ph.fric; b.x += b.vx; b.y += b.vy;
+
+    // Magnetisme ke target slot (TX) jika sudah melewati tengah papan
     if(b.tx !== undefined){
-      const prog = Math.max(0,(b.y-BH*0.40)/(BH*0.60));
-      if(prog > 0) b.vx += (b.tx-b.x)*prog*0.016;
+      const prog = Math.max(0,(b.y-BH*0.35)/(BH*0.65));
+      if(prog > 0) b.vx += (b.tx-b.x)*prog*0.018;
     }
-    const colDist = BALL_R+PEG_R+0.5;
+
+    const colDist = BALL_R+PEG_R;
     for(let i=0; i<pegs.length; i++){
       const p=pegs[i], dx=b.x-p.x, dy=b.y-p.y, d2=dx*dx+dy*dy;
-      if(d2 < colDist*colDist && d2 > 0.001){
+      if(d2 < colDist*colDist && d2 > 0){
         const d=Math.sqrt(d2), nx=dx/d, ny=dy/d;
-        b.x+=nx*(colDist-d); b.y+=ny*(colDist-d);
+        // Reposition bola agar tidak overlap (mencegah nyangkut di dalam paku)
+        b.x=p.x+nx*colDist; b.y=p.y+ny*colDist;
+        
         const dot=b.vx*nx+b.vy*ny;
         b.vx=(b.vx-2*dot*nx)*ph.bounce+(Math.random()-.5)*ph.randV;
         b.vy=(b.vy-2*dot*ny)*Math.abs(ph.bounce);
-        b.vx=Math.max(-ph.pegF,Math.min(ph.pegF,b.vx));
         
-        // EFEK PAKU BERUBAH WARNA SAAT TERKENA BOLA
+        // Batasi kecepatan agar bola tidak "tembus"
+        b.vx=Math.max(-4,Math.min(4,b.vx));
+        
         p.glow=1; 
-        p.hue=1; // Penanda sedang aktif
-        setTimeout(() => { p.glow = 0; p.hue = 0; }, 150);
+        setTimeout(() => { p.glow = 0; }, 120);
         snd('hit');
       }
     }
-    if(b.x<BALL_R)    {b.x=BALL_R;    b.vx= Math.abs(b.vx)*0.45;}
-    if(b.x>BW-BALL_R) {b.x=BW-BALL_R; b.vx=-Math.abs(b.vx)*0.45;}
-    if(b.y>BH+BALL_R*3 && !b.done){ b.done=true; toRemove.push(b); onBallLand(b); }
+
+    if(b.x<BALL_R)    {b.x=BALL_R;    b.vx= Math.abs(b.vx)*0.5;}
+    if(b.x>BW-BALL_R) {b.x=BW-BALL_R; b.vx=-Math.abs(b.vx)*0.5;}
+    
+    // Triger landing sedikit lebih awal sebelum benar-benar hilang dari layar
+    if(b.y > BH - 10 && !b.done){ 
+      b.done=true; 
+      onBallLand(b); 
+    }
+    if(b.y > BH + 50) toRemove.push(b);
   });
   balls = balls.filter(b=>!toRemove.includes(b));
 }
@@ -431,51 +445,46 @@ function physics(){
 function draw(){
   ctx.clearRect(0, 0, BW, BH);
   pegs.forEach(p => {
-    const r = PEG_R;
     ctx.save();
     ctx.beginPath();
-    ctx.arc(p.x, p.y, r, 0, Math.PI*2);
-    // Warna dasar putih terang, jika kena (glow) jadi kuning neon
+    ctx.arc(p.x, p.y, PEG_R, 0, Math.PI*2);
     ctx.fillStyle = p.glow > 0 ? '#f5e642' : '#FFFFFF';
-    ctx.shadowBlur = p.glow > 0 ? 15 : 5;
-    ctx.shadowColor = p.glow > 0 ? '#f5e642' : 'rgba(255,255,255,0.5)';
+    ctx.shadowBlur = p.glow > 0 ? 15 : 4;
+    ctx.shadowColor = p.glow > 0 ? '#f5e642' : 'rgba(255,255,255,0.3)';
     ctx.fill();
     ctx.restore();
   });
   balls.forEach(b => {
     ctx.save();
-    const gr = ctx.createRadialGradient(b.x-BALL_R*.32,b.y-BALL_R*.35,BALL_R*.04, b.x,b.y,BALL_R);
-    gr.addColorStop(0,'#ffaacc'); gr.addColorStop(0.45, b.refunded ? '#666' : '#ff0077'); gr.addColorStop(1,'#220005');
+    const gr = ctx.createRadialGradient(b.x-2,b.y-2,1, b.x,b.y,BALL_R);
+    gr.addColorStop(0,'#ffaacc'); 
+    gr.addColorStop(0.5, b.refunded ? '#666' : '#ff0077'); 
+    gr.addColorStop(1,'#220005');
     ctx.beginPath(); ctx.arc(b.x,b.y,BALL_R,0,Math.PI*2);
-    ctx.fillStyle=gr; ctx.shadowColor= b.refunded ? '#333' : 'rgba(255,0,119,0.85)'; ctx.shadowBlur=12; ctx.fill();
+    ctx.fillStyle=gr; 
+    ctx.shadowColor= b.refunded ? '#333' : 'rgba(255,0,119,0.8)'; 
+    ctx.shadowBlur=10; 
+    ctx.fill();
     ctx.restore();
   });
 }
 
-// 3. PAPAN KOTAK MULTIPLIER BERKEDIP SAAT BOLA MASUK
 function onBallLand(b){
-  if(b.refunded) return;
+  if(b.refunded || b.resolved) return;
+  b.resolved = true;
+
   const finalMult = (b.serverMult !== undefined) ? b.serverMult : MULTS[Math.min(MULTS.length-1, Math.max(0, Math.floor(b.x/slotW)))];
   
-  // Update Saldo dari Nilai Server yang sudah dibawa bola
-  if(b.serverNewSaldo) {
-      setSaldo(b.serverNewSaldo);
-  } else {
-      setSaldo(getSaldo() + Math.floor(b.bet * finalMult));
-  }
+  if(b.serverNewSaldo) setSaldo(b.serverNewSaldo);
+  else setSaldo(getSaldo() + Math.floor(b.bet * finalMult));
 
-  // Efek Berkedip Slot
-  let slotIdx = Math.min(MULTS.length-1, Math.max(0, Math.floor(b.x/slotW)));
-  if(b.serverMult !== undefined){
-    const opts=[];
-    MULTS.forEach((m,i)=>{ if(m===b.serverMult) opts.push(i); });
-    if(opts.length>0) slotIdx = opts[0];
-  }
+  // PERBAIKAN: Gunakan serverSlotIdx jika tersedia agar kedipan akurat 100%
+  let slotIdx = (b.serverSlotIdx !== undefined) ? b.serverSlotIdx : Math.min(MULTS.length-1, Math.max(0, Math.floor(b.x/slotW)));
   
   const el = document.getElementById('slot-'+slotIdx);
   if(el){
     el.classList.add('active');
-    setTimeout(() => el.classList.remove('active'), 600);
+    setTimeout(() => el.classList.remove('active'), 500);
   }
 
   const list=document.getElementById('score-list');
@@ -486,7 +495,6 @@ function onBallLand(b){
   if(finalMult >= 1.5) snd('win');
 }
 
-// SETUP CANVAS & SYSTEM
 function setupCanvas(){
   const wrap = document.getElementById('board-wrapper');
   canvas = document.getElementById('plinko-canvas');
@@ -540,7 +548,9 @@ function changeBet(d){
   document.getElementById('current-bet').textContent=BETS[betIdx].toLocaleString('id-ID');
 }
 function onPlayDown(e){
-  e.preventDefault(); if(isAuto){stopAuto();return;} if(holdActive) return;
+  if(e.cancelable) e.preventDefault(); 
+  if(isAuto){stopAuto();return;} 
+  if(holdActive) return;
   holdActive=true; spawnBall();
   holdTimeout=setTimeout(()=>{ holdRepeat=setInterval(spawnBall,speedMode==='turbo'?250:600); },300);
 }
@@ -550,6 +560,7 @@ window.addEventListener('load', ()=>{
   if(!getU()){ location.href='index.html'; return; }
   setupCanvas(); loop();
 });
+window.addEventListener('resize', setupCanvas);
 </script>
 </body>
 </html>
