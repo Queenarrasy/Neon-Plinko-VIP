@@ -2,15 +2,16 @@
  * ============================================================
  *  GLOBAL.JS — NEON PLINKO VIP
  *  Pusat koneksi semua halaman ke Google Sheets (Apps Script)
- *  Versi: 3.0 | Fix: Saldo sync real-time, winrate aktif
+ *  Versi: 4.0
+ *  Fix: setSaldo broadcast aman, showModal kompatibel game.html
  * ============================================================
  */
 
 // ─── CONFIG ─────────────────────────────────────────────────
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
-const SYNC_INTERVAL_MS   = 8000;   // sync saldo otomatis setiap 8 detik
-const SESSION_CHECK_MS   = 15000;  // cek session setiap 15 detik
-const USDT_RATE_CACHE_MS = 300000; // cache kurs USDT 5 menit
+const SCRIPT_URL         = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
+const SYNC_INTERVAL_MS   = 8000;
+const SESSION_CHECK_MS   = 15000;
+const USDT_RATE_CACHE_MS = 300000;
 
 // ─── UTILITIES ──────────────────────────────────────────────
 function getUsername() {
@@ -20,7 +21,7 @@ function getSaldo() {
   return parseFloat(localStorage.getItem('user_saldo') || 0);
 }
 function setSaldo(val) {
-  const v = parseFloat(val) || 0;
+  const v = Math.floor(parseFloat(val) || 0);
   localStorage.setItem('user_saldo', v);
   _broadcastSaldo(v);
 }
@@ -38,14 +39,12 @@ function fmtDate(d) {
 
 // ─── SERVER CALL ─────────────────────────────────────────────
 async function apiCall(payload) {
-  // Coba GET dulu (kompatibel dengan WebView/cors)
   try {
     const url = SCRIPT_URL + '?data=' + encodeURIComponent(JSON.stringify(payload));
-    const r = await fetch(url, { redirect: 'follow' });
-    const t = await r.text();
+    const r   = await fetch(url, { redirect: 'follow' });
+    const t   = await r.text();
     try { const j = JSON.parse(t); if (j && j.result !== undefined) return j; } catch(e) {}
   } catch(e) {}
-  // Fallback POST
   try {
     const r2 = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
     const t2 = await r2.text();
@@ -55,21 +54,28 @@ async function apiCall(payload) {
   }
 }
 
-// ─── SALDO SYNC (broadcast ke semua elemen #display-saldo) ───
+// ─── SALDO BROADCAST ─────────────────────────────────────────
+// Hanya update #display-saldo di halaman NON-game
+// Di game.html, saldo dikelola oleh addS() sendiri
 function _broadcastSaldo(val) {
-  const v = parseFloat(val) || 0;
+  const v = Math.floor(parseFloat(val) || 0);
+  // Cek apakah halaman ini adalah game.html
+  const page = location.pathname.split('/').pop();
+  if (page === 'game.html') return; // game.html kelola sendiri
   document.querySelectorAll('#display-saldo, #wd-balance').forEach(el => {
     el.textContent = fmtIDR(v);
   });
 }
 
-// ─── AUTO SYNC SALDO DARI SERVER ─────────────────────────────
+// ─── AUTO SYNC SALDO ─────────────────────────────────────────
 let _syncInterval = null;
 function startSaldoSync() {
   if (_syncInterval) clearInterval(_syncInterval);
   _syncInterval = setInterval(async () => {
     const u = getUsername();
     if (!u) return;
+    const page = location.pathname.split('/').pop();
+    if (page === 'game.html') return; // game.html sync sendiri
     try {
       const res = await apiCall({ action: 'get_saldo', username: u });
       if (res.result === 'SUCCESS' && res.saldo !== undefined) {
@@ -88,7 +94,7 @@ function stopSaldoSync() {
   _syncInterval = null;
 }
 
-// ─── SESSION ONLINE/OFFLINE ──────────────────────────────────
+// ─── SESSION ─────────────────────────────────────────────────
 async function setOnline() {
   const u = getUsername();
   if (!u) return;
@@ -101,6 +107,8 @@ async function setOffline() {
 }
 window.addEventListener('beforeunload', setOffline);
 window.addEventListener('visibilitychange', () => {
+  const page = location.pathname.split('/').pop();
+  if (page === 'game.html') return; // game.html handle sendiri
   if (document.hidden) setOffline(); else setOnline();
 });
 
@@ -117,35 +125,77 @@ function updateUI(data) {
   if (data.saldo !== undefined) setSaldo(data.saldo);
 }
 
+// ─── MODAL UNIVERSAL ─────────────────────────────────────────
+// Signature: showModal(icon, title, msg, type)
+// Di game.html, fungsi ini di-override oleh script game
+// Di halaman lain, fungsi ini yang dipakai
+function showModal(icon, title, msg, type) {
+  const overlay = document.getElementById('modal-overlay');
+  const modal   = document.getElementById('neon-modal');
+  if (!modal) return;
+
+  const colorMap = {
+    success: { border:'rgba(245,230,66,.35)', shadow:'rgba(245,230,66,.55)', text:'var(--yellow)' },
+    error:   { border:'rgba(255,0,119,.35)',  shadow:'rgba(255,0,119,.55)',  text:'var(--pink)'   },
+    info:    { border:'rgba(0,85,255,.35)',   shadow:'rgba(0,85,255,.55)',   text:'#7799ff'        },
+    pink:    { border:'rgba(255,0,119,.35)',  shadow:'rgba(255,0,119,.55)',  text:'var(--pink)'   },
+    yellow:  { border:'rgba(245,230,66,.35)', shadow:'rgba(245,230,66,.55)', text:'var(--yellow)' },
+    blue:    { border:'rgba(0,85,255,.35)',   shadow:'rgba(0,85,255,.55)',   text:'#7799ff'        }
+  };
+  const c = colorMap[type] || colorMap.pink;
+  modal.style.borderColor = c.border;
+  modal.style.boxShadow   = `0 0 20px ${c.shadow}`;
+
+  const titleEl = document.getElementById('modal-title') || document.getElementById('m-title');
+  if (titleEl) {
+    titleEl.textContent = (icon ? icon + ' ' : '') + (title || '');
+    titleEl.style.color = c.text;
+  }
+
+  const msgEl = document.getElementById('modal-msg') || document.getElementById('m-text');
+  if (msgEl) msgEl.textContent = msg || '';
+
+  if (overlay) overlay.style.display = 'block';
+  modal.style.display = 'block';
+}
+
+// closeModal — dipanggil dari onclick di HTML
+function closeModal() {
+  const overlay = document.getElementById('modal-overlay');
+  const modal   = document.getElementById('neon-modal');
+  if (overlay) overlay.style.display = 'none';
+  if (modal)   modal.style.display   = 'none';
+}
+
 // ─── PROFIL PAGE ─────────────────────────────────────────────
 async function initProfil() {
   const u = getUsername();
   if (!u) { location.href = 'index.html'; return; }
 
   document.getElementById('profile-username').textContent = u;
-  document.getElementById('display-saldo').textContent = fmtIDR(getSaldo());
+  document.getElementById('display-saldo').textContent    = fmtIDR(getSaldo());
 
   const res = await apiCall({ action: 'get_profile', username: u });
   if (res.result !== 'SUCCESS') return;
 
   const d = res.data;
-  document.getElementById('profile-username').textContent  = d.username    || u;
-  document.getElementById('profile-tier').textContent      = d.tier        || 'MEMBER';
-  document.getElementById('display-saldo').textContent     = fmtIDR(d.saldo || 0);
-  document.getElementById('profile-fullname').textContent  = d.namaLengkap || '—';
-  document.getElementById('profile-phone').textContent     = d.phone       || '—';
-  document.getElementById('profile-bank').textContent      = d.bank        || '—';
+  document.getElementById('profile-username').textContent  = d.username      || u;
+  document.getElementById('profile-tier').textContent      = d.tier          || 'MEMBER';
+  document.getElementById('display-saldo').textContent     = fmtIDR(d.saldo  || 0);
+  document.getElementById('profile-fullname').textContent  = d.namaLengkap   || '—';
+  document.getElementById('profile-phone').textContent     = d.phone         || '—';
+  document.getElementById('profile-bank').textContent      = d.bank          || '—';
   document.getElementById('profile-rek').textContent       = d.nomorRekening || '—';
   document.getElementById('total-depo').textContent        = fmtIDR(d.totalDepo || 0);
   document.getElementById('total-wd').textContent          = fmtIDR(d.totalWD   || 0);
-  document.getElementById('profile-refcode').textContent   = d.refCode     || '—';
+  document.getElementById('profile-refcode').textContent   = d.refCode       || '—';
 
   setSaldo(d.saldo || 0);
-  localStorage.setItem('user_tier', d.tier || 'MEMBER');
-  localStorage.setItem('_cache_bank', d.bank || '');
-  localStorage.setItem('_cache_rekening', d.nomorRekening || '');
-  localStorage.setItem('_cache_refCode', d.refCode || '');
-  localStorage.setItem('user_fullname', d.namaLengkap || '');
+  localStorage.setItem('user_tier',      d.tier          || 'MEMBER');
+  localStorage.setItem('_cache_bank',    d.bank          || '');
+  localStorage.setItem('_cache_rekening',d.nomorRekening || '');
+  localStorage.setItem('_cache_refCode', d.refCode       || '');
+  localStorage.setItem('user_fullname',  d.namaLengkap   || '');
 }
 
 // ─── WITHDRAW PAGE ───────────────────────────────────────────
@@ -173,33 +223,26 @@ async function initWithdraw() {
 }
 
 async function processWithdraw() {
-  const u       = getUsername();
-  const amount  = parseInt(document.getElementById('wd-amount').value);
-  const name    = document.getElementById('wd-account-name').value;
-  const rekNo   = document.getElementById('wd-account-num').value;
-  const bank    = document.getElementById('wd-method').value;
+  const u      = getUsername();
+  const amount = parseInt(document.getElementById('wd-amount').value);
+  const name   = document.getElementById('wd-account-name').value;
+  const rekNo  = document.getElementById('wd-account-num').value;
+  const bank   = document.getElementById('wd-method').value;
 
-  if (!amount || isNaN(amount)) {
-    return showModal('⚠️', 'PERHATIAN', 'Masukkan nominal penarikan!', 'error');
-  }
-  if (amount < 50000) {
-    return showModal('🚫', 'DITOLAK', 'Minimal penarikan IDR 50.000', 'error');
-  }
-  if (getSaldo() < amount) {
-    return showModal('❌', 'SALDO KURANG', 'Saldo tidak mencukupi untuk penarikan ini.', 'error');
-  }
+  if (!amount || isNaN(amount))
+    return showModal('⚠️','PERHATIAN','Masukkan nominal penarikan!','error');
+  if (amount < 50000)
+    return showModal('🚫','DITOLAK','Minimal penarikan IDR 50.000','error');
+  if (getSaldo() < amount)
+    return showModal('❌','SALDO KURANG','Saldo tidak mencukupi untuk penarikan ini.','error');
 
   const btn = document.querySelector('.btn-submit');
   if (btn) { btn.disabled = true; btn.textContent = 'Memproses...'; }
 
   const res = await apiCall({
-    action: 'withdraw',
-    username: u,
-    namaLengkap: name,
-    bank: bank,
-    rekening: rekNo,
-    jumlah: amount,
-    tanggal: fmtDate()
+    action: 'withdraw', username: u,
+    namaLengkap: name, bank, rekening: rekNo,
+    jumlah: amount, tanggal: fmtDate()
   });
 
   if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i>&nbsp; Ajukan Penarikan'; }
@@ -208,15 +251,15 @@ async function processWithdraw() {
     setSaldo(res.newSaldo);
     document.getElementById('wd-balance').textContent = fmtIDR(res.newSaldo);
     document.getElementById('wd-amount').value = '';
-    showModal('✅', 'BERHASIL', 'Pengajuan penarikan terkirim!\nSaldo akan dikurangi otomatis.', 'success');
+    showModal('✅','BERHASIL','Pengajuan penarikan terkirim!\nSaldo akan dikurangi otomatis.','success');
     loadWdHistory();
   } else {
-    showModal('❌', 'GAGAL', res.message || 'Gagal mengajukan penarikan.', 'error');
+    showModal('❌','GAGAL', res.message || 'Gagal mengajukan penarikan.','error');
   }
 }
 
 async function loadWdHistory() {
-  const u = getUsername();
+  const u         = getUsername();
   const container = document.getElementById('wd-history');
   if (!container) return;
   container.innerHTML = '<div class="hist-loading"><i class="fa-solid fa-spinner fa-spin"></i> Memuat...</div>';
@@ -229,10 +272,9 @@ async function loadWdHistory() {
 
   container.innerHTML = '';
   res.data.forEach((item, i) => {
-    const isLatest = (i === 0 && item.status === 'PROSES');
+    const isLatest   = (i === 0 && item.status === 'PROSES');
     const statusClass = item.status === 'BERHASIL' ? 'status-sukses'
-                      : item.status === 'GAGAL'    ? 'status-gagal'
-                      : 'status-proses';
+                      : item.status === 'GAGAL'    ? 'status-gagal' : 'status-proses';
     const div = document.createElement('div');
     div.className = 'history-item' + (isLatest ? ' latest' : '');
     div.innerHTML = `
@@ -271,36 +313,33 @@ async function initDeposit() {
   const u = getUsername();
   if (!u) { location.href = 'index.html'; return; }
   loadDepoHistory();
-  const rate = await fetchUsdtRate();
+  const rate   = await fetchUsdtRate();
   const rateEl = document.getElementById('usdt-rate-info');
   if (rateEl) rateEl.textContent = 'Kurs: 1 USDT ≈ IDR ' + rate.toLocaleString('id-ID') + ' (fee $2 sudah dipotong)';
 }
 
 async function submitDeposit(method) {
   const u = getUsername();
-  let amountRaw, amountIDR = 0, amountCrypto = '';
+  let amountIDR = 0, amountCrypto = '';
 
   if (method === 'QRIS') {
-    amountRaw = parseInt(document.getElementById('depo-amount').value);
+    const amountRaw = parseInt(document.getElementById('depo-amount').value);
     if (!amountRaw || isNaN(amountRaw)) { alert('Masukkan nominal terlebih dahulu!'); return; }
     if (amountRaw < 20000) { alert('Minimal deposit QRIS IDR 20.000!'); return; }
     amountIDR = amountRaw;
   } else {
-    amountRaw = parseFloat(document.getElementById('usdtAmount').value);
+    const amountRaw = parseFloat(document.getElementById('usdtAmount').value);
     if (!amountRaw || isNaN(amountRaw)) { alert('Masukkan nominal USDT!'); return; }
     if (amountRaw < 10) { alert('Minimal deposit USDT $10!'); return; }
-    const rate = await fetchUsdtRate();
+    const rate   = await fetchUsdtRate();
     const received = (amountRaw - 2) * rate;
-    amountCrypto   = Math.floor(received) + ' (' + amountRaw + ')';
-    amountIDR      = 0;
+    amountCrypto = Math.floor(received) + ' (' + amountRaw + ')';
+    amountIDR    = 0;
   }
 
   const res = await apiCall({
-    action: 'deposit',
-    username: u,
-    method: method,
-    nominalIDR: amountIDR,
-    nominalCrypto: amountCrypto,
+    action: 'deposit', username: u, method,
+    nominalIDR: amountIDR, nominalCrypto: amountCrypto,
     tanggal: fmtDate()
   });
 
@@ -315,7 +354,7 @@ async function submitDeposit(method) {
 }
 
 async function loadDepoHistory() {
-  const u = getUsername();
+  const u         = getUsername();
   const container = document.querySelector('.history-box');
   if (!container) return;
   container.innerHTML = 'Memuat riwayat...';
@@ -328,12 +367,11 @@ async function loadDepoHistory() {
 
   let html = '';
   res.data.forEach(item => {
-    const nominal = item.nominalCrypto
-      ? '$' + item.nominalCrypto.match(/\((\d+)\)/)?.[1]
+    const nominal     = item.nominalCrypto
+      ? '$' + (item.nominalCrypto.match(/\((\d+)\)/)?.[1] || item.nominalCrypto)
       : fmtIDR(item.nominalIDR);
     const statusColor = item.status === 'BERHASIL' ? '#00ff77'
-                      : item.status === 'GAGAL'    ? '#ff6666'
-                      : '#f5e642';
+                      : item.status === 'GAGAL'    ? '#ff6666' : '#f5e642';
     html += `
       <div style="padding:12px;border-bottom:1px solid rgba(255,255,255,.07);font-size:12px;">
         <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
@@ -353,6 +391,8 @@ async function initReward() {
   const u = getUsername();
   if (!u) { location.href = 'index.html'; return; }
 
+  document.getElementById('display-saldo').textContent = fmtIDR(getSaldo());
+
   const refCode = localStorage.getItem('_cache_refCode') || '—';
   const refEl   = document.getElementById('ref-code-display');
   if (refEl) refEl.textContent = refCode;
@@ -361,7 +401,7 @@ async function initReward() {
 }
 
 async function loadInbox() {
-  const u = getUsername();
+  const u         = getUsername();
   const container = document.getElementById('inbox-container');
   if (!container) return;
 
@@ -388,27 +428,27 @@ async function loadInbox() {
 }
 
 async function claimInbox(id, saldo) {
-  const u = getUsername();
-  const res = await apiCall({ action: 'claim_inbox', username: u, id: id, saldo: saldo });
+  const u   = getUsername();
+  const res = await apiCall({ action: 'claim_inbox', username: u, id, saldo });
   if (res.result === 'SUCCESS') {
     setSaldo(res.newSaldo);
-    showModal('🎁', 'HADIAH DIKLAIM!', fmtIDR(saldo) + ' berhasil masuk ke saldo utama!', 'success');
+    showModal('🎁','HADIAH DIKLAIM!', fmtIDR(saldo) + ' berhasil masuk ke saldo utama!','success');
     loadInbox();
   } else {
-    showModal('❌', 'GAGAL', res.message || 'Gagal klaim hadiah.', 'error');
+    showModal('❌','GAGAL', res.message || 'Gagal klaim hadiah.','error');
   }
 }
 
 async function claimDailyReward() {
-  const u = getUsername();
+  const u   = getUsername();
   const res = await apiCall({ action: 'claim_daily', username: u });
   if (res.result === 'SUCCESS') {
     setSaldo(res.newSaldo);
     localStorage.setItem('lastDailyClaim', new Date().toDateString());
-    showModal('☀️', 'DAILY BONUS!', 'IDR 1.000 berhasil diklaim!\nSaldo: ' + fmtIDR(res.newSaldo), 'success');
+    showModal('☀️','DAILY BONUS!','IDR 1.000 berhasil diklaim!\nSaldo: ' + fmtIDR(res.newSaldo),'success');
     checkDailyCooldown();
   } else {
-    showModal('⏳', 'SUDAH KLAIM', res.message || 'Daily bonus sudah diklaim hari ini.', 'info');
+    showModal('⏳','SUDAH KLAIM', res.message || 'Daily bonus sudah diklaim hari ini.','info');
   }
 }
 
@@ -423,8 +463,8 @@ function checkDailyCooldown() {
     const now  = new Date();
     const next = new Date(); next.setHours(24, 0, 0, 0);
     const diff = next - now;
-    const h = Math.floor(diff / 3600000);
-    const m = Math.floor((diff % 3600000) / 60000);
+    const h    = Math.floor(diff / 3600000);
+    const m    = Math.floor((diff % 3600000) / 60000);
     el.textContent = 'Reset: ' + h + 'j ' + m + 'm lagi';
   } else {
     if (btn) btn.disabled = false;
@@ -433,24 +473,24 @@ function checkDailyCooldown() {
 }
 
 async function claimReferral() {
-  const u = getUsername();
+  const u   = getUsername();
   const now = new Date();
-  if (now.getDay() !== 0) {
-    return showModal('📅', 'BELUM WAKTUNYA', 'Bonus referral hanya bisa diklaim setiap hari Minggu.', 'info');
-  }
+  if (now.getDay() !== 0)
+    return showModal('📅','BELUM WAKTUNYA','Bonus referral hanya bisa diklaim setiap hari Minggu.','info');
   const res = await apiCall({ action: 'claim_referral', username: u });
   if (res.result === 'SUCCESS') {
     setSaldo(res.newSaldo);
-    document.getElementById('ref-bonus-total').textContent = fmtIDR(0);
-    showModal('🎉', 'REFERRAL DIKLAIM!', fmtIDR(res.bonus) + ' masuk ke saldo!\nSaldo: ' + fmtIDR(res.newSaldo), 'success');
+    const bonusEl = document.getElementById('ref-bonus-total');
+    if (bonusEl) bonusEl.textContent = fmtIDR(0);
+    showModal('🎉','REFERRAL DIKLAIM!', fmtIDR(res.bonus) + ' masuk ke saldo!\nSaldo: ' + fmtIDR(res.newSaldo),'success');
     loadRefList();
   } else {
-    showModal('❌', 'GAGAL', res.message || 'Tidak ada bonus yang bisa diklaim.', 'error');
+    showModal('❌','GAGAL', res.message || 'Tidak ada bonus yang bisa diklaim.','error');
   }
 }
 
 async function loadRefList() {
-  const u = getUsername();
+  const u         = getUsername();
   const container = document.getElementById('ref-list-container');
   const bonusEl   = document.getElementById('ref-bonus-total');
   if (!container) return;
@@ -465,7 +505,7 @@ async function loadRefList() {
 
   container.innerHTML = '';
   res.data.forEach(item => {
-    const div = document.createElement('div');
+    const div   = document.createElement('div');
     div.className = 'ref-row';
     const badge = item.status === 'VALID'
       ? '<span class="ref-badge ref-valid">VALID</span>'
@@ -477,65 +517,14 @@ async function loadRefList() {
 
 async function copyLink() {
   const code = localStorage.getItem('_cache_refCode') || '';
-  if (!code) return showModal('❌', 'ERROR', 'Kode referral tidak ditemukan.', 'error');
+  if (!code) return showModal('❌','ERROR','Kode referral tidak ditemukan.','error');
   const link = window.location.origin + '/index.html?ref=' + code;
   try {
     await navigator.clipboard.writeText(link);
-    showModal('✅', 'DISALIN!', 'Link referral berhasil disalin:\n' + link, 'success');
+    showModal('✅','DISALIN!','Link referral berhasil disalin:\n' + link,'success');
   } catch(e) {
-    showModal('📋', 'LINK REFERRAL', link, 'info');
+    showModal('📋','LINK REFERRAL', link,'info');
   }
-}
-
-// ─── GAME PAGE ───────────────────────────────────────────────
-let _gameSessionStart = null;
-
-async function initGame() {
-  const u = getUsername();
-  if (!u) { location.href = 'index.html'; return; }
-
-  const res = await apiCall({ action: 'get_game_config', username: u });
-  if (res.result === 'SUCCESS') {
-    setSaldo(res.saldo);
-    localStorage.setItem('user_winrate',        res.winrate || 50);
-    localStorage.setItem('user_maxWinLimit',    res.maxWinLimit || 500000);
-    localStorage.setItem('user_sessionMinutes', res.sessionMinutes || 60);
-    _gameSessionStart = new Date(res.sessionStart || Date.now());
-
-    await apiCall({ action: 'set_session_start', username: u });
-  }
-
-  setOnline();
-  startSaldoSync();
-  document.getElementById('display-saldo').textContent = fmtIDR(getSaldo());
-}
-
-// ─── MODAL UNIVERSAL ─────────────────────────────────────────
-function showModal(icon, title, msg, type) {
-  const overlay = document.getElementById('modal-overlay');
-  const modal   = document.getElementById('neon-modal');
-  if (!modal) return;
-
-  if (modal.className !== undefined) {
-    modal.className = 'm-' + (type || 'info');
-  }
-
-  const colors = { success:'#f5e642', error:'#ff0077', info:'#0055ff' };
-  const c = colors[type] || colors.info;
-  modal.style.borderColor = c;
-  modal.style.boxShadow   = '0 0 20px ' + c + '55';
-
-  const iconEl = document.getElementById('modal-icon') || document.getElementById('m-icon');
-  if (iconEl) iconEl.textContent = icon || '✨';
-
-  const titleEl = document.getElementById('modal-title') || document.getElementById('m-title');
-  if (titleEl) titleEl.textContent = title;
-
-  const msgEl = document.getElementById('modal-msg') || document.getElementById('m-text');
-  if (msgEl) msgEl.textContent = msg;
-
-  if (overlay) overlay.style.display = 'block';
-  modal.style.display = 'block';
 }
 
 // ─── AUTO-INIT ────────────────────────────────────────────────
@@ -547,8 +536,9 @@ window.addEventListener('load', async () => {
     return;
   }
 
+  // Tangani ref dari URL di halaman login
   if (page === 'index.html' || page === '') {
-    const params = new URLSearchParams(window.location.search);
+    const params     = new URLSearchParams(window.location.search);
     const refFromUrl = params.get('ref');
     if (refFromUrl) {
       const refInput = document.getElementById('referral_code');
@@ -556,9 +546,11 @@ window.addEventListener('load', async () => {
     }
   }
 
+  // Panggil init sesuai halaman
+  // game.html punya init sendiri — tidak dipanggil dari sini
   if (page === 'profil.html')   await initProfil();
   if (page === 'withdraw.html') await initWithdraw();
   if (page === 'deposit.html')  await initDeposit();
   if (page === 'reward.html')   await initReward();
-  if (page === 'game.html')     await initGame();
+  // game.html: initGame dipanggil oleh script game.html sendiri
 });
