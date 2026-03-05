@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>NEON PLINKO VIP</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -15,41 +15,47 @@
   --bp:rgba(255,0,119,.35);--bb:rgba(0,85,255,.35);--by:rgba(245,230,66,.35);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-html,body{
-  width:100%;height:100%;overflow:hidden;
+html{width:100%;height:100%;}
+body{
+  width:100%;overflow:hidden;
   display:flex;flex-direction:column;
   background:var(--bg);
   background-image:
     radial-gradient(ellipse 70% 40% at 15% 0%,rgba(0,55,255,.09) 0%,transparent 65%),
     radial-gradient(ellipse 55% 45% at 85% 100%,rgba(255,0,119,.08) 0%,transparent 65%);
   color:#dde0f0;font-family:'Outfit',sans-serif;
+  /* height di-set via JS agar Android tidak pakai vh yang salah */
 }
-body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
-  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.014) 3px,rgba(0,0,0,.014) 4px);}
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.014) 3px,rgba(0,0,0,.014) 4px);
+}
 
 /* ── MODAL ─────────────────────────────────────────────── */
 #modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);z-index:9998;}
-#neon-modal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-  background:linear-gradient(160deg,#07091d,#0b0d24);border-radius:22px;z-index:9999;
-  padding:26px 22px;text-align:center;min-width:270px;max-width:310px;width:86%;
-  animation:mpop .3s cubic-bezier(.34,1.56,.64,1) both;}
-#neon-modal.m-pink  {border:1px solid var(--bp);box-shadow:var(--gp);}
-#neon-modal.m-blue  {border:1px solid var(--bb);box-shadow:var(--gb);}
-#neon-modal.m-yellow{border:1px solid var(--by);box-shadow:var(--gy);}
-#neon-modal.m-success{border:1px solid var(--by);box-shadow:var(--gy);}
-#neon-modal.m-error {border:1px solid var(--bp);box-shadow:var(--gp);}
-#neon-modal.m-info  {border:1px solid var(--bb);box-shadow:var(--gb);}
-@keyframes mpop{from{opacity:0;transform:translate(-50%,-50%) scale(.7)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
-#modal-title{font-family:'Cinzel Decorative',serif;font-size:11px;font-weight:700;letter-spacing:1.5px;margin-bottom:8px;}
-.m-pink #modal-title,.m-error #modal-title{color:var(--pink);}
-.m-blue #modal-title,.m-info #modal-title{color:#7799ff;}
-.m-yellow #modal-title,.m-success #modal-title{color:var(--yellow);}
-#modal-msg{font-size:12px;color:rgba(220,220,240,.65);line-height:1.65;}
-.modal-btn{margin-top:15px;padding:9px 24px;border-radius:50px;cursor:pointer;
-  font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;background:transparent;transition:.25s;}
-.m-pink .modal-btn,.m-error .modal-btn{border:1px solid var(--bp);color:var(--pink);}
-.m-blue .modal-btn,.m-info .modal-btn{border:1px solid var(--bb);color:#7799ff;}
-.m-yellow .modal-btn,.m-success .modal-btn{border:1px solid var(--by);color:var(--yellow);}
+#neon-modal{
+  display:none;position:fixed;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  background:linear-gradient(160deg,#07091d,#0b0d24);
+  border-radius:22px;z-index:9999;
+  padding:26px 22px;text-align:center;
+  min-width:270px;max-width:310px;width:86%;
+  animation:mpop .3s cubic-bezier(.34,1.56,.64,1) both;
+}
+#neon-modal.m-pink,.m-error  {border:1px solid var(--bp);box-shadow:var(--gp);}
+#neon-modal.m-blue,.m-info   {border:1px solid var(--bb);box-shadow:var(--gb);}
+#neon-modal.m-yellow,.m-success{border:1px solid var(--by);box-shadow:var(--gy);}
+@keyframes mpop{
+  from{opacity:0;transform:translate(-50%,-50%) scale(.7)}
+  to  {opacity:1;transform:translate(-50%,-50%) scale(1)}
+}
+#modal-title{font-family:'Cinzel Decorative',serif;font-size:11px;font-weight:700;letter-spacing:1.5px;margin-bottom:8px;color:var(--pink);}
+#modal-msg{font-size:12px;color:rgba(220,220,240,.65);line-height:1.65;white-space:pre-line;}
+.modal-btn{
+  margin-top:15px;padding:9px 24px;border-radius:50px;cursor:pointer;
+  font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;
+  background:transparent;border:1px solid var(--bp);color:var(--pink);transition:.25s;
+}
 
 /* ── HEADER ─────────────────────────────────────────────── */
 .header{
@@ -61,27 +67,29 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   display:flex;align-items:center;justify-content:space-between;
   box-shadow:0 2px 20px rgba(0,85,255,.1);
 }
-.header-item{display:flex;flex-direction:column;align-items:center;
-  cursor:pointer;min-width:50px;transition:.2s;text-decoration:none;}
+.header-item{
+  display:flex;flex-direction:column;align-items:center;
+  cursor:pointer;min-width:50px;transition:.2s;text-decoration:none;
+}
 .header-item:active{transform:scale(.86);}
 .header-item i{font-size:22px;display:block;margin-bottom:2px;}
 .header-item span{font-size:8.5px;font-weight:700;letter-spacing:1px;}
-.balance-box{flex:1;margin:0 10px;background:rgba(0,0,0,.55);
+.balance-box{
+  flex:1;margin:0 10px;background:rgba(0,0,0,.55);
   border:1px solid var(--bp);border-radius:20px;
-  padding:5px 16px;text-align:center;box-shadow:var(--gp);}
+  padding:5px 16px;text-align:center;box-shadow:var(--gp);
+}
 .saldo-label{font-size:7.5px;font-weight:600;letter-spacing:2px;color:rgba(255,255,255,.38);margin-bottom:1px;}
 #display-saldo{font-family:'Cinzel Decorative',serif;font-size:15px;font-weight:900;color:#fff;text-shadow:var(--gp);}
 
-/* ── BOARD ──────────────────────────────────────────────── */
+/* ── BOARD — height di-set via JS ──────────────────────── */
 #board-wrapper{
-  flex:0 0 auto;
-  height:42vh;
-  min-height:180px;
-  max-height:320px;
-  position:relative;
-  overflow:hidden;
+  flex-shrink:0;
+  position:relative;overflow:hidden;
+  background:#020310;
 }
-#plinko-canvas{display:block;width:100%;height:100%;}
+/* Canvas di-posisikan absolute, width/height via JS */
+#plinko-canvas{position:absolute;top:0;left:0;display:block;}
 
 /* FLOATING SCORE */
 #floating-score{
@@ -90,8 +98,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   border-radius:11px;padding:5px 9px;z-index:50;
   box-shadow:var(--gb);min-width:88px;
 }
-.score-entry{font-size:9.5px;font-weight:700;color:var(--yellow);
-  border-bottom:1px solid rgba(255,255,255,.07);padding:3px 0;text-align:center;}
+.score-entry{
+  font-size:9.5px;font-weight:700;color:var(--yellow);
+  border-bottom:1px solid rgba(255,255,255,.07);
+  padding:3px 0;text-align:center;
+}
 .score-entry:last-child{border-bottom:none;}
 
 /* ── SLOT ROW ───────────────────────────────────────────── */
@@ -111,19 +122,13 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 
 /* ── CONTROLS ───────────────────────────────────────────── */
 .controls{
-  flex:1;
-  min-height:0;
-  z-index:10;
-  padding:10px 16px 0;
+  flex:1;min-height:0;z-index:10;
+  padding:8px 16px 0;
   background:rgba(2,3,13,.97);
   border-top:1px solid rgba(0,85,255,.28);
-  display:flex;
-  flex-direction:column;
-  gap:8px;
+  display:flex;flex-direction:column;gap:7px;overflow:hidden;
 }
-
-/* MODE BUTTONS */
-.mode-row{display:flex;gap:8px;}
+.mode-row{display:flex;gap:8px;flex-shrink:0;}
 .btn-mode{
   flex:1;background:transparent;
   padding:9px 4px;border-radius:12px;
@@ -137,20 +142,18 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 #m-auto  {border:1px solid var(--by);color:var(--yellow);}
 #m-auto.active  {background:rgba(245,230,66,.15);box-shadow:var(--gy);}
 
-/* BET ROW */
 .bet-row{
+  flex-shrink:0;
   display:flex;align-items:center;gap:10px;
   background:rgba(0,0,0,.35);
   border:1px solid rgba(0,85,255,.2);
-  border-radius:50px;
-  padding:5px 10px;
+  border-radius:50px;padding:5px 10px;
 }
 .bet-btn{
   width:36px;height:36px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
   font-size:22px;cursor:pointer;transition:.15s;
   background:transparent;border:none;flex-shrink:0;
-  -webkit-tap-highlight-color:transparent;
 }
 .bet-btn:active{transform:scale(.80);}
 .bet-btn.locked{opacity:.25;pointer-events:none;}
@@ -161,19 +164,15 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 #current-bet{
   font-family:'Cinzel Decorative',serif;
   font-size:18px;font-weight:900;
-  color:var(--yellow);text-shadow:var(--gy);
-  line-height:1.1;
+  color:var(--yellow);text-shadow:var(--gy);line-height:1.1;
 }
 #bet-lock-hint{
   font-size:8px;color:rgba(245,230,66,.5);
-  text-align:center;display:none;
-  letter-spacing:.5px;
+  text-align:center;display:none;letter-spacing:.5px;flex-shrink:0;
 }
 
-/* PLAY BUTTON */
 .btn-play{
-  flex-shrink:0;
-  width:100%;padding:15px;border-radius:50px;cursor:pointer;
+  flex-shrink:0;width:100%;padding:14px;border-radius:50px;cursor:pointer;
   font-family:'Cinzel Decorative',serif;font-size:13px;font-weight:900;
   letter-spacing:2px;text-transform:uppercase;transition:.18s;
   background:linear-gradient(90deg,rgba(255,0,119,.72),rgba(0,85,255,.72));
@@ -187,14 +186,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   border-color:var(--by);box-shadow:var(--gy);color:#000;
 }
 
-/* ── NAV BOTTOM ─────────────────────────────────────────── */
 .nav-bottom{
   flex-shrink:0;
-  display:grid;grid-template-columns:repeat(3,1fr);
-  gap:8px;
+  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
   border-top:1px solid rgba(0,85,255,.18);
-  padding-top:8px;
-  padding-bottom:10px;
+  padding-top:8px;padding-bottom:10px;
 }
 .nav-btn{
   display:flex;flex-direction:column;align-items:center;
@@ -205,11 +201,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .nav-btn i{font-size:19px;margin-bottom:3px;}
 .nav-btn span{font-size:8.5px;letter-spacing:.4px;}
 .btn-withdraw{border:1px solid var(--by);color:var(--yellow);background:rgba(245,230,66,.04);}
-.btn-withdraw:hover{background:rgba(245,230,66,.1);box-shadow:var(--gy);}
 .btn-deposit {border:1px solid var(--bp);color:var(--pink);background:rgba(255,0,119,.04);}
-.btn-deposit:hover {background:rgba(255,0,119,.1);box-shadow:var(--gp);}
 .btn-reward  {border:1px solid var(--bb);color:#7799ff;background:rgba(0,85,255,.04);}
-.btn-reward:hover  {background:rgba(0,85,255,.1);box-shadow:var(--gb);}
 </style>
 </head>
 <body>
@@ -221,12 +214,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 
 <div id="modal-overlay" onclick="closeModal()"></div>
 <div id="neon-modal" class="m-pink">
-  <div id="modal-title">PERHATIAN</div>
+  <div id="modal-title">⚠️ PERHATIAN</div>
   <div id="modal-msg"></div>
   <button class="modal-btn" onclick="closeModal()">OK</button>
 </div>
 
-<!-- HEADER -->
 <div class="header">
   <div class="header-item" onclick="snd('click');location.href='profil.html'">
     <i class="fa-solid fa-circle-user" style="color:var(--yellow);text-shadow:var(--gy);"></i>
@@ -236,10 +228,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
     <div class="saldo-label">SALDO UTAMA</div>
     <div id="display-saldo">IDR 0</div>
   </div>
-  <div class="header-item" style="visibility:hidden;"></div>
+  <div class="header-item" style="visibility:hidden;min-width:50px;"></div>
 </div>
 
-<!-- BOARD -->
 <div id="board-wrapper">
   <canvas id="plinko-canvas"></canvas>
   <div id="floating-score">
@@ -249,20 +240,15 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   </div>
 </div>
 
-<!-- SLOT ROW -->
 <div class="multiplier-row" id="slot-row"></div>
 
-<!-- CONTROLS -->
 <div class="controls">
-
-  <!-- 1. MODE BUTTONS -->
   <div class="mode-row">
     <button class="btn-mode active" id="m-normal" onclick="setSpeedMode('normal')">🎯 NORMAL</button>
     <button class="btn-mode"        id="m-turbo"  onclick="setSpeedMode('turbo')">⚡ TURBO</button>
     <button class="btn-mode"        id="m-auto"   onclick="toggleAuto()">🔄 AUTO: OFF</button>
   </div>
 
-  <!-- 2. BET ROW -->
   <div class="bet-row">
     <div class="bet-btn bet-minus" id="btn-minus" onclick="changeBet(-1)">
       <i class="fa-solid fa-circle-minus"></i>
@@ -277,7 +263,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   </div>
   <div id="bet-lock-hint">🔒 Stop AUTO untuk mengubah taruhan</div>
 
-  <!-- 3. PLAY / STOP BUTTON -->
   <button class="btn-play" id="main-btn"
     onpointerdown="onPlayDown(event)"
     onpointerup="onPlayUp(event)"
@@ -286,7 +271,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
     <i class="fa-solid fa-play" id="play-icon"></i>&nbsp;<span id="play-label">PLAY BALL</span>
   </button>
 
-  <!-- 4. NAV BOTTOM -->
   <div class="nav-bottom">
     <a href="withdraw.html" class="nav-btn btn-withdraw" onclick="snd('click')">
       <i class="fa-solid fa-money-bill-transfer"></i><span>WITHDRAW</span>
@@ -298,73 +282,57 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
       <i class="fa-solid fa-gift"></i><span>REWARD</span>
     </a>
   </div>
+</div>
 
-</div><!-- end .controls -->
-
-<!-- global.js HARUS dimuat sebelum script game -->
+<!-- global.js wajib ada di folder yang sama -->
 <script src="global.js"></script>
 
 <script>
 /* ════════════════════════════════════════════════════════════
-   NEON PLINKO VIP — Game Engine v4 (FIX: saldo akurat)
-   - Saldo dikurangi SEBELUM snapshot saldoAwal dikirim ke server
-   - setS_server() aman: diabaikan jika ada bola aktif / < 20 dtk sejak aksi
-   - Gunakan apiCall() dari global.js untuk konsistensi
+   NEON PLINKO VIP — Engine v5
+   FIX:
+   1. Canvas sizing via JS pixel (bukan vh) — Android WebView safe
+   2. applyLayout() hitung board height dari window.innerHeight nyata
+   3. Saldo snapshot sebelum bet dikurangi (multi-bola aman)
+   4. setS_server() diabaikan saat bola aktif / < 20s setelah aksi
+   5. Integrasi penuh dengan global.js (apiCall, setSaldo, getSaldo)
    ════════════════════════════════════════════════════════════ */
 
 // ── CONFIG ───────────────────────────────────────────────────
 const ROWS   = 10;
-const MULTS  = [10, 3, 1.5, 0.5, 0.2, 0.2, 0.5, 1.5, 3, 10];
+const MULTS  = [10,3,1.5,0.5,0.2,0.2,0.5,1.5,3,10];
 const BETS   = [400,800,1000,1200,1600,2000,4000,8000,10000,20000];
 const BALL_R = 6.5;
 const PEG_R  = 5.0;
-
-const PH = {
-  normal:{ grav:0.16, fric:0.994, bounce:0.50, pegF:3.0,  randV:0.5,  autoMs:750  },
-  turbo: { grav:0.34, fric:0.987, bounce:0.40, pegF:4.8,  randV:0.65, autoMs:200  }
+const PH     = {
+  normal:{ grav:0.16, fric:0.994, bounce:0.50, pegF:3.0,  randV:0.5,  autoMs:750 },
+  turbo: { grav:0.34, fric:0.987, bounce:0.40, pegF:4.8,  randV:0.65, autoMs:200 }
 };
+
+// URL Apps Script — ambil dari global.js, fallback hardcode
+const _GSURL = (typeof SCRIPT_URL !== 'undefined')
+  ? SCRIPT_URL
+  : "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
 
 // ── STATE ────────────────────────────────────────────────────
 let canvas, ctx, DPR=1, BW=0, BH=0;
-let pegs      = [];
-let balls     = [];
-let slotW     = 0;
-let speedMode = 'normal';
-let isAuto    = false;
-let autoTimer = null;
-let betIdx    = 0;
-let syncTimer = null;
-let raf       = null;
-
-// Hold-to-fire
-let holdActive  = false;
-let holdRepeat  = null;
-let holdTimeout = null;
-
-// ── HELPERS ──────────────────────────────────────────────────
-const getU = () => localStorage.getItem('username');
+let pegs=[], balls=[], slotW=0;
+let speedMode='normal', isAuto=false, autoTimer=null;
+let betIdx=0, syncTimer=null, raf=null;
+let holdActive=false, holdRepeat=null, holdTimeout=null;
 
 // ── SALDO IN-MEMORY ──────────────────────────────────────────
-// _saldo  = satu-satunya sumber kebenaran di sisi client
-// _lastAct = timestamp aksi terakhir, untuk block setS_server
 let _saldo   = Math.max(0, parseFloat(localStorage.getItem('user_saldo')||0));
 let _lastAct = 0;
 
 const _renderS = () => {
   const v = Math.floor(_saldo);
+  localStorage.setItem('user_saldo', v);
   document.getElementById('display-saldo').textContent =
     'IDR ' + v.toLocaleString('id-ID');
-  // Sinkron ke localStorage agar global.js (getSaldo()) selalu up-to-date
-  localStorage.setItem('user_saldo', v);
 };
 
-const getS = () => _saldo;
-
-/**
- * addS — satu-satunya cara ubah saldo lokal.
- * delta positif  = tambah (kemenangan)
- * delta negatif  = kurangi (taruhan)
- */
+/** Satu-satunya fungsi untuk ubah saldo */
 const addS = delta => {
   _lastAct = Date.now();
   _saldo   = Math.max(0, Math.floor(_saldo + delta));
@@ -372,529 +340,455 @@ const addS = delta => {
   _renderS();
 };
 
-/**
- * setS_server — dipanggil dari sync periodik (global.js / startSync).
- * DIABAIKAN jika ada bola aktif atau baru main < 20 detik.
- * Ini mencegah race condition: server lambat balas → saldo local tertimpa.
- */
+/** Sync dari server — diabaikan jika game aktif */
 const setS_server = v => {
-  if (balls.length > 0)            return; // bola masih jalan
-  if (Date.now() - _lastAct < 20000) return; // baru main < 20 dtk
+  if(balls.length > 0)              return;
+  if(Date.now() - _lastAct < 20000) return;
   _saldo = Math.max(0, Math.floor(parseFloat(v)||0));
   localStorage.setItem('user_saldo', _saldo);
   _renderS();
 };
 
+// ── UTILS ────────────────────────────────────────────────────
+const getU   = () => localStorage.getItem('username');
 const fmtIDR = v  => 'IDR ' + Math.floor(v).toLocaleString('id-ID');
 const snd    = t  => {
-  try{ const a=document.getElementById('snd-'+t); a.currentTime=0; a.play().catch(()=>{}); }catch(e){}
+  try{const a=document.getElementById('snd-'+t);a.currentTime=0;a.play().catch(()=>{});}catch(e){}
 };
 
-// ── MODAL (kompatibel dengan global.js showModal & modal lokal) ──
+// ── MODAL ────────────────────────────────────────────────────
 function closeModal(){
-  document.getElementById('neon-modal').style.display    = 'none';
-  document.getElementById('modal-overlay').style.display = 'none';
+  document.getElementById('neon-modal').style.display    ='none';
+  document.getElementById('modal-overlay').style.display ='none';
 }
 
-// Override showModal global.js agar cocok dengan struktur modal lokal
-// (global.js mencari #modal-icon / #m-icon; di halaman ini pakai #modal-title)
-function showModal(icon, title, msg, type){
-  const modal   = document.getElementById('neon-modal');
-  const overlay = document.getElementById('modal-overlay');
-  if (!modal) return;
-
-  // Reset class
-  modal.className = 'm-' + (type||'pink');
-
-  // Title
-  const tEl = document.getElementById('modal-title');
-  if (tEl) tEl.textContent = (icon ? icon + ' ' : '') + (title || 'PERHATIAN');
-
-  // Message
-  const mEl = document.getElementById('modal-msg');
-  if (mEl) mEl.textContent = msg || '';
-
-  overlay.style.display = 'block';
-  modal.style.display   = 'block';
+/**
+ * showModal — mendukung 2 signature:
+ *   (msg, type)             — panggilan internal lama
+ *   (icon, title, msg, type)— dari global.js
+ */
+function showModal(a,b,c,d){
+  let title, msg, type, cls;
+  if(c !== undefined){
+    // Signature: (icon, title, msg, type)
+    title = (a?a+' ':'')+b;
+    msg   = c;
+    type  = d||'pink';
+  } else {
+    // Signature: (msg, type)
+    msg   = a;
+    type  = b||'pink';
+    title = type==='yellow'?'✨ SELAMAT!':type==='blue'?'ℹ️ INFO':'⚠️ PERHATIAN';
+  }
+  const colorMap = {pink:'var(--pink)',error:'var(--pink)',yellow:'var(--yellow)',success:'var(--yellow)',blue:'#7799ff',info:'#7799ff'};
+  const modal = document.getElementById('neon-modal');
+  modal.style.borderColor  = colorMap[type]||'var(--pink)';
+  modal.style.boxShadow    = `0 0 20px ${colorMap[type]||'var(--pink)'}55`;
+  document.getElementById('modal-title').style.color = colorMap[type]||'var(--pink)';
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-msg').textContent   = msg;
+  document.getElementById('modal-overlay').style.display = 'block';
+  modal.style.display = 'block';
 }
 
-// ── API (gunakan apiCall dari global.js) ──────────────────────
-// Fallback ke fetch langsung jika global.js belum dimuat
-const SCRIPT_URL_LOCAL = (typeof SCRIPT_URL !== 'undefined')
-  ? SCRIPT_URL
-  : "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
-
+// ── API — pakai apiCall dari global.js jika ada ──────────────
 async function api(payload){
-  // Pakai apiCall dari global.js jika tersedia
-  if (typeof apiCall === 'function') return apiCall(payload);
-  // Fallback lokal
+  if(typeof apiCall === 'function') return apiCall(payload);
   try{
-    const r = await fetch(SCRIPT_URL_LOCAL+'?data='+encodeURIComponent(JSON.stringify(payload)),{redirect:'follow'});
-    const j = JSON.parse(await r.text());
-    if(j && j.result!==undefined) return j;
+    const r=await fetch(_GSURL+'?data='+encodeURIComponent(JSON.stringify(payload)),{redirect:'follow'});
+    const j=JSON.parse(await r.text());
+    if(j&&j.result!==undefined) return j;
   }catch(e){}
   try{
-    const r2 = await fetch(SCRIPT_URL_LOCAL,{method:'POST',body:JSON.stringify(payload)});
+    const r2=await fetch(_GSURL,{method:'POST',body:JSON.stringify(payload)});
     return JSON.parse(await r2.text());
-  }catch(e){ return {result:'ERROR'}; }
+  }catch(e){return{result:'ERROR'};}
 }
 
-// ══════════════════════════════════════════════════════════
-// CANVAS SETUP
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
+// LAYOUT — Kunci fix canvas kosong di Android WebView
+// Hindari vh sama sekali, hitung semua dari window.innerHeight
+// ══════════════════════════════════════════════════════════════
+function applyLayout(){
+  const totalH = window.innerHeight;
+  document.body.style.height = totalH + 'px';
+
+  const header   = document.querySelector('.header');
+  const slotRow  = document.getElementById('slot-row');
+  const controls = document.querySelector('.controls');
+
+  const headerH = header  ? header.offsetHeight  : 52;
+  const slotH   = slotRow ? slotRow.offsetHeight : 42;
+
+  // Kontrol butuh minimal ~215px agar semua tombol muat
+  const ctrlMin = 215;
+
+  // Board = sisa ruang setelah header + slot + controls
+  const boardH  = Math.max(150, Math.min(
+    totalH - headerH - slotH - ctrlMin,
+    Math.floor(totalH * 0.42)
+  ));
+
+  const board = document.getElementById('board-wrapper');
+  board.style.height = boardH + 'px';
+  return boardH;
+}
+
+// ══════════════════════════════════════════════════════════════
+// CANVAS SETUP — ukur SETELAH applyLayout()
+// ══════════════════════════════════════════════════════════════
 function setupCanvas(){
   const wrap = document.getElementById('board-wrapper');
   canvas = document.getElementById('plinko-canvas');
   ctx    = canvas.getContext('2d');
-  DPR    = window.devicePixelRatio || 1;
-  BW     = wrap.clientWidth;
-  BH     = wrap.clientHeight;
-  canvas.width        = BW * DPR;
-  canvas.height       = BH * DPR;
+  DPR    = Math.min(window.devicePixelRatio||1, 2); // cap DPR di 2 untuk performa
+
+  // Gunakan offsetWidth/offsetHeight setelah layout diapply
+  BW = wrap.offsetWidth  || window.innerWidth  || 360;
+  BH = wrap.offsetHeight || 200;
+
+  canvas.width  = Math.floor(BW * DPR);
+  canvas.height = Math.floor(BH * DPR);
   canvas.style.width  = BW + 'px';
   canvas.style.height = BH + 'px';
   ctx.scale(DPR, DPR);
+
   buildPegs();
   buildSlots();
 }
 
 function buildPegs(){
-  pegs = [];
-  const margin   = Math.max(BW * 0.06, 18);
-  const usableW  = BW - margin * 2;
+  pegs=[];
+  const margin   = Math.max(BW*0.06, 18);
+  const usableW  = BW - margin*2;
   const spacingX = usableW / ROWS;
   const topPad   = BH * 0.04;
   const spacingY = (BH * 0.90) / ROWS;
-
-  for(let row=0; row<ROWS; row++){
-    const count  = row + 2;
-    const totalW = (count - 1) * spacingX;
-    const sx     = BW/2 - totalW/2;
-    const y      = topPad + row * spacingY;
-    for(let col=0; col<count; col++){
-      pegs.push({ x: sx + col*spacingX, y, glow:0, hue:0 });
+  for(let row=0;row<ROWS;row++){
+    const count=row+2;
+    const totalW=(count-1)*spacingX;
+    const sx=BW/2-totalW/2;
+    const y=topPad+row*spacingY;
+    for(let col=0;col<count;col++){
+      pegs.push({x:sx+col*spacingX, y, glow:0, hue:0});
     }
   }
 }
 
 function buildSlots(){
-  const row = document.getElementById('slot-row');
-  row.innerHTML = '';
-  slotW = BW / MULTS.length;
-  MULTS.forEach((m, i) => {
-    const s = document.createElement('div');
-    s.className = `slot ${m>=3?'s-high':m>=1?'s-mid':'s-low'}`;
-    s.id = 'slot-'+i;
-    s.textContent = m+'x';
+  const row=document.getElementById('slot-row');
+  row.innerHTML='';
+  slotW=BW/MULTS.length;
+  MULTS.forEach((m,i)=>{
+    const s=document.createElement('div');
+    s.className=`slot ${m>=3?'s-high':m>=1?'s-mid':'s-low'}`;
+    s.id='slot-'+i; s.textContent=m+'x';
     row.appendChild(s);
   });
 }
 
-// ══════════════════════════════════════════════════════════
-// DRAW + PHYSICS LOOP
-// ══════════════════════════════════════════════════════════
-function loop(){
-  physics();
-  draw();
+// ══════════════════════════════════════════════════════════════
+// GAME LOOP
+// ══════════════════════════════════════════════════════════════
+function gameLoop(){
+  physics(); draw();
+  raf=requestAnimationFrame(gameLoop);
 }
+function startLoop(){ if(!raf) gameLoop(); }
+function stopLoop(){ if(raf){cancelAnimationFrame(raf);raf=null;} }
 
-function startLoop(){
-  if(raf) return; // sudah berjalan
-  loop();
-}
-
+// ── DRAW ─────────────────────────────────────────────────────
 function draw(){
-  ctx.clearRect(0, 0, BW, BH);
+  ctx.clearRect(0,0,BW,BH);
 
-  // Pegs
-  pegs.forEach(p => {
-    if(p.glow > 0) p.glow = Math.max(0, p.glow - 0.035);
-    const r = PEG_R + p.glow * 2.8;
+  pegs.forEach(p=>{
+    if(p.glow>0) p.glow=Math.max(0,p.glow-0.035);
+    const r=PEG_R+p.glow*2.8;
     ctx.save();
-    if(p.glow > 0.05){
-      const col = p.hue===0
-        ? `rgba(255,0,119,${p.glow*0.55})`
-        : `rgba(245,230,66,${p.glow*0.6})`;
-      const g = ctx.createRadialGradient(p.x,p.y,0, p.x,p.y, r*3.5);
-      g.addColorStop(0, col); g.addColorStop(1,'rgba(0,0,0,0)');
-      ctx.beginPath(); ctx.arc(p.x,p.y,r*3.5,0,Math.PI*2);
-      ctx.fillStyle = g; ctx.fill();
+    if(p.glow>0.05){
+      const col=p.hue===0?`rgba(255,0,119,${p.glow*0.55})`:`rgba(245,230,66,${p.glow*0.6})`;
+      const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*3.5);
+      g.addColorStop(0,col);g.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.beginPath();ctx.arc(p.x,p.y,r*3.5,0,Math.PI*2);
+      ctx.fillStyle=g;ctx.fill();
     }
-    const pg = ctx.createRadialGradient(p.x-r*.3,p.y-r*.3,r*.05, p.x,p.y,r);
+    const pg=ctx.createRadialGradient(p.x-r*.3,p.y-r*.3,r*.05,p.x,p.y,r);
     pg.addColorStop(0,'rgba(255,255,255,0.9)');
-    pg.addColorStop(0.35, p.glow>0.05
-      ? (p.hue===0?'rgba(255,120,180,1)':'rgba(255,235,80,1)')
-      : 'rgba(190,200,255,0.8)');
-    pg.addColorStop(1, p.glow>0.05
-      ? (p.hue===0?'rgba(200,0,80,0.9)':'rgba(180,150,0,0.9)')
-      : 'rgba(80,90,160,0.7)');
-    ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2);
-    ctx.fillStyle   = pg;
-    ctx.shadowColor = p.glow>0.05 ? (p.hue===0?'#ff0077':'#f5e642') : 'rgba(120,140,255,0.4)';
-    ctx.shadowBlur  = p.glow>0.05 ? 16 : 4;
-    ctx.fill();
-    ctx.restore();
+    pg.addColorStop(0.35,p.glow>0.05?(p.hue===0?'rgba(255,120,180,1)':'rgba(255,235,80,1)'):'rgba(190,200,255,0.8)');
+    pg.addColorStop(1,p.glow>0.05?(p.hue===0?'rgba(200,0,80,0.9)':'rgba(180,150,0,0.9)'):'rgba(80,90,160,0.7)');
+    ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);
+    ctx.fillStyle=pg;
+    ctx.shadowColor=p.glow>0.05?(p.hue===0?'#ff0077':'#f5e642'):'rgba(120,140,255,0.4)';
+    ctx.shadowBlur=p.glow>0.05?16:4;
+    ctx.fill();ctx.restore();
   });
 
-  // Balls
-  balls.forEach(b => {
+  balls.forEach(b=>{
     ctx.save();
-    const gr = ctx.createRadialGradient(b.x-BALL_R*.32,b.y-BALL_R*.35,BALL_R*.04, b.x,b.y,BALL_R);
-    gr.addColorStop(0,'#ffaacc');
-    gr.addColorStop(0.45,'#ff0077');
-    gr.addColorStop(1,'#440011');
-    ctx.beginPath(); ctx.arc(b.x,b.y,BALL_R,0,Math.PI*2);
-    ctx.fillStyle   = gr;
-    ctx.shadowColor = 'rgba(255,0,119,0.85)';
-    ctx.shadowBlur  = 16;
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(b.x-BALL_R*.28,b.y-BALL_R*.3, BALL_R*.3, 0, Math.PI*2);
-    ctx.fillStyle  = 'rgba(255,255,255,0.2)';
-    ctx.shadowBlur = 0;
-    ctx.fill();
+    const gr=ctx.createRadialGradient(b.x-BALL_R*.32,b.y-BALL_R*.35,BALL_R*.04,b.x,b.y,BALL_R);
+    gr.addColorStop(0,'#ffaacc');gr.addColorStop(0.45,'#ff0077');gr.addColorStop(1,'#440011');
+    ctx.beginPath();ctx.arc(b.x,b.y,BALL_R,0,Math.PI*2);
+    ctx.fillStyle=gr;ctx.shadowColor='rgba(255,0,119,0.85)';ctx.shadowBlur=16;ctx.fill();
+    ctx.beginPath();ctx.arc(b.x-BALL_R*.28,b.y-BALL_R*.3,BALL_R*.3,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,255,255,0.2)';ctx.shadowBlur=0;ctx.fill();
     ctx.restore();
   });
-
-  raf = requestAnimationFrame(loop);
 }
 
-// ══════════════════════════════════════════════════════════
-// PHYSICS
-// ══════════════════════════════════════════════════════════
+// ── PHYSICS ──────────────────────────────────────────────────
 function physics(){
-  const toRemove = [];
+  const toRemove=[];
+  balls.forEach(b=>{
+    const ph=PH[b.spd]||PH.normal;
+    b.vy+=ph.grav; b.vx*=ph.fric; b.x+=b.vx; b.y+=b.vy;
 
-  balls.forEach(b => {
-    const ph = PH[b.spd] || PH.normal;
-    b.vy += ph.grav;
-    b.vx *= ph.fric;
-    b.x  += b.vx;
-    b.y  += b.vy;
-
-    // Peg collisions
-    const colDist = BALL_R + PEG_R + 0.5;
-    for(let i=0; i<pegs.length; i++){
-      const p  = pegs[i];
-      const dx = b.x - p.x, dy = b.y - p.y;
-      const d2 = dx*dx + dy*dy;
-      if(d2 < colDist*colDist && d2 > 0.001){
-        const d  = Math.sqrt(d2);
-        const nx = dx/d, ny = dy/d;
-        const pen = colDist - d;
-        b.x += nx*pen; b.y += ny*pen;
-        const dot = b.vx*nx + b.vy*ny;
-        b.vx = (b.vx - 2*dot*nx)*ph.bounce + (Math.random()-.5)*ph.randV;
-        b.vy = (b.vy - 2*dot*ny)*Math.abs(ph.bounce);
-        if(b.vy < 0.3) b.vy = 0.3 + Math.random()*0.2;
-        const mx = ph.pegF * 1.15;
-        b.vx = Math.max(-mx, Math.min(mx, b.vx));
-        const prog = Math.min(1, b.y / BH);
-        b.vx += (b.tx - b.x) * prog * 0.07;
-        p.glow = 1; p.hue = (Math.random() > 0.45) ? 1 : 0;
+    const colDist=BALL_R+PEG_R+0.5;
+    for(let i=0;i<pegs.length;i++){
+      const p=pegs[i];
+      const dx=b.x-p.x,dy=b.y-p.y,d2=dx*dx+dy*dy;
+      if(d2<colDist*colDist&&d2>0.001){
+        const d=Math.sqrt(d2),nx=dx/d,ny=dy/d,pen=colDist-d;
+        b.x+=nx*pen;b.y+=ny*pen;
+        const dot=b.vx*nx+b.vy*ny;
+        b.vx=(b.vx-2*dot*nx)*ph.bounce+(Math.random()-.5)*ph.randV;
+        b.vy=(b.vy-2*dot*ny)*Math.abs(ph.bounce);
+        if(b.vy<0.3)b.vy=0.3+Math.random()*0.2;
+        const mx=ph.pegF*1.15;
+        b.vx=Math.max(-mx,Math.min(mx,b.vx));
+        b.vx+=(b.tx-b.x)*Math.min(1,b.y/BH)*0.07;
+        p.glow=1;p.hue=(Math.random()>0.45)?1:0;
         snd('hit');
       }
     }
 
-    // Ball–ball collisions
-    for(let j=0; j<balls.length; j++){
-      const o = balls[j];
-      if(o === b) continue;
-      const dx = b.x-o.x, dy = b.y-o.y;
-      const d2 = dx*dx + dy*dy;
-      const minD = BALL_R*2 + 0.5;
-      if(d2 < minD*minD && d2 > 0.001){
-        const d  = Math.sqrt(d2);
-        const nx = dx/d, ny = dy/d;
-        const sep = (minD - d) * 0.5;
-        b.x += nx*sep; b.y += ny*sep;
-        o.x -= nx*sep; o.y -= ny*sep;
-        const dvx = b.vx-o.vx, dvy = b.vy-o.vy;
-        const dot = dvx*nx + dvy*ny;
-        if(dot < 0){
-          const imp = dot * 0.55;
-          b.vx -= imp*nx; b.vy -= imp*ny;
-          o.vx += imp*nx; o.vy += imp*ny;
-          if(b.vy < 0.1) b.vy = 0.2;
-          if(o.vy < 0.1) o.vy = 0.2;
+    for(let j=0;j<balls.length;j++){
+      const o=balls[j];if(o===b)continue;
+      const dx=b.x-o.x,dy=b.y-o.y,d2=dx*dx+dy*dy,minD=BALL_R*2+0.5;
+      if(d2<minD*minD&&d2>0.001){
+        const d=Math.sqrt(d2),nx=dx/d,ny=dy/d,sep=(minD-d)*0.5;
+        b.x+=nx*sep;b.y+=ny*sep;o.x-=nx*sep;o.y-=ny*sep;
+        const dvx=b.vx-o.vx,dvy=b.vy-o.vy,dot=dvx*nx+dvy*ny;
+        if(dot<0){
+          const imp=dot*0.55;
+          b.vx-=imp*nx;b.vy-=imp*ny;o.vx+=imp*nx;o.vy+=imp*ny;
+          if(b.vy<0.1)b.vy=0.2;if(o.vy<0.1)o.vy=0.2;
         }
       }
     }
 
-    // Wall bounce
-    if(b.x < BALL_R)    { b.x = BALL_R;    b.vx =  Math.abs(b.vx)*0.45; }
-    if(b.x > BW-BALL_R) { b.x = BW-BALL_R; b.vx = -Math.abs(b.vx)*0.45; }
-    if(b.x < -20 || b.x > BW+20) b.x = BW/2;
+    if(b.x<BALL_R)   {b.x=BALL_R;   b.vx=Math.abs(b.vx)*0.45;}
+    if(b.x>BW-BALL_R){b.x=BW-BALL_R;b.vx=-Math.abs(b.vx)*0.45;}
+    if(b.x<-20||b.x>BW+20)b.x=BW/2;
 
-    // Bottom
-    if(b.y > BH + BALL_R*3 && !b.done){
-      b.done = true;
-      toRemove.push(b);
-      onBallLand(b);
+    if(b.y>BH+BALL_R*3&&!b.done){
+      b.done=true;toRemove.push(b);onBallLand(b);
     }
   });
-
-  balls = balls.filter(b => !toRemove.includes(b));
+  balls=balls.filter(b=>!toRemove.includes(b));
 }
 
 function onBallLand(b){
-  if(b.resolved || b.refunded) return;
-  b.resolved = true;
-
-  // Prioritas slot dari server, fallback posisi bola
-  let col = (b.serverSlotIdx !== null && b.serverSlotIdx !== undefined)
-    ? b.serverSlotIdx
-    : Math.floor(b.x / slotW);
-  col = Math.min(MULTS.length-1, Math.max(0, col));
-
-  const mult = MULTS[col];
-  const win  = Math.floor(b.bet * mult);
-
-  // Tambah kemenangan ke saldo
+  if(b.resolved||b.refunded)return;
+  b.resolved=true;
+  let col=(b.serverSlotIdx!==null&&b.serverSlotIdx!==undefined)
+    ?b.serverSlotIdx:Math.floor(b.x/slotW);
+  col=Math.min(MULTS.length-1,Math.max(0,col));
+  const mult=MULTS[col];
+  const win=Math.floor(b.bet*mult);
   addS(win);
-
-  if(mult >= 1.5) snd('win');
-  const el = document.getElementById('slot-'+col);
-  if(el){ el.classList.add('active'); setTimeout(()=>el.classList.remove('active'), 650); }
-  const list = document.getElementById('score-list');
-  const e    = document.createElement('div');
-  e.className = 'score-entry';
-  const c2   = mult>=3?'var(--pink)':mult>=1?'var(--yellow)':'#7799ff';
-  e.innerHTML = `<span style="color:${c2}">${mult}x</span> · ${fmtIDR(win)}`;
+  if(mult>=1.5)snd('win');
+  const el=document.getElementById('slot-'+col);
+  if(el){el.classList.add('active');setTimeout(()=>el.classList.remove('active'),650);}
+  const list=document.getElementById('score-list');
+  const e=document.createElement('div');
+  e.className='score-entry';
+  const c2=mult>=3?'var(--pink)':mult>=1?'var(--yellow)':'#7799ff';
+  e.innerHTML=`<span style="color:${c2}">${mult}x</span> · ${fmtIDR(win)}`;
   list.prepend(e);
-  while(list.children.length > 4) list.removeChild(list.lastChild);
+  while(list.children.length>4)list.removeChild(list.lastChild);
 }
 
-// ══════════════════════════════════════════════════════════
-// SPAWN BALL  ← FIX UTAMA
-// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
+// SPAWN BALL — FIX SALDO
+// ══════════════════════════════════════════════════════════════
 function spawnBall(){
-  const bet = BETS[betIdx];
-
-  if(_saldo < bet){
+  const bet=BETS[betIdx];
+  if(_saldo<bet){
     snd('error');
-    if(isAuto) stopAuto();
-    else { holdActive=false; clearTimeout(holdTimeout); clearInterval(holdRepeat); }
-    showModal('⚠️', 'SALDO KURANG', 'Saldo tidak cukup!\nSilakan deposit terlebih dahulu.', 'error');
+    if(isAuto)stopAuto();
+    else{holdActive=false;clearTimeout(holdTimeout);clearInterval(holdRepeat);}
+    showModal('Saldo tidak cukup!\nSilakan deposit terlebih dahulu.','pink');
     return;
   }
 
-  // ════════════════════════════════════════════
-  // FIX: Snapshot saldoAwal SEBELUM kurangi bet
-  // Ini yang dikirim ke server sebagai acuan
-  // ════════════════════════════════════════════
-  const saldoSebelumBet = _saldo; // snapshot sebelum addS(-bet)
-  addS(-bet);                      // kurangi bet dari saldo lokal
+  // ★ Snapshot saldo SEBELUM dikurangi — kirim ke server sebagai acuan
+  const saldoSebelumBet=_saldo;
+  addS(-bet);
 
-  const sx = BW/2 + (Math.random()-.5)*10;
-  const ball = {
-    x:sx, y:-BALL_R*1.5,
-    vx:(Math.random()-.5)*1.0, vy:0.4,
-    bet, tx: BW/2,
-    spd:speedMode, done:false,
-    serverSlotIdx:null, resolved:false, refunded:false
+  const sx=BW/2+(Math.random()-.5)*10;
+  const ball={
+    x:sx,y:-BALL_R*1.5,
+    vx:(Math.random()-.5)*1.0,vy:0.4,
+    bet,tx:BW/2,spd:speedMode,done:false,
+    serverSlotIdx:null,resolved:false,refunded:false
   };
   balls.push(ball);
 
-  // Kirim saldoAwal = saldo sebelum bet dikurangi (nilai yang benar)
-  api({ action:'game_play', username:getU(), bet, saldoAwal: saldoSebelumBet })
-  .then(r => {
-    if(r && r.result==='SUCCESS'){
-      // Arahkan bola ke slot dari server
-      const sm   = r.target_multiplier;
-      const opts = [];
-      MULTS.forEach((m,i) => { if(m===sm) opts.push(i); });
-      if(opts.length > 0){
-        const curCol = Math.max(0, Math.min(MULTS.length-1, Math.floor(ball.x/slotW)));
-        opts.sort((a,b) => Math.abs(a-curCol) - Math.abs(b-curCol));
-        ball.serverSlotIdx = opts[0];
-        ball.tx = (opts[0] + 0.5) * slotW;
+  api({action:'game_play',username:getU(),bet,saldoAwal:saldoSebelumBet})
+  .then(r=>{
+    if(r&&r.result==='SUCCESS'){
+      const opts=[];
+      MULTS.forEach((m,i)=>{if(m===r.target_multiplier)opts.push(i);});
+      if(opts.length>0){
+        const cur=Math.max(0,Math.min(MULTS.length-1,Math.floor(ball.x/slotW)));
+        opts.sort((a,b)=>Math.abs(a-cur)-Math.abs(b-cur));
+        ball.serverSlotIdx=opts[0];
+        ball.tx=(opts[0]+0.5)*slotW;
       }
-      // Bola sudah landing sebelum server balas → koreksi selisih
-      if(ball.resolved && ball.serverSlotIdx !== null){
-        const landedCol     = Math.min(MULTS.length-1, Math.max(0, Math.floor(ball.x/slotW)));
-        const resolvedMult  = MULTS[landedCol];
-        const diff = Math.floor(bet * r.target_multiplier) - Math.floor(bet * resolvedMult);
-        if(diff !== 0) addS(diff);
+      // Koreksi jika bola sudah landing sebelum server balas
+      if(ball.resolved&&ball.serverSlotIdx!==null){
+        const landedCol=Math.min(MULTS.length-1,Math.max(0,Math.floor(ball.x/slotW)));
+        const diff=Math.floor(bet*r.target_multiplier)-Math.floor(bet*MULTS[landedCol]);
+        if(diff!==0)addS(diff);
       }
-    } else {
-      // Server error → kembalikan bet
-      ball.refunded = true;
-      if(!ball.resolved) addS(bet);
+    }else{
+      ball.refunded=true;
+      if(!ball.resolved)addS(bet);
     }
-  }).catch(() => {
-    ball.refunded = true;
-    if(!ball.resolved) addS(bet);
+  }).catch(()=>{
+    ball.refunded=true;
+    if(!ball.resolved)addS(bet);
   });
 }
 
-// ══════════════════════════════════════════════════════════
-// MODE CONTROLS
-// ══════════════════════════════════════════════════════════
+// ── CONTROLS ─────────────────────────────────────────────────
 function setSpeedMode(m){
-  snd('click');
-  speedMode = m;
-  document.getElementById('m-normal').classList.toggle('active', m==='normal');
-  document.getElementById('m-turbo').classList.toggle('active',  m==='turbo');
-  if(isAuto){
-    clearInterval(autoTimer);
-    autoTimer = setInterval(spawnBall, PH[speedMode].autoMs);
-  }
+  snd('click');speedMode=m;
+  document.getElementById('m-normal').classList.toggle('active',m==='normal');
+  document.getElementById('m-turbo').classList.toggle('active', m==='turbo');
+  if(isAuto){clearInterval(autoTimer);autoTimer=setInterval(spawnBall,PH[speedMode].autoMs);}
 }
 
-function toggleAuto(){
-  snd('click');
-  if(isAuto) stopAuto(); else startAuto();
-}
+function toggleAuto(){snd('click');isAuto?stopAuto():startAuto();}
 
 function startAuto(){
-  isAuto = true;
-  document.getElementById('m-auto').textContent = '🔄 AUTO: ON';
+  isAuto=true;
+  document.getElementById('m-auto').textContent='🔄 AUTO: ON';
   document.getElementById('m-auto').classList.add('active');
   document.getElementById('main-btn').classList.add('stop-mode');
-  document.getElementById('play-icon').className = 'fa-solid fa-stop';
-  document.getElementById('play-label').textContent = 'STOP AUTO';
+  document.getElementById('play-icon').className='fa-solid fa-stop';
+  document.getElementById('play-label').textContent='STOP AUTO';
   document.getElementById('btn-minus').classList.add('locked');
   document.getElementById('btn-plus').classList.add('locked');
-  document.getElementById('bet-lock-hint').style.display = 'block';
+  document.getElementById('bet-lock-hint').style.display='block';
   spawnBall();
-  autoTimer = setInterval(spawnBall, PH[speedMode].autoMs);
+  autoTimer=setInterval(spawnBall,PH[speedMode].autoMs);
 }
 
 function stopAuto(){
-  isAuto = false;
-  clearInterval(autoTimer); autoTimer = null;
-  document.getElementById('m-auto').textContent = '🔄 AUTO: OFF';
+  isAuto=false;clearInterval(autoTimer);autoTimer=null;
+  document.getElementById('m-auto').textContent='🔄 AUTO: OFF';
   document.getElementById('m-auto').classList.remove('active');
   document.getElementById('main-btn').classList.remove('stop-mode');
-  document.getElementById('play-icon').className = 'fa-solid fa-play';
-  document.getElementById('play-label').textContent = 'PLAY BALL';
+  document.getElementById('play-icon').className='fa-solid fa-play';
+  document.getElementById('play-label').textContent='PLAY BALL';
   document.getElementById('btn-minus').classList.remove('locked');
   document.getElementById('btn-plus').classList.remove('locked');
-  document.getElementById('bet-lock-hint').style.display = 'none';
+  document.getElementById('bet-lock-hint').style.display='none';
 }
 
-// ── BET ──────────────────────────────────────────────────────
 function changeBet(d){
   if(isAuto){
-    const h = document.getElementById('bet-lock-hint');
-    h.style.color = '#ff0077';
-    setTimeout(() => h.style.color = 'rgba(245,230,66,.5)', 600);
+    const h=document.getElementById('bet-lock-hint');
+    h.style.color='#ff0077';
+    setTimeout(()=>h.style.color='rgba(245,230,66,.5)',600);
     return;
   }
   snd('click');
-  betIdx = Math.max(0, Math.min(BETS.length-1, betIdx+d));
-  document.getElementById('current-bet').textContent = BETS[betIdx].toLocaleString('id-ID');
+  betIdx=Math.max(0,Math.min(BETS.length-1,betIdx+d));
+  document.getElementById('current-bet').textContent=BETS[betIdx].toLocaleString('id-ID');
 }
 
-// ── PLAY BUTTON ───────────────────────────────────────────────
 function onPlayDown(e){
   e.preventDefault();
-  if(isAuto){ stopAuto(); return; }
-  if(holdActive) return;
-  holdActive = true;
-  spawnBall();
-  const delay = speedMode==='turbo' ? 210 : 520;
-  holdTimeout = setTimeout(() => {
-    holdRepeat = setInterval(spawnBall, delay);
-  }, 280);
+  if(isAuto){stopAuto();return;}
+  if(holdActive)return;
+  holdActive=true;spawnBall();
+  const delay=speedMode==='turbo'?210:520;
+  holdTimeout=setTimeout(()=>{holdRepeat=setInterval(spawnBall,delay);},280);
 }
 function onPlayUp(e){
-  if(!holdActive) return;
-  holdActive = false;
-  clearTimeout(holdTimeout);
-  clearInterval(holdRepeat);
-  holdTimeout = holdRepeat = null;
+  if(!holdActive)return;
+  holdActive=false;
+  clearTimeout(holdTimeout);clearInterval(holdRepeat);
+  holdTimeout=holdRepeat=null;
 }
 
-// ── SALDO SYNC (dari server, aman dengan setS_server) ─────────
+// ── SYNC ─────────────────────────────────────────────────────
 function startSync(){
-  if(syncTimer) clearInterval(syncTimer);
-  syncTimer = setInterval(async () => {
-    const u = getU(); if(!u) return;
-    try{
-      const r = await api({ action:'get_saldo', username:u });
-      if(r.result==='SUCCESS') setS_server(r.saldo);
-    }catch(e){}
-  }, 8000);
+  if(syncTimer)clearInterval(syncTimer);
+  syncTimer=setInterval(async()=>{
+    const u=getU();if(!u)return;
+    try{const r=await api({action:'get_saldo',username:u});if(r.result==='SUCCESS')setS_server(r.saldo);}catch(e){}
+  },8000);
 }
 
-// ── RESIZE ────────────────────────────────────────────────────
+// ── RESIZE ───────────────────────────────────────────────────
 let _rt;
-window.addEventListener('resize', () => {
+window.addEventListener('resize',()=>{
   clearTimeout(_rt);
-  _rt = setTimeout(() => {
-    cancelAnimationFrame(raf);
-    raf = null;
-    balls=[];
-    setupCanvas();
-    startLoop();
-  }, 200);
+  _rt=setTimeout(()=>{
+    stopLoop();balls=[];
+    applyLayout();setupCanvas();startLoop();
+  },250);
 });
 
-// ── INIT ──────────────────────────────────────────────────────
-window.addEventListener('load', async () => {
-  if(!getU()){ location.href='index.html'; return; }
+// ══════════════════════════════════════════════════════════════
+// INIT
+// Tahap 1: DOMContentLoaded — set body height sinkron
+// Tahap 2: load (async) — setTimeout 120ms, lalu applyLayout→setupCanvas→loop
+// ══════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded',()=>{
+  document.body.style.height = window.innerHeight+'px';
+});
 
-  // Sinkron saldo dari localStorage (bisa diset global.js terlebih dahulu)
-  const storedSaldo = parseFloat(localStorage.getItem('user_saldo')||0);
-  if(storedSaldo > 0) _saldo = storedSaldo;
+window.addEventListener('load', async ()=>{
+  if(!getU()){location.href='index.html';return;}
 
+  const stored=parseFloat(localStorage.getItem('user_saldo')||0);
+  if(stored>0)_saldo=stored;
   _renderS();
 
-  // FIX: Tunggu layout selesai render sebelum setup canvas
-  // Di mobile WebView, clientWidth/Height bisa 0 saat 'load' event
-  const initCanvas = () => {
-    const wrap = document.getElementById('board-wrapper');
-    const w = wrap.clientWidth;
-    const h = wrap.clientHeight;
-    if(w < 10 || h < 10){
-      // Layout belum siap, coba lagi di frame berikutnya
-      requestAnimationFrame(initCanvas);
-      return;
-    }
-    setupCanvas();
-    if(!raf) startLoop();
-  };
-  requestAnimationFrame(initCanvas);
+  // ★ Tunda 120ms setelah load agar semua elemen sudah ter-paint
+  // Ini solusi paling andal untuk Android WebView
+  setTimeout(()=>{
+    applyLayout();   // hitung tinggi board dari pixel nyata
+    setupCanvas();   // setup canvas setelah board punya ukuran
+    startLoop();     // mulai game loop
+  }, 120);
 
-  // ResizeObserver untuk re-setup jika ukuran board berubah
-  try {
-    const ro = new ResizeObserver(() => {
-      clearTimeout(_rt);
-      _rt = setTimeout(() => {
-        cancelAnimationFrame(raf);
-        raf = null;
-        balls=[];
-        setupCanvas();
-        startLoop();
-      }, 150);
-    });
-    ro.observe(document.getElementById('board-wrapper'));
-  } catch(e) {}
-
-
+  // Server calls (async — tidak blokir canvas)
   try{
-    const r = await api({ action:'get_game_config', username:getU() });
+    const r=await api({action:'get_game_config',username:getU()});
     if(r.result==='SUCCESS'){
       setS_server(r.saldo);
-      if(r.winrate)        localStorage.setItem('user_winrate', r.winrate);
-      if(r.maxWinLimit)    localStorage.setItem('user_maxWinLimit', r.maxWinLimit);
-      if(r.sessionMinutes) localStorage.setItem('user_sessionMinutes', r.sessionMinutes);
+      if(r.winrate)        localStorage.setItem('user_winrate',r.winrate);
+      if(r.maxWinLimit)    localStorage.setItem('user_maxWinLimit',r.maxWinLimit);
+      if(r.sessionMinutes) localStorage.setItem('user_sessionMinutes',r.sessionMinutes);
     }
   }catch(e){}
-  try{ await api({ action:'set_status',       username:getU(), status:'ONLINE' }); }catch(e){}
-  try{ await api({ action:'set_session_start', username:getU() }); }catch(e){}
+  try{await api({action:'set_status',       username:getU(),status:'ONLINE'});}catch(e){}
+  try{await api({action:'set_session_start',username:getU()});}catch(e){}
   startSync();
 });
 
-window.addEventListener('beforeunload', () => {
-  const u = getU();
-  if(u) navigator.sendBeacon(
-    SCRIPT_URL_LOCAL+'?data='+encodeURIComponent(JSON.stringify({ action:'set_status', username:u, status:'OFFLINE' }))
+window.addEventListener('beforeunload',()=>{
+  const u=getU();
+  if(u)navigator.sendBeacon(
+    _GSURL+'?data='+encodeURIComponent(JSON.stringify({action:'set_status',username:u,status:'OFFLINE'}))
   );
-  cancelAnimationFrame(raf);
-  if(syncTimer) clearInterval(syncTimer);
+  stopLoop();
+  if(syncTimer)clearInterval(syncTimer);
 });
 </script>
 </body>
