@@ -1,307 +1,182 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>NEON PLINKO VIP</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<style>
-:root{
-  --pink:#ff0077;--blue:#0055ff;--yellow:#f5e642;--bg:#02030d;
-  --gp:0 0 8px rgba(255,0,119,.65),0 0 24px rgba(255,0,119,.22);
-  --gb:0 0 8px rgba(0,85,255,.65),0 0 24px rgba(0,85,255,.22);
-  --gy:0 0 8px rgba(245,230,66,.65),0 0 24px rgba(245,230,66,.22);
-  --bp:rgba(255,0,119,.35);--bb:rgba(0,85,255,.35);--by:rgba(245,230,66,.35);
-}
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-body{
-  width:100%;overflow:hidden;display:flex;flex-direction:column;
-  background:var(--bg);color:#dde0f0;font-family:'Outfit',sans-serif;
-  background-image: radial-gradient(ellipse 70% 40% at 15% 0%,rgba(0,55,255,.09) 0%,transparent 65%);
-}
-/* MODAL */
-#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);z-index:9998;}
-#neon-modal{
-  display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-  background:#07091d;border-radius:22px;z-index:9999;padding:26px 22px;text-align:center;width:86%;max-width:310px;
-}
-/* HEADER */
-.header{padding:10px;background:rgba(2,3,13,.9);border-bottom:1px solid var(--bb);display:flex;align-items:center;justify-content:space-between;}
-.balance-box{flex:1;margin:0 10px;background:#000;border:1px solid var(--bp);border-radius:20px;padding:5px;text-align:center;}
-#display-saldo{font-family:'Cinzel Decorative',serif;font-size:16px;color:#fff;text-shadow:var(--gp);}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>REWARDS - NEON PLINKO VIP</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        :root {
+            --pink: #ff0077; --blue: #0044ff; --yellow: #fbff00; --white: #ffffff; --bg: #03040a;
+            --neon-pink: 0 0 15px rgba(255, 0, 119, 0.7);
+            --neon-blue: 0 0 15px rgba(0, 68, 255, 0.7);
+            --neon-yellow: 0 0 15px rgba(251, 255, 0, 0.7);
+        }
+        body {
+            background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif;
+            margin: 0; padding: 0; min-height: 100vh;
+        }
 
-/* BOARD */
-#board-wrapper{position:relative;flex:1;background:#020310;overflow:hidden;}
-#plinko-canvas{display:block;}
+        #neon-modal {
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: #0a0b1e; border: 2px solid var(--pink); border-radius: 15px;
+            box-shadow: var(--neon-pink); z-index: 9999; padding: 25px; text-align: center;
+            min-width: 280px; animation: modalIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes modalIn { from { opacity: 0; scale: 0.5; } to { opacity: 1; scale: 1; } }
+        .modal-btn {
+            margin-top: 20px; padding: 10px 25px; border-radius: 50px; cursor: pointer;
+            border: 1px solid var(--yellow); background: var(--yellow); color: black; font-weight: bold;
+        }
 
-/* SLOTS */
-.multiplier-row{display:flex;justify-content:center;gap:3px;padding:5px 10px;background:#02030d;}
-.slot{
-  flex:1;height:35px;display:flex;align-items:center;justify-content:center;
-  font-size:10px;font-weight:900;border-radius:6px;transition:0.2s;
-}
-.slot.active{transform:scale(1.15);filter:brightness(1.5);box-shadow:0 0 15px #fff;}
-.s-high{background:var(--pink);color:#fff;}
-.s-mid {background:var(--yellow);color:#000;}
-.s-low {background:var(--blue);color:#fff;}
+        .header {
+            padding: 20px; background: rgba(0, 0, 0, 0.9); border-bottom: 2px solid var(--blue);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .btn-back { color: var(--white); font-size: 20px; text-decoration: none; }
 
-/* CONTROLS */
-.controls{padding:10px;background:#07091d;display:flex;flex-direction:column;gap:8px;}
-.btn-play{
-  padding:15px;border-radius:50px;font-family:'Cinzel Decorative';background:linear-gradient(90deg,var(--pink),var(--blue));
-  color:#fff;border:1px solid var(--yellow);font-weight:900;cursor:pointer;
-}
-.bet-row{display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.4);padding:8px 15px;border-radius:30px;}
-.bet-btn{font-size:24px;color:var(--pink);cursor:pointer;}
-</style>
+        .container { padding: 20px; }
+
+        /* KOTAK HADIAH / GIFT BOX */
+        .gift-box-card {
+            background: linear-gradient(135deg, #0f0c29, #302b63);
+            border: 2px solid var(--pink); border-radius: 20px; padding: 20px;
+            margin-bottom: 25px; box-shadow: var(--neon-pink); text-align: center;
+        }
+        .gift-box-card i { font-size: 50px; color: var(--pink); text-shadow: var(--neon-pink); margin-bottom: 15px; }
+        .gift-input {
+            width: 100%; padding: 12px; background: #000; border: 1px solid var(--yellow);
+            border-radius: 10px; color: var(--yellow); text-align: center; font-weight: bold;
+            font-size: 16px; margin-bottom: 15px; outline: none; box-sizing: border-box;
+        }
+        .btn-redeem {
+            width: 100%; padding: 12px; border-radius: 50px; background: var(--pink);
+            color: white; font-weight: 900; border: none; cursor: pointer; text-transform: uppercase;
+        }
+
+        /* VIP Card */
+        .vip-status-card {
+            background: rgba(255, 255, 255, 0.05); border: 1px solid var(--blue);
+            border-radius: 15px; padding: 15px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px;
+        }
+        .vip-icon { font-size: 30px; color: var(--yellow); }
+        .vip-info h4 { margin: 0; font-size: 14px; color: var(--yellow); }
+        .vip-info p { margin: 0; font-size: 11px; opacity: 0.7; }
+
+        /* Reward Grid */
+        .reward-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .reward-item {
+            background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(0, 68, 255, 0.3);
+            border-radius: 15px; padding: 15px; text-align: center;
+        }
+        .reward-item i { font-size: 24px; color: var(--blue); margin-bottom: 10px; display: block; }
+        .reward-item h5 { margin: 5px 0; font-size: 12px; }
+        .btn-claim-small {
+            background: transparent; border: 1px solid var(--blue); color: var(--blue);
+            padding: 5px 10px; border-radius: 50px; font-size: 10px; font-weight: bold; cursor: pointer;
+        }
+    </style>
 </head>
 <body>
 
-<audio id="snd-hit" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
-<audio id="snd-win" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3"></audio>
-
-<div id="modal-overlay" onclick="closeModal()"></div>
-<div id="neon-modal">
-  <div id="modal-title" style="color:var(--pink);font-weight:bold;margin-bottom:10px;">INFO</div>
-  <div id="modal-msg"></div>
-  <button onclick="closeModal()" style="margin-top:15px;padding:8px 20px;border-radius:20px;background:none;border:1px solid var(--pink);color:#fff;">OK</button>
-</div>
-
-<div class="header">
-  <div class="balance-box">
-    <div style="font-size:8px;color:gray;">SALDO UTAMA</div>
-    <div id="display-saldo">IDR 0</div>
-  </div>
-</div>
-
-<div id="board-wrapper">
-  <canvas id="plinko-canvas"></canvas>
-</div>
-
-<div class="multiplier-row" id="slot-row"></div>
-
-<div class="controls">
-  <div style="display:flex;gap:5px;">
-    <button id="m-normal" onclick="setSpeed('normal')" style="flex:1;padding:8px;background:rgba(255,0,119,0.2);border:1px solid var(--pink);color:#fff;border-radius:10px;">NORMAL</button>
-    <button id="m-turbo" onclick="setSpeed('turbo')" style="flex:1;padding:8px;background:none;border:1px solid var(--blue);color:#fff;border-radius:10px;">TURBO</button>
-  </div>
-  
-  <div class="bet-row">
-    <div class="bet-btn" onclick="changeBet(-1)"><i class="fa-solid fa-minus-circle"></i></div>
-    <div style="text-align:center">
-      <div style="font-size:10px;color:gray;">BET</div>
-      <div id="current-bet" style="color:var(--yellow);font-weight:bold;">400</div>
+    <div id="neon-modal">
+        <h3 id="modal-title" style="color: var(--yellow);">REWARD!</h3>
+        <p id="modal-msg"></p>
+        <button class="modal-btn" onclick="closeModal()">AMBIL</button>
     </div>
-    <div class="bet-btn" onclick="changeBet(1)" style="color:var(--blue)"><i class="fa-solid fa-plus-circle"></i></div>
-  </div>
 
-  <button class="btn-play" id="main-btn" onclick="handlePlay()">PLAY BALL</button>
-</div>
+    <div class="header">
+        <a href="index.html" class="btn-back"><i class="fa-solid fa-arrow-left"></i></a>
+        <div style="font-weight: 900; letter-spacing: 2px;">REWARD & GIFT</div>
+        <div style="width: 20px;"></div>
+    </div>
 
-<script src="global.js"></script>
-<script>
-const ROWS = 10;
-const MULTS = [10, 5, 2, 1.2, 0.5, 0.2, 0.2, 0.5, 1.2, 2, 5, 10];
-const BETS = [400, 800, 1000, 2000, 5000, 10000];
-let betIdx = 0;
-let speed = 'normal';
-let balls = [];
-let pegs = [];
-let canvas, ctx, BW, BH;
-let saldo = getStoredSaldo();
+    <div class="container">
+        <div class="gift-box-card">
+            <i class="fa-solid fa-box-open"></i>
+            <h3 style="margin: 0 0 10px 0; font-size: 18px; color: var(--white);">KOTAK HADIAH ADMIN</h3>
+            <p style="font-size: 11px; color: #ccc; margin-bottom: 15px;">Masukkan kode voucher dari Admin untuk klaim saldo gratis.</p>
+            <input type="text" id="gift-code" class="gift-input" placeholder="MASUKKAN KODE">
+            <button class="btn-redeem" onclick="redeemGift()">KLAIM HADIAH</button>
+        </div>
 
-function setup() {
-  canvas = document.getElementById('plinko-canvas');
-  ctx = canvas.getContext('2d');
-  const wrap = document.getElementById('board-wrapper');
-  BW = wrap.offsetWidth;
-  BH = wrap.offsetHeight;
-  canvas.width = BW;
-  canvas.height = BH;
-  
-  createPegs();
-  createSlots();
-  updateDisplay();
-}
+        <div class="vip-status-card">
+            <i class="fa-solid fa-crown vip-icon"></i>
+            <div class="vip-info">
+                <h4 id="profile-tier-reward">VIP MEMBER</h4>
+                <p>Nikmati limit withdraw lebih tinggi &amp; prioritas klaim.</p>
+            </div>
+        </div>
 
-function createPegs() {
-  pegs = [];
-  const spacingX = BW / (ROWS + 2);
-  const spacingY = BH / (ROWS + 1);
-  for (let r = 2; r <= ROWS + 1; r++) {
-    const rowY = (r - 1) * spacingY;
-    const rowWidth = (r - 1) * spacingX;
-    const startX = (BW - rowWidth) / 2;
-    for (let c = 0; c < r; c++) {
-      pegs.push({ x: startX + c * spacingX, y: rowY, glow: 0 });
-    }
-  }
-}
+        <!-- KOTAK HADIAH INBOX ADMIN -->
+        <div style="margin-bottom:20px;">
+            <div style="font-weight:900;color:var(--pink);margin-bottom:10px;font-size:13px;letter-spacing:1px;">
+                <i class="fa-solid fa-envelope-open-text"></i> HADIAH &amp; PESAN ADMIN
+            </div>
+            <div id="inbox-container">
+                <div style="text-align:center;color:#555;padding:15px;font-size:12px;">Memuat hadiah...</div>
+            </div>
+        </div>
 
-function createSlots() {
-  const container = document.getElementById('slot-row');
-  container.innerHTML = '';
-  MULTS.forEach((m, i) => {
-    const div = document.createElement('div');
-    div.className = `slot ${m >= 2 ? 's-high' : m >= 1 ? 's-mid' : 's-low'}`;
-    div.id = `slot-${i}`;
-    div.innerText = m + 'x';
-    container.appendChild(div);
-  });
-}
+        <div class="reward-grid">
+            <div class="reward-item">
+                <i class="fa-solid fa-calendar-day"></i>
+                <h5>DAILY BONUS</h5>
+                <button class="btn-claim-small" onclick="claimType('daily')">CLAIM 500</button>
+            </div>
+            <div class="reward-item">
+                <i class="fa-solid fa-share-nodes" style="color: var(--pink);"></i>
+                <h5>REFERRAL</h5>
+                <button class="btn-claim-small" onclick="copyLink()" style="border-color: var(--pink); color: var(--pink);">SALIN LINK</button>
+            </div>
+        </div>
 
-function handlePlay() {
-  const bet = BETS[betIdx];
-  if (saldo < bet) {
-    showModal("Saldo tidak cukup!", "pink");
-    return;
-  }
-  
-  const saldoAwal = saldo;
-  saldo -= bet;
-  updateDisplay();
+        <!-- REFERRAL INFO -->
+        <div style="margin-top:20px;border:1px solid var(--blue);border-radius:15px;padding:15px;background:rgba(0,68,255,0.05);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <div style="font-size:12px;font-weight:900;color:var(--yellow);">
+                    <i class="fa-solid fa-users"></i> PROGRAM REFERRAL
+                </div>
+                <button onclick="claimReferral()"
+                    style="padding:6px 14px;border-radius:50px;background:var(--blue);color:white;
+                           font-size:10px;font-weight:900;border:none;cursor:pointer;">
+                    CLAIM (MINGGU)
+                </button>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:8px;color:#aaa;">
+                <span>Kode Referral Kamu:</span>
+                <span id="ref-code-display" style="color:var(--yellow);font-weight:bold;">-</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:12px;color:#aaa;">
+                <span>Total Bonus Tersedia:</span>
+                <span id="ref-bonus-total" style="color:#00ff88;font-weight:bold;">IDR 0</span>
+            </div>
+            <div id="ref-list-container"
+                style="max-height:160px;overflow-y:auto;border-top:1px solid #222;padding-top:8px;">
+                <div style="text-align:center;color:#555;font-size:11px;padding:8px;">
+                    Memuat daftar undangan...
+                </div>
+            </div>
+        </div>
+    </div>
 
-  const ball = {
-    x: BW / 2 + (Math.random() - 0.5) * 10,
-    y: 10,
-    vx: (Math.random() - 0.5) * 2,
-    vy: 0,
-    bet: bet,
-    targetIdx: null,
-    landed: false
-  };
-  balls.push(ball);
+    <script src="global.js"></script>
+    <script>
+        // ── Semua fungsi inti ada di global.js ──
+        // redeemGift(), claimDailyReward(), claimReferral(), copyRefLink(),
+        // loadInbox(), loadRefList(), claimType(), copyLink() → semua dari global.js
 
-  // Sync to Server
-  apiCall({ action: 'game_play', username: getUsername(), bet: bet, saldoAwal: saldoAwal })
-    .then(res => {
-      if (res.result === 'SUCCESS') {
-        const indices = [];
-        MULTS.forEach((m, i) => { if (m === res.target_multiplier) indices.push(i); });
-        ball.targetIdx = indices[Math.floor(Math.random() * indices.length)];
-      }
-    });
-}
-
-function update() {
-  const gravity = speed === 'turbo' ? 0.4 : 0.2;
-  const friction = 0.98;
-
-  balls.forEach(b => {
-    if (b.landed) return;
-    b.vy += gravity;
-    b.vx *= friction;
-    b.x += b.vx;
-    b.y += b.vy;
-
-    // Collision with Pegs
-    pegs.forEach(p => {
-      const dx = b.x - p.x;
-      const dy = b.y - p.y;
-      const dist = Math.sqrt(dx*dx + dy*dy);
-      if (dist < 10) {
-        const angle = Math.atan2(dy, dx);
-        b.vx = Math.cos(angle) * 3 + (Math.random() - 0.5);
-        b.vy = Math.sin(angle) * 3;
-        p.glow = 1;
-        document.getElementById('snd-hit').cloneNode().play();
-        
-        // Steering towards target
-        if (b.targetIdx !== null) {
-          const targetX = (BW / MULTS.length) * (b.targetIdx + 0.5);
-          b.vx += (targetX - b.x) * 0.05;
+        // closeModal didefinisikan ulang agar konsisten dengan style reward.html
+        function closeModal() {
+            document.getElementById('neon-modal').style.display = 'none';
         }
-      }
-    });
 
-    // Wall bounce
-    if (b.x < 5 || b.x > BW - 5) b.vx *= -0.5;
-
-    // Landed
-    if (b.y > BH - 10) {
-      b.landed = true;
-      const slotIdx = Math.floor(b.x / (BW / MULTS.length));
-      const finalIdx = Math.min(MULTS.length - 1, Math.max(0, slotIdx));
-      finishBall(b, finalIdx);
-    }
-  });
-  balls = balls.filter(b => !b.landed);
-}
-
-function finishBall(ball, idx) {
-  const mult = MULTS[idx];
-  const win = Math.floor(ball.bet * mult);
-  saldo += win;
-  updateDisplay();
-  
-  const slotEl = document.getElementById(`slot-${idx}`);
-  slotEl.classList.add('active');
-  setTimeout(() => slotEl.classList.remove('active'), 400);
-  document.getElementById('snd-win').play();
-}
-
-function draw() {
-  ctx.clearRect(0, 0, BW, BH);
-
-  // Draw Pegs
-  pegs.forEach(p => {
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
-    ctx.fillStyle = p.glow > 0 ? `rgba(255,255,255,${p.glow})` : '#334466';
-    ctx.fill();
-    if (p.glow > 0) p.glow -= 0.05;
-  });
-
-  // Draw Balls
-  balls.forEach(b => {
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, 7, 0, Math.PI * 2);
-    ctx.fillStyle = '#ff0077';
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = '#ff0077';
-    ctx.fill();
-    ctx.shadowBlur = 0;
-  });
-}
-
-function loop() {
-  update();
-  draw();
-  requestAnimationFrame(loop);
-}
-
-function updateDisplay() {
-  document.getElementById('display-saldo').innerText = fmtIDR(saldo);
-  document.getElementById('current-bet').innerText = BETS[betIdx];
-  storeLocalSaldo(saldo);
-}
-
-function changeBet(dir) {
-  betIdx = Math.max(0, Math.min(BETS.length - 1, betIdx + dir));
-  updateDisplay();
-}
-
-function setSpeed(s) {
-  speed = s;
-  document.getElementById('m-normal').style.background = s === 'normal' ? 'rgba(255,0,119,0.3)' : 'none';
-  document.getElementById('m-turbo').style.background = s === 'turbo' ? 'rgba(0,85,255,0.3)' : 'none';
-}
-
-function showModal(msg, type) {
-  document.getElementById('modal-msg').innerText = msg;
-  document.getElementById('modal-overlay').style.display = 'block';
-  document.getElementById('neon-modal').style.display = 'block';
-}
-function closeModal() {
-  document.getElementById('modal-overlay').style.display = 'none';
-  document.getElementById('neon-modal').style.display = 'none';
-}
-
-window.onload = () => {
-  setup();
-  loop();
-};
-</script>
+        window.addEventListener("load", () => {
+            if (!localStorage.getItem('username')) {
+                location.href = 'index.html';
+            }
+            // initReward() dipanggil otomatis oleh global.js via DOMContentLoaded
+        });
+    </script>
 </body>
 </html>
