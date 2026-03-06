@@ -258,9 +258,15 @@ body {
   </div>
 </div>
 
+<!-- global.js wajib di-include sebelum script ini -->
+<script src="global.js"></script>
+
 <script>
 /* ══════════════════════════════════════════════════════
-   LOGIC ENGINE
+   LOGIC ENGINE — SERVER-CONNECTED WINRATE & MAXWIN
+   - Winrate & MaxWinLimit diatur admin via Google Sheet
+   - game_play dikirim ke server → server tentukan multiplier
+   - Hasil (newSaldo) dikembalikan server & disinkronkan lokal
 ══════════════════════════════════════════════════════ */
 const ROWS = 10;
 const MULTS = [10, 3, 1.5, 0.5, 0.2, 0.2, 0.5, 1.5, 3, 10];
@@ -270,21 +276,85 @@ const PEG_R = 3.5;
 
 let canvas, ctx, BW, BH, pegs = [], balls = [], slotW;
 let speedMode = 'normal', isAuto = false, autoTimer = null, betIdx = 0;
-let _saldo = Math.max(0, parseFloat(localStorage.getItem('user_saldo') || 100000));
+let _saldo = Math.max(0, parseFloat(localStorage.getItem('user_saldo') || 0));
+
+// ─── Config dari server (diisi saat loadGameConfig) ──────────
+let _serverWinrate    = 50;    // default, akan di-override server
+let _serverMaxWin     = 500000; // default, akan di-override server
+let _serverSessionMin = 60;    // default
+let _serverSessionStart = '';  // default
 
 const PH = {
   normal: { grav: 0.3, fric: 0.99, bounce: 0.5, autoMs: 700 },
   turbo: { grav: 0.55, fric: 0.98, bounce: 0.4, autoMs: 250 }
 };
 
-function init() {
+/* ══════════════════════════════════════════════════════
+   INIT & LOAD CONFIG SERVER
+══════════════════════════════════════════════════════ */
+async function init() {
+  // Guard login
+  if (typeof requireLogin === 'function' && !requireLogin()) return;
+
   canvas = document.getElementById('plinko-canvas');
   ctx = canvas.getContext('2d');
   resize();
   _renderS();
   loop();
+
+  // Load config (saldo, winrate, maxWinLimit) dari server
+  await loadGameConfig();
+
+  // Set session start hari ini jika belum ada
+  const username = typeof getUsername === 'function' ? getUsername() : localStorage.getItem('username');
+  if (username) {
+    apiCall({ action: 'set_session_start', username });
+  }
+
+  // Sync saldo saat tab kembali aktif (visibilitychange)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      syncSaldoServer();
+    }
+  });
 }
 
+async function loadGameConfig() {
+  const username = typeof getUsername === 'function' ? getUsername() : localStorage.getItem('username');
+  if (!username) return;
+  try {
+    const res = await apiCall({ action: 'get_game_config', username });
+    if (res && res.result === 'SUCCESS') {
+      _saldo              = Math.max(0, parseFloat(res.saldo) || 0);
+      _serverWinrate      = parseFloat(res.winrate)       || 50;
+      _serverMaxWin       = parseFloat(res.maxWinLimit)   || 500000;
+      _serverSessionMin   = parseFloat(res.sessionMinutes)|| 60;
+      _serverSessionStart = res.sessionStart              || '';
+      storeLocalSaldo(_saldo);
+      _renderS();
+    }
+  } catch(e) {}
+}
+
+// Sync saldo dari server (tanpa override winrate/config)
+async function syncSaldoServer() {
+  const username = typeof getUsername === 'function' ? getUsername() : localStorage.getItem('username');
+  if (!username) return;
+  try {
+    const res = await apiCall({ action: 'get_saldo', username });
+    if (res && res.result === 'SUCCESS') {
+      _saldo            = Math.max(0, parseFloat(res.saldo) || 0);
+      _serverWinrate    = parseFloat(res.winrate)     || _serverWinrate;
+      _serverMaxWin     = parseFloat(res.maxWinLimit) || _serverMaxWin;
+      storeLocalSaldo(_saldo);
+      _renderS();
+    }
+  } catch(e) {}
+}
+
+/* ══════════════════════════════════════════════════════
+   CANVAS & PEGS
+══════════════════════════════════════════════════════ */
 function resize() {
   const wrap = document.getElementById('board-wrapper');
   BW = wrap.offsetWidth;
@@ -303,7 +373,7 @@ function resize() {
 function buildPegs() {
   pegs = [];
   const spacingX = (BW * 0.85) / (ROWS);
-  const spacingY = (BH * 0.82) / (ROWS); // Menyesuaikan agar paku mengisi area board
+  const spacingY = (BH * 0.82) / (ROWS);
   for(let r = 0; r < ROWS; r++) {
     const count = r + 2;
     const startX = (BW - (count - 1) * spacingX) / 2;
@@ -326,6 +396,9 @@ function buildSlots() {
   });
 }
 
+/* ══════════════════════════════════════════════════════
+   GAME LOOP
+══════════════════════════════════════════════════════ */
 function loop() {
   ctx.clearRect(0, 0, BW, BH);
   const ph = PH[speedMode];
@@ -379,29 +452,92 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-function onLand(b) {
-  let idx = Math.floor(b.x / slotW);
-  idx = Math.max(0, Math.min(MULTS.length - 1, idx));
-  const mult = MULTS[idx];
-  const win = Math.floor(b.bet * mult);
-  
-  _saldo += win;
-  _renderS();
+/* ══════════════════════════════════════════════════════
+   ON LAND — PANGGIL SERVER UNTUK TENTUKAN HASIL
+   Server memakai winrate & maxWinLimit dari kolom admin
+══════════════════════════════════════════════════════ */
+async function onLand(b) {
+  const username = typeof getUsername === 'function' ? getUsername() : localStorage.getItem('username');
+  if (!username) return;
 
-  const slotEl = document.getElementById('slot-' + idx);
-  slotEl.classList.add('active');
-  setTimeout(() => slotEl.classList.remove('active'), 400);
+  // Snapshot saldo sebelum hasil diterima (sudah dikurangi bet di spawnBall)
+  const saldoAwal = b.saldoSebelumBet; // dikirim dari spawnBall
 
-  if (mult >= 1) snd('win');
-  
-  const list = document.getElementById('score-list');
-  const div = document.createElement('div');
-  div.className = 'score-entry';
-  div.innerHTML = `<b>${mult}x</b> | +${win}`;
-  list.prepend(div);
-  if(list.children.length > 5) list.lastChild.remove();
+  try {
+    const res = await apiCall({
+      action:    'game_play',
+      username:  username,
+      bet:       b.bet,
+      saldoAwal: saldoAwal  // snapshot sebelum bet — sesuai rumus server
+    });
+
+    if (res && res.result === 'SUCCESS') {
+      // Server menentukan multiplier berdasarkan winrate & maxWinLimit admin
+      const serverMult = parseFloat(res.target_multiplier);
+      const serverWin  = Math.floor(b.bet * serverMult);
+      const newSaldo   = parseFloat(res.newSaldo);
+
+      // Tentukan slot visual yang mendekati multiplier server
+      const visualIdx  = findClosestSlotIdx(serverMult);
+
+      // Update saldo lokal sesuai server
+      _saldo = newSaldo;
+      // Sinkronkan ke localStorage via global.js
+      if (typeof storeLocalSaldo === 'function') storeLocalSaldo(newSaldo);
+      else localStorage.setItem('user_saldo', newSaldo);
+      _renderS();
+
+      // Animasi slot
+      const slotEl = document.getElementById('slot-' + visualIdx);
+      if (slotEl) {
+        slotEl.classList.add('active');
+        setTimeout(() => slotEl.classList.remove('active'), 400);
+      }
+
+      if (serverMult >= 1) snd('win');
+
+      // Update floating score
+      const list = document.getElementById('score-list');
+      const div  = document.createElement('div');
+      div.className = 'score-entry';
+      div.innerHTML = `<b>${serverMult}x</b> | +${serverWin.toLocaleString('id-ID')}`;
+      list.prepend(div);
+      if(list.children.length > 5) list.lastChild.remove();
+
+    } else {
+      // Jika server error, kembalikan bet ke saldo lokal (fallback)
+      _saldo += b.bet;
+      if (typeof storeLocalSaldo === 'function') storeLocalSaldo(_saldo);
+      else localStorage.setItem('user_saldo', _saldo);
+      _renderS();
+      if (res && res.message) showModal(res.message);
+    }
+  } catch(e) {
+    // Network error: kembalikan bet
+    _saldo += b.bet;
+    if (typeof storeLocalSaldo === 'function') storeLocalSaldo(_saldo);
+    else localStorage.setItem('user_saldo', _saldo);
+    _renderS();
+  }
 }
 
+/**
+ * Temukan index slot visual yang multiplier-nya paling mendekati
+ * target_multiplier dari server.
+ */
+function findClosestSlotIdx(targetMult) {
+  let bestIdx  = 0;
+  let bestDiff = Math.abs(MULTS[0] - targetMult);
+  for (let i = 1; i < MULTS.length; i++) {
+    const diff = Math.abs(MULTS[i] - targetMult);
+    if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
+  }
+  return bestIdx;
+}
+
+/* ══════════════════════════════════════════════════════
+   SPAWN BALL — KURANGI BET LOKAL DULU, KIRIM KE SERVER SAAT LAND
+══════════════════════════════════════════════════════ */
 function spawnBall() {
   const bet = BETS[betIdx];
   if (_saldo < bet) {
@@ -409,12 +545,23 @@ function spawnBall() {
     stopAuto();
     return;
   }
+  const saldoSebelumBet = _saldo; // snapshot sebelum dikurangi bet
   _saldo -= bet;
   _renderS();
   snd('click');
-  balls.push({ x: BW/2 + (Math.random()-0.5)*20, y: -5, vx: (Math.random()-0.5)*2, vy: 1, bet: bet });
+  balls.push({
+    x: BW/2 + (Math.random()-0.5)*20,
+    y: -5,
+    vx: (Math.random()-0.5)*2,
+    vy: 1,
+    bet: bet,
+    saldoSebelumBet: saldoSebelumBet  // disimpan untuk dikirim ke server
+  });
 }
 
+/* ══════════════════════════════════════════════════════
+   SPEED MODE & AUTO
+══════════════════════════════════════════════════════ */
 function setSpeedMode(m) {
   speedMode = m;
   snd('click');
@@ -444,9 +591,14 @@ function changeBet(d) {
   snd('click');
 }
 
+/* ══════════════════════════════════════════════════════
+   RENDER & UI HELPERS
+══════════════════════════════════════════════════════ */
 function _renderS() {
   document.getElementById('display-saldo').textContent = 'IDR ' + Math.floor(_saldo).toLocaleString('id-ID');
-  localStorage.setItem('user_saldo', _saldo);
+  // Simpan ke localStorage via global.js jika tersedia
+  if (typeof storeLocalSaldo === 'function') storeLocalSaldo(_saldo);
+  else localStorage.setItem('user_saldo', _saldo);
 }
 
 function showModal(m) {
@@ -467,6 +619,23 @@ function snd(t) {
     a.play();
   } catch(e) {}
 }
+
+/* ══════════════════════════════════════════════════════
+   SET OFFLINE saat tutup tab (game.html punya handler sendiri)
+══════════════════════════════════════════════════════ */
+window.addEventListener('beforeunload', () => {
+  const username = typeof getUsername === 'function' ? getUsername() : localStorage.getItem('username');
+  if (username) {
+    // Gunakan sendBeacon agar tidak terblokir tab close
+    const SURL = typeof SCRIPT_URL !== 'undefined' ? SCRIPT_URL
+      : 'https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec';
+    navigator.sendBeacon(
+      SURL + '?data=' + encodeURIComponent(
+        JSON.stringify({ action: 'set_status', username, status: 'OFFLINE' })
+      )
+    );
+  }
+});
 
 window.addEventListener('resize', resize);
 document.addEventListener('DOMContentLoaded', init);
