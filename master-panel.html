@@ -56,6 +56,7 @@
             background: var(--green); color: black; border: none; padding: 5px 10px;
             border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 10px;
         }
+        .btn-approve:disabled { background: #333; color: #666; cursor: not-allowed; }
 
         /* USER MONITOR */
         .user-box { 
@@ -82,6 +83,7 @@
             background: #000; color: white; border: 1px solid #444; 
             padding: 8px; border-radius: 6px; font-size: 9px; cursor: pointer; font-weight: bold;
         }
+        .btn-action:hover { border-color: var(--blue); color: var(--blue); }
 
         /* MODALS & TOAST */
         .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 999; backdrop-filter: blur(5px); }
@@ -93,8 +95,13 @@
         #toast { 
             visibility: hidden; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); 
             background: var(--blue); color: black; padding: 10px 20px; border-radius: 8px; font-weight: bold; z-index: 2000;
+            transition: 0.3s;
         }
         #toast.show { visibility: visible; }
+        #toast.error { background: var(--pink); color: white; }
+
+        /* Loading spinner */
+        .loading-text { color: #444; font-size: 11px; text-align: center; padding: 10px; }
     </style>
 </head>
 <body>
@@ -116,7 +123,7 @@
             <i class="fas fa-wallet"></i> Pending Deposits
         </h3>
         <div id="depo-list">
-            <p style="font-size:10px; color:#666; text-align:center;">Checking for requests...</p>
+            <p class="loading-text">Checking for requests...</p>
         </div>
     </div>
 
@@ -125,44 +132,66 @@
         <div id="clock" style="font-size:10px; color:var(--yellow); margin-top:5px;"></div>
     </div>
 
-    <div id="display-area">
-        </div>
+    <div id="display-area"></div>
 
     <div class="overlay" id="common-overlay"></div>
     <div class="neon-modal" id="common-modal">
         <h3 id="modal-title" style="color:var(--blue); font-size:16px;">TITLE</h3>
-        <input type="number" id="modal-input" style="width:80%; padding:10px; margin:15px 0; background:#000; border:1px solid var(--blue); color:#fff; text-align:center;">
+        <input type="number" id="modal-input" style="width:80%; padding:10px; margin:15px 0; background:#000; border:1px solid var(--blue); color:#fff; text-align:center;" placeholder="Masukkan nilai...">
         <div style="display:flex; gap:10px; justify-content:center;">
-            <button id="modal-ok-btn" style="background:var(--blue); border:none; padding:10px 15px; border-radius:5px; font-weight:bold;">CONFIRM</button>
-            <button onclick="closeModal()" style="background:#333; color:#fff; border:none; padding:10px 15px; border-radius:5px;">CANCEL</button>
+            <button id="modal-ok-btn" style="background:var(--blue); border:none; padding:10px 15px; border-radius:5px; font-weight:bold; cursor:pointer;">CONFIRM</button>
+            <button onclick="closeModal()" style="background:#333; color:#fff; border:none; padding:10px 15px; border-radius:5px; cursor:pointer;">CANCEL</button>
         </div>
     </div>
 
     <div id="toast">SYSTEM UPDATED</div>
 
     <script>
+        // ─── URL SERVER — sama dengan global.js ──────────────────
         const API_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
+
         let isProcessing = false;
         let lastBalances = {};
+        let panicCountdown = null;
+        let panicEndTime   = null;
 
-        // --- FETCH SEMUA DATA (USER & DEPO) ---
+        // ─── CORE API CALL (POST) ────────────────────────────────
+        // Menggunakan pola yang sama dengan global.js: coba GET dulu, fallback POST
+        async function callAPI(payload) {
+            try {
+                // Coba GET dulu (lebih cepat, sama dengan global.js)
+                const url = API_URL + '?data=' + encodeURIComponent(JSON.stringify(payload));
+                const r   = await fetch(url, { redirect: 'follow' });
+                const t   = await r.text();
+                const j   = JSON.parse(t);
+                // getAllUsers & get_pending_deposits mengembalikan array langsung
+                if (j !== undefined) return j;
+            } catch(e) {}
+            // Fallback POST
+            try {
+                const r2  = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+                return JSON.parse(await r2.text());
+            } catch(e) {
+                return { result: 'ERROR', message: 'Koneksi gagal.' };
+            }
+        }
+
+        // ─── FETCH SEMUA DATA (USER & DEPO) ─────────────────────
         async function fetchMasterData() {
             if (isProcessing) return;
             try {
-                // Fetch Users
-                const resUser = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "getAllUsers" }) });
-                const users = await resUser.json();
-                renderUsers(users);
+                // Fetch semua user untuk Live Monitor
+                const users = await callAPI({ action: 'getAllUsers' });
+                if (Array.isArray(users)) renderUsers(users);
 
-                // Fetch Deposits
-                const resDepo = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "get_pending_deposits" }) });
-                const deposits = await resDepo.json();
-                renderDeposits(deposits);
+                // Fetch deposit pending
+                const deposits = await callAPI({ action: 'get_pending_deposits' });
+                if (Array.isArray(deposits)) renderDeposits(deposits);
 
-            } catch(e) { console.error("Sync Error"); }
+            } catch(e) { console.error('Sync Error:', e); }
         }
 
-        // --- RENDER DEPOSITS ---
+        // ─── RENDER DEPOSITS ─────────────────────────────────────
         function renderDeposits(data) {
             const container = document.getElementById('depo-list');
             if (!data || data.length === 0) {
@@ -171,144 +200,235 @@
             }
 
             let html = `<table class="depo-table">
-                <tr><th>USER</th><th>NOMINAL</th><th>AKSI</th></tr>`;
+                <tr><th>USER</th><th>NOMINAL</th><th>METHOD</th><th>AKSI</th></tr>`;
             
             data.forEach(d => {
                 html += `
                 <tr>
-                    <td>${d.username}</td>
-                    <td style="color:var(--green)">${Number(d.nominal).toLocaleString()}</td>
-                    <td><button class="btn-approve" onclick="approveDeposit(${d.row})">OK</button></td>
+                    <td><b>${d.username}</b><br><span style="color:#555;font-size:9px">${d.tanggal}</span></td>
+                    <td style="color:var(--green)">IDR ${Number(d.nominal).toLocaleString('id-ID')}</td>
+                    <td style="color:var(--yellow);font-size:10px">${d.method}</td>
+                    <td><button class="btn-approve" id="approve-btn-${d.row}" onclick="approveDeposit(${d.row}, this)">APPROVE</button></td>
                 </tr>`;
             });
             container.innerHTML = html + `</table>`;
         }
 
-        // --- RENDER USERS ---
+        // ─── RENDER USERS ────────────────────────────────────────
         function renderUsers(users) {
             const area = document.getElementById('display-area');
+
             users.forEach(u => {
                 let userDiv = document.getElementById(`user-${u.username}`);
                 const currentSaldo = Number(u.saldo);
-                const oldSaldo = lastBalances[u.username] || currentSaldo;
+                const oldSaldo     = lastBalances[u.username] !== undefined ? lastBalances[u.username] : currentSaldo;
                 
-                let balanceClass = "";
-                if (currentSaldo > oldSaldo) balanceClass = "balance-up";
-                else if (currentSaldo < oldSaldo) balanceClass = "balance-down";
+                let balanceClass = '';
+                if (currentSaldo > oldSaldo) balanceClass = 'balance-up';
+                else if (currentSaldo < oldSaldo) balanceClass = 'balance-down';
                 
                 lastBalances[u.username] = currentSaldo;
 
                 if (!userDiv) {
                     userDiv = document.createElement('div');
-                    userDiv.id = `user-${u.username}`;
+                    userDiv.id        = `user-${u.username}`;
                     userDiv.className = 'user-box';
                     area.appendChild(userDiv);
                 }
 
-                const isOnline = u.status.toLowerCase() === 'online' || u.status.toLowerCase() === 'active';
+                const isOnline = u.status.toLowerCase() === 'online';
 
                 userDiv.innerHTML = `
                     <div class="user-info">
                         <div>
                             <span class="username">${u.username.toUpperCase()}</span>
-                            <span class="status-badge ${isOnline ? 'status-online' : 'status-offline'}">${u.status}</span>
+                            <span class="status-badge ${isOnline ? 'status-online' : 'status-offline'}">${u.status.toUpperCase()}</span>
+                            <br>
+                            <span style="font-size:9px; color:#888">${u.namaLengkap} | ${u.tier}</span>
                         </div>
-                        <div class="balance-val ${balanceClass}">IDR ${currentSaldo.toLocaleString()}</div>
+                        <div style="text-align:right">
+                            <div class="balance-val ${balanceClass}">IDR ${currentSaldo.toLocaleString('id-ID')}</div>
+                            <div style="font-size:9px; color:#666">
+                                WR: <span style="color:var(--yellow)">${u.winrate}%</span> &nbsp;|&nbsp;
+                                MAX: <span style="color:var(--pink)">IDR ${Number(u.maxWinLimit).toLocaleString('id-ID')}</span>
+                            </div>
+                        </div>
                     </div>
                     <div class="controls">
-                        <select class="select-strategy" onchange="updateWR('${u.username}', this.value)">
-                            <option value="">WR SEKARANG: ${u.winrate}%</option>
-                            <option value="3">3% - KURAS TOTAL</option>
-                            <option value="40">40% - KURAS HALUS</option>
-                            <option value="50">50% - FAIR PLAY</option>
-                            <option value="75">75% - GACOR</option>
-                            <option value="100">100% - PASTI JP</option>
+                        <select class="select-strategy" onchange="updateWR('${u.username}', this.value, this)">
+                            <option value="">⚙ WR SEKARANG: ${u.winrate}%</option>
+                            <option value="3">3% — KURAS TOTAL</option>
+                            <option value="10">10% — SANGAT KETAT</option>
+                            <option value="40">40% — KURAS HALUS</option>
+                            <option value="50">50% — FAIR PLAY</option>
+                            <option value="75">75% — GACOR</option>
+                            <option value="90">90% — SANGAT GACOR</option>
+                            <option value="100">100% — PASTI JP</option>
                         </select>
-                        <button class="btn-action btn-inject" onclick="prepareInject('${u.username}')">ADJUST CREDIT</button>
-                        <button class="btn-action btn-maxwin" onclick="prepareMaxwin('${u.username}')">SET MAXWIN</button>
+                        <button class="btn-action" onclick="prepareInject('${u.username}')">
+                            <i class="fas fa-coins"></i> ADJUST CREDIT
+                        </button>
+                        <button class="btn-action" onclick="prepareMaxwin('${u.username}')">
+                            <i class="fas fa-shield-halved"></i> SET MAXWIN
+                        </button>
                     </div>
                 `;
             });
+
+            // Hapus user-box yang sudah tidak ada di data
+            const existingDivs = area.querySelectorAll('.user-box');
+            const activeUsernames = users.map(u => `user-${u.username}`);
+            existingDivs.forEach(div => {
+                if (!activeUsernames.includes(div.id)) div.remove();
+            });
         }
 
-        // --- ACTIONS ---
+        // ─── ACTIONS ─────────────────────────────────────────────
+
+        // PANIC: set WR semua user → 10% selama N menit
         async function startPanicSession(min) {
-            if(!confirm(`Aktifkan Panic ${min} menit? WR semua pemain jadi 10%.`)) return;
-            showToast("INITIATING PANIC...");
-            await callAPI({ action: "set_global_panic", minutes: min });
-            document.getElementById('panic-timer-display').innerText = `STATUS: PANIC ACTIVE (${min} MIN)`;
+            if (!confirm(`Aktifkan Global Panic ${min} menit?\nWR SEMUA pemain akan menjadi 10%.`)) return;
+            showToast('INITIATING PANIC...', false);
+            const res = await callAPI({ action: 'set_global_panic', minutes: min });
+            if (res && res.result === 'SUCCESS') {
+                panicEndTime = Date.now() + min * 60 * 1000;
+                startPanicCountdown(min * 60);
+                showToast(`PANIC AKTIF — ${min} MENIT`, false);
+                fetchMasterData();
+            } else {
+                showToast('GAGAL: ' + (res.message || 'Error'), true);
+            }
         }
 
         async function stopPanicSession() {
-            await callAPI({ action: "set_global_panic", minutes: 0 });
-            document.getElementById('panic-timer-display').innerText = `STATUS: SYSTEM SECURE`;
-            showToast("PANIC DEACTIVATED");
+            const res = await callAPI({ action: 'set_global_panic', minutes: 0 });
+            if (res && res.result === 'SUCCESS') {
+                clearInterval(panicCountdown);
+                document.getElementById('panic-timer-display').innerText = 'STATUS: SYSTEM SECURE';
+                showToast('PANIC DEACTIVATED — WR PULIH', false);
+                fetchMasterData();
+            } else {
+                showToast('GAGAL MATIKAN PANIC', true);
+            }
         }
 
-        async function approveDeposit(row) {
-            if(!confirm("Setujui deposit ini? Saldo akan masuk otomatis.")) return;
-            showToast("PROCESSING DEPO...");
-            const res = await callAPI({ action: "approve_deposit", row: row });
-            if(res.result === "SUCCESS") showToast("DEPOSIT BERHASIL!");
-            fetchMasterData();
+        function startPanicCountdown(totalSec) {
+            clearInterval(panicCountdown);
+            let remaining = totalSec;
+            const el = document.getElementById('panic-timer-display');
+            panicCountdown = setInterval(() => {
+                remaining--;
+                const m = Math.floor(remaining / 60);
+                const s = remaining % 60;
+                el.innerText = `STATUS: PANIC ACTIVE — ${m}:${String(s).padStart(2,'0')} TERSISA`;
+                if (remaining <= 0) {
+                    clearInterval(panicCountdown);
+                    // Auto-matikan panic saat waktu habis
+                    callAPI({ action: 'set_global_panic', minutes: 0 }).then(() => {
+                        el.innerText = 'STATUS: PANIC ENDED — SYSTEM SECURE';
+                        fetchMasterData();
+                    });
+                }
+            }, 1000);
         }
 
-        async function updateWR(user, rate) {
-            if(!rate) return;
-            await callAPI({ action: "updateWinrate", targetUser: user, newRate: rate });
-            showToast(`WR ${user} -> ${rate}%`);
+        // APPROVE DEPOSIT
+        async function approveDeposit(row, btnEl) {
+            if (!confirm('Setujui deposit ini? Saldo akan masuk otomatis ke user.')) return;
+            if (btnEl) { btnEl.disabled = true; btnEl.innerText = '...'; }
+            showToast('PROCESSING DEPOSIT...', false);
+            const res = await callAPI({ action: 'approve_deposit', row: row });
+            if (res && res.result === 'SUCCESS') {
+                showToast('✅ DEPOSIT BERHASIL DIAPPROVE!', false);
+                fetchMasterData();
+            } else {
+                showToast('GAGAL: ' + (res.message || 'Error server'), true);
+                if (btnEl) { btnEl.disabled = false; btnEl.innerText = 'APPROVE'; }
+            }
         }
 
+        // UPDATE WINRATE PER USER
+        async function updateWR(user, rate, selectEl) {
+            if (!rate) return;
+            showToast(`UPDATING WR ${user}...`, false);
+            const res = await callAPI({ action: 'updateWinrate', targetUser: user, newRate: rate });
+            if (res && res.result === 'SUCCESS') {
+                showToast(`✅ WR ${user} → ${rate}%`, false);
+                fetchMasterData();
+            } else {
+                showToast('GAGAL UPDATE WR: ' + (res.message || ''), true);
+            }
+            if (selectEl) selectEl.value = ''; // reset dropdown
+        }
+
+        // ADJUST SALDO (inject/deduct)
         function prepareInject(user) {
-            showModal(`ADJUST SALDO: ${user}`, (val) => {
-                callAPI({ action: "adminUpdateSaldo", targetUser: user, amount: val }).then(() => fetchMasterData());
+            showModal(`ADJUST SALDO: ${user.toUpperCase()}\n(+angka = tambah, -angka = kurangi)`, (val) => {
+                const amount = parseFloat(val);
+                if (isNaN(amount)) { showToast('Nilai tidak valid', true); return; }
+                callAPI({ action: 'adminUpdateSaldo', targetUser: user, amount: amount })
+                    .then(res => {
+                        if (res && res.result === 'SUCCESS') {
+                            showToast(`✅ SALDO ${user} DIUPDATE`, false);
+                            fetchMasterData();
+                        } else {
+                            showToast('GAGAL: ' + (res.message || ''), true);
+                        }
+                    });
             });
         }
 
+        // SET MAXWIN LIMIT
         function prepareMaxwin(user) {
-            showModal(`SET LIMIT JP: ${user}`, (val) => {
-                callAPI({ action: "setMaxwinLimit", targetUser: user, maxwin: val }).then(() => fetchMasterData());
+            showModal(`SET LIMIT MAXWIN: ${user.toUpperCase()}\n(contoh: 500000 = IDR 500.000)`, (val) => {
+                const maxwin = parseFloat(val);
+                if (isNaN(maxwin) || maxwin < 0) { showToast('Nilai tidak valid', true); return; }
+                callAPI({ action: 'setMaxwinLimit', targetUser: user, maxwin: maxwin })
+                    .then(res => {
+                        if (res && res.result === 'SUCCESS') {
+                            showToast(`✅ MAXWIN ${user} → IDR ${maxwin.toLocaleString('id-ID')}`, false);
+                            fetchMasterData();
+                        } else {
+                            showToast('GAGAL: ' + (res.message || ''), true);
+                        }
+                    });
             });
         }
 
-        // --- HELPERS ---
-        async function callAPI(payload) {
-            isProcessing = true;
-            try {
-                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
-                const json = await res.json();
-                isProcessing = false;
-                return json;
-            } catch(e) { isProcessing = false; return {result: "ERROR"}; }
-        }
-
+        // ─── UI HELPERS ──────────────────────────────────────────
         function showModal(title, cb) {
             document.getElementById('modal-title').innerText = title;
-            document.getElementById('modal-input').value = "";
-            document.getElementById('common-overlay').style.display = "block";
-            document.getElementById('common-modal').style.display = "block";
-            document.getElementById('modal-ok-btn').onclick = () => { cb(document.getElementById('modal-input').value); closeModal(); };
+            document.getElementById('modal-input').value    = '';
+            document.getElementById('common-overlay').style.display = 'block';
+            document.getElementById('common-modal').style.display   = 'block';
+            document.getElementById('modal-ok-btn').onclick = () => {
+                cb(document.getElementById('modal-input').value);
+                closeModal();
+            };
         }
 
         function closeModal() {
-            document.getElementById('common-overlay').style.display = "none";
-            document.getElementById('common-modal').style.display = "none";
+            document.getElementById('common-overlay').style.display = 'none';
+            document.getElementById('common-modal').style.display   = 'none';
         }
 
-        function showToast(msg) {
+        let toastTimer = null;
+        function showToast(msg, isError = false) {
             const t = document.getElementById('toast');
-            t.innerText = msg; t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 2000);
+            t.innerText = msg;
+            t.className = isError ? 'show error' : 'show';
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => { t.className = ''; }, 2500);
         }
 
-        // --- LOOP ---
+        // ─── CLOCK & LOOP ────────────────────────────────────────
         setInterval(() => { 
             document.getElementById('clock').innerText = new Date().toLocaleString('id-ID'); 
         }, 1000);
         
         window.onload = () => {
             fetchMasterData();
-            setInterval(fetchMasterData, 4000); // Sync setiap 4 detik
+            setInterval(fetchMasterData, 4000); // sync tiap 4 detik
         };
     </script>
 </body>
