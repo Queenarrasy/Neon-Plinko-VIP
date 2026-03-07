@@ -236,38 +236,126 @@ function loop() {
       continue;
     }
 
-    b.vy += ph.grav; b.x += b.vx; b.y += b.vy;
-    if (b.x < BALL_R || b.x > BW - BALL_R) b.vx *= -0.5;
+    // ── 1. Gravitasi & friction udara ─────────────────────────
+    // Friction horizontal kecil supaya bola tidak luncur selamanya
+    b.vx *= 0.995;
+    b.vy += ph.grav;
 
-    // Perlambat bola jika server belum jawab (jaga agar tidak mendarat duluan)
-    if (b.serverStatus === BALL_WAITING && b.y > BH * 0.78) {
-      b.vy *= 0.65;
-      if (b.vy < 0.25) b.vy = 0.25;
+    // Batasi kecepatan maksimum agar bola tidak hyperspeed
+    const MAX_VX = 6, MAX_VY = 12;
+    if (b.vx >  MAX_VX) b.vx =  MAX_VX;
+    if (b.vx < -MAX_VX) b.vx = -MAX_VX;
+    if (b.vy >  MAX_VY) b.vy =  MAX_VY;
+
+    // ── 2. Tahan bola di zona atas jika server belum jawab ────
+    // Bola HANYA diperlambat saat mendekati batas bawah board,
+    // bukan ditarik paksa — sehingga pantulan paku tetap natural
+    if (b.serverStatus === BALL_WAITING) {
+      const brakeStart = BH * 0.72;
+      if (b.y > brakeStart) {
+        // Deselerasi proporsional: makin dekat bawah makin kuat
+        const ratio = (b.y - brakeStart) / (BH * 0.26);
+        const brake = 1 - ratio * 0.55;
+        b.vy *= Math.max(0.45, brake);
+        if (b.vy < 0.2) b.vy = 0.2;
+      }
     }
 
-    // Magnet ke slot target HANYA setelah server jawab (READY)
-    if (b.serverStatus === BALL_READY && b.targetIdx !== undefined && b.y > BH * 0.2) {
+    // ── 3. Magnet halus HANYA setelah server jawab (READY) ────
+    // Gaya magnet sangat kecil di atas, bertambah sedikit di bawah
+    // sehingga bola tetap melewati paku secara natural
+    if (b.serverStatus === BALL_READY && b.targetIdx !== undefined) {
       const targetX = (b.targetIdx * slotW) + (slotW / 2);
       const diff    = targetX - b.x;
-      const force   = 0.015 * (b.y / BH);
-      b.vx += diff * force;
+      const absDiff = Math.abs(diff);
+
+      // Gaya linear sangat kecil — tidak menyebabkan lompat teleport
+      // Semakin bawah bola, sedikit lebih kuat agar presisi di slot
+      const depthRatio = Math.max(0, Math.min(1, b.y / BH));
+
+      // Batasi gaya agar tidak lebih dari 15% dari jarak per frame
+      // Ini mencegah "terbang" tiba-tiba ke slot jauh
+      const maxForce = 0.003 + depthRatio * 0.005;  // max ~0.008
+      const force    = Math.min(maxForce, absDiff * 0.0004 + depthRatio * 0.004);
+      b.vx += (diff > 0 ? 1 : -1) * force * Math.min(absDiff, slotW * 2);
+
+      // Clamp vx agar magnet tidak membuat bola tiba-tiba melejit
+      const vxClamp = 3.5 + depthRatio * 1.5;
+      if (b.vx >  vxClamp) b.vx =  vxClamp;
+      if (b.vx < -vxClamp) b.vx = -vxClamp;
     }
 
-    pegs.forEach(p => {
-      const dx = b.x - p.x, dy = b.y - p.y, d = Math.sqrt(dx*dx + dy*dy);
-      if (d < BALL_R + PEG_R) {
-        p.glow = 1.2; snd('hit');
-        const nx = dx/d, ny = dy/d, dot = b.vx * nx + b.vy * ny;
-        b.vx = (b.vx - 2 * dot * nx) * ph.bounce + (Math.random() - 0.5);
-        b.vy = Math.abs(b.vy - 2 * dot * ny) * ph.bounce;
-        if (b.vy < 1.8) b.vy = 1.8;
+    // ── 4. Gerak posisi ───────────────────────────────────────
+    b.x += b.vx;
+    b.y += b.vy;
+
+    // Pantulan dinding kiri/kanan (tidak menembus batas)
+    if (b.x < BALL_R) {
+      b.x  = BALL_R;
+      b.vx = Math.abs(b.vx) * 0.55;
+    } else if (b.x > BW - BALL_R) {
+      b.x  = BW - BALL_R;
+      b.vx = -Math.abs(b.vx) * 0.55;
+    }
+
+    // ── 5. Resolusi tabrakan paku ─────────────────────────────
+    // Hanya proses paku yang BENAR-BENAR bertabrakan (bukan ruang kosong)
+    // Tambahkan push-out agar bola tidak menembus paku
+    let hitThisFrame = false;
+    for (let pi = 0; pi < pegs.length; pi++) {
+      const p  = pegs[pi];
+      const dx = b.x - p.x;
+      const dy = b.y - p.y;
+      const d  = Math.sqrt(dx * dx + dy * dy);
+      const minDist = BALL_R + PEG_R;
+
+      if (d < minDist && d > 0.001) {
+        // Push-out: keluarkan bola dari overlap agar tidak menembus
+        const overlap = minDist - d;
+        const nx = dx / d, ny = dy / d;
+        b.x += nx * overlap;
+        b.y += ny * overlap;
+
+        // Refleksi kecepatan berdasarkan normal paku
+        const dot = b.vx * nx + b.vy * ny;
+        if (dot < 0) {   // hanya pantul jika bola bergerak menuju paku
+          b.vx -= 2 * dot * nx;
+          b.vy -= 2 * dot * ny;
+
+          // Terapkan koefisien restitusi (bounce) dan sedikit randomness
+          // Random hanya pada vx agar bola memantul kiri/kanan naturally
+          // TIDAK menambah vy minus (tidak terbang ke atas)
+          const restitusi = ph.bounce;
+          b.vx = b.vx * restitusi + (Math.random() - 0.5) * 0.8;
+          b.vy = b.vy * restitusi;
+
+          // Pastikan bola selalu bergerak ke bawah setelah memantul paku
+          // Jika vy terlalu kecil, beri dorongan gravitasi minimal
+          if (b.vy < 1.2) b.vy = 1.2;
+
+          // Clamp vy agar bola tidak terlalu kencang ke bawah
+          if (b.vy > MAX_VY) b.vy = MAX_VY;
+        }
+
+        p.glow = 1.2;
+        if (!hitThisFrame) { snd('hit'); hitThisFrame = true; }
+
+        // Hanya proses 1 paku per frame agar tidak double-bounce
+        break;
       }
-    });
+    }
 
-    ctx.beginPath(); ctx.fillStyle = '#ff0077'; ctx.shadowBlur = 15; ctx.shadowColor = '#ff0077';
-    ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+    // ── 6. Render bola ───────────────────────────────────────
+    ctx.beginPath();
+    ctx.fillStyle   = '#ff0077';
+    ctx.shadowBlur  = 15;
+    ctx.shadowColor = '#ff0077';
+    ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
 
-    // Mendarat HANYA jika status READY (server sudah jawab)
+    // ── 7. Mendarat ──────────────────────────────────────────
+    // Bola hanya boleh mendarat jika status READY (server sudah jawab)
     if (b.y > BH && b.serverStatus === BALL_READY) {
       onLand(b);
       balls.splice(i, 1);
