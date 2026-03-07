@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-/* CSS tetap sama seperti kodingan Anda sebelumnya */
+/* CSS tetap sama */
 :root { --pink: #ff0077; --blue: #0044ff; --yellow: #f5e642; --dark-blue: #050614; --bg: #02030d; --gp: 0 0 15px rgba(255, 0, 119, 0.7); --gb: 0 0 20px rgba(0, 68, 255, 0.8); --gy: 0 0 15px rgba(245, 230, 66, 0.7); --header-h: 60px; --slot-h: 40px; }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 body { width: 100vw; height: 100vh; overflow: hidden; background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; display: flex; flex-direction: column; }
@@ -175,10 +175,10 @@ function loop() {
         if (b.vy < 1.8) b.vy = 1.8;
         
         // --- LOGIK WINRATE: Memaksa bola ke target multiplier ---
-        if (b.targetIdx !== undefined && b.y > BH * 0.5) {
+        if (b.targetIdx !== undefined && b.y > BH * 0.45) { // Magnet aktif lebih awal
             let targetX = (b.targetIdx * slotW) + (slotW / 2);
             let diff = targetX - b.x;
-            b.vx += diff * 0.05; // Tarikan magnet halus ke kolom target
+            b.vx += diff * 0.06; 
         }
       }
     });
@@ -191,59 +191,71 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-// FUNGSI BARU: Ambil multiplier dari Server (Winrate & MaxWin diproses di sini)
-async function spawnBall() {
+// FUNGSI DIPERBAIKI: Spawning Instan tanpa delay await
+function spawnBall() {
   const bet = BETS[betIdx];
   const user = getUsername();
   if (_saldo < bet) { showModal("BALANCE INSUFFICIENT."); stopAuto(); return; }
 
-  // Snapshot saldo sebelum bet untuk dikirim ke server (sesuai kodingan Code.gs Anda)
   const saldoAwal = _saldo;
   
-  // Kurangi saldo di tampilan langsung (Client side)
+  // 1. Kurangi saldo secara visual segera
   _saldo -= bet;
   _renderS();
   snd('click');
 
-  // Panggil Server untuk menentukan multiplier berdasarkan WINRATE admin
-  const res = await apiCall({
+  // 2. Buat objek bola segera (bola akan muncul di detik ke-0)
+  const newBall = { 
+    x: BW/2 + (Math.random()-0.5)*20, 
+    y: -10, 
+    vx: (Math.random()-0.5)*2, 
+    vy: 1, 
+    bet: bet, 
+    targetIdx: undefined, // Akan diisi setelah respon server datang
+    serverWin: 0,
+    serverNewSaldo: undefined
+  };
+  balls.push(newBall);
+
+  // 3. Panggil Server di background (tanpa menghambat animasi bola)
+  apiCall({
     action: 'game_play',
     username: user,
     bet: bet,
     saldoAwal: saldoAwal
+  }).then(res => {
+    if (res.result === 'SUCCESS') {
+      let targetMultiplier = res.target_multiplier;
+      let possibleIndices = [];
+      MULTS.forEach((m, idx) => { if(m === targetMultiplier) possibleIndices.push(idx); });
+      
+      // Update data bola yang sudah terlanjur meluncur
+      newBall.targetIdx = possibleIndices[Math.floor(Math.random() * possibleIndices.length)];
+      newBall.serverWin = res.win;
+      newBall.serverNewSaldo = res.newSaldo;
+    } else {
+      // Jika server error, hapus bola dan kembalikan saldo
+      balls = balls.filter(b => b !== newBall);
+      _saldo += bet;
+      _renderS();
+      showModal(res.message || "SERVER CONNECTION ERROR.");
+      stopAuto();
+    }
   });
-
-  if (res.result === 'SUCCESS') {
-    // Cari index kolom multiplier yang sesuai dengan target dari server
-    let targetMultiplier = res.target_multiplier;
-    let possibleIndices = [];
-    MULTS.forEach((m, idx) => { if(m === targetMultiplier) possibleIndices.push(idx); });
-    let finalIdx = possibleIndices[Math.floor(Math.random() * possibleIndices.length)];
-
-    balls.push({ 
-      x: BW/2 + (Math.random()-0.5)*20, 
-      y: -5, vx: (Math.random()-0.5)*2, vy: 1, 
-      bet: bet, 
-      targetIdx: finalIdx, // Titik mendarat yang sudah diatur server
-      serverWin: res.win,
-      serverNewSaldo: res.newSaldo
-    });
-  } else {
-    // Jika server error, kembalikan saldo
-    _saldo += bet;
-    _renderS();
-    showModal(res.message || "SERVER CONNECTION ERROR.");
-    stopAuto();
-  }
 }
 
 function onLand(b) {
   let idx = Math.floor(b.x / slotW);
   idx = Math.max(0, Math.min(MULTS.length - 1, idx));
   
-  // Gunakan data dari server untuk akurasi saldo
-  const win = b.serverWin;
-  _saldo = b.serverNewSaldo; 
+  // Gunakan data dari server jika sudah sampai, jika belum (fallback) hitung lokal
+  if (b.serverNewSaldo !== undefined) {
+      _saldo = b.serverNewSaldo;
+  } else {
+      // Skenario jika internet sangat lambat
+      _saldo += (b.bet * MULTS[idx]);
+  }
+  
   _renderS();
 
   const slotEl = document.getElementById('slot-' + idx);
@@ -255,7 +267,8 @@ function onLand(b) {
   const list = document.getElementById('score-list');
   const div = document.createElement('div');
   div.className = 'score-entry';
-  div.innerHTML = `<b>${MULTS[idx]}x</b> | +${win}`;
+  const displayWin = b.serverWin || (b.bet * MULTS[idx]);
+  div.innerHTML = `<b>${MULTS[idx]}x</b> | +${displayWin}`;
   list.prepend(div);
   if(list.children.length > 5) list.lastChild.remove();
 }
@@ -265,7 +278,6 @@ function _renderS() {
   storeLocalSaldo(_saldo);
 }
 
-/* Fungsi sisa tetap sama (setSpeedMode, toggleAuto, dll) */
 function setSpeedMode(m) { speedMode = m; snd('click'); document.getElementById('m-normal').classList.toggle('active', m === 'normal'); document.getElementById('m-turbo').classList.toggle('active', m === 'turbo'); }
 function toggleAuto() { isAuto = !isAuto; document.getElementById('m-auto').classList.toggle('active', isAuto); if (isAuto) { spawnBall(); autoTimer = setInterval(spawnBall, PH[speedMode].autoMs); } else { clearInterval(autoTimer); } }
 function stopAuto() { isAuto = false; clearInterval(autoTimer); document.getElementById('m-auto').classList.remove('active'); }
