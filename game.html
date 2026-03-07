@@ -238,7 +238,7 @@ function loop() {
 
     // ── 1. Gravitasi & friction udara ─────────────────────────
     // Friction horizontal kecil supaya bola tidak luncur selamanya
-    b.vx *= 0.995;
+    b.vx *= 0.978;   // friction horizontal — reduksi drift antar paku
     b.vy += ph.grav;
 
     // Batasi kecepatan maksimum agar bola tidak hyperspeed
@@ -248,41 +248,33 @@ function loop() {
     if (b.vy >  MAX_VY) b.vy =  MAX_VY;
 
     // ── 2. Tahan bola di zona atas jika server belum jawab ────
-    // Bola HANYA diperlambat saat mendekati batas bawah board,
-    // bukan ditarik paksa — sehingga pantulan paku tetap natural
     if (b.serverStatus === BALL_WAITING) {
       const brakeStart = BH * 0.72;
       if (b.y > brakeStart) {
-        // Deselerasi proporsional: makin dekat bawah makin kuat
         const ratio = (b.y - brakeStart) / (BH * 0.26);
-        const brake = 1 - ratio * 0.55;
-        b.vy *= Math.max(0.45, brake);
+        b.vy *= Math.max(0.45, 1 - ratio * 0.55);
         if (b.vy < 0.2) b.vy = 0.2;
       }
     }
 
-    // ── 3. Magnet halus HANYA setelah server jawab (READY) ────
-    // Gaya magnet sangat kecil di atas, bertambah sedikit di bawah
-    // sehingga bola tetap melewati paku secara natural
+    // ── 3. Bias arah halus menuju slot target (READY) ────────
+    // PRINSIP: bola TIDAK ditarik paksa — vx-nya dibias sedikit
+    // setiap frame ke arah target. Gaya KONSTAN & SANGAT KECIL,
+    // tidak bergantung jarak, sehingga bola tidak bisa lompat jauh.
+    // Bola tetap memantul paku natural & condong ke target pelan.
     if (b.serverStatus === BALL_READY && b.targetIdx !== undefined) {
-      const targetX = (b.targetIdx * slotW) + (slotW / 2);
-      const diff    = targetX - b.x;
-      const absDiff = Math.abs(diff);
+      const targetX   = (b.targetIdx * slotW) + (slotW / 2);
+      const diff      = targetX - b.x;
+      const direction = diff > 0 ? 1 : -1;
 
-      // Gaya linear sangat kecil — tidak menyebabkan lompat teleport
-      // Semakin bawah bola, sedikit lebih kuat agar presisi di slot
-      const depthRatio = Math.max(0, Math.min(1, b.y / BH));
+      // Bias kecil konstan, aktif di 70% bawah board
+      if (b.y > BH * 0.30) {
+        b.vx += direction * 0.04;
+      }
 
-      // Batasi gaya agar tidak lebih dari 15% dari jarak per frame
-      // Ini mencegah "terbang" tiba-tiba ke slot jauh
-      const maxForce = 0.003 + depthRatio * 0.005;  // max ~0.008
-      const force    = Math.min(maxForce, absDiff * 0.0004 + depthRatio * 0.004);
-      b.vx += (diff > 0 ? 1 : -1) * force * Math.min(absDiff, slotW * 2);
-
-      // Clamp vx agar magnet tidak membuat bola tiba-tiba melejit
-      const vxClamp = 3.5 + depthRatio * 1.5;
-      if (b.vx >  vxClamp) b.vx =  vxClamp;
-      if (b.vx < -vxClamp) b.vx = -vxClamp;
+      // Hard clamp vx — bola tidak boleh gerak horizontal > 2.5px/frame
+      if (b.vx >  2.5) b.vx =  2.5;
+      if (b.vx < -2.5) b.vx = -2.5;
     }
 
     // ── 4. Gerak posisi ───────────────────────────────────────
