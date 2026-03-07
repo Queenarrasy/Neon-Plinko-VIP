@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-/* CSS tetap sama */
+/* CSS Tetap Sama */
 :root { --pink: #ff0077; --blue: #0044ff; --yellow: #f5e642; --dark-blue: #050614; --bg: #02030d; --gp: 0 0 15px rgba(255, 0, 119, 0.7); --gb: 0 0 20px rgba(0, 68, 255, 0.8); --gy: 0 0 15px rgba(245, 230, 66, 0.7); --header-h: 60px; --slot-h: 40px; }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 body { width: 100vw; height: 100vh; overflow: hidden; background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; display: flex; flex-direction: column; }
@@ -165,6 +165,16 @@ function loop() {
     b.vy += ph.grav; b.x += b.vx; b.y += b.vy;
     if (b.x < BALL_R || b.x > BW - BALL_R) b.vx *= -0.5;
 
+    // --- PERBAIKAN LOGIK WINRATE (MAGNET KONSTAN) ---
+    // Sekarang diletakkan di luar loop paku agar menarik terus setiap frame
+    if (b.targetIdx !== undefined && b.y > BH * 0.2) { 
+        let targetX = (b.targetIdx * slotW) + (slotW / 2);
+        let diff = targetX - b.x;
+        // Semakin jauh bola jatuh, tarikan semakin kuat untuk presisi tinggi
+        let force = 0.015 * (b.y / BH); 
+        b.vx += diff * force; 
+    }
+
     pegs.forEach(p => {
       let dx = b.x - p.x, dy = b.y - p.y, d = Math.sqrt(dx*dx + dy*dy);
       if (d < BALL_R + PEG_R) {
@@ -173,13 +183,6 @@ function loop() {
         b.vx = (b.vx - 2 * dot * nx) * ph.bounce + (Math.random() - 0.5);
         b.vy = Math.abs(b.vy - 2 * dot * ny) * ph.bounce;
         if (b.vy < 1.8) b.vy = 1.8;
-        
-        // --- LOGIK WINRATE: Memaksa bola ke target multiplier ---
-        if (b.targetIdx !== undefined && b.y > BH * 0.45) { // Magnet aktif lebih awal
-            let targetX = (b.targetIdx * slotW) + (slotW / 2);
-            let diff = targetX - b.x;
-            b.vx += diff * 0.06; 
-        }
       }
     });
 
@@ -191,33 +194,25 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-// FUNGSI DIPERBAIKI: Spawning Instan tanpa delay await
 function spawnBall() {
   const bet = BETS[betIdx];
   const user = getUsername();
   if (_saldo < bet) { showModal("BALANCE INSUFFICIENT."); stopAuto(); return; }
 
   const saldoAwal = _saldo;
-  
-  // 1. Kurangi saldo secara visual segera
   _saldo -= bet;
   _renderS();
   snd('click');
 
-  // 2. Buat objek bola segera (bola akan muncul di detik ke-0)
+  // Spawn Instan
   const newBall = { 
     x: BW/2 + (Math.random()-0.5)*20, 
-    y: -10, 
-    vx: (Math.random()-0.5)*2, 
-    vy: 1, 
-    bet: bet, 
-    targetIdx: undefined, // Akan diisi setelah respon server datang
-    serverWin: 0,
-    serverNewSaldo: undefined
+    y: -10, vx: (Math.random()-0.5)*2, vy: 1, 
+    bet: bet, targetIdx: undefined, serverWin: 0 
   };
   balls.push(newBall);
 
-  // 3. Panggil Server di background (tanpa menghambat animasi bola)
+  // Sync ke server di background
   apiCall({
     action: 'game_play',
     username: user,
@@ -229,16 +224,14 @@ function spawnBall() {
       let possibleIndices = [];
       MULTS.forEach((m, idx) => { if(m === targetMultiplier) possibleIndices.push(idx); });
       
-      // Update data bola yang sudah terlanjur meluncur
       newBall.targetIdx = possibleIndices[Math.floor(Math.random() * possibleIndices.length)];
       newBall.serverWin = res.win;
       newBall.serverNewSaldo = res.newSaldo;
     } else {
-      // Jika server error, hapus bola dan kembalikan saldo
       balls = balls.filter(b => b !== newBall);
       _saldo += bet;
       _renderS();
-      showModal(res.message || "SERVER CONNECTION ERROR.");
+      showModal(res.message || "SERVER ERROR.");
       stopAuto();
     }
   });
@@ -248,11 +241,9 @@ function onLand(b) {
   let idx = Math.floor(b.x / slotW);
   idx = Math.max(0, Math.min(MULTS.length - 1, idx));
   
-  // Gunakan data dari server jika sudah sampai, jika belum (fallback) hitung lokal
   if (b.serverNewSaldo !== undefined) {
       _saldo = b.serverNewSaldo;
   } else {
-      // Skenario jika internet sangat lambat
       _saldo += (b.bet * MULTS[idx]);
   }
   
