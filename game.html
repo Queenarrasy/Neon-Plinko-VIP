@@ -16,8 +16,9 @@ body { width: 100vw; height: 100vh; overflow: hidden; background: var(--bg); col
 #display-saldo { font-family: 'Cinzel Decorative', serif; font-size: 18px; color: var(--yellow); text-shadow: var(--gy); font-weight: 900; }
 #board-wrapper { flex: 1; position: relative; background: radial-gradient(circle at center, #070a24 0%, #02030d 100%); overflow: hidden; display: flex; flex-direction: column; }
 #plinko-canvas { flex: 1; display: block; width: 100%; }
-#floating-score { position: absolute; top: 10px; right: 10px; background: rgba(0, 0, 0, 0.8); border: 1px solid var(--blue); border-radius: 8px; padding: 5px; width: 95px; box-shadow: var(--gb); }
-.score-entry { font-size: 10px; border-bottom: 1px solid rgba(0, 68, 255, 0.3); padding: 3px 0; text-align: center; color: var(--pink); }
+#floating-score { position: absolute; top: 10px; right: 10px; background: rgba(0, 0, 0, 0.8); border: 1px solid var(--blue); border-radius: 8px; padding: 5px; width: 95px; box-shadow: var(--gb); z-index: 20; }
+.score-entry { font-size: 10px; border-bottom: 1px solid rgba(0, 68, 255, 0.3); padding: 3px 0; text-align: center; color: var(--pink); animation: slideIn 0.3s ease-out; }
+@keyframes slideIn { from { opacity:0; transform:translateX(10px); } to { opacity:1; transform:translateX(0); } }
 .multiplier-row { height: var(--slot-h); display: flex; gap: 3px; padding: 0 10px; align-items: center; background: transparent; margin-top: -15px; margin-bottom: 10px; z-index: 10; }
 .slot { flex: 1; height: 32px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; transition: all 0.2s; border: 1px solid rgba(255,255,255,0.1); }
 .s-high { background: var(--pink); color: #fff; box-shadow: var(--gp); border-color: #ff6eb4; }
@@ -98,13 +99,13 @@ const MULTS = [10, 3, 1.5, 0.5, 0.2, 0.2, 0.5, 1.5, 3, 10];
 const BETS  = [400, 800, 1000, 1200, 1600, 2000, 4000, 8000, 10000, 20000];
 const BALL_R = 7, PEG_R = 3.5;
 
-let canvas, ctx, BW, BH, pegs = [], balls = [], slotW;
+let canvas, ctx, BW, BH, pegs = [], balls = [], slotW, particles = [];
 let speedMode = 'normal', isAuto = false, autoTimer = null, betIdx = 0;
 let _saldo = getStoredSaldo();
 
 const PH = {
-  normal: { grav: 0.2, fric: 0.99, bounce: 0.45, autoMs: 1400 },
-  turbo:  { grav: 0.6, fric: 0.98, bounce: 0.40, autoMs: 300  }
+  normal: { grav: 0.22, fric: 0.99, bounce: 0.45, autoMs: 1200 },
+  turbo:  { grav: 0.65, fric: 0.98, bounce: 0.40, autoMs: 300  }
 };
 
 const BALL_WAITING = 'waiting';
@@ -118,6 +119,7 @@ function init() {
   resize();
   _renderS();
   loop();
+  
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && balls.length === 0) {
       apiCall({ action: 'get_saldo', username: getUsername() }).then(res => {
@@ -140,12 +142,12 @@ function resize() {
 function buildPegs() {
   pegs = [];
   const spacingX = (BW * 0.88) / ROWS;
-  const spacingY = (BH * 0.80) / ROWS;
+  const spacingY = (BH * 0.75) / ROWS;
   for (let r = 0; r < ROWS; r++) {
     const count  = r + 2;
     const startX = (BW - (count - 1) * spacingX) / 2;
     for (let c = 0; c < count; c++) {
-      pegs.push({ x: startX + c * spacingX, y: 40 + r * spacingY, glow: 0 });
+      pegs.push({ x: startX + c * spacingX, y: 50 + r * spacingY, glow: 0 });
     }
   }
 }
@@ -161,52 +163,67 @@ function buildSlots() {
   });
 }
 
-// ── GAME LOOP: ENHANCED STEERING ENGINE ───────────────────────────────────
+// ── LOGIKA PARTIKEL UNTUK KEMENANGAN BESAR ─────────────────────────────
+function createParticles(x, y, color) {
+  for (let i = 0; i < 15; i++) {
+    particles.push({
+      x: x, y: y,
+      vx: (Math.random() - 0.5) * 6,
+      vy: (Math.random() - 0.5) * 6 - 2,
+      life: 1.0, color: color,
+      size: Math.random() * 3 + 1
+    });
+  }
+}
+
 function loop() {
-  ctx.fillStyle = 'rgba(2, 3, 13, 0.88)'; 
+  ctx.fillStyle = 'rgba(2, 3, 13, 0.85)'; 
   ctx.fillRect(0, 0, BW, BH);
 
   const ph = PH[speedMode];
-  const LAST_PEG_Y = pegs[pegs.length - 1].y;
+  const LAST_PEG_Y = pegs.length > 0 ? pegs[pegs.length - 1].y : BH;
 
   // Render Pegs
   pegs.forEach(p => {
-    p.glow *= 0.85;
-    ctx.fillStyle = p.glow > 0.1 ? '#ffffff' : 'rgba(0, 68, 255, 0.35)';
+    p.glow *= 0.88;
+    ctx.fillStyle = p.glow > 0.1 ? '#ffffff' : 'rgba(0, 68, 255, 0.3)';
     ctx.beginPath();
-    ctx.arc(p.x, p.y, PEG_R + (p.glow * 1.2), 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, PEG_R + (p.glow * 1.5), 0, Math.PI * 2);
     ctx.fill();
   });
 
+  // Render Particles
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy; p.vy += 0.1; p.life -= 0.02;
+    if (p.life <= 0) { particles.splice(i, 1); continue; }
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1.0;
+
+  // Render & Logic Balls
   for (let i = balls.length - 1; i >= 0; i--) {
     const b = balls[i];
     if (b.serverStatus === BALL_ERROR) { balls.splice(i, 1); continue; }
 
-    // Physics Dasar
     b.vy += ph.grav;
     b.vx *= ph.fric;
 
-    // --- ULTRA SMOOTH STEERING ENGINE ---
+    // --- SMOOTH STEERING ---
     if (b.serverStatus === BALL_READY && b.targetIdx !== undefined) {
       const targetX = (b.targetIdx * slotW) + (slotW / 2);
       const dx = targetX - b.x;
-      
-      // Hitung progress perjalanan bola dari atas ke bawah (0.0 sampai 1.0)
-      const startY = pegs[0].y;
-      const totalRange = LAST_PEG_Y - startY;
-      const progress = Math.max(0, Math.min(1, (b.y - startY) / totalRange));
-      
-      // MENGGUNAKAN SINUSOIDAL STEERING:
-      // Tarikan dimulai sangat lemah di atas dan menguat secara halus (sine curve)
-      // Ini mencegah efek patah atau teleportasi
-      const steerStrength = Math.sin(progress * Math.PI * 0.5) * 0.018;
-      b.vx += dx * steerStrength;
+      const progress = Math.min(1, b.y / BH);
+      const steerPower = Math.pow(progress, 1.5) * 0.022;
+      b.vx += dx * steerPower;
 
-      // Anti-jitter: Jika bola sudah melewati paku terakhir, kunci posisi X perlahan
       if (b.y > LAST_PEG_Y) {
-        const snapEase = 0.12;
-        b.x += (targetX - b.x) * snapEase;
-        b.vx *= 0.8; // Redam guncangan horizontal saat masuk slot
+        b.x += (targetX - b.x) * 0.1; // Snap akhir
+        b.vx *= 0.85;
       }
     }
 
@@ -217,42 +234,29 @@ function loop() {
     if (b.x < BALL_R) { b.x = BALL_R; b.vx *= -0.4; }
     else if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx *= -0.4; }
 
-    // Collision Paku (Pegs)
-    let hit = false;
-    for (let pi = 0; pi < pegs.length; pi++) {
-      const p = pegs[pi];
-      if (Math.abs(p.y - b.y) > 12) continue;
-      
-      const distDx = b.x - p.x;
-      const distDy = b.y - p.y;
-      const d = Math.sqrt(distDx*distDx + distDy*distDy);
-      const minD = BALL_R + PEG_R;
-
-      if (d < minD) {
-        const nx = distDx / d, ny = distDy / d;
-        b.x = p.x + nx * minD;
-        b.y = p.y + ny * minD;
-
-        const dot = b.vx * nx + b.vy * ny;
+    // Paku
+    for (let p of pegs) {
+      const dx = b.x - p.x, dy = b.y - p.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < BALL_R + PEG_R) {
+        const nx = dx/dist, ny = dy/dist;
+        b.x = p.x + nx * (BALL_R + PEG_R);
+        b.y = p.y + ny * (BALL_R + PEG_R);
+        const dot = b.vx*nx + b.vy*ny;
         if (dot < 0) {
-          // Tambahkan sedikit noise/acak agar tidak terlihat kaku seperti robot
-          const chaos = (Math.random() - 0.5) * 0.15;
-          b.vx = (b.vx - 2 * dot * nx) * ph.bounce + chaos;
-          b.vy = (b.vy - 2 * dot * ny) * ph.bounce;
-          
-          if (b.vy < 0.6) b.vy = 0.6; // Pastikan bola selalu turun
+          b.vx = (b.vx - 2*dot*nx) * ph.bounce + (Math.random()-0.5)*0.2;
+          b.vy = (b.vy - 2*dot*ny) * ph.bounce;
+          if (b.vy < 0.5) b.vy = 0.5;
         }
-        p.glow = 1.0;
-        if (!hit) { snd('hit'); hit = true; }
-        break; 
+        p.glow = 1.0; snd('hit');
+        break;
       }
     }
 
     // Render Bola
     ctx.beginPath();
-    ctx.shadowBlur = 8;
-    ctx.shadowColor = '#ff0077';
-    ctx.fillStyle = '#ffffff'; // Inti putih untuk efek neon tajam
+    ctx.shadowBlur = 10; ctx.shadowColor = '#ff0077';
+    ctx.fillStyle = '#ffffff';
     ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2);
     ctx.fill();
     ctx.shadowBlur = 0;
@@ -266,29 +270,32 @@ function loop() {
 }
 
 function spawnBall() {
-  var bet = BETS[betIdx];
+  const bet = BETS[betIdx];
   if (_saldo < bet) { showModal("BALANCE INSUFFICIENT."); stopAuto(); return; }
-  var saldoAwal = _saldo;
+  const saldoAwal = _saldo;
   _saldo -= bet; _renderS();
   snd('click');
 
-  var newBall = {
-    x: BW/2 + (Math.random()-0.5)*20, y: -25,
-    vx: (Math.random()-0.5)*3.5, vy: 1,
+  const newBall = {
+    x: BW/2 + (Math.random()-0.5)*25, y: -20,
+    vx: (Math.random()-0.5)*3, vy: 1,
     bet: bet, targetIdx: undefined,
-    serverStatus: BALL_WAITING
+    serverStatus: BALL_WAITING,
+    serverMult: 0, serverWin: 0 // Default values
   };
   balls.push(newBall);
 
   apiCall({ action: 'game_play', username: getUsername(), bet: bet, saldoAwal: saldoAwal })
   .then(res => {
     if (res && res.result === 'SUCCESS') {
-      let tm = res.target_multiplier;
+      let tm = parseFloat(res.target_multiplier);
       let possible = [];
       MULTS.forEach((m, idx) => { if (m === tm) possible.push(idx); });
+      if (possible.length === 0) possible = [Math.floor(MULTS.length/2)]; // Fallback
+      
       newBall.targetIdx = possible[Math.floor(Math.random() * possible.length)];
-      newBall.serverWin = res.win;
-      newBall.serverNewSaldo = res.newSaldo;
+      newBall.serverWin = parseFloat(res.win) || 0;
+      newBall.serverNewSaldo = parseFloat(res.newSaldo) || _saldo;
       newBall.serverMult = tm;
       newBall.serverStatus = BALL_READY;
     } else {
@@ -304,8 +311,17 @@ function spawnBall() {
 }
 
 function onLand(b) {
-  const idx = b.targetIdx;
-  _saldo = b.serverNewSaldo;
+  // VALIDASI: Jika data server belum siap, gunakan fallback agar tidak muncul NaN/undefined
+  const mult = b.serverStatus === BALL_READY ? b.serverMult : 0;
+  const win = b.serverStatus === BALL_READY ? b.serverWin : 0;
+  const idx = b.targetIdx !== undefined ? b.targetIdx : Math.floor(MULTS.length/2);
+
+  if (b.serverStatus === BALL_READY) {
+    _saldo = b.serverNewSaldo;
+  } else {
+    // Jika bola mendarat tapi server belum merespon (jarang tapi mungkin)
+    // Saldo akan diupdate saat api call selesai atau via visibilitychange
+  }
   _renderS();
 
   const slotEl = document.getElementById('slot-' + idx);
@@ -314,12 +330,15 @@ function onLand(b) {
     setTimeout(() => slotEl.classList.remove('active'), 500);
   }
 
-  if (b.serverMult >= 1) snd('win');
+  if (mult >= 1) {
+    snd('win');
+    createParticles((idx * slotW) + slotW/2, BH - 20, mult >= 3 ? '#f5e642' : '#ff0077');
+  }
 
   const list = document.getElementById('score-list');
   const div = document.createElement('div');
   div.className = 'score-entry';
-  div.innerHTML = `<b>${b.serverMult}x</b> | +${Math.floor(b.serverWin).toLocaleString('id-ID')}`;
+  div.innerHTML = `<b>${mult}x</b> | +${Math.floor(win).toLocaleString('id-ID')}`;
   list.prepend(div);
   if (list.children.length > 5) list.lastChild.remove();
 }
