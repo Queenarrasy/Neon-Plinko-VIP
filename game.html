@@ -103,8 +103,8 @@ let speedMode = 'normal', isAuto = false, autoTimer = null, betIdx = 0;
 let _saldo = getStoredSaldo();
 
 const PH = {
-  normal: { grav: 0.17, fric: 0.985, bounce: 0.44, autoMs: 1400 },
-  turbo:  { grav: 0.55, fric: 0.980, bounce: 0.38, autoMs: 300  }
+  normal: { grav: 0.2, fric: 0.99, bounce: 0.45, autoMs: 1400 },
+  turbo:  { grav: 0.6, fric: 0.98, bounce: 0.40, autoMs: 300  }
 };
 
 const BALL_WAITING = 'waiting';
@@ -139,13 +139,13 @@ function resize() {
 
 function buildPegs() {
   pegs = [];
-  const spacingX = (BW * 0.85) / ROWS;
-  const spacingY = (BH * 0.82) / ROWS;
+  const spacingX = (BW * 0.88) / ROWS;
+  const spacingY = (BH * 0.80) / ROWS;
   for (let r = 0; r < ROWS; r++) {
     const count  = r + 2;
     const startX = (BW - (count - 1) * spacingX) / 2;
     for (let c = 0; c < count; c++) {
-      pegs.push({ x: startX + c * spacingX, y: 35 + r * spacingY, glow: 0 });
+      pegs.push({ x: startX + c * spacingX, y: 40 + r * spacingY, glow: 0 });
     }
   }
 }
@@ -161,19 +161,20 @@ function buildSlots() {
   });
 }
 
-// ── GAME LOOP OPTIMIZED ────────────────────────────────────────────────
+// ── GAME LOOP: ULTRA SMOOTH STEERING ───────────────────────────────────
 function loop() {
-  ctx.fillStyle = 'rgba(2, 3, 13, 0.85)';
+  ctx.fillStyle = 'rgba(2, 3, 13, 0.88)'; // Ghosting trail sangat halus
   ctx.fillRect(0, 0, BW, BH);
 
   const ph = PH[speedMode];
-  const LAST_PEG_Y = 35 + (ROWS - 1) * ((BH * 0.82) / ROWS) + PEG_R + BALL_R;
+  const LAST_PEG_Y = pegs[pegs.length - 1].y;
 
+  // Render Pegs
   pegs.forEach(p => {
     p.glow *= 0.85;
-    ctx.fillStyle = p.glow > 0.1 ? '#ffffff' : 'rgba(0, 68, 255, 0.4)';
+    ctx.fillStyle = p.glow > 0.1 ? '#ffffff' : 'rgba(0, 68, 255, 0.35)';
     ctx.beginPath();
-    ctx.arc(p.x, p.y, PEG_R + (p.glow * 1.5), 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, PEG_R + (p.glow * 1.2), 0, Math.PI * 2);
     ctx.fill();
   });
 
@@ -181,71 +182,87 @@ function loop() {
     const b = balls[i];
     if (b.serverStatus === BALL_ERROR) { balls.splice(i, 1); continue; }
 
+    // Logic: Waiting State (Bukan ngerem mendadak, tapi melambat alami)
     if (b.serverStatus === BALL_WAITING) {
-      const brakeY = BH * 0.70;
-      if (b.y > brakeY) {
-        b.vy *= 0.92; 
-        if (b.vy < 0.15) b.vy = 0.15;
+      if (b.y > BH * 0.65) {
+        b.vy *= 0.94;
+        if (b.vy < 0.2) b.vy = 0.2;
       }
     }
 
+    // Apply Physics
     b.vy += ph.grav;
     b.vx *= ph.fric;
 
+    // --- SMART STEERING ENGINE ---
     if (b.serverStatus === BALL_READY && b.targetIdx !== undefined) {
       const targetX = (b.targetIdx * slotW) + (slotW / 2);
-      const distToTarget = targetX - b.x;
+      const dx = targetX - b.x;
+      
+      // Hitung progress perjalanan (0 - 1)
       const progress = Math.min(1, b.y / BH);
-      const influence = Math.pow(progress, 2);
+      
+      // Bias halus sejak awal: Semakin kebawah, koreksi semakin presisi
+      // Gunakan Math.pow agar tarikan di atas hampir tidak terasa sama sekali
+      const steerPower = Math.pow(progress, 1.8) * 0.025;
+      b.vx += dx * steerPower;
 
-      if (b.y < LAST_PEG_Y) {
-        const desiredVx = distToTarget * 0.04;
-        b.vx += (desiredVx - b.vx) * (0.01 + influence * 0.02);
-      } else {
-        const landingLerp = Math.min(0.15, (b.y - LAST_PEG_Y) * 0.005);
-        b.vx = b.vx * (1 - landingLerp) + (distToTarget * landingLerp);
+      // Anti-jitter: Jika sudah di area landing, redam kecepatan horizontal yang liar
+      if (b.y > LAST_PEG_Y) {
+        const landingEase = Math.min(1, (b.y - LAST_PEG_Y) / 50);
+        b.vx *= (1 - landingEase * 0.1);
       }
     }
 
     b.x += b.vx;
     b.y += b.vy;
 
-    if (b.x < BALL_R) { b.x = BALL_R; b.vx *= -0.4; }
-    else if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx *= -0.4; }
+    // Dinding
+    if (b.x < BALL_R) { b.x = BALL_R; b.vx *= -0.3; }
+    else if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx *= -0.3; }
 
+    // Collision Paku
     let hit = false;
     for (let pi = 0; pi < pegs.length; pi++) {
       const p = pegs[pi];
-      if (Math.abs(p.y - b.y) > 15) continue;
-      const dx = b.x - p.x;
-      const dy = b.y - p.y;
-      const d = Math.sqrt(dx * dx + dy * dy);
+      if (Math.abs(p.y - b.y) > 12) continue;
+      
+      const distDx = b.x - p.x;
+      const distDy = b.y - p.y;
+      const d = Math.sqrt(distDx*distDx + distDy*distDy);
       const minD = BALL_R + PEG_R;
 
       if (d < minD) {
-        const nx = dx / d, ny = dy / d;
-        b.x += nx * (minD - d);
-        b.y += ny * (minD - d);
-        const isLastRows = p.y > LAST_PEG_Y - 40;
-        const bounceFactor = isLastRows ? ph.bounce * 0.6 : ph.bounce;
+        const nx = distDx / d, ny = distDy / d;
+        // Push out
+        b.x = p.x + nx * minD;
+        b.y = p.y + ny * minD;
+
+        // Reflection
         const dot = b.vx * nx + b.vy * ny;
         if (dot < 0) {
-          b.vx = (b.vx - 2 * dot * nx) * bounceFactor;
-          b.vy = (b.vy - 2 * dot * ny) * bounceFactor;
-          if (b.vy < 0.8) b.vy = 0.8; 
+          // Tambahkan sedikit noise acak agar pantulan tidak kaku (robotik)
+          const randomness = (Math.random() - 0.5) * 0.2;
+          b.vx = (b.vx - 2 * dot * nx) * ph.bounce + randomness;
+          b.vy = (b.vy - 2 * dot * ny) * ph.bounce;
+          
+          // Pastikan bola tidak memantul ke atas terlalu lama
+          if (b.vy < 0.5) b.vy = 0.5;
         }
         p.glow = 1.0;
         if (!hit) { snd('hit'); hit = true; }
-        break;
+        break; 
       }
     }
 
+    // Render Bola
     ctx.beginPath();
     ctx.fillStyle = '#ff0077';
     ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-    ctx.lineWidth = 1;
+    // Glowing ring
+    ctx.strokeStyle = 'rgba(255, 110, 180, 0.5)';
+    ctx.lineWidth = 2;
     ctx.stroke();
 
     if (b.y > BH + BALL_R) {
@@ -257,66 +274,61 @@ function loop() {
 }
 
 function spawnBall() {
-  var bet  = BETS[betIdx];
-  var user = getUsername();
+  var bet = BETS[betIdx];
   if (_saldo < bet) { showModal("BALANCE INSUFFICIENT."); stopAuto(); return; }
   var saldoAwal = _saldo;
-  _saldo -= bet;
-  _renderS();
+  _saldo -= bet; _renderS();
   snd('click');
+
   var newBall = {
-    x: BW/2 + (Math.random()-0.5)*20,
-    y: -10, vx: (Math.random()-0.5)*2, vy: 1,
-    bet: bet,
-    targetIdx:      undefined,
-    serverWin:      0,
-    serverNewSaldo: undefined,
-    serverMult:     undefined,
-    serverStatus:   BALL_WAITING
+    x: BW/2 + (Math.random()-0.5)*15, y: -20,
+    vx: (Math.random()-0.5)*3, vy: 1,
+    bet: bet, targetIdx: undefined,
+    serverStatus: BALL_WAITING
   };
   balls.push(newBall);
 
-  apiCall({
-    action:    'game_play',
-    username:  user,
-    bet:       bet,
-    saldoAwal: saldoAwal
-  }).then(function(res) {
+  apiCall({ action: 'game_play', username: getUsername(), bet: bet, saldoAwal: saldoAwal })
+  .then(res => {
     if (res && res.result === 'SUCCESS') {
-      var tm = res.target_multiplier;
-      var possible = [];
-      MULTS.forEach(function(m, idx) { if (m === tm) possible.push(idx); });
-      newBall.targetIdx      = possible[Math.floor(Math.random() * possible.length)];
-      newBall.serverWin      = res.win;
+      let tm = res.target_multiplier;
+      let possible = [];
+      MULTS.forEach((m, idx) => { if (m === tm) possible.push(idx); });
+      newBall.targetIdx = possible[Math.floor(Math.random() * possible.length)];
+      newBall.serverWin = res.win;
       newBall.serverNewSaldo = res.newSaldo;
-      newBall.serverMult     = tm;
-      newBall.serverStatus   = BALL_READY;
+      newBall.serverMult = tm;
+      newBall.serverStatus = BALL_READY;
     } else {
       newBall.serverStatus = BALL_ERROR;
       _saldo += bet; _renderS();
       showModal(res.message || "SERVER ERROR."); stopAuto();
     }
-  }).catch(function() {
+  }).catch(() => {
     newBall.serverStatus = BALL_ERROR;
     _saldo += bet; _renderS();
-    showModal("Koneksi gagal. Cek internet Anda."); stopAuto();
+    stopAuto();
   });
 }
 
 function onLand(b) {
-  const idx = (b.targetIdx !== undefined)
-    ? Math.max(0, Math.min(MULTS.length - 1, b.targetIdx))
-    : Math.max(0, Math.min(MULTS.length - 1, Math.floor(b.x / slotW)));
+  // Gunakan targetIdx murni dari server untuk highlight
+  const idx = b.targetIdx;
   _saldo = b.serverNewSaldo;
   _renderS();
-  var slotEl = document.getElementById('slot-' + idx);
-  slotEl.classList.add('active');
-  setTimeout(function() { slotEl.classList.remove('active'); }, 400);
+
+  const slotEl = document.getElementById('slot-' + idx);
+  if (slotEl) {
+    slotEl.classList.add('active');
+    setTimeout(() => slotEl.classList.remove('active'), 500);
+  }
+
   if (b.serverMult >= 1) snd('win');
-  var list = document.getElementById('score-list');
-  var div  = document.createElement('div');
+
+  const list = document.getElementById('score-list');
+  const div = document.createElement('div');
   div.className = 'score-entry';
-  div.innerHTML = '<b>' + b.serverMult + 'x</b> | +' + Math.floor(b.serverWin).toLocaleString('id-ID');
+  div.innerHTML = `<b>${b.serverMult}x</b> | +${Math.floor(b.serverWin).toLocaleString('id-ID')}`;
   list.prepend(div);
   if (list.children.length > 5) list.lastChild.remove();
 }
@@ -336,13 +348,6 @@ function snd(t) { try { var a = document.getElementById('snd-' + t); a.currentTi
 
 window.addEventListener('resize', resize);
 document.addEventListener('DOMContentLoaded', init);
-
-window.addEventListener('beforeunload', function() {
-  var u = getUsername();
-  if (u) navigator.sendBeacon(
-    SCRIPT_URL + '?data=' + encodeURIComponent(JSON.stringify({ action: 'set_status', username: u, status: 'OFFLINE' }))
-  );
-});
 </script>
 </body>
 </html>
