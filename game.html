@@ -182,17 +182,20 @@ function loop() {
     b.x += b.vx;
     b.y += b.vy;
 
-    // --- STEERING TANPA EFEK SLOW MOTION ---
+    // --- LOGIKA MAGNET SINKRONISASI ---
     if (b.serverStatus === BALL_READY && b.targetIdx !== undefined) {
+      // Hitung posisi tengah slot target secara presisi
       let targetX = (b.targetIdx * slotW) + (slotW / 2);
       let dist = targetX - b.x;
       
       if (b.y < LAST_PEG_Y) {
-        b.vx += dist * 0.015; 
+        // Dorongan halus saat masih di area paku
+        b.vx += dist * 0.012; 
       } else {
-        // Area "Home Stretch" (setelah paku terakhir)
-        // Paksa koordinat X agar sinkron dengan targetIdx sebelum menyentuh dasar
-        b.vx = dist * 0.2; 
+        // MAGNET KUAT: Saat sudah lewat paku terakhir, paksa bola ke tengah slot
+        // Ini memastikan visual b.x selaras dengan b.targetIdx
+        b.x += dist * 0.15; 
+        b.vx *= 0.9; // Redam goyangan liar di akhir
       }
     }
 
@@ -209,7 +212,7 @@ function loop() {
         b.vx = (b.vx - 2 * dot * nx) * ph.bounce;
         b.vy = Math.abs(b.vy - 2 * dot * ny) * ph.bounce;
         b.vx += (Math.random() - 0.5) * 0.8;
-        if (b.vy < 2.0) b.vy = 2.0; 
+        if (b.vy < 2.5) b.vy = 2.5; 
         break;
       }
     }
@@ -217,8 +220,10 @@ function loop() {
     ctx.beginPath(); ctx.fillStyle = '#ff0077'; ctx.shadowBlur = 15; ctx.shadowColor = '#ff0077';
     ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
 
-    if (b.y > BH && b.serverStatus === BALL_READY) {
-      onLand(b); balls.splice(i, 1);
+    // Trigger Finish: Menggunakan koordinat canvas murni
+    if (b.y > BH) {
+       if (b.serverStatus === BALL_READY) onLand(b);
+       balls.splice(i, 1);
     }
   }
   requestAnimationFrame(loop);
@@ -240,7 +245,6 @@ function spawnBall() {
     if (res && res.result === 'SUCCESS') {
       const possible = [];
       MULTS.forEach((m, idx) => { if (m === res.target_multiplier) possible.push(idx); });
-      // Simpan index spesifik yang dituju
       newBall.targetIdx = possible[Math.floor(Math.random() * possible.length)];
       newBall.serverWin = res.win;
       newBall.serverNewSaldo = res.newSaldo;
@@ -256,10 +260,10 @@ function spawnBall() {
 function onLand(b) {
   _saldo = b.serverNewSaldo; _renderS();
   
-  // PERBAIKAN: Gunakan targetIdx langsung, jangan hitung ulang pakai b.x
+  // Pastikan slot yang menyala ADALAH targetIdx dari server
   const safeIdx = b.targetIdx; 
-  
   const slotEl = document.getElementById('slot-' + safeIdx);
+  
   if(slotEl) {
     slotEl.classList.add('active'); 
     setTimeout(() => slotEl.classList.remove('active'), 400);
