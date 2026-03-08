@@ -177,24 +177,22 @@ function loop() {
     let b = balls[i];
     if (b.serverStatus === BALL_ERROR) { balls.splice(i, 1); continue; }
 
-    // Jatuh bebas tanpa pengereman
     b.vy += ph.grav;
     b.vx *= ph.fric;
     b.x += b.vx;
     b.y += b.vy;
 
-    // --- ALGORITMA STEERING TANPA EFEK SLOW MOTION ---
+    // --- STEERING TANPA EFEK SLOW MOTION ---
     if (b.serverStatus === BALL_READY && b.targetIdx !== undefined) {
       let targetX = (b.targetIdx * slotW) + (slotW / 2);
       let dist = targetX - b.x;
       
-      // Memberikan dorongan horizontal halus (vx) tanpa mengurangi vy (kecepatan jatuh)
-      // Ini memastikan bola tetap meluncur cepat tapi berbelok ke target yang benar
-      b.vx += dist * 0.015; 
-      
-      // Jika sudah melewati paku, pastikan vx cukup untuk mencapai targetX sebelum menyentuh dasar
-      if (b.y > LAST_PEG_Y) {
-         b.vx = (targetX - b.x) * 0.15; // Dorongan konstan tanpa pengereman vy
+      if (b.y < LAST_PEG_Y) {
+        b.vx += dist * 0.015; 
+      } else {
+        // Area "Home Stretch" (setelah paku terakhir)
+        // Paksa koordinat X agar sinkron dengan targetIdx sebelum menyentuh dasar
+        b.vx = dist * 0.2; 
       }
     }
 
@@ -211,16 +209,14 @@ function loop() {
         b.vx = (b.vx - 2 * dot * nx) * ph.bounce;
         b.vy = Math.abs(b.vy - 2 * dot * ny) * ph.bounce;
         b.vx += (Math.random() - 0.5) * 0.8;
-        if (b.vy < 2.0) b.vy = 2.0; // Minimal jatuh tetap cepat
+        if (b.vy < 2.0) b.vy = 2.0; 
         break;
       }
     }
 
-    // Render Bola
     ctx.beginPath(); ctx.fillStyle = '#ff0077'; ctx.shadowBlur = 15; ctx.shadowColor = '#ff0077';
     ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
 
-    // Finish
     if (b.y > BH && b.serverStatus === BALL_READY) {
       onLand(b); balls.splice(i, 1);
     }
@@ -244,6 +240,7 @@ function spawnBall() {
     if (res && res.result === 'SUCCESS') {
       const possible = [];
       MULTS.forEach((m, idx) => { if (m === res.target_multiplier) possible.push(idx); });
+      // Simpan index spesifik yang dituju
       newBall.targetIdx = possible[Math.floor(Math.random() * possible.length)];
       newBall.serverWin = res.win;
       newBall.serverNewSaldo = res.newSaldo;
@@ -258,8 +255,9 @@ function spawnBall() {
 
 function onLand(b) {
   _saldo = b.serverNewSaldo; _renderS();
-  const idx = Math.floor(b.x / slotW);
-  const safeIdx = Math.max(0, Math.min(idx, MULTS.length - 1));
+  
+  // PERBAIKAN: Gunakan targetIdx langsung, jangan hitung ulang pakai b.x
+  const safeIdx = b.targetIdx; 
   
   const slotEl = document.getElementById('slot-' + safeIdx);
   if(slotEl) {
