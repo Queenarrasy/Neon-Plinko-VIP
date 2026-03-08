@@ -107,15 +107,10 @@ const PH = {
   turbo:  { grav: 0.55, fric: 0.98, bounce: 0.4, autoMs: 250 }
 };
 
-// ─── STATUS BOLA ─────────────────────────────────────────────
-// WAITING = server belum jawab  → bola direm, belum boleh mendarat
-// READY   = server sudah jawab  → targetIdx aktif, boleh mendarat
-// ERROR   = server error        → bola dihapus, bet dikembalikan
 const BALL_WAITING = 'waiting';
 const BALL_READY   = 'ready';
 const BALL_ERROR   = 'error';
 
-// ─── INIT ────────────────────────────────────────────────────
 function init() {
   if (!requireLogin()) return;
   canvas = document.getElementById('plinko-canvas');
@@ -124,7 +119,6 @@ function init() {
   _renderS();
   loop();
 
-  // Sync saldo fresh dari server saat kembali ke tab
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && balls.length === 0) {
       apiCall({ action: 'get_saldo', username: getUsername() }).then(res => {
@@ -134,7 +128,6 @@ function init() {
   });
 }
 
-// ─── RESIZE & BUILD ──────────────────────────────────────────
 function resize() {
   const wrap = document.getElementById('board-wrapper');
   BW = wrap.offsetWidth; BH = wrap.offsetHeight;
@@ -169,33 +162,13 @@ function buildSlots() {
   });
 }
 
-// ─── GAME LOOP ───────────────────────────────────────────────
-//
-//  ARSITEKTUR 2 ZONA:
-//
-//  [ZONA PAKU]    y < LAST_PEG_Y
-//    → Fisika murni: gravitasi + pantulan paku.
-//    → TIDAK ada magnet/bias/gaya horizontal buatan.
-//    → Bola bergerak bebas & natural seperti plinko nyata.
-//
-//  [ZONA LANDING] y >= LAST_PEG_Y  (di bawah paku terakhir)
-//    → Tidak ada paku. Bola jatuh vertikal bebas.
-//    → Posisi X digeser halus via LERP POSISI 13%/frame ke targetX.
-//    → Smooth, tidak teleport, tidak melayang, tidak overshoot.
-//    → vx = 0 agar tidak ada drift.
-//
-//  [WAITING]
-//    → Bola direm halus di 75% board bawah hingga server jawab.
-//    → Mencegah mendarat sebelum hasil server diterima.
-//
+// ─── GAME LOOP FISIKA TERBARU ───────────────────────────────
 function loop() {
   ctx.clearRect(0, 0, BW, BH);
   const ph = PH[speedMode];
 
-  // Batas zona paku terakhir
   const LAST_PEG_Y = 35 + (ROWS - 1) * ((BH * 0.82) / ROWS) + PEG_R + BALL_R + 4;
 
-  // Gambar paku
   pegs.forEach(p => {
     p.glow *= 0.85;
     ctx.fillStyle = p.glow > 0.3 ? '#fff' : 'rgba(0, 68, 255, 0.5)';
@@ -205,26 +178,32 @@ function loop() {
   for (let i = balls.length - 1; i >= 0; i--) {
     const b = balls[i];
 
-    // Hapus bola error tanpa onLand
     if (b.serverStatus === BALL_ERROR) { balls.splice(i, 1); continue; }
 
-    // [WAITING] Rem halus di 75% board bawah
+    // [WAITING] Rem dirombak agar tidak terlihat melayang aneh jika server delay
     if (b.serverStatus === BALL_WAITING) {
       const brakeY = BH * 0.75;
       if (b.y > brakeY) {
         const t = Math.min(1, (b.y - brakeY) / (BH * 0.23));
         b.vy *= (1 - t * 0.60);
-        if (b.vy < 0.18) b.vy = 0.18;
+        if (b.vy < 1.5) b.vy = 1.5; // Diganti dari 0.18 ke 1.5 agar terlihat seperti gravitasi ringan
       }
     }
 
     if (b.y < LAST_PEG_Y) {
       // ══════════════════════════════════════════
-      // [ZONA PAKU] — fisika murni
+      // [ZONA PAKU] — Fisika Murni + Magnet Halus
       // ══════════════════════════════════════════
       b.vy += ph.grav;
       if (b.vy > 13) b.vy = 13;
-      b.vx *= 0.978;
+
+      // Magnet halus: memandu bola perlahan ke kolom yang tepat sejak bola turun
+      if (b.serverStatus === BALL_READY && b.targetIdx !== undefined) {
+        const targetX = (b.targetIdx * slotW) + (slotW / 2);
+        b.vx += Math.sign(targetX - b.x) * 0.08;
+      }
+
+      b.vx *= 0.98;
 
       b.x += b.vx;
       b.y += b.vy;
@@ -232,7 +211,6 @@ function loop() {
       if (b.x < BALL_R)         { b.x = BALL_R;      b.vx =  Math.abs(b.vx) * 0.45; }
       else if (b.x > BW-BALL_R) { b.x = BW - BALL_R; b.vx = -Math.abs(b.vx) * 0.45; }
 
-      // Tabrakan paku — hanya 1 paku per frame (break setelah hit)
       let hit = false;
       for (let pi = 0; pi < pegs.length; pi++) {
         const p  = pegs[pi];
@@ -240,14 +218,20 @@ function loop() {
         const d  = Math.sqrt(dx*dx + dy*dy);
         const minD = BALL_R + PEG_R;
         if (d < minD && d > 0.001) {
-          // Push-out
           const ov = minD - d, nx = dx/d, ny = dy/d;
           b.x += nx * ov; b.y += ny * ov;
-          // Refleksi fisik
+
           const dot = b.vx*nx + b.vy*ny;
           if (dot < 0) {
             b.vx = (b.vx - 2*dot*nx) * ph.bounce + (Math.random()-0.5) * 0.6;
             b.vy = (b.vy - 2*dot*ny) * ph.bounce;
+
+            // Bias Pantulan: Dorongan ekstra ke target setiap tabrak paku agar presisi
+            if (b.serverStatus === BALL_READY && b.targetIdx !== undefined) {
+              const targetX = (b.targetIdx * slotW) + (slotW / 2);
+              b.vx += Math.sign(targetX - b.x) * 1.5;
+            }
+
             if (b.vy < 1.0) b.vy = 1.0;
             if (b.vy > 13)  b.vy = 13;
           }
@@ -259,34 +243,41 @@ function loop() {
 
     } else {
       // ══════════════════════════════════════════
-      // [ZONA LANDING] — lerp posisi X ke slot target
+      // [ZONA LANDING] — Fisika Pegas (Spring-Damper), TANPA Teleport LERP
       // ══════════════════════════════════════════
       b.vy += ph.grav;
       if (b.vy > 13) b.vy = 13;
 
       if (b.serverStatus === BALL_READY && b.targetIdx !== undefined) {
         const targetX = (b.targetIdx * slotW) + (slotW / 2);
-        // Lerp posisi 13%/frame: smooth, tidak teleport, tidak overshoot
-        b.x += (targetX - b.x) * 0.13;
-        b.vx = 0;
+        const dx = targetX - b.x;
+
+        // Tarikan pegas yang halus agar bola membelok bagai kurva parabola alami
+        b.vx += dx * 0.12;
+
+        // Batasi speed horizontal agar pergerakan tidak "loncat" ekstrem
+        const maxVx = 7;
+        if (b.vx > maxVx) b.vx = maxVx;
+        if (b.vx < -maxVx) b.vx = -maxVx;
+
+        // Redaman friksi agar bola mendarat di tengah kotak tanpa bergetar
+        b.vx *= 0.82;
       } else {
-        b.x  += b.vx;
         b.vx *= 0.92;
       }
 
+      b.x += b.vx;
       b.y += b.vy;
 
       if (b.x < BALL_R)         b.x = BALL_R;
       else if (b.x > BW-BALL_R) b.x = BW - BALL_R;
     }
 
-    // Render bola
     ctx.beginPath();
     ctx.fillStyle = '#ff0077'; ctx.shadowBlur = 15; ctx.shadowColor = '#ff0077';
     ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2); ctx.fill();
     ctx.shadowBlur = 0;
 
-    // Mendarat — hanya jika server sudah jawab (READY)
     if (b.y > BH && b.serverStatus === BALL_READY) {
       onLand(b);
       balls.splice(i, 1);
@@ -295,7 +286,6 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-// ─── SPAWN BALL ──────────────────────────────────────────────
 function spawnBall() {
   const bet  = BETS[betIdx];
   const user = getUsername();
@@ -306,7 +296,6 @@ function spawnBall() {
   _renderS();
   snd('click');
 
-  // Bola lahir status WAITING — belum boleh mendarat
   const newBall = {
     x: BW/2 + (Math.random()-0.5)*20,
     y: -10, vx: (Math.random()-0.5)*2, vy: 1,
@@ -319,7 +308,6 @@ function spawnBall() {
   };
   balls.push(newBall);
 
-  // Kirim ke server — menang/kalah 100% ditentukan server via winrate
   apiCall({
     action:    'game_play',
     username:  user,
@@ -331,7 +319,6 @@ function spawnBall() {
       const possible = [];
       MULTS.forEach((m, idx) => { if (m === tm) possible.push(idx); });
 
-      // Set semua data server → status READY → bola boleh mendarat
       newBall.targetIdx      = possible[Math.floor(Math.random() * possible.length)];
       newBall.serverWin      = res.win;
       newBall.serverNewSaldo = res.newSaldo;
@@ -339,22 +326,17 @@ function spawnBall() {
       newBall.serverStatus   = BALL_READY;
 
     } else {
-      // Server error: batalkan bola, kembalikan bet
       newBall.serverStatus = BALL_ERROR;
       _saldo += bet; _renderS();
       showModal(res.message || "SERVER ERROR."); stopAuto();
     }
   }).catch(() => {
-    // Network error: batalkan bola, kembalikan bet
     newBall.serverStatus = BALL_ERROR;
     _saldo += bet; _renderS();
     showModal("Koneksi gagal. Cek internet Anda."); stopAuto();
   });
 }
 
-// ─── ON LAND ────────────────────────────────────────────────
-// Saldo & hasil 100% dari server. idx dari posisi fisik bola
-// (zona landing sudah lerp bola ke targetX, jadi selalu konsisten).
 function onLand(b) {
   const idx = Math.max(0, Math.min(MULTS.length - 1, Math.floor(b.x / slotW)));
 
@@ -375,13 +357,11 @@ function onLand(b) {
   if (list.children.length > 5) list.lastChild.remove();
 }
 
-// ─── RENDER SALDO ───────────────────────────────────────────
 function _renderS() {
   document.getElementById('display-saldo').textContent = 'IDR ' + Math.floor(_saldo).toLocaleString('id-ID');
   storeLocalSaldo(_saldo);
 }
 
-// ─── CONTROLS ───────────────────────────────────────────────
 function setSpeedMode(m) { speedMode = m; snd('click'); document.getElementById('m-normal').classList.toggle('active', m === 'normal'); document.getElementById('m-turbo').classList.toggle('active', m === 'turbo'); }
 function toggleAuto() { isAuto = !isAuto; document.getElementById('m-auto').classList.toggle('active', isAuto); if (isAuto) { spawnBall(); autoTimer = setInterval(spawnBall, PH[speedMode].autoMs); } else { clearInterval(autoTimer); } }
 function stopAuto() { isAuto = false; clearInterval(autoTimer); document.getElementById('m-auto').classList.remove('active'); }
@@ -393,7 +373,6 @@ function snd(t) { try { const a = document.getElementById('snd-' + t); a.current
 window.addEventListener('resize', resize);
 document.addEventListener('DOMContentLoaded', init);
 
-// Set OFFLINE saat tutup tab — game.html handle sendiri (tidak dobel dengan global.js)
 window.addEventListener('beforeunload', () => {
   const u = getUsername();
   if (u) navigator.sendBeacon(
