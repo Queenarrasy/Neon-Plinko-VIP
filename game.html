@@ -93,9 +93,17 @@ body { width: 100vw; height: 100vh; overflow: hidden; background: var(--bg); col
 
 <script src="global.js"></script>
 <script>
-const ROWS  = 10;
+/**
+ * PERBAIKAN UTAMA:
+ * 1. Menghapus 'Magnetik' kasar yang menyebabkan teleport.
+ * 2. Menggunakan gravitasi progresif agar bola terasa berat.
+ * 3. Sinkronisasi Landing: Bola hanya jatuh ke target yang ditentukan server tanpa melayang.
+ * 4. Animasi pergerakan menggunakan peredam (friction) yang lebih realistis.
+ */
+
+const ROWS = 10;
 const MULTS = [10, 3, 1.5, 0.5, 0.2, 0.2, 0.5, 1.5, 3, 10];
-const BETS  = [400, 800, 1000, 1200, 1600, 2000, 4000, 8000, 10000, 20000];
+const BETS = [400, 800, 1000, 1200, 1600, 2000, 4000, 8000, 10000, 20000];
 const BALL_R = 7, PEG_R = 3.5;
 
 let canvas, ctx, BW, BH, pegs = [], balls = [], slotW;
@@ -103,8 +111,8 @@ let speedMode = 'normal', isAuto = false, autoTimer = null, betIdx = 0;
 let _saldo = getStoredSaldo();
 
 const PH = {
-  normal: { grav: 0.32, fric: 0.99, bounce: 0.45, autoMs: 700 },
-  turbo:  { grav: 0.58, fric: 0.98, bounce: 0.35, autoMs: 250 }
+  normal: { grav: 0.4, fric: 0.98, bounce: 0.5, autoMs: 700 },
+  turbo:  { grav: 0.7, fric: 0.96, bounce: 0.4, autoMs: 250 }
 };
 
 const BALL_WAITING = 'waiting';
@@ -114,25 +122,18 @@ const BALL_ERROR   = 'error';
 async function init() {
   if (!requireLogin()) return;
   canvas = document.getElementById('plinko-canvas');
-  ctx    = canvas.getContext('2d');
+  ctx = canvas.getContext('2d');
   resize();
   _saldo = await syncServerSaldo();
   _renderS();
   loop();
-
-  document.addEventListener('visibilitychange', async () => {
-    if (document.visibilityState === 'visible' && balls.length === 0) {
-      _saldo = await syncServerSaldo();
-      _renderS();
-    }
-  });
 }
 
 function resize() {
   const wrap = document.getElementById('board-wrapper');
   BW = wrap.offsetWidth; BH = wrap.offsetHeight;
   const DPR = window.devicePixelRatio || 1;
-  canvas.width  = BW * DPR; canvas.height = BH * DPR;
+  canvas.width = BW * DPR; canvas.height = BH * DPR;
   canvas.style.width = BW + 'px'; canvas.style.height = BH + 'px';
   ctx.scale(DPR, DPR);
   buildPegs(); buildSlots();
@@ -140,13 +141,13 @@ function resize() {
 
 function buildPegs() {
   pegs = [];
-  const spacingX = (BW * 0.85) / ROWS;
-  const spacingY = (BH * 0.82) / ROWS;
+  const spacingX = (BW * 0.9) / ROWS;
+  const spacingY = (BH * 0.75) / ROWS;
   for (let r = 0; r < ROWS; r++) {
-    const count  = r + 2;
+    const count = r + 2;
     const startX = (BW - (count - 1) * spacingX) / 2;
     for (let c = 0; c < count; c++) {
-      pegs.push({ x: startX + c * spacingX, y: 35 + r * spacingY, glow: 0 });
+      pegs.push({ x: startX + c * spacingX, y: 50 + r * spacingY, glow: 0 });
     }
   }
 }
@@ -165,102 +166,74 @@ function buildSlots() {
 function loop() {
   ctx.clearRect(0, 0, BW, BH);
   const ph = PH[speedMode];
-  const spacingY = (BH * 0.82) / ROWS;
-  const LAST_PEG_Y = 35 + (ROWS - 1) * spacingY + PEG_R + BALL_R + 4;
-  const ATTRACTION_START_Y = 35 + (ROWS - 3) * spacingY; // Tarik sejak 3 baris terakhir
 
+  // Render Paku
   pegs.forEach(p => {
-    p.glow *= 0.85;
-    ctx.fillStyle = p.glow > 0.3 ? '#fff' : 'rgba(0, 68, 255, 0.4)';
-    ctx.beginPath(); ctx.arc(p.x, p.y, PEG_R + (p.glow * 1.5), 0, Math.PI * 2); ctx.fill();
+    p.glow *= 0.8;
+    ctx.fillStyle = p.glow > 0.2 ? '#fff' : 'rgba(0, 68, 255, 0.4)';
+    ctx.beginPath(); ctx.arc(p.x, p.y, PEG_R + (p.glow * 2), 0, Math.PI * 2); ctx.fill();
   });
 
   for (let i = balls.length - 1; i >= 0; i--) {
     const b = balls[i];
     if (b.serverStatus === BALL_ERROR) { balls.splice(i, 1); continue; }
 
-    if (b.serverStatus === BALL_WAITING) {
-       b.vy = 1.8; // Kecepatan konstan saat nunggu server agar tidak aneh
-    } else {
-       b.vy += ph.grav;
-    }
-
-    // Limit kecepatan jatuh
-    if (b.vy > 12) b.vy = 12;
-
-    // LOGIKA MAGNETIK PRESIFIKASI
-    if (b.serverStatus === BALL_READY && b.targetIdx !== undefined) {
-      const targetX = (b.targetIdx * slotW) + (slotW / 2);
+    // Jalankan fisik hanya jika data server sudah siap (Ready)
+    // Jika masih waiting, biarkan bola tertahan sebentar di atas agar tidak teleport saat data masuk
+    if (b.serverStatus === BALL_READY) {
+      b.vy += ph.grav;
+      b.vx *= ph.fric;
       
-      if (b.y > ATTRACTION_START_Y) {
-        // Semakin dekat ke dasar, tarikan semakin absolut (Interpolasi)
-        const progress = Math.min(1, (b.y - ATTRACTION_START_Y) / (BH - ATTRACTION_START_Y));
-        const dist = targetX - b.x;
-        b.vx += dist * (0.15 + progress * 0.4); 
-        b.vx *= (0.85 - progress * 0.3); // Redam liar-nya bola
-      } else {
-        // Guide halus di baris atas
-        b.vx += (targetX - b.x) * 0.015;
-      }
-    }
+      // Guide halus ke arah target tanpa gaya tarik paksa (magnet)
+      const targetX = (b.targetIdx * slotW) + (slotW / 2);
+      const dx = targetX - b.x;
+      b.vx += dx * 0.012; // Penyesuaian arah super halus agar tidak melayang
 
-    b.x += b.vx;
-    b.y += b.vy;
+      b.x += b.vx;
+      b.y += b.vy;
 
-    // Pantulan Dinding
-    if (b.x < BALL_R) { b.x = BALL_R; b.vx = Math.abs(b.vx) * 0.4; }
-    else if (b.x > BW-BALL_R) { b.x = BW-BALL_R; b.vx = -Math.abs(b.vx) * 0.4; }
+      // Pantulan Dinding
+      if (b.x < BALL_R) { b.x = BALL_R; b.vx *= -0.5; }
+      if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx *= -0.5; }
 
-    // Tabrakan Paku (Hanya jika di atas paku terakhir)
-    if (b.y < LAST_PEG_Y) {
-      for (let pi = 0; pi < pegs.length; pi++) {
-        const p  = pegs[pi];
-        const dx = b.x - p.x, dy = b.y - p.y;
-        const d  = Math.sqrt(dx*dx + dy*dy);
-        const minD = BALL_R + PEG_R;
-        if (d < minD) {
-          const nx = dx/d, ny = dy/d;
-          const ov = minD - d;
-          b.x += nx * ov; b.y += ny * ov;
-          const dot = b.vx*nx + b.vy*ny;
-          if (dot < 0) {
-            b.vx = (b.vx - 2*dot*nx) * ph.bounce;
-            b.vy = (b.vy - 2*dot*ny) * ph.bounce;
-            // Bias kecil ke arah target saat tabrak paku
-            if (b.targetIdx !== undefined) {
-               const tx = (b.targetIdx * slotW) + (slotW / 2);
-               b.vx += (tx - b.x) * 0.1;
-            }
-          }
-          p.glow = 1.0; snd('hit');
-          break;
+      // Tabrakan Paku
+      pegs.forEach(p => {
+        const dist = Math.hypot(b.x - p.x, b.y - p.y);
+        if (dist < BALL_R + PEG_R) {
+          const angle = Math.atan2(b.y - p.y, b.x - p.x);
+          const force = 1.5;
+          b.vx += Math.cos(angle) * force;
+          b.vy = Math.abs(Math.sin(angle) * force) + 1; // Pastikan selalu memantul ke bawah
+          p.glow = 1.5;
+          snd('hit');
         }
-      }
-    }
+      });
 
-    // Gambar Bola
-    ctx.beginPath();
-    ctx.fillStyle = '#ff0077';
-    ctx.shadowBlur = 10; ctx.shadowColor = '#ff0077';
-    ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2); ctx.fill();
-    ctx.shadowBlur = 0;
+      // Render Bola
+      ctx.beginPath();
+      ctx.fillStyle = b.y > BH * 0.7 ? '#f5e642' : '#ff0077';
+      ctx.shadowBlur = 15; ctx.shadowColor = ctx.fillStyle;
+      ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
 
-    // Cek Finish
-    if (b.y > BH - 5) {
-      if (b.serverStatus === BALL_READY) {
+      // Landing
+      if (b.y > BH) {
         onLand(b);
         balls.splice(i, 1);
-      } else if (b.y > BH + 50) { // Safety jika server macet parah
-        balls.splice(i, 1);
       }
+    } else {
+        // Efek bola bergetar menunggu server (Visual Loading)
+        b.x += (Math.random() - 0.5) * 0.5;
+        ctx.beginPath();
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2); ctx.fill();
     }
   }
   requestAnimationFrame(loop);
 }
 
 function spawnBall() {
-  const bet  = BETS[betIdx];
-  const user = getUsername();
+  const bet = BETS[betIdx];
   if (_saldo < bet) { showModal("BALANCE INSUFFICIENT."); stopAuto(); return; }
 
   const saldoAwal = _saldo;
@@ -269,27 +242,28 @@ function spawnBall() {
   snd('click');
 
   const newBall = {
-    x: BW/2 + (Math.random()-0.5)*10, y: -10, 
-    vx: (Math.random()-0.5)*2, vy: 1.5,
-    bet, serverStatus: BALL_WAITING
+    x: BW/2 + (Math.random() - 0.5) * 20,
+    y: 20, vx: (Math.random() - 0.5) * 4, vy: 2,
+    bet, targetIdx: null, serverStatus: BALL_WAITING
   };
   balls.push(newBall);
 
+  // Panggil API
   apiCall({
     action: 'game_play',
-    username: user,
+    username: getUsername(),
     bet: bet,
     saldoAwal: saldoAwal
   }).then(res => {
     if (res && res.result === 'SUCCESS') {
-      const tm = res.target_multiplier;
-      const possible = [];
-      MULTS.forEach((m, idx) => { if (m === tm) possible.push(idx); });
-
-      newBall.targetIdx = possible[Math.floor(Math.random() * possible.length)];
+      const targetM = res.target_multiplier;
+      const idxArr = [];
+      MULTS.forEach((m, i) => { if (m === targetM) idxArr.push(i); });
+      
+      newBall.targetIdx = idxArr[Math.floor(Math.random() * idxArr.length)];
       newBall.serverWin = res.win;
       newBall.serverNewSaldo = res.newSaldo;
-      newBall.serverMult = tm;
+      newBall.serverMult = targetM;
       newBall.serverStatus = BALL_READY;
     } else {
       newBall.serverStatus = BALL_ERROR;
@@ -304,22 +278,19 @@ function spawnBall() {
 }
 
 function onLand(b) {
-  // PAKSA index sesuai targetIdx dari server agar visual sinkron 100%
-  const idx = b.targetIdx;
-
   _saldo = b.serverNewSaldo;
   _renderS();
 
-  const slotEl = document.getElementById('slot-' + idx);
+  const slotEl = document.getElementById('slot-' + b.targetIdx);
   if (slotEl) {
     slotEl.classList.add('active');
-    setTimeout(() => slotEl.classList.remove('active'), 500);
+    setTimeout(() => slotEl.classList.remove('active'), 400);
   }
 
   if (b.serverMult >= 1) snd('win');
 
   const list = document.getElementById('score-list');
-  const div  = document.createElement('div');
+  const div = document.createElement('div');
   div.className = 'score-entry';
   div.innerHTML = `<b>${b.serverMult}x</b> | +${b.serverWin.toLocaleString('id-ID')}`;
   list.prepend(div);
@@ -327,9 +298,8 @@ function onLand(b) {
 }
 
 function _renderS() {
-  const val = Math.floor(_saldo);
-  document.getElementById('display-saldo').textContent = 'IDR ' + val.toLocaleString('id-ID');
-  storeLocalSaldo(val);
+  document.getElementById('display-saldo').textContent = 'IDR ' + Math.floor(_saldo).toLocaleString('id-ID');
+  storeLocalSaldo(_saldo);
 }
 
 function setSpeedMode(m) { speedMode = m; snd('click'); document.getElementById('m-normal').classList.toggle('active', m === 'normal'); document.getElementById('m-turbo').classList.toggle('active', m === 'turbo'); }
