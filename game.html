@@ -161,9 +161,9 @@ function buildSlots() {
   });
 }
 
-// ── GAME LOOP: ULTRA SMOOTH STEERING ───────────────────────────────────
+// ── GAME LOOP: ENHANCED STEERING ENGINE ───────────────────────────────────
 function loop() {
-  ctx.fillStyle = 'rgba(2, 3, 13, 0.88)'; // Ghosting trail sangat halus
+  ctx.fillStyle = 'rgba(2, 3, 13, 0.88)'; 
   ctx.fillRect(0, 0, BW, BH);
 
   const ph = PH[speedMode];
@@ -182,35 +182,31 @@ function loop() {
     const b = balls[i];
     if (b.serverStatus === BALL_ERROR) { balls.splice(i, 1); continue; }
 
-    // Logic: Waiting State (Bukan ngerem mendadak, tapi melambat alami)
-    if (b.serverStatus === BALL_WAITING) {
-      if (b.y > BH * 0.65) {
-        b.vy *= 0.94;
-        if (b.vy < 0.2) b.vy = 0.2;
-      }
-    }
-
-    // Apply Physics
+    // Physics Dasar
     b.vy += ph.grav;
     b.vx *= ph.fric;
 
-    // --- SMART STEERING ENGINE ---
+    // --- ULTRA SMOOTH STEERING ENGINE ---
     if (b.serverStatus === BALL_READY && b.targetIdx !== undefined) {
       const targetX = (b.targetIdx * slotW) + (slotW / 2);
       const dx = targetX - b.x;
       
-      // Hitung progress perjalanan (0 - 1)
-      const progress = Math.min(1, b.y / BH);
+      // Hitung progress perjalanan bola dari atas ke bawah (0.0 sampai 1.0)
+      const startY = pegs[0].y;
+      const totalRange = LAST_PEG_Y - startY;
+      const progress = Math.max(0, Math.min(1, (b.y - startY) / totalRange));
       
-      // Bias halus sejak awal: Semakin kebawah, koreksi semakin presisi
-      // Gunakan Math.pow agar tarikan di atas hampir tidak terasa sama sekali
-      const steerPower = Math.pow(progress, 1.8) * 0.025;
-      b.vx += dx * steerPower;
+      // MENGGUNAKAN SINUSOIDAL STEERING:
+      // Tarikan dimulai sangat lemah di atas dan menguat secara halus (sine curve)
+      // Ini mencegah efek patah atau teleportasi
+      const steerStrength = Math.sin(progress * Math.PI * 0.5) * 0.018;
+      b.vx += dx * steerStrength;
 
-      // Anti-jitter: Jika sudah di area landing, redam kecepatan horizontal yang liar
+      // Anti-jitter: Jika bola sudah melewati paku terakhir, kunci posisi X perlahan
       if (b.y > LAST_PEG_Y) {
-        const landingEase = Math.min(1, (b.y - LAST_PEG_Y) / 50);
-        b.vx *= (1 - landingEase * 0.1);
+        const snapEase = 0.12;
+        b.x += (targetX - b.x) * snapEase;
+        b.vx *= 0.8; // Redam guncangan horizontal saat masuk slot
       }
     }
 
@@ -218,10 +214,10 @@ function loop() {
     b.y += b.vy;
 
     // Dinding
-    if (b.x < BALL_R) { b.x = BALL_R; b.vx *= -0.3; }
-    else if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx *= -0.3; }
+    if (b.x < BALL_R) { b.x = BALL_R; b.vx *= -0.4; }
+    else if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx *= -0.4; }
 
-    // Collision Paku
+    // Collision Paku (Pegs)
     let hit = false;
     for (let pi = 0; pi < pegs.length; pi++) {
       const p = pegs[pi];
@@ -234,20 +230,17 @@ function loop() {
 
       if (d < minD) {
         const nx = distDx / d, ny = distDy / d;
-        // Push out
         b.x = p.x + nx * minD;
         b.y = p.y + ny * minD;
 
-        // Reflection
         const dot = b.vx * nx + b.vy * ny;
         if (dot < 0) {
-          // Tambahkan sedikit noise acak agar pantulan tidak kaku (robotik)
-          const randomness = (Math.random() - 0.5) * 0.2;
-          b.vx = (b.vx - 2 * dot * nx) * ph.bounce + randomness;
+          // Tambahkan sedikit noise/acak agar tidak terlihat kaku seperti robot
+          const chaos = (Math.random() - 0.5) * 0.15;
+          b.vx = (b.vx - 2 * dot * nx) * ph.bounce + chaos;
           b.vy = (b.vy - 2 * dot * ny) * ph.bounce;
           
-          // Pastikan bola tidak memantul ke atas terlalu lama
-          if (b.vy < 0.5) b.vy = 0.5;
+          if (b.vy < 0.6) b.vy = 0.6; // Pastikan bola selalu turun
         }
         p.glow = 1.0;
         if (!hit) { snd('hit'); hit = true; }
@@ -257,13 +250,12 @@ function loop() {
 
     // Render Bola
     ctx.beginPath();
-    ctx.fillStyle = '#ff0077';
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = '#ff0077';
+    ctx.fillStyle = '#ffffff'; // Inti putih untuk efek neon tajam
     ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2);
     ctx.fill();
-    // Glowing ring
-    ctx.strokeStyle = 'rgba(255, 110, 180, 0.5)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    ctx.shadowBlur = 0;
 
     if (b.y > BH + BALL_R) {
       onLand(b);
@@ -281,8 +273,8 @@ function spawnBall() {
   snd('click');
 
   var newBall = {
-    x: BW/2 + (Math.random()-0.5)*15, y: -20,
-    vx: (Math.random()-0.5)*3, vy: 1,
+    x: BW/2 + (Math.random()-0.5)*20, y: -25,
+    vx: (Math.random()-0.5)*3.5, vy: 1,
     bet: bet, targetIdx: undefined,
     serverStatus: BALL_WAITING
   };
@@ -312,7 +304,6 @@ function spawnBall() {
 }
 
 function onLand(b) {
-  // Gunakan targetIdx murni dari server untuk highlight
   const idx = b.targetIdx;
   _saldo = b.serverNewSaldo;
   _renderS();
