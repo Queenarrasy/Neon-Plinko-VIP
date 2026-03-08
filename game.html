@@ -147,17 +147,14 @@ let speedMode = 'normal', isAuto = false, autoTimer = null, betIdx = 0;
 let _saldo = getStoredSaldo();
 
 const PH = {
-  normal: { grav: 0.3, fric: 0.99, bounce: 0.5, autoMs: 700 },
-  turbo:  { grav: 0.55, fric: 0.98, bounce: 0.4, autoMs: 250 }
+  normal: { grav: 0.3, bounce: 0.48, autoMs: 700 },
+  turbo:  { grav: 0.55, bounce: 0.38, autoMs: 250 }
 };
 
-// ─── Status bola ─────────────────────────────────────────────
-// WAITING = server belum jawab → bola diperlambat, tidak boleh mendarat
-// READY   = server sudah jawab → targetIdx aktif, bola boleh mendarat
-// ERROR   = server error       → bola dihapus, bet dikembalikan
-const BALL_WAITING = 'waiting';
-const BALL_READY   = 'ready';
-const BALL_ERROR   = 'error';
+// Status bola
+const BALL_WAITING = 'waiting'; // server belum jawab
+const BALL_READY   = 'ready';   // server sudah jawab, boleh mendarat
+const BALL_ERROR   = 'error';   // error, bola dihapus
 
 // ─── INIT ────────────────────────────────────────────────────
 function init() {
@@ -168,14 +165,10 @@ function init() {
   _renderS();
   loop();
 
-  // Sync saldo dari server saat tab aktif kembali
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && balls.length === 0) {
       apiCall({ action: 'get_saldo', username: getUsername() }).then(res => {
-        if (res && res.result === 'SUCCESS') {
-          _saldo = parseFloat(res.saldo) || _saldo;
-          _renderS();
-        }
+        if (res && res.result === 'SUCCESS') { _saldo = parseFloat(res.saldo) || _saldo; _renderS(); }
       });
     }
   });
@@ -221,6 +214,7 @@ function loop() {
   ctx.clearRect(0, 0, BW, BH);
   const ph = PH[speedMode];
 
+  // Gambar paku
   pegs.forEach(p => {
     p.glow *= 0.85;
     ctx.fillStyle = p.glow > 0.3 ? '#fff' : 'rgba(0, 68, 255, 0.5)';
@@ -228,126 +222,117 @@ function loop() {
   });
 
   for (let i = balls.length - 1; i >= 0; i--) {
-    let b = balls[i];
+    const b = balls[i];
+    if (b.serverStatus === BALL_ERROR) { balls.splice(i, 1); continue; }
 
-    // Hapus bola error tanpa onLand
-    if (b.serverStatus === BALL_ERROR) {
-      balls.splice(i, 1);
-      continue;
-    }
-
-    // ── 1. Gravitasi & friction udara ─────────────────────────
-    // Friction horizontal kecil supaya bola tidak luncur selamanya
-    b.vx *= 0.978;   // friction horizontal — reduksi drift antar paku
+    // ── FISIKA ───────────────────────────────────────────────
+    // Gravitasi
     b.vy += ph.grav;
+    if (b.vy > 13) b.vy = 13;
 
-    // Batasi kecepatan maksimum agar bola tidak hyperspeed
-    const MAX_VX = 6, MAX_VY = 12;
-    if (b.vx >  MAX_VX) b.vx =  MAX_VX;
-    if (b.vx < -MAX_VX) b.vx = -MAX_VX;
-    if (b.vy >  MAX_VY) b.vy =  MAX_VY;
+    // Friction horizontal — reduksi drift natural antar paku
+    b.vx *= 0.97;
 
-    // ── 2. Tahan bola di zona atas jika server belum jawab ────
+    // ── WAITING: rem bola di zona bawah sampai server jawab ──
     if (b.serverStatus === BALL_WAITING) {
-      const brakeStart = BH * 0.72;
-      if (b.y > brakeStart) {
-        const ratio = (b.y - brakeStart) / (BH * 0.26);
-        b.vy *= Math.max(0.45, 1 - ratio * 0.55);
-        if (b.vy < 0.2) b.vy = 0.2;
+      const zone = BH * 0.73;
+      if (b.y > zone) {
+        const t = Math.min(1, (b.y - zone) / (BH * 0.25));
+        b.vy *= (1 - t * 0.62);
+        if (b.vy < 0.15) b.vy = 0.15;
       }
     }
 
-    // ── 3. Bias arah halus menuju slot target (READY) ────────
-    // PRINSIP: bola TIDAK ditarik paksa — vx-nya dibias sedikit
-    // setiap frame ke arah target. Gaya KONSTAN & SANGAT KECIL,
-    // tidak bergantung jarak, sehingga bola tidak bisa lompat jauh.
-    // Bola tetap memantul paku natural & condong ke target pelan.
+    // ── READY: arahkan bola ke slot target ───────────────────
+    //
+    // ZONA PAKU (y < lastPegY):
+    //   Bias ringan konstan ke arah target.
+    //   Bola tetap memantul paku secara bebas dan natural.
+    //   vx di-clamp ketat agar tidak "terbang" ke slot jauh.
+    //
+    // ZONA LANDING (lastPegY <= y < BH):
+    //   Tidak ada paku di sini. Bola jatuh bebas.
+    //   vx di-set langsung = kecepatan menuju targetX dengan lerp,
+    //   sehingga bola meluncur mulus lurus ke kotak target.
+    //   TIDAK ada percepatan mendadak — lerp membuat gerakan halus.
+    //   Ini JUGA memastikan posisi fisik b.x = posisi kotak target
+    //   saat mendarat, sehingga kotak yang berkedip SELALU konsisten.
+    //
     if (b.serverStatus === BALL_READY && b.targetIdx !== undefined) {
-      const targetX   = (b.targetIdx * slotW) + (slotW / 2);
-      const diff      = targetX - b.x;
-      const direction = diff > 0 ? 1 : -1;
+      const targetX  = (b.targetIdx * slotW) + (slotW / 2);
+      const diff     = targetX - b.x;
+      const lastPegY = 35 + (ROWS - 1) * ((BH * 0.82) / ROWS) + PEG_R + BALL_R + 2;
 
-      // Bias kecil konstan, aktif di 70% bawah board
-      if (b.y > BH * 0.30) {
-        b.vx += direction * 0.04;
+      if (b.y < lastPegY) {
+        // Zona paku: bias kecil ke arah target, clamp ketat
+        if (b.y > BH * 0.25) {
+          b.vx += (diff > 0 ? 1 : -1) * 0.055;
+        }
+        if (b.vx >  2.8) b.vx =  2.8;
+        if (b.vx < -2.8) b.vx = -2.8;
+
+      } else {
+        // Zona landing: tidak ada paku, bola jatuh bebas lurus ke slot
+        // Lerp vx menuju kecepatan yang diperlukan untuk mencapai targetX
+        // Semakin bawah, lerp semakin kuat → bola pasti sampai tepat
+        const distLeft = BH - b.y;                  // jarak tersisa ke bawah
+        const framesLeft = Math.max(1, distLeft / Math.max(b.vy, 0.5));
+        const neededVx   = diff / framesLeft;        // vx ideal agar tepat sampai
+        b.vx += (neededVx - b.vx) * 0.22;           // lerp 22% per frame → smooth
+        // Clamp ringan agar tetap terlihat natural
+        if (b.vx >  6) b.vx =  6;
+        if (b.vx < -6) b.vx = -6;
       }
-
-      // Hard clamp vx — bola tidak boleh gerak horizontal > 2.5px/frame
-      if (b.vx >  2.5) b.vx =  2.5;
-      if (b.vx < -2.5) b.vx = -2.5;
     }
 
-    // ── 4. Gerak posisi ───────────────────────────────────────
+    // ── UPDATE POSISI ────────────────────────────────────────
     b.x += b.vx;
     b.y += b.vy;
 
-    // Pantulan dinding kiri/kanan (tidak menembus batas)
-    if (b.x < BALL_R) {
-      b.x  = BALL_R;
-      b.vx = Math.abs(b.vx) * 0.55;
-    } else if (b.x > BW - BALL_R) {
-      b.x  = BW - BALL_R;
-      b.vx = -Math.abs(b.vx) * 0.55;
-    }
+    // Dinding kiri/kanan
+    if (b.x < BALL_R)        { b.x = BALL_R;        b.vx =  Math.abs(b.vx) * 0.4; }
+    else if (b.x > BW-BALL_R){ b.x = BW - BALL_R;   b.vx = -Math.abs(b.vx) * 0.4; }
 
-    // ── 5. Resolusi tabrakan paku ─────────────────────────────
-    // Hanya proses paku yang BENAR-BENAR bertabrakan (bukan ruang kosong)
-    // Tambahkan push-out agar bola tidak menembus paku
-    let hitThisFrame = false;
-    for (let pi = 0; pi < pegs.length; pi++) {
-      const p  = pegs[pi];
-      const dx = b.x - p.x;
-      const dy = b.y - p.y;
-      const d  = Math.sqrt(dx * dx + dy * dy);
-      const minDist = BALL_R + PEG_R;
-
-      if (d < minDist && d > 0.001) {
-        // Push-out: keluarkan bola dari overlap agar tidak menembus
-        const overlap = minDist - d;
-        const nx = dx / d, ny = dy / d;
-        b.x += nx * overlap;
-        b.y += ny * overlap;
-
-        // Refleksi kecepatan berdasarkan normal paku
-        const dot = b.vx * nx + b.vy * ny;
-        if (dot < 0) {   // hanya pantul jika bola bergerak menuju paku
-          b.vx -= 2 * dot * nx;
-          b.vy -= 2 * dot * ny;
-
-          // Terapkan koefisien restitusi (bounce) dan sedikit randomness
-          // Random hanya pada vx agar bola memantul kiri/kanan naturally
-          // TIDAK menambah vy minus (tidak terbang ke atas)
-          const restitusi = ph.bounce;
-          b.vx = b.vx * restitusi + (Math.random() - 0.5) * 0.8;
-          b.vy = b.vy * restitusi;
-
-          // Pastikan bola selalu bergerak ke bawah setelah memantul paku
-          // Jika vy terlalu kecil, beri dorongan gravitasi minimal
-          if (b.vy < 1.2) b.vy = 1.2;
-
-          // Clamp vy agar bola tidak terlalu kencang ke bawah
-          if (b.vy > MAX_VY) b.vy = MAX_VY;
+    // ── TABRAKAN PAKU ────────────────────────────────────────
+    // Hanya cek di zona paku (bola belum melewati paku terakhir).
+    // Di zona landing tidak ada paku → skip sepenuhnya.
+    // Ini menghilangkan "phantom bounce" di ruang kosong.
+    const lastPegZone = 35 + (ROWS - 1) * ((BH * 0.82) / ROWS) + PEG_R + BALL_R + 8;
+    if (b.y < lastPegZone) {
+      let hit = false;
+      for (let pi = 0; pi < pegs.length; pi++) {
+        const p  = pegs[pi];
+        const dx = b.x - p.x, dy = b.y - p.y;
+        const d  = Math.sqrt(dx * dx + dy * dy);
+        const minD = BALL_R + PEG_R;
+        if (d < minD && d > 0.001) {
+          // Push-out: keluarkan bola dari overlap
+          const ov = minD - d, nx = dx/d, ny = dy/d;
+          b.x += nx * ov;
+          b.y += ny * ov;
+          // Refleksi fisik
+          const dot = b.vx*nx + b.vy*ny;
+          if (dot < 0) {
+            b.vx = (b.vx - 2*dot*nx) * ph.bounce + (Math.random()-0.5) * 0.65;
+            b.vy = (b.vy - 2*dot*ny) * ph.bounce;
+            // Pastikan bola selalu turun setelah memantul
+            if (b.vy < 0.8) b.vy = 0.8;
+            if (b.vy > 13)  b.vy = 13;
+          }
+          p.glow = 1.2;
+          if (!hit) { snd('hit'); hit = true; }
+          break; // maksimal 1 paku per frame
         }
-
-        p.glow = 1.2;
-        if (!hitThisFrame) { snd('hit'); hitThisFrame = true; }
-
-        // Hanya proses 1 paku per frame agar tidak double-bounce
-        break;
       }
     }
 
-    // ── 6. Render bola ───────────────────────────────────────
+    // ── RENDER BOLA ──────────────────────────────────────────
     ctx.beginPath();
-    ctx.fillStyle   = '#ff0077';
-    ctx.shadowBlur  = 15;
-    ctx.shadowColor = '#ff0077';
-    ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillStyle = '#ff0077'; ctx.shadowBlur = 15; ctx.shadowColor = '#ff0077';
+    ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2); ctx.fill();
     ctx.shadowBlur = 0;
 
-    // ── 7. Mendarat ──────────────────────────────────────────
-    // Bola hanya boleh mendarat jika status READY (server sudah jawab)
+    // ── MENDARAT ─────────────────────────────────────────────
     if (b.y > BH && b.serverStatus === BALL_READY) {
       onLand(b);
       balls.splice(i, 1);
@@ -367,7 +352,6 @@ function spawnBall() {
   _renderS();
   snd('click');
 
-  // Bola lahir dengan status WAITING — belum boleh mendarat
   const newBall = {
     x: BW/2 + (Math.random()-0.5)*20,
     y: -10, vx: (Math.random()-0.5)*2, vy: 1,
@@ -380,7 +364,6 @@ function spawnBall() {
   };
   balls.push(newBall);
 
-  // Kirim ke server
   apiCall({
     action:    'game_play',
     username:  user,
@@ -388,12 +371,10 @@ function spawnBall() {
     saldoAwal: saldoAwal
   }).then(res => {
     if (res && res.result === 'SUCCESS') {
-      // Cari semua indeks slot yang cocok dengan multiplier server
       const tm = res.target_multiplier;
       const possible = [];
       MULTS.forEach((m, idx) => { if (m === tm) possible.push(idx); });
 
-      // Set data server ke bola → ubah status ke READY (bola boleh mendarat)
       newBall.targetIdx      = possible[Math.floor(Math.random() * possible.length)];
       newBall.serverWin      = res.win;
       newBall.serverNewSaldo = res.newSaldo;
@@ -401,28 +382,25 @@ function spawnBall() {
       newBall.serverStatus   = BALL_READY;
 
     } else {
-      // Error: batalkan bola & kembalikan bet
       newBall.serverStatus = BALL_ERROR;
-      _saldo += bet;
-      _renderS();
-      showModal(res.message || "SERVER ERROR.");
-      stopAuto();
+      _saldo += bet; _renderS();
+      showModal(res.message || "SERVER ERROR."); stopAuto();
     }
   }).catch(() => {
     newBall.serverStatus = BALL_ERROR;
-    _saldo += bet;
-    _renderS();
-    showModal("Koneksi gagal. Cek internet Anda.");
-    stopAuto();
+    _saldo += bet; _renderS();
+    showModal("Koneksi gagal. Cek internet Anda."); stopAuto();
   });
 }
 
 // ─── ON LAND ────────────────────────────────────────────────
+// Highlight kotak = posisi FISIK bola saat mendarat (b.x).
+// Karena zona landing sudah memandu bola ke targetX via lerp,
+// posisi fisik b.x selalu sangat dekat dengan targetIdx → konsisten.
+// Saldo & hasil tetap 100% dari server.
 function onLand(b) {
-  // Gunakan targetIdx dari server — sudah dijamin benar oleh status READY
-  const idx = Math.max(0, Math.min(MULTS.length - 1, b.targetIdx));
+  const idx = Math.max(0, Math.min(MULTS.length - 1, Math.floor(b.x / slotW)));
 
-  // Saldo selalu dari server — tidak ada perhitungan lokal
   _saldo = b.serverNewSaldo;
   _renderS();
 
@@ -458,7 +436,6 @@ function snd(t) { try { const a = document.getElementById('snd-' + t); a.current
 window.addEventListener('resize', resize);
 document.addEventListener('DOMContentLoaded', init);
 
-// Set OFFLINE saat tutup tab — game.html handle sendiri
 window.addEventListener('beforeunload', () => {
   const u = getUsername();
   if (u) navigator.sendBeacon(
