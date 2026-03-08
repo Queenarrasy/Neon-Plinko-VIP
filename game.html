@@ -7,7 +7,6 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-/* CSS Tetap Sama */
 :root { --pink: #ff0077; --blue: #0044ff; --yellow: #f5e642; --dark-blue: #050614; --bg: #02030d; --gp: 0 0 15px rgba(255, 0, 119, 0.7); --gb: 0 0 20px rgba(0, 68, 255, 0.8); --gy: 0 0 15px rgba(245, 230, 66, 0.7); --header-h: 60px; --slot-h: 40px; }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 body { width: 100vw; height: 100vh; overflow: hidden; background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; display: flex; flex-direction: column; }
@@ -93,107 +92,61 @@ body { width: 100vw; height: 100vh; overflow: hidden; background: var(--bg); col
 </div>
 
 <script>
-
-// ═══════════════════════════════════════════════════════════
-//  GLOBAL FUNCTIONS (inline — tidak butuh global.js terpisah)
-// ═══════════════════════════════════════════════════════════
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
 
 async function apiCall(payload) {
   try {
     const url = SCRIPT_URL + '?data=' + encodeURIComponent(JSON.stringify(payload));
     const r   = await fetch(url, { redirect: 'follow' });
-    const t   = await r.text();
-    const j   = JSON.parse(t);
-    if (j && j.result !== undefined) return j;
-  } catch(e) {}
-  try {
-    const r2 = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
-    return JSON.parse(await r2.text());
-  } catch(e) {
-    return { result: 'ERROR', message: 'Koneksi gagal. Cek koneksi internet.' };
-  }
+    const j   = await r.json();
+    return j;
+  } catch(e) { return { result: 'ERROR', message: 'Koneksi gagal.' }; }
 }
 
 function getUsername()    { return localStorage.getItem('username') || null; }
 function getStoredSaldo() { return Math.floor(parseFloat(localStorage.getItem('user_saldo') || 0)); }
-function storeLocalSaldo(v) {
-  const val = Math.max(0, Math.floor(parseFloat(v) || 0));
-  localStorage.setItem('user_saldo', val);
-  return val;
-}
-function fmtIDR(v) { return 'IDR ' + Math.floor(parseFloat(v) || 0).toLocaleString('id-ID'); }
-function fmtDate() {
-  return new Date().toLocaleString('id-ID', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit' });
-}
-async function userLogout() {
-  const u = getUsername();
-  if (u) { try { await apiCall({ action: 'set_status', username: u, status: 'OFFLINE' }); } catch(e) {} }
-  localStorage.clear(); location.href = 'index.html';
-}
-function requireLogin() {
-  if (!getUsername()) { location.href = 'index.html'; return false; }
-  return true;
-}
-// ═══════════════════════════════════════════════════════════
+function storeLocalSaldo(v) { localStorage.setItem('user_saldo', Math.max(0, Math.floor(v))); }
 
 const ROWS  = 10;
 const MULTS = [10, 3, 1.5, 0.5, 0.2, 0.2, 0.5, 1.5, 3, 10];
 const BETS  = [400, 800, 1000, 1200, 1600, 2000, 4000, 8000, 10000, 20000];
 const BALL_R = 7, PEG_R = 3.5;
+const BALL_WAITING = 'waiting', BALL_READY = 'ready', BALL_ERROR = 'error';
 
 let canvas, ctx, BW, BH, pegs = [], balls = [], slotW;
 let speedMode = 'normal', isAuto = false, autoTimer = null, betIdx = 0;
 let _saldo = getStoredSaldo();
 
 const PH = {
-  normal: { grav: 0.3, bounce: 0.48, autoMs: 700 },
-  turbo:  { grav: 0.55, bounce: 0.38, autoMs: 250 }
+  normal: { grav: 0.32, bounce: 0.5, fric: 0.98, autoMs: 700 },
+  turbo:  { grav: 0.58, bounce: 0.4, fric: 0.96, autoMs: 250 }
 };
 
-// Status bola
-const BALL_WAITING = 'waiting'; // server belum jawab
-const BALL_READY   = 'ready';   // server sudah jawab, boleh mendarat
-const BALL_ERROR   = 'error';   // error, bola dihapus
-
-// ─── INIT ────────────────────────────────────────────────────
 function init() {
-  if (!requireLogin()) return;
+  if (!getUsername()) { location.href = 'index.html'; return; }
   canvas = document.getElementById('plinko-canvas');
   ctx    = canvas.getContext('2d');
-  resize();
-  _renderS();
-  loop();
-
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && balls.length === 0) {
-      apiCall({ action: 'get_saldo', username: getUsername() }).then(res => {
-        if (res && res.result === 'SUCCESS') { _saldo = parseFloat(res.saldo) || _saldo; _renderS(); }
-      });
-    }
-  });
+  resize(); _renderS(); loop();
 }
 
-// ─── RESIZE & BUILD ──────────────────────────────────────────
 function resize() {
   const wrap = document.getElementById('board-wrapper');
   BW = wrap.offsetWidth; BH = wrap.offsetHeight;
   const DPR = window.devicePixelRatio || 1;
-  canvas.width  = BW * DPR; canvas.height = BH * DPR;
-  canvas.style.width = BW + 'px'; canvas.style.height = BH + 'px';
+  canvas.width = BW * DPR; canvas.height = BH * DPR;
   ctx.scale(DPR, DPR);
   buildPegs(); buildSlots();
 }
 
 function buildPegs() {
   pegs = [];
-  const spacingX = (BW * 0.85) / ROWS;
-  const spacingY = (BH * 0.82) / ROWS;
+  const spacingX = (BW * 0.88) / ROWS;
+  const spacingY = (BH * 0.80) / ROWS;
   for (let r = 0; r < ROWS; r++) {
-    const count  = r + 2;
+    const count = r + 2;
     const startX = (BW - (count - 1) * spacingX) / 2;
     for (let c = 0; c < count; c++) {
-      pegs.push({ x: startX + c * spacingX, y: 35 + r * spacingY, glow: 0 });
+      pegs.push({ x: startX + c * spacingX, y: 50 + r * spacingY, glow: 0 });
     }
   }
 }
@@ -209,211 +162,132 @@ function buildSlots() {
   });
 }
 
-// ─── GAME LOOP ───────────────────────────────────────────────
-// PRINSIP FISIKA:
-//
-// [ZONA PAKU] y < LAST_PEG_Y
-//   Fisika bebas murni: gravitasi + pantulan paku.
-//   TIDAK ada magnet, bias, atau gaya horizontal buatan.
-//   Bola bergerak 100% natural.
-//
-// [ZONA LANDING] y >= LAST_PEG_Y
-//   Di bawah paku terakhir, tidak ada paku lagi.
-//   Posisi X bola digeser halus via lerp POSISI (bukan kecepatan)
-//   langsung menuju tengah slot target. Terlihat smooth, tidak teleport.
-//   vx di-nolkan sehingga tidak ada drift/melayang aneh.
-//
-// [WAITING]
-//   Bola direm secara halus di 25% bawah board sampai server jawab.
-//
 function loop() {
   ctx.clearRect(0, 0, BW, BH);
   const ph = PH[speedMode];
+  const LAST_PEG_Y = pegs[pegs.length - 1].y;
 
-  // Garis batas paku terakhir — dihitung sekali di sini
-  const LAST_PEG_Y = 35 + (ROWS - 1) * ((BH * 0.82) / ROWS) + PEG_R + BALL_R + 4;
-
-  // Gambar paku
   pegs.forEach(p => {
-    p.glow *= 0.85;
-    ctx.fillStyle = p.glow > 0.3 ? '#fff' : 'rgba(0, 68, 255, 0.5)';
+    p.glow *= 0.88;
+    ctx.fillStyle = p.glow > 0.3 ? '#fff' : 'rgba(0, 68, 255, 0.4)';
     ctx.beginPath(); ctx.arc(p.x, p.y, PEG_R + (p.glow * 1.5), 0, Math.PI * 2); ctx.fill();
   });
 
   for (let i = balls.length - 1; i >= 0; i--) {
-    const b = balls[i];
-
+    let b = balls[i];
     if (b.serverStatus === BALL_ERROR) { balls.splice(i, 1); continue; }
 
-    // [WAITING] Rem bola di 25% bawah board sampai server jawab
-    if (b.serverStatus === BALL_WAITING) {
-      const brakeY = BH * 0.75;
-      if (b.y > brakeY) {
-        const t = Math.min(1, (b.y - brakeY) / (BH * 0.23));
-        b.vy *= (1 - t * 0.60);
-        if (b.vy < 0.18) b.vy = 0.18;
-      }
-    }
-
-    if (b.y < LAST_PEG_Y) {
-      // ─── [ZONA PAKU] Fisika bebas murni ──────────────────
-      b.vy += ph.grav;
-      if (b.vy > 13) b.vy = 13;
-      b.vx *= 0.978;
-
-      b.x += b.vx;
-      b.y += b.vy;
-
-      if (b.x < BALL_R)         { b.x = BALL_R;      b.vx =  Math.abs(b.vx) * 0.45; }
-      else if (b.x > BW-BALL_R) { b.x = BW - BALL_R; b.vx = -Math.abs(b.vx) * 0.45; }
-
-      // Tabrakan paku
-      let hit = false;
-      for (let pi = 0; pi < pegs.length; pi++) {
-        const p  = pegs[pi];
-        const dx = b.x - p.x, dy = b.y - p.y;
-        const d  = Math.sqrt(dx*dx + dy*dy);
-        const minD = BALL_R + PEG_R;
-        if (d < minD && d > 0.001) {
-          const ov = minD - d;
-          const nx = dx/d, ny = dy/d;
-          b.x += nx * ov;
-          b.y += ny * ov;
-          const dot = b.vx*nx + b.vy*ny;
-          if (dot < 0) {
-            b.vx = (b.vx - 2*dot*nx) * ph.bounce + (Math.random()-0.5) * 0.6;
-            b.vy = (b.vy - 2*dot*ny) * ph.bounce;
-            if (b.vy < 1.0) b.vy = 1.0;
-            if (b.vy > 13)  b.vy = 13;
-          }
-          p.glow = 1.2;
-          if (!hit) { snd('hit'); hit = true; }
-          break;
-        }
-      }
-
+    // Logic Rem untuk Server Lag
+    if (b.serverStatus === BALL_WAITING && b.y > BH * 0.7) {
+      b.vy *= 0.92; if (b.vy < 0.5) b.vy = 0.5;
     } else {
-      // ─── [ZONA LANDING] Lerp posisi X ke slot target ─────
-      // Tidak ada paku di sini. Bola jatuh bebas vertikal.
-      // Posisi X digeser smooth ke tengah slot via lerp posisi.
       b.vy += ph.grav;
-      if (b.vy > 13) b.vy = 13;
-
-      if (b.serverStatus === BALL_READY && b.targetIdx !== undefined) {
-        const targetX = (b.targetIdx * slotW) + (slotW / 2);
-        // Lerp posisi 13% per frame — smooth, tidak teleport, tidak overshoot
-        b.x += (targetX - b.x) * 0.13;
-        b.vx = 0;
-      } else {
-        b.x  += b.vx;
-        b.vx *= 0.92;
-      }
-
-      b.y += b.vy;
-
-      if (b.x < BALL_R)         b.x = BALL_R;
-      else if (b.x > BW-BALL_R) b.x = BW - BALL_R;
     }
 
-    // Render bola
-    ctx.beginPath();
-    ctx.fillStyle = '#ff0077'; ctx.shadowBlur = 15; ctx.shadowColor = '#ff0077';
-    ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2); ctx.fill();
-    ctx.shadowBlur = 0;
+    b.vx *= ph.fric;
+    b.x += b.vx;
+    b.y += b.vy;
 
-    // Mendarat
+    // --- STEERING REALISTIS (Anti-Teleport) ---
+    if (b.serverStatus === BALL_READY && b.targetIdx !== undefined) {
+      let targetX = (b.targetIdx * slotW) + (slotW / 2);
+      let dist = targetX - b.x;
+      
+      if (b.y < LAST_PEG_Y) {
+        // Saat masih di paku: Beri gaya tarik horizontal kecil (efek angin/magnet halus)
+        b.vx += dist * 0.008; 
+      } else {
+        // Saat sudah lewat paku: Perhalus jalur ke target tanpa menghentikan momentum
+        b.x += dist * 0.12;
+        b.vx *= 0.85; 
+      }
+    }
+
+    // Pantulan Dinding
+    if (b.x < BALL_R) { b.x = BALL_R; b.vx *= -0.5; }
+    if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx *= -0.5; }
+
+    // Pantulan Paku
+    for (let p of pegs) {
+      let dx = b.x - p.x, dy = b.y - p.y, d = Math.sqrt(dx*dx + dy*dy);
+      if (d < BALL_R + PEG_R) {
+        p.glow = 1.2; snd('hit');
+        let nx = dx/d, ny = dy/d, dot = b.vx * nx + b.vy * ny;
+        b.vx = (b.vx - 2 * dot * nx) * ph.bounce;
+        b.vy = Math.abs(b.vy - 2 * dot * ny) * ph.bounce;
+        b.vx += (Math.random() - 0.5) * 0.8; // Random jitter agar tidak kaku
+        if (b.vy < 1.5) b.vy = 1.5;
+        break;
+      }
+    }
+
+    // Render Bola
+    ctx.beginPath(); ctx.fillStyle = '#ff0077'; ctx.shadowBlur = 15; ctx.shadowColor = '#ff0077';
+    ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+
+    // Finish
     if (b.y > BH && b.serverStatus === BALL_READY) {
-      onLand(b);
-      balls.splice(i, 1);
+      onLand(b); balls.splice(i, 1);
     }
   }
   requestAnimationFrame(loop);
 }
-// ─── SPAWN BALL ──────────────────────────────────────────────
+
 function spawnBall() {
-  const bet  = BETS[betIdx];
-  const user = getUsername();
+  const bet = BETS[betIdx];
   if (_saldo < bet) { showModal("BALANCE INSUFFICIENT."); stopAuto(); return; }
+  
+  _saldo -= bet; _renderS(); snd('click');
 
-  const saldoAwal = _saldo;
-  _saldo -= bet;
-  _renderS();
-  snd('click');
-
-  const newBall = {
-    x: BW/2 + (Math.random()-0.5)*20,
-    y: -10, vx: (Math.random()-0.5)*2, vy: 1,
-    bet,
-    targetIdx:      undefined,
-    serverWin:      0,
-    serverNewSaldo: undefined,
-    serverMult:     undefined,
-    serverStatus:   BALL_WAITING
+  const newBall = { 
+    x: BW/2 + (Math.random()-0.5)*30, y: -10, vx: (Math.random()-0.5)*2, vy: 1, 
+    bet, serverStatus: BALL_WAITING 
   };
   balls.push(newBall);
 
-  apiCall({
-    action:    'game_play',
-    username:  user,
-    bet:       bet,
-    saldoAwal: saldoAwal
-  }).then(res => {
+  apiCall({ action: 'game_play', username: getUsername(), bet, saldoAwal: _saldo + bet }).then(res => {
     if (res && res.result === 'SUCCESS') {
-      const tm = res.target_multiplier;
       const possible = [];
-      MULTS.forEach((m, idx) => { if (m === tm) possible.push(idx); });
-
-      newBall.targetIdx      = possible[Math.floor(Math.random() * possible.length)];
-      newBall.serverWin      = res.win;
+      MULTS.forEach((m, idx) => { if (m === res.target_multiplier) possible.push(idx); });
+      newBall.targetIdx = possible[Math.floor(Math.random() * possible.length)];
+      newBall.serverWin = res.win;
       newBall.serverNewSaldo = res.newSaldo;
-      newBall.serverMult     = tm;
-      newBall.serverStatus   = BALL_READY;
-
+      newBall.serverMult = res.target_multiplier;
+      newBall.serverStatus = BALL_READY;
     } else {
-      newBall.serverStatus = BALL_ERROR;
-      _saldo += bet; _renderS();
+      newBall.serverStatus = BALL_ERROR; _saldo += bet; _renderS();
       showModal(res.message || "SERVER ERROR."); stopAuto();
     }
-  }).catch(() => {
-    newBall.serverStatus = BALL_ERROR;
-    _saldo += bet; _renderS();
-    showModal("Koneksi gagal. Cek internet Anda."); stopAuto();
   });
 }
 
-// ─── ON LAND ────────────────────────────────────────────────
-// Highlight kotak = posisi FISIK bola saat mendarat (b.x).
-// Karena zona landing sudah memandu bola ke targetX via lerp,
-// posisi fisik b.x selalu sangat dekat dengan targetIdx → konsisten.
-// Saldo & hasil tetap 100% dari server.
 function onLand(b) {
-  const idx = Math.max(0, Math.min(MULTS.length - 1, Math.floor(b.x / slotW)));
-
-  _saldo = b.serverNewSaldo;
-  _renderS();
-
-  const slotEl = document.getElementById('slot-' + idx);
-  slotEl.classList.add('active');
-  setTimeout(() => slotEl.classList.remove('active'), 400);
-
+  _saldo = b.serverNewSaldo; _renderS();
+  // Gunakan koordinat X asli bola untuk menentukan slot mana yang berkedip
+  const idx = Math.floor(b.x / slotW);
+  const safeIdx = Math.max(0, Math.min(idx, MULTS.length - 1));
+  
+  const slotEl = document.getElementById('slot-' + safeIdx);
+  if(slotEl) {
+    slotEl.classList.add('active'); 
+    setTimeout(() => slotEl.classList.remove('active'), 400);
+  }
+  
   if (b.serverMult >= 1) snd('win');
-
   const list = document.getElementById('score-list');
-  const div  = document.createElement('div');
+  const div = document.createElement('div');
   div.className = 'score-entry';
   div.innerHTML = `<b>${b.serverMult}x</b> | +${b.serverWin.toLocaleString('id-ID')}`;
   list.prepend(div);
   if (list.children.length > 5) list.lastChild.remove();
 }
 
-// ─── RENDER SALDO ───────────────────────────────────────────
-function _renderS() {
-  document.getElementById('display-saldo').textContent = 'IDR ' + Math.floor(_saldo).toLocaleString('id-ID');
-  storeLocalSaldo(_saldo);
+function _renderS() { 
+  document.getElementById('display-saldo').textContent = 'IDR ' + Math.floor(_saldo).toLocaleString('id-ID'); 
+  storeLocalSaldo(_saldo); 
 }
 
-// ─── CONTROLS ───────────────────────────────────────────────
-function setSpeedMode(m) { speedMode = m; snd('click'); document.getElementById('m-normal').classList.toggle('active', m === 'normal'); document.getElementById('m-turbo').classList.toggle('active', m === 'turbo'); }
+function setSpeedMode(m) { speedMode = m; snd('click'); document.querySelectorAll('.btn-mode').forEach(b => b.classList.remove('active')); document.getElementById('m-'+m).classList.add('active'); }
 function toggleAuto() { isAuto = !isAuto; document.getElementById('m-auto').classList.toggle('active', isAuto); if (isAuto) { spawnBall(); autoTimer = setInterval(spawnBall, PH[speedMode].autoMs); } else { clearInterval(autoTimer); } }
 function stopAuto() { isAuto = false; clearInterval(autoTimer); document.getElementById('m-auto').classList.remove('active'); }
 function changeBet(d) { if (isAuto) return; betIdx = Math.max(0, Math.min(BETS.length - 1, betIdx + d)); document.getElementById('current-bet').textContent = BETS[betIdx].toLocaleString('id-ID'); snd('click'); }
@@ -423,13 +297,6 @@ function snd(t) { try { const a = document.getElementById('snd-' + t); a.current
 
 window.addEventListener('resize', resize);
 document.addEventListener('DOMContentLoaded', init);
-
-window.addEventListener('beforeunload', () => {
-  const u = getUsername();
-  if (u) navigator.sendBeacon(
-    SCRIPT_URL + '?data=' + encodeURIComponent(JSON.stringify({ action: 'set_status', username: u, status: 'OFFLINE' }))
-  );
-});
 </script>
 </body>
 </html>
