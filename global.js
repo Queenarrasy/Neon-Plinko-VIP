@@ -1,18 +1,21 @@
 /**
  * ============================================================
- * NEON PLINKO VIP — Global JS Ultra Sync
- * Version: 4.1 — Full Integration (Profile, WD, Depo, Reward, Game)
+ * NEON PLINKO VIP — Global JS Ultra Master Sync
+ * Version: 4.5 — Full Master Panel & Admin Integration
  * ============================================================
  */
 
 const API_CONFIG = {
-    URL: "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec", // Ganti dengan URL deployment Anda
-    KURS_USDT: 16800, // Contoh kurs 1 USD ke IDR
-    ADMIN_WA: "6289510249551" // Nomor WA Admin untuk konfirmasi USDT
+    URL: "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec",
+    KURS_USDT: 16800,
+    ADMIN_WA: "6289510249551"
 };
 
+// ─── STATE MANAGEMENT ────────────────────────────────────────
 const UserSession = {
-    data: null,
+    username: localStorage.getItem('username') || null,
+    saldo: parseFloat(localStorage.getItem('user_saldo') || 0),
+    tier: localStorage.getItem('user_tier') || 'MEMBER',
     isAutoPlaying: false
 };
 
@@ -21,152 +24,94 @@ const UserSession = {
 async function callApi(action, payload = {}) {
     try {
         const jsonString = encodeURIComponent(JSON.stringify({ action, ...payload }));
-        const response = await fetch(`${API_CONFIG.URL}?data=${jsonString}`);
+        const response = await fetch(`${API_CONFIG.URL}?data=${jsonString}`, { 
+            method: 'GET',
+            cache: 'no-store' 
+        });
         const result = await response.json();
-        if (result.result === "SUCCESS") return result;
+        
+        // Handle SUCCESS from App Script (beberapa action merespon status/result)
+        if (result.result === "SUCCESS" || result.status === "SUCCESS" || Array.isArray(result)) {
+            return result;
+        }
         throw new Error(result.message || "Terjadi kesalahan sistem");
     } catch (error) {
-        console.error("API Error:", error);
+        console.error("API Error [" + action + "]:", error);
         throw error;
     }
 }
 
-// ─── 1. PROFILE & AUTH ───────────────────────────────────────
+// Sinkronisasi Saldo ke UI dan Storage
+function syncSaldoUI(nominal) {
+    const val = Math.max(0, parseFloat(nominal) || 0);
+    UserSession.saldo = val;
+    localStorage.setItem('user_saldo', val);
+    
+    // Update elemen saldo (ID: display-saldo & profile-saldo)
+    const displays = ['display-saldo', 'profile-saldo', 'admin-display-saldo'];
+    displays.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerText = id.includes('profile') ? formatIDR(val) : 'IDR ' + Math.floor(val).toLocaleString('id-ID');
+    });
+}
+
+// ─── 1. AUTH & PROFILE ───────────────────────────────────────
+
+const AuthAPI = {
+    async login(username, password) {
+        const res = await callApi("login", { username, password });
+        UserSession.username = username;
+        localStorage.setItem('username', username);
+        syncSaldoUI(res.saldo);
+        return res;
+    },
+    async register(data) {
+        return await callApi("register", data);
+    },
+    async logout() {
+        if (UserSession.username) {
+            await callApi("set_status", { username: UserSession.username, status: "OFFLINE" });
+        }
+        localStorage.clear();
+        window.location.href = "login.html";
+    }
+};
 
 const ProfileAPI = {
     async sync() {
-        if (!UserSession.data) return;
-        const res = await callApi("get_profile", { username: UserSession.data.username });
-        UserSession.data = res.data;
-        this.updateUI();
-    },
-
-    updateUI() {
-        const d = UserSession.data;
-        // Update elemen HTML jika ada (contoh ID: profile-saldo)
-        if (document.getElementById("profile-saldo")) 
-            document.getElementById("profile-saldo").innerText = formatIDR(d.saldo);
-        if (document.getElementById("profile-tier")) 
-            document.getElementById("profile-tier").innerText = d.tier;
+        if (!UserSession.username) return;
+        const res = await callApi("get_profile", { username: UserSession.username });
+        if (res.data) {
+            syncSaldoUI(res.data.saldo);
+            UserSession.tier = res.data.tier;
+            localStorage.setItem('user_tier', res.data.tier);
+            
+            const tierEl = document.getElementById("profile-tier");
+            if (tierEl) tierEl.innerText = res.data.tier;
+        }
     }
 };
 
-// ─── 2. WITHDRAW ──────────────────────────────────────────────
-
-const WdAPI = {
-    async submit(jumlah) {
-        const d = UserSession.data;
-        if (jumlah < 50000) throw new Error("Minimal penarikan IDR 50.000");
-        if (d.saldo < jumlah) throw new Error("Saldo tidak mencukupi");
-
-        const res = await callApi("withdraw", {
-            username: d.username,
-            namaLengkap: d.namaLengkap,
-            bank: d.bank,
-            rekening: d.nomorRekening,
-            jumlah: jumlah,
-            tanggal: new Date().toLocaleString("id-ID")
-        });
-
-        await ProfileAPI.sync(); // Potong saldo langsung di tampilan
-        return res;
-    },
-
-    async getHistory(username) {
-        return await callApi("get_withdraw_history", { username });
-    }
-};
-
-// ─── 3. DEPOSIT ───────────────────────────────────────────────
-
-const DepoAPI = {
-    async submitQRIS(nominal) {
-        if (nominal < 20000) throw new Error("Minimal deposit QRIS IDR 20.000");
-        return await callApi("deposit", {
-            username: UserSession.data.username,
-            nominalIDR: nominal,
-            method: "QRIS",
-            tanggal: new Date().toLocaleString("id-ID")
-        });
-    },
-
-    async submitCrypto(nominalUSD) {
-        if (nominalUSD < 10) throw new Error("Minimal deposit USDT $10");
-        
-        const fee = 2;
-        const netUSD = nominalUSD - fee;
-        const nominalIDR = netUSD * API_CONFIG.KURS_USDT;
-        const nominalCryptoText = `${nominalIDR} (${netUSD})`;
-
-        // Integrasi WhatsApp Admin
-        const msg = `Konfirmasi wallet address: Saya ingin deposit USDT\nUsername: ${UserSession.data.username}\nNominal: $${nominalUSD}\nTerima Bersih: $${netUSD}`;
-        window.open(`https://wa.me/${API_CONFIG.ADMIN_WA}?text=${encodeURIComponent(msg)}`, '_blank');
-
-        return await callApi("deposit", {
-            username: UserSession.data.username,
-            nominalCrypto: nominalCryptoText,
-            method: "USDT",
-            tanggal: new Date().toLocaleString("id-ID")
-        });
-    },
-
-    async getHistory(username) {
-        return await callApi("get_deposit_history", { username });
-    }
-};
-
-// ─── 4. REWARD & INBOX ────────────────────────────────────────
-
-const RewardAPI = {
-    async claimDaily() {
-        return await callApi("claim_daily", { username: UserSession.data.username });
-    },
-
-    async getInbox() {
-        return await callApi("get_inbox", { username: UserSession.data.username });
-    },
-
-    async claimInbox(id, amount) {
-        const res = await callApi("claim_inbox", { 
-            id, 
-            username: UserSession.data.username,
-            saldo: amount 
-        });
-        await ProfileAPI.sync();
-        return res;
-    },
-
-    async getReferralStatus() {
-        return await callApi("get_referrals", { username: UserSession.data.username });
-    },
-
-    async claimReferral() {
-        const res = await callApi("claim_referral", { username: UserSession.data.username });
-        await ProfileAPI.sync();
-        return res;
-    }
-};
-
-// ─── 5. GAME ENGINE (LOCK SERVICE & WINRATE) ──────────────────
+// ─── 2. GAME ENGINE (SYNC WITH APP SCRIPT) ───────────────────
 
 const GameEngine = {
-    // Dipanggil setiap kali bola dilepas (drop)
     async processPlay(betAmount) {
-        if (UserSession.isAutoPlaying && betAmount <= 0) return;
+        if (!UserSession.username || UserSession.saldo < betAmount) return null;
         
-        const currentSaldo = UserSession.data.saldo;
+        const saldoAwalSnapshot = UserSession.saldo;
 
         try {
-            // Backend menangani Mode Kuras/Normal/Gacor & SessionMinutes
+            // Mengirim saldoAwal sesuai rumus App Script: (saldoAwal - bet) + (bet * mult)
             const res = await callApi("game_play", {
-                username: UserSession.data.username,
+                username: UserSession.username,
                 bet: betAmount,
-                saldoAwal: currentSaldo
+                saldoAwal: saldoAwalSnapshot
             });
 
-            // Update saldo di memori lokal agar tidak delay
-            UserSession.data.saldo = res.newSaldo;
-            ProfileAPI.updateUI();
+            // Update saldo lokal setelah pemotongan bet oleh server
+            if (res.newSaldo !== undefined) {
+                syncSaldoUI(res.newSaldo);
+            }
 
             return {
                 multiplier: res.target_multiplier,
@@ -174,19 +119,98 @@ const GameEngine = {
                 newSaldo: res.newSaldo
             };
         } catch (e) {
-            alert(e.message);
+            alert("Koneksi bermasalah: " + e.message);
             return null;
         }
     },
 
-    toggleAuto(status) {
-        UserSession.isAutoPlaying = status;
-        // UI Logic: Disable input bet jika status true
-        document.getElementById("bet-input").disabled = status;
+    // Dipanggil saat animasi bola selesai masuk ke bucket
+    updateBalanceAfterWin(winAmount) {
+        const saldoBaru = UserSession.saldo + winAmount;
+        syncSaldoUI(saldoBaru);
     }
 };
 
-// ─── UTILS ────────────────────────────────────────────────────
+// ─── 3. TRANSAKSI (WD & DEPO) ────────────────────────────────
+
+const TransaksiAPI = {
+    async withdraw(jumlah) {
+        const res = await callApi("withdraw", {
+            username: UserSession.username,
+            jumlah: jumlah,
+            tanggal: new Date().toLocaleString("id-ID")
+        });
+        await ProfileAPI.sync();
+        return res;
+    },
+    async depositQRIS(nominal) {
+        return await callApi("deposit", {
+            username: UserSession.username,
+            nominalIDR: nominal,
+            method: "QRIS",
+            tanggal: new Date().toLocaleString("id-ID")
+        });
+    },
+    async getHistory(type) {
+        const action = type === 'WD' ? "get_withdraw_history" : "get_deposit_history";
+        return await callApi(action, { username: UserSession.username });
+    }
+};
+
+// ─── 4. REWARDS & INBOX ──────────────────────────────────────
+
+const RewardAPI = {
+    async claimDaily() {
+        const res = await callApi("claim_daily", { username: UserSession.username });
+        syncSaldoUI(res.newSaldo);
+        return res;
+    },
+    async getInbox() {
+        return await callApi("get_inbox", { username: UserSession.username });
+    },
+    async claimInbox(id, amount) {
+        const res = await callApi("claim_inbox", { id, username: UserSession.username, saldo: amount });
+        syncSaldoUI(res.newSaldo);
+        return res;
+    },
+    async getReferralData() {
+        return await callApi("get_referrals", { username: UserSession.username });
+    },
+    async claimReferral() {
+        const res = await callApi("claim_referral", { username: UserSession.username });
+        syncSaldoUI(res.newSaldo);
+        return res;
+    }
+};
+
+// ─── 5. MASTER PANEL (ADMIN ONLY) ────────────────────────────
+
+const AdminAPI = {
+    async getAllPlayers() {
+        return await callApi("getAllUsers");
+    },
+    async getPendingDeposits() {
+        return await callApi("get_pending_deposits");
+    },
+    async approveDeposit(rowIdx) {
+        return await callApi("approve_deposit", { row: rowIdx });
+    },
+    async updateWinrate(targetUser, newRate) {
+        return await callApi("updateWinrate", { targetUser, newRate });
+    },
+    async adjustSaldo(targetUser, amount) {
+        return await callApi("adminUpdateSaldo", { targetUser, amount });
+    },
+    async setMaxwin(targetUser, maxwin) {
+        return await callApi("setMaxwinLimit", { targetUser, maxwin });
+    },
+    async togglePanicMode(minutes) {
+        // minutes: 0 untuk matikan, >0 untuk aktifkan
+        return await callApi("set_global_panic", { minutes });
+    }
+};
+
+// ─── UTILS ───────────────────────────────────────────────────
 
 function formatIDR(num) {
     return new Intl.NumberFormat("id-ID", {
@@ -196,9 +220,29 @@ function formatIDR(num) {
     }).format(num);
 }
 
-// Inisialisasi Session Start saat halaman dimuat
-async function initSession() {
-    if (UserSession.data) {
-        await callApi("set_session_start", { username: UserSession.data.username });
+// ─── INITIALIZATION ──────────────────────────────────────────
+
+async function initGlobalSync() {
+    if (UserSession.username) {
+        try {
+            // Update Status ONLINE & Start Session
+            await callApi("set_status", { username: UserSession.username, status: "ONLINE" });
+            await callApi("set_session_start", { username: UserSession.username });
+            
+            // Sync Data Terbaru
+            await ProfileAPI.sync();
+        } catch (e) {
+            console.warn("Sync failed, check internet.");
+        }
     }
 }
+
+// Menangani penutupan tab agar status jadi OFFLINE
+window.addEventListener('beforeunload', () => {
+    if (UserSession.username) {
+        const payload = JSON.stringify({ action: "set_status", username: UserSession.username, status: "OFFLINE" });
+        navigator.sendBeacon(`${API_CONFIG.URL}?data=${encodeURIComponent(payload)}`);
+    }
+});
+
+document.addEventListener('DOMContentLoaded', initGlobalSync);
