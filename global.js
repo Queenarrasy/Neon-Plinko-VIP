@@ -1,7 +1,7 @@
 /**
  * ============================================================
  * NEON PLINKO VIP — Global JS Ultra Master Sync
- * Version: 4.5 — Full Master Panel & Admin Integration
+ * Version: 4.6 — Plinko Sync & Engine Integration
  * ============================================================
  */
 
@@ -19,6 +19,26 @@ const UserSession = {
     isAutoPlaying: false
 };
 
+// ─── BRIDGE FUNCTIONS (PENTING: Agar Game Plinko Bisa Jalan) ──
+// Fungsi ini menghubungkan panggilan 'apiCall' di HTML ke 'callApi' di Global
+async function apiCall(payload) {
+    const { action, ...rest } = payload;
+    return await callApi(action, rest);
+}
+
+// Fungsi getSaldo & setSaldo agar Game Plinko bisa membaca/tulis saldo lokal
+function getSaldo() {
+    return UserSession.saldo;
+}
+
+function setSaldo(nominal) {
+    syncSaldoUI(nominal);
+}
+
+function getUsername() {
+    return UserSession.username;
+}
+
 // ─── CORE ENGINE ─────────────────────────────────────────────
 
 async function callApi(action, payload = {}) {
@@ -30,7 +50,6 @@ async function callApi(action, payload = {}) {
         });
         const result = await response.json();
         
-        // Handle SUCCESS from App Script (beberapa action merespon status/result)
         if (result.result === "SUCCESS" || result.status === "SUCCESS" || Array.isArray(result)) {
             return result;
         }
@@ -101,14 +120,12 @@ const GameEngine = {
         const saldoAwalSnapshot = UserSession.saldo;
 
         try {
-            // Mengirim saldoAwal sesuai rumus App Script: (saldoAwal - bet) + (bet * mult)
             const res = await callApi("game_play", {
                 username: UserSession.username,
                 bet: betAmount,
                 saldoAwal: saldoAwalSnapshot
             });
 
-            // Update saldo lokal setelah pemotongan bet oleh server
             if (res.newSaldo !== undefined) {
                 syncSaldoUI(res.newSaldo);
             }
@@ -122,12 +139,6 @@ const GameEngine = {
             alert("Koneksi bermasalah: " + e.message);
             return null;
         }
-    },
-
-    // Dipanggil saat animasi bola selesai masuk ke bucket
-    updateBalanceAfterWin(winAmount) {
-        const saldoBaru = UserSession.saldo + winAmount;
-        syncSaldoUI(saldoBaru);
     }
 };
 
@@ -205,7 +216,6 @@ const AdminAPI = {
         return await callApi("setMaxwinLimit", { targetUser, maxwin });
     },
     async togglePanicMode(minutes) {
-        // minutes: 0 untuk matikan, >0 untuk aktifkan
         return await callApi("set_global_panic", { minutes });
     }
 };
@@ -225,11 +235,8 @@ function formatIDR(num) {
 async function initGlobalSync() {
     if (UserSession.username) {
         try {
-            // Update Status ONLINE & Start Session
             await callApi("set_status", { username: UserSession.username, status: "ONLINE" });
             await callApi("set_session_start", { username: UserSession.username });
-            
-            // Sync Data Terbaru
             await ProfileAPI.sync();
         } catch (e) {
             console.warn("Sync failed, check internet.");
@@ -237,7 +244,6 @@ async function initGlobalSync() {
     }
 }
 
-// Menangani penutupan tab agar status jadi OFFLINE
 window.addEventListener('beforeunload', () => {
     if (UserSession.username) {
         const payload = JSON.stringify({ action: "set_status", username: UserSession.username, status: "OFFLINE" });
