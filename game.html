@@ -13,557 +13,399 @@
   --gp:0 0 15px rgba(255,0,119,0.7);
   --gb:0 0 20px rgba(0,68,255,0.8);
   --gy:0 0 15px rgba(245,230,66,0.7);
-  --header-h:60px; --slot-h:42px;
+  --header-h:65px; --slot-h:45px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{width:100vw;height:100vh;overflow:hidden;background:var(--bg);color:#fff;font-family:'Outfit',sans-serif;display:flex;flex-direction:column}
 
-/* LOADING */
-#loading{display:none;position:fixed;inset:0;background:rgba(2,3,13,0.85);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:12px;backdrop-filter:blur(4px)}
-.spin{width:48px;height:48px;border:4px solid rgba(0,68,255,0.3);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite}
-#loading p{font-size:13px;color:var(--blue);letter-spacing:1px}
-@keyframes spin{to{transform:rotate(360deg)}}
-
 /* HEADER */
 .header{height:var(--header-h);background:rgba(2,3,13,0.95);border-bottom:2px solid var(--blue);box-shadow:var(--gb);display:flex;align-items:center;padding:0 15px;justify-content:space-between;z-index:100;flex-shrink:0}
 .profile-btn{color:var(--blue);font-size:24px;text-shadow:var(--gb);cursor:pointer}
-.balance-container{background:rgba(0,0,0,0.6);border:1px solid var(--pink);border-radius:12px;padding:5px 20px;text-align:center;box-shadow:inset 0 0 10px rgba(255,0,119,0.3);cursor:pointer}
-#display-saldo{font-family:'Cinzel Decorative',serif;font-size:18px;color:var(--yellow);text-shadow:var(--gy);font-weight:900}
+.balance-container{background:rgba(0,0,0,0.6);border:1px solid var(--pink);border-radius:12px;padding:5px 20px;text-align:center;box-shadow:inset 0 0 10px rgba(255,0,119,0.3);min-width:140px}
+#display-saldo{font-family:'Cinzel Decorative',serif;font-size:16px;color:var(--yellow);text-shadow:var(--gy);font-weight:900}
 #tier-badge{font-size:9px;text-align:center;letter-spacing:1px;margin-top:2px;font-weight:700;color:#aaa}
 
-/* BOARD */
+/* BOARD AREA */
 #board-wrapper{flex:1;position:relative;background:radial-gradient(circle at center,#070a24 0%,#02030d 100%);overflow:hidden;display:flex;flex-direction:column;min-height:0}
-#plinko-canvas{flex:1;display:block;width:100%}
+#plinko-canvas{flex:1;display:block;width:100%;height:100%}
+
+/* SCORE LIST */
 #floating-score{position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.8);border:1px solid var(--blue);border-radius:8px;padding:5px;width:110px;box-shadow:var(--gb);z-index:20}
 .score-entry{font-size:10px;border-bottom:1px solid rgba(0,68,255,0.3);padding:3px 0;text-align:center;animation:slideIn .3s ease-out}
 .score-win{color:var(--yellow)!important}
 .score-loss{color:rgba(255,255,255,0.4)!important}
 
-/* WR BAR */
-#wr-bar-wrap{position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.75);border:1px solid rgba(0,68,255,0.5);border-radius:8px;padding:5px 8px;z-index:20;font-size:9px;color:rgba(255,255,255,0.6);min-width:70px}
-#wr-bar-track{height:4px;border-radius:2px;background:rgba(255,255,255,0.1);margin-top:3px}
-#wr-bar-fill{height:4px;border-radius:2px;background:linear-gradient(90deg,var(--pink),var(--yellow));width:50%;transition:width .5s}
-
-/* SLOTS */
-.multiplier-row{height:var(--slot-h);display:flex;width:100%;padding:0 2px;margin-top:-5px;z-index:10;gap:2px;flex-shrink:0}
-.slot{flex:1;height:32px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;transition:all .15s;border-radius:4px;border:1px solid rgba(255,255,255,0.1)}
-.s-high{background:var(--pink);color:#fff}
-.s-mid{background:var(--yellow);color:#000}
-.s-low{background:var(--blue);color:#fff}
-.slot.active{transform:translateY(-8px) scale(1.1);filter:brightness(1.8);box-shadow:0 0 25px #fff;border:2px solid #fff}
+/* MULTIPLIER SLOTS */
+.multiplier-row{height:var(--slot-h);display:flex;width:100%;padding:0 4px;z-index:10;gap:4px;flex-shrink:0;margin-bottom:5px}
+.slot{flex:1;height:35px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;transition:all .15s;border-radius:6px;border:1px solid rgba(255,255,255,0.1);text-shadow:0 1px 2px rgba(0,0,0,0.8)}
+.s-high{background:linear-gradient(to bottom, #ff0077, #990033);color:#fff;border-color:#ff66aa}
+.s-mid{background:linear-gradient(to bottom, #f5e642, #b5a91d);color:#000;border-color:#fff}
+.s-low{background:linear-gradient(to bottom, #0044ff, #002288);color:#fff;border-color:#6699ff}
+.slot.active{transform:translateY(-10px) scale(1.15);filter:brightness(1.5);box-shadow:0 0 25px #fff;border:2px solid #fff;z-index:100}
 
 /* CONTROLS */
-.controls{padding:12px 15px 28px 15px;background:linear-gradient(to top,#02030d 20%,#0a0b1e 100%);border-top:2px solid var(--blue);display:flex;flex-direction:column;gap:8px;box-shadow:0 -10px 20px rgba(0,68,255,0.2);flex-shrink:0}
+.controls{padding:15px;background:linear-gradient(to top,#02030d 20%,#0a0b1e 100%);border-top:2px solid var(--blue);display:flex;flex-direction:column;gap:10px;box-shadow:0 -10px 20px rgba(0,68,255,0.2);flex-shrink:0}
 .mode-row{display:flex;gap:8px}
-.btn-mode{flex:1;padding:10px;border-radius:8px;border:1px solid var(--blue);background:rgba(0,68,255,0.1);color:var(--blue);font-size:10px;font-weight:bold;cursor:pointer;transition:.2s}
+.btn-mode{flex:1;padding:12px;border-radius:10px;border:1px solid var(--blue);background:rgba(0,68,255,0.1);color:var(--blue);font-size:11px;font-weight:bold;cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;gap:6px}
 .btn-mode.active{background:var(--blue);color:#fff;box-shadow:var(--gb)}
-.btn-mode:active{transform:scale(0.97)}
-.bet-row{display:flex;align-items:center;justify-content:space-between;background:rgba(0,68,255,0.08);border-radius:12px;padding:6px 15px;border:1px solid var(--blue)}
-.bet-btn{background:none;border:none;color:var(--pink);font-size:26px;cursor:pointer;text-shadow:var(--gp);transition:.15s}
-.bet-btn:active{transform:scale(0.88)}
-#current-bet{font-family:'Cinzel Decorative';font-size:20px;color:var(--yellow);text-shadow:var(--gy)}
-.btn-play{width:100%;padding:16px;border-radius:12px;border:none;font-family:'Cinzel Decorative';font-weight:900;font-size:18px;color:#fff;cursor:pointer;background:linear-gradient(90deg,var(--blue),var(--pink));box-shadow:var(--gb);transition:.2s}
-.btn-play:active{transform:scale(0.98);filter:brightness(1.15)}
-.btn-play:disabled{opacity:.45;cursor:not-allowed;transform:none}
-.nav-bottom{display:flex;gap:8px}
-.nav-btn{flex:1;padding:8px;text-align:center;border-radius:8px;text-decoration:none;font-size:9px;font-weight:bold;border:1px solid var(--blue);color:#fff;background:rgba(0,68,255,0.15);display:flex;flex-direction:column;align-items:center;gap:4px;transition:.2s}
-.nav-btn:active{background:rgba(0,68,255,0.35)}
-.nav-btn i{font-size:12px;color:var(--blue)}
+.bet-row{display:flex;align-items:center;justify-content:space-between;background:rgba(0,68,255,0.1);border-radius:15px;padding:8px 20px;border:1px solid var(--blue)}
+.bet-btn{background:none;border:none;color:var(--pink);font-size:28px;cursor:pointer;text-shadow:var(--gp)}
+#current-bet{font-family:'Cinzel Decorative';font-size:22px;color:var(--yellow);text-shadow:var(--gy);font-weight:900}
+.btn-play{width:100%;padding:18px;border-radius:15px;border:none;font-family:'Cinzel Decorative';font-weight:900;font-size:20px;color:#fff;cursor:pointer;background:linear-gradient(90deg,var(--blue),var(--pink));box-shadow:var(--gb);transition:.2s;text-shadow: 0 2px 4px rgba(0,0,0,0.5)}
+.btn-play:active{transform:scale(0.96)}
+
+/* NAV */
+.nav-bottom{display:flex;gap:10px}
+.nav-btn{flex:1;padding:10px;text-align:center;border-radius:10px;text-decoration:none;font-size:10px;font-weight:bold;border:1px solid var(--blue);color:#fff;background:rgba(0,68,255,0.15);display:flex;flex-direction:column;align-items:center;gap:4px}
 
 /* MODAL */
-#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:1000;backdrop-filter:blur(3px)}
-#neon-modal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#050614;border:2px solid var(--blue);border-radius:15px;padding:25px;text-align:center;z-index:1001;box-shadow:var(--gb);width:85%}
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:2000;backdrop-filter:blur(5px)}
+#neon-modal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#050614;border:2px solid var(--blue);border-radius:20px;padding:30px;text-align:center;z-index:2001;box-shadow:var(--gb);width:80%;max-width:320px}
 
 @keyframes slideIn{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:translateX(0)}}
 </style>
 </head>
 <body>
 
-<audio id="snd-hit"   src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3" preload="auto"></audio>
-<audio id="snd-win"   src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3" preload="auto"></audio>
-<audio id="snd-click" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3" preload="auto"></audio>
-
-<!-- LOADING — dikontrol oleh global.js setLoading() -->
-<div id="loading"><div class="spin"></div><p>CONNECTING...</p></div>
-
-<!-- MODAL -->
 <div id="modal-overlay"></div>
 <div id="neon-modal">
-  <div style="font-family:'Cinzel Decorative';color:var(--blue);margin-bottom:15px;">
-    <i class="fa-solid fa-triangle-exclamation"></i> SYSTEM ALERT
-  </div>
+  <div style="font-family:'Cinzel Decorative';color:var(--blue);margin-bottom:15px;font-size:18px;">ALERT</div>
   <p id="modal-msg" style="color:#ddeeff;margin-bottom:20px;font-size:14px;line-height:1.6;"></p>
-  <button class="btn-mode active" onclick="closeModal()" style="width:120px;margin:0 auto;">OK</button>
+  <button class="btn-mode active" onclick="closeModal()" style="width:100%">OK</button>
 </div>
 
-<!-- HEADER -->
 <div class="header">
-  <div class="profile-btn" onclick="location.href='profil.html'"><i class="fa-solid fa-user-shield"></i></div>
-  <div class="balance-container" onclick="syncSaldoUI()" title="Tap untuk refresh">
-    <div style="font-size:8px;color:var(--blue);letter-spacing:1px;">VAULT BALANCE</div>
+  <div class="profile-btn" onclick="location.href='profil.html'"><i class="fa-solid fa-user-astronaut"></i></div>
+  <div class="balance-container">
+    <div style="font-size:8px;color:var(--blue);letter-spacing:1px;font-weight:bold">VAULT BALANCE</div>
     <div id="display-saldo">IDR 0</div>
-    <div id="tier-badge">MEMBER</div>
+    <div id="tier-badge">LOADING...</div>
   </div>
-  <div class="profile-btn" style="color:var(--yellow)"><i class="fa-solid fa-gem"></i></div>
+  <div class="profile-btn" style="color:var(--yellow)" onclick="syncSaldoUI()"><i class="fa-solid fa-rotate"></i></div>
 </div>
 
-<!-- BOARD -->
 <div id="board-wrapper">
   <canvas id="plinko-canvas"></canvas>
-  <div id="wr-bar-wrap">
-    <span id="wr-label">WR --</span>
-    <div id="wr-bar-track"><div id="wr-bar-fill"></div></div>
-  </div>
   <div id="floating-score"><div id="score-list"></div></div>
 </div>
 
-<!-- SLOT ROW -->
 <div class="multiplier-row" id="slot-row"></div>
 
-<!-- CONTROLS -->
 <div class="controls">
   <div class="mode-row">
-    <button class="btn-mode active" id="m-normal" onclick="setSpeedMode('normal')"><i class="fa-solid fa-gauge-high"></i> NORMAL</button>
-    <button class="btn-mode"        id="m-turbo"  onclick="setSpeedMode('turbo')"><i class="fa-solid fa-bolt-lightning"></i> TURBO</button>
-    <button class="btn-mode"        id="m-auto"   onclick="toggleAuto()"><i class="fa-solid fa-rotate"></i> AUTO</button>
+    <button class="btn-mode active" id="m-normal" onclick="setSpeedMode('normal')"><i class="fa-solid fa-bolt"></i> NORMAL</button>
+    <button class="btn-mode" id="m-turbo" onclick="setSpeedMode('turbo')"><i class="fa-solid fa-gauge-high"></i> TURBO</button>
+    <button class="btn-mode" id="m-auto" onclick="toggleAuto()"><i class="fa-solid fa-sync-alt"></i> AUTO</button>
   </div>
   <div class="bet-row">
-    <button class="bet-btn" onclick="changeBet(-1)"><i class="fa-solid fa-square-minus"></i></button>
+    <button class="bet-btn" onclick="changeBet(-1)"><i class="fa-solid fa-circle-minus"></i></button>
     <div style="text-align:center">
-      <div style="font-size:9px;color:var(--blue);opacity:.8">BET AMOUNT</div>
+      <div style="font-size:9px;color:var(--blue);opacity:.8;font-weight:bold">BET AMOUNT</div>
       <div id="current-bet">400</div>
     </div>
-    <button class="bet-btn" onclick="changeBet(1)"><i class="fa-solid fa-square-plus"></i></button>
+    <button class="bet-btn" onclick="changeBet(1)"><i class="fa-solid fa-circle-plus"></i></button>
   </div>
-  <button class="btn-play" id="main-btn" onclick="spawnBall()"><i class="fa-solid fa-meteor"></i> DROP BALL</button>
+  <button class="btn-play" id="main-btn" onclick="spawnBall()">DROP NEON BALL</button>
   <div class="nav-bottom">
-    <a href="withdraw.html" class="nav-btn"><i class="fa-solid fa-money-bill-transfer"></i> WITHDRAW</a>
-    <a href="deposit.html"  class="nav-btn"><i class="fa-solid fa-building-columns"></i> DEPOSIT</a>
-    <a href="reward.html"   class="nav-btn"><i class="fa-solid fa-trophy"></i> REWARD</a>
+    <a href="deposit.html" class="nav-btn"><i class="fa-solid fa-wallet"></i> DEPOSIT</a>
+    <a href="withdraw.html" class="nav-btn"><i class="fa-solid fa-money-bill-wave"></i> WITHDRAW</a>
   </div>
 </div>
 
-<!-- global.js HARUS diload SEBELUM script game -->
 <script src="global.js"></script>
 <script>
-// ═══════════════════════════════════════════════════════════
-//  NEON PLINKO VIP — game.html v7.1 FIXED
-//  Integrasi penuh dengan global.js v4.1
-// ═══════════════════════════════════════════════════════════
+/**
+ * NEON PLINKO VIP ENGINE v8.0
+ * Fully Synchronized with Google Sheets & global.js
+ */
 
-const ROWS   = 10;
-const MULTS  = [10, 3, 1.5, 0.5, 0.2, 0.2, 0.5, 1.5, 3, 10];
-const BETS   = [400, 800, 1000, 1200, 1600, 2000, 4000, 8000, 10000, 20000];
-const BALL_R = 6, PEG_R = 3;
-
-const BALL_WAITING = 'waiting';
-const BALL_READY   = 'ready';
-const BALL_ERROR   = 'error';
+const ROWS = 10;
+const MULTS = [10, 5, 2, 1.2, 0.5, 0.5, 1.2, 2, 5, 10];
+const BETS = [400, 800, 1000, 2000, 5000, 10000, 25000, 50000];
+const BALL_R = 7, PEG_R = 3.5;
 
 let canvas, ctx, BW, BH;
-let pegs = [], balls = [], slotW, particles = [];
+let pegs = [], balls = [], slotW = 0;
 let speedMode = 'normal', isAuto = false, autoTimer = null, betIdx = 0;
-let _saldo    = 0;
-let _username = '';
-let _winrate  = 50;
-let _syncTimer = null;
+let _saldo = 0, _username = '';
 
-const PH = {
-  normal: { grav:0.42, fric:0.99, bounce:0.55, autoMs:700 },
-  turbo:  { grav:0.95, fric:0.98, bounce:0.40, autoMs:200 }
+const PHYSICS = {
+  normal: { grav: 0.45, fric: 0.99, bounce: 0.5, autoMs: 800 },
+  turbo: { grav: 1.0, fric: 0.98, bounce: 0.35, autoMs: 250 }
 };
 
-// ─── INIT ─────────────────────────────────────────────────
-// KUNCI FIX: init() dipanggil dari DOMContentLoaded di bawah.
-// global.js sudah load currentUser secara synchronous saat script dimuat.
-// Jadi requireLogin() PASTI bisa baca session dengan benar.
+window.addEventListener('load', init);
+
 async function init() {
-  // [1] Cek login — jika null langsung redirect, tidak lanjut
   const user = requireLogin('index.html');
-  if (!user) return; // stop di sini, redirect sudah dipanggil
+  if (!user) return;
 
-  // [2] Ambil data dari session yang sudah ada
-  _username = user.username  || '';
-  _saldo    = parseFloat(user.saldo) || 0;
-  _winrate  = parseFloat(user.winrate) || 50;
+  _username = user.username;
+  _saldo = parseFloat(user.saldo) || 0;
 
-  // [3] Render UI dari data session (instan, tidak tunggu server)
-  _renderS();
-  _renderTier(user.tier || 'MEMBER');
-  _renderWR(_winrate);
-
-  // [4] Setup canvas & game
   canvas = document.getElementById('plinko-canvas');
-  ctx    = canvas.getContext('2d');
+  ctx = canvas.getContext('2d');
+
+  window.addEventListener('resize', resize);
   resize();
   buildSlots();
-  loop();
-
-  // [5] Non-blocking: beritahu server user ONLINE + catat session
-  // (void functions di global.js — tidak perlu .catch())
-  apiSetSessionStart(_username);
-  apiSetStatus(_username, 'ONLINE');
-
-  // [6] Sync saldo fresh dari server (background, tidak block UI)
+  renderProfileUI(user);
+  
+  // Start Game Loop
+  update();
+  
+  // Background Sync
   syncSaldoUI();
-
-  // [7] Auto-sync setiap 10 detik saat tidak ada bola
-  _syncTimer = setInterval(() => {
-    if (balls.length === 0) syncSaldoUI();
-  }, 10000);
-
-  // [8] Sync saat tab aktif kembali
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && balls.length === 0) syncSaldoUI();
-  });
+  apiSetStatus(_username, 'ONLINE');
 }
 
-// ─── SYNC SALDO ───────────────────────────────────────────
-async function syncSaldoUI() {
-  if (!_username) return;
-  const res = await apiGetSaldo(_username);
-  if (res && res.result === 'SUCCESS') {
-    _saldo   = parseFloat(res.saldo)   || _saldo;
-    _winrate = parseFloat(res.winrate) || _winrate;
-    _renderS();
-    _renderTier(res.tier || 'MEMBER');
-    _renderWR(_winrate);
-  }
-}
-
-// ─── RENDER ───────────────────────────────────────────────
-function _renderS() {
-  const el = document.getElementById('display-saldo');
-  if (el) el.textContent = 'IDR ' + Math.floor(_saldo).toLocaleString('id-ID');
-}
-
-function _renderTier(tier) {
-  const map = {
-    MEMBER:   ['#aaa','👤'], SILVER:['#c0c0c0','🥈'],
-    GOLD:     ['#ffd700','🥇'], PLATINUM:['#e5e4e2','💎'], DIAMOND:['#b9f2ff','💠']
-  };
-  const [color, icon] = map[tier] || map.MEMBER;
-  const el = document.getElementById('tier-badge');
-  if (el) { el.textContent = icon + ' ' + tier; el.style.color = color; }
-}
-
-function _renderWR(wr) {
-  const lbl = document.getElementById('wr-label');
-  const bar = document.getElementById('wr-bar-fill');
-  if (lbl) lbl.textContent = 'WR ' + Math.round(wr) + '%';
-  if (bar) bar.style.width = Math.min(100, Math.max(0, wr)) + '%';
-}
-
-// ─── RESIZE & BUILD ───────────────────────────────────────
 function resize() {
   const wrap = document.getElementById('board-wrapper');
-  BW = wrap.offsetWidth; BH = wrap.offsetHeight;
-  const DPR = window.devicePixelRatio || 1;
-  canvas.width  = BW * DPR; canvas.height = BH * DPR;
-  canvas.style.width = BW + 'px'; canvas.style.height = BH + 'px';
-  ctx.scale(DPR, DPR);
+  BW = wrap.offsetWidth;
+  BH = wrap.offsetHeight;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = BW * dpr;
+  canvas.height = BH * dpr;
+  ctx.scale(dpr, dpr);
   slotW = BW / MULTS.length;
-  buildPegs();
+  createPegs();
 }
 
-function buildPegs() {
+function createPegs() {
   pegs = [];
-  const sx = (BW * 0.92) / (ROWS + 1);
-  const sy = (BH * 0.82) / ROWS;
+  const spacingX = BW / (ROWS + 2);
+  const spacingY = (BH * 0.85) / ROWS;
+  
   for (let r = 0; r < ROWS; r++) {
-    const count = r + 2;
-    const startX = (BW - (count-1)*sx) / 2;
-    for (let c = 0; c < count; c++) pegs.push({ x: startX+c*sx, y: 50+r*sy, glow:0 });
+    const rowCount = r + 3;
+    const startX = (BW - (rowCount - 1) * spacingX) / 2;
+    for (let c = 0; c < rowCount; c++) {
+      pegs.push({
+        x: startX + c * spacingX,
+        y: 60 + r * spacingY,
+        glow: 0
+      });
+    }
   }
 }
 
 function buildSlots() {
-  const row = document.getElementById('slot-row');
-  row.innerHTML = '';
+  const container = document.getElementById('slot-row');
+  container.innerHTML = '';
   MULTS.forEach((m, i) => {
-    const s = document.createElement('div');
-    s.className = 'slot ' + (m>=3?'s-high':m>=1?'s-mid':'s-low');
-    s.id = 'slot-' + i;
-    s.innerHTML = m + 'x';
-    row.appendChild(s);
+    const div = document.createElement('div');
+    div.className = `slot ${m >= 5 ? 's-high' : m >= 1.2 ? 's-mid' : 's-low'}`;
+    div.id = `slot-${i}`;
+    div.innerHTML = m + 'x';
+    container.appendChild(div);
   });
 }
 
-// ─── PARTICLES ────────────────────────────────────────────
-function createParticles(x, y, color) {
-  for (let i = 0; i < 14; i++) {
-    particles.push({
-      x, y,
-      vx: (Math.random()-.5)*7, vy: (Math.random()-1.2)*7,
-      size: Math.random()*2.5+1, color, life:1.0
-    });
+function renderProfileUI(data) {
+  document.getElementById('display-saldo').innerText = formatIDR(_saldo);
+  const badge = document.getElementById('tier-badge');
+  badge.innerText = `✧ ${data.tier || 'MEMBER'} ✧`;
+  badge.style.color = data.tier === 'GOLD' ? '#f5e642' : '#0044ff';
+}
+
+async function syncSaldoUI() {
+  const res = await apiGetSaldo(_username);
+  if (res && res.result === 'SUCCESS') {
+    _saldo = parseFloat(res.saldo);
+    renderProfileUI(res);
   }
 }
 
-// ─── GAME LOOP ────────────────────────────────────────────
-function loop() {
-  ctx.clearRect(0, 0, BW, BH);
-  const ph = PH[speedMode];
-  const lastPeg    = pegs.length > 0 ? pegs[pegs.length-1] : { y: BH*.85 };
-  const LAST_PEG_Y = lastPeg.y + PEG_R + BALL_R + 2;
-
-  // Paku
-  pegs.forEach(p => {
-    p.glow *= 0.85;
-    ctx.fillStyle = p.glow > 0.1
-      ? `rgba(255,255,255,${0.3+p.glow})` : 'rgba(0,68,255,0.3)';
-    ctx.beginPath(); ctx.arc(p.x, p.y, PEG_R+(p.glow*2), 0, Math.PI*2); ctx.fill();
-  });
-
-  // Bola
-  for (let i = balls.length-1; i >= 0; i--) {
-    const b = balls[i];
-    if (b.serverStatus === BALL_ERROR) { balls.splice(i,1); continue; }
-
-    // Rem saat menunggu server jawab
-    if (b.serverStatus === BALL_WAITING && b.y > BH*.80) {
-      const t = Math.min(1, (b.y - BH*.80) / (BH*.18));
-      b.vy *= (1 - t*.75);
-      if (b.vy < 0.08) b.vy = 0.08;
-    }
-
-    b.vy += ph.grav;
-    if (b.vy > 14) b.vy = 14;
-
-    if (b.y < LAST_PEG_Y) {
-      // ZONA PAKU
-      b.vx *= ph.fric;
-      if (Math.abs(b.vy) < 0.3 && b.y < BH*.8) { b.vx += (Math.random()-.5)*.4; b.vy += 0.4; }
-
-      if (b.serverStatus === BALL_READY && b.targetIdx !== undefined) {
-        const tx   = (b.targetIdx * slotW) + slotW/2;
-        const prog = Math.max(0, (b.y - BH*.4) / (BH*.6));
-        b.vx += (tx - b.x) * 0.006 * prog * prog;
-      }
-
-      b.x += b.vx; b.y += b.vy;
-      if (b.x < BALL_R)         { b.x = BALL_R;      b.vx =  Math.abs(b.vx)*.4; }
-      else if (b.x > BW-BALL_R) { b.x = BW-BALL_R;   b.vx = -Math.abs(b.vx)*.4; }
-
-      for (let pi = 0; pi < pegs.length; pi++) {
-        const p = pegs[pi];
-        if (Math.abs(p.y-b.y) > BALL_R+PEG_R+2) continue;
-        const dx=b.x-p.x, dy=b.y-p.y, dist=Math.sqrt(dx*dx+dy*dy), mD=BALL_R+PEG_R;
-        if (dist < mD && dist > 0.001) {
-          const ov=mD-dist, nx=dx/dist, ny=dy/dist;
-          b.x+=nx*ov; b.y+=ny*ov;
-          const dot=b.vx*nx+b.vy*ny;
-          if (dot < 0) {
-            b.vx = (b.vx-2*dot*nx)*ph.bounce + (Math.random()-.5)*.5;
-            b.vy = (b.vy-2*dot*ny)*ph.bounce;
-            if (b.vy < 0.8) b.vy = 0.8;
-            if (b.vy > 14)  b.vy = 14;
-          }
-          p.glow = 1.0; snd('hit'); break;
-        }
-      }
-    } else {
-      // ZONA LANDING
-      b.vx *= 0.78;
-      if (b.serverStatus === BALL_READY && b.targetIdx !== undefined) {
-        const tx = (b.targetIdx * slotW) + slotW/2;
-        b.vx += (tx - b.x) * 0.012;
-      }
-      b.x += b.vx; b.y += b.vy;
-      if (b.x < BALL_R)         { b.x = BALL_R;    b.vx =  Math.abs(b.vx)*.3; }
-      else if (b.x > BW-BALL_R) { b.x = BW-BALL_R; b.vx = -Math.abs(b.vx)*.3; }
-    }
-
-    // Render bola
-    const hx=b.x-b.vx*1.4, hy=b.y-b.vy*.8;
-    const gr = ctx.createRadialGradient(hx, hy, .5, b.x, b.y, BALL_R);
-    gr.addColorStop(0,'#ffffff'); gr.addColorStop(.35,'#ff4499'); gr.addColorStop(1,'#990033');
-    ctx.beginPath(); ctx.fillStyle=gr; ctx.arc(b.x,b.y,BALL_R,0,Math.PI*2); ctx.fill();
-
-    // Landing check
-    if (b.y > BH+BALL_R && b.serverStatus === BALL_READY) {
-      onLand(b); balls.splice(i,1);
-    }
-  }
-
-  // Particles
-  for (let i = particles.length-1; i >= 0; i--) {
-    const p = particles[i];
-    p.x+=p.vx; p.y+=p.vy; p.vy+=.2; p.life-=.04;
-    if (p.life<=0) { particles.splice(i,1); continue; }
-    ctx.globalAlpha=p.life; ctx.fillStyle=p.color;
-    ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill();
-  }
-  ctx.globalAlpha=1.0;
-  requestAnimationFrame(loop);
-}
-
-// ─── SPAWN BALL ───────────────────────────────────────────
+// SPAWN BALL WITH SERVER VALIDATION
 async function spawnBall() {
   const bet = BETS[betIdx];
   if (_saldo < bet) {
-    showModal('SALDO TIDAK CUKUP!<br><small>Silakan deposit terlebih dahulu.</small>');
-    stopAuto(); return;
+    showModal("SALDO TIDAK CUKUP! <br> Silakan isi deposit Anda.");
+    stopAuto();
+    return;
   }
 
-  // Snapshot saldo SEBELUM bet — wajib dikirim ke GAS
-  const saldoAwal = _saldo;
-  _saldo -= bet;  // kurangi lokal agar terasa responsif
-  _renderS();
-  snd('click');
+  // Pre-bet local deduction (responsiveness)
+  const snapshotSaldo = _saldo;
+  _saldo -= bet;
+  document.getElementById('display-saldo').innerText = formatIDR(_saldo);
 
-  const newBall = {
-    x: BW/2+(Math.random()-.5)*15, y:-10,
-    vx:(Math.random()-.5)*2, vy:2,
-    bet,
-    serverStatus:   BALL_WAITING,
-    targetIdx:      undefined,
-    serverMult:     0,
-    serverWin:      0,
-    serverNewSaldo: undefined
+  const ball = {
+    x: BW / 2 + (Math.random() - 0.5) * 20,
+    y: -20,
+    vx: (Math.random() - 0.5) * 2,
+    vy: 2,
+    bet: bet,
+    status: 'WAITING',
+    targetIdx: null,
+    finalSaldo: 0
   };
-  balls.push(newBall);
+  balls.push(ball);
 
   try {
-    // Panggil apiGamePlay dari global.js
-    // Rumus GAS: newSaldo = (saldoAwal - bet) + (bet × multiplier)
-    const res = await apiGamePlay(_username, bet, saldoAwal);
-
+    const res = await apiGamePlay(_username, bet, snapshotSaldo);
     if (res && res.result === 'SUCCESS') {
-      const tm       = parseFloat(res.target_multiplier);
-      const win      = parseFloat(res.win);
-      const newSaldo = parseFloat(res.newSaldo);
-
-      if (isNaN(tm) || isNaN(win) || isNaN(newSaldo)) {
-        newBall.serverStatus = BALL_ERROR;
-        _saldo = saldoAwal; _renderS(); return;
-      }
-
-      // Cari slot index yang cocok dengan multiplier dari server
-      const possible = [];
-      MULTS.forEach((m, idx) => { if (Math.abs(m - tm) < 0.01) possible.push(idx); });
-      newBall.targetIdx      = possible.length > 0
-        ? possible[Math.floor(Math.random()*possible.length)]
-        : Math.floor(MULTS.length/2);
-      newBall.serverMult     = tm;
-      newBall.serverWin      = win;
-      newBall.serverNewSaldo = newSaldo;
-      newBall.serverStatus   = BALL_READY;
-
+      ball.status = 'READY';
+      ball.finalSaldo = parseFloat(res.newSaldo);
+      const targetMult = parseFloat(res.target_multiplier);
+      
+      // Find valid indices for the target multiplier
+      const possibleIndices = [];
+      MULTS.forEach((m, idx) => {
+        if (Math.abs(m - targetMult) < 0.01) possibleIndices.push(idx);
+      });
+      ball.targetIdx = possibleIndices[Math.floor(Math.random() * possibleIndices.length)];
     } else {
-      // Server tolak — refund saldo lokal
-      newBall.serverStatus = BALL_ERROR;
-      _saldo = saldoAwal; _renderS();
-      if (res && res.message) showModal(res.message);
-      stopAuto();
+      balls = balls.filter(b => b !== ball);
+      _saldo = snapshotSaldo;
+      renderProfileUI({tier: 'MEMBER'});
+      showModal(res.message || "Server Error");
+    }
+  } catch (e) {
+    balls = balls.filter(b => b !== ball);
+    _saldo = snapshotSaldo;
+    showModal("Koneksi Terputus");
+  }
+}
+
+function update() {
+  ctx.clearRect(0, 0, BW, BH);
+  const ph = PHYSICS[speedMode];
+
+  // Draw Pegs
+  pegs.forEach(p => {
+    p.glow *= 0.9;
+    ctx.fillStyle = `rgba(0, 68, 255, ${0.2 + p.glow})`;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, PEG_R + (p.glow * 2), 0, Math.PI * 2);
+    ctx.fill();
+    // Tiny white center
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 1, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Balls Physics
+  for (let i = balls.length - 1; i >= 0; i--) {
+    const b = balls[i];
+    b.vy += ph.grav;
+    b.vx *= ph.fric;
+
+    // Directing ball to target
+    if (b.status === 'READY' && b.y > BH * 0.3) {
+      const targetX = (b.targetIdx * slotW) + (slotW / 2);
+      const diff = targetX - b.x;
+      b.vx += diff * 0.02; 
     }
 
-  } catch(err) {
-    newBall.serverStatus = BALL_ERROR;
-    _saldo = saldoAwal; _renderS();
-    showModal('Koneksi bermasalah. Coba lagi.');
-    stopAuto();
+    b.x += b.vx;
+    b.y += b.vy;
+
+    // Wall bounce
+    if (b.x < BALL_R || b.x > BW - BALL_R) b.vx *= -0.5;
+
+    // Peg collision
+    pegs.forEach(p => {
+      const dx = b.x - p.x;
+      const dy = b.y - p.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < BALL_R + PEG_R) {
+        p.glow = 1.0;
+        const angle = Math.atan2(dy, dx);
+        const speed = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
+        b.vx = Math.cos(angle) * speed * ph.bounce;
+        b.vy = Math.sin(angle) * speed * ph.bounce + 0.2;
+      }
+    });
+
+    // Draw Ball (Neon Style)
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = "#ff0077";
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Scoring
+    if (b.y > BH) {
+      handleLanding(b);
+      balls.splice(i, 1);
+    }
   }
+
+  requestAnimationFrame(update);
 }
 
-// ─── ON LAND ──────────────────────────────────────────────
-function onLand(b) {
-  if (b.serverStatus !== BALL_READY) return;
-
-  // Saldo MUTLAK dari server — bukan perhitungan lokal
-  if (b.serverNewSaldo !== undefined && !isNaN(b.serverNewSaldo)) {
-    _saldo = b.serverNewSaldo;
-  }
-  _renderS();
-
-  // Highlight slot dari targetIdx server (bukan posisi fisik)
-  const idx = (b.targetIdx !== undefined)
-    ? Math.max(0, Math.min(MULTS.length-1, b.targetIdx))
-    : Math.max(0, Math.min(MULTS.length-1, Math.floor(b.x/slotW)));
-
-  const slotEl = document.getElementById('slot-'+idx);
-  if (slotEl) {
-    slotEl.classList.add('active');
-    setTimeout(() => slotEl.classList.remove('active'), 450);
+function handleLanding(b) {
+  if (b.status !== 'READY') return;
+  
+  _saldo = b.finalSaldo;
+  document.getElementById('display-saldo').innerText = formatIDR(_saldo);
+  
+  const idx = b.targetIdx;
+  const slot = document.getElementById(`slot-${idx}`);
+  if (slot) {
+    slot.classList.add('active');
+    setTimeout(() => slot.classList.remove('active'), 400);
   }
 
-  const mult  = b.serverMult || 0;
-  const win   = b.serverWin  || 0;
-  const isWin = mult >= 1;
-
-  if (isWin) {
-    snd('win');
-    createParticles((idx*slotW)+slotW/2, BH-10, mult>=3?'#f5e642':'#ff0077');
-  }
-
-  // Score board
+  // Update Score History
   const list = document.getElementById('score-list');
-  const div  = document.createElement('div');
-  div.className = 'score-entry ' + (isWin ? 'score-win' : 'score-loss');
-  div.innerHTML = '<b>' + mult + 'x</b> | ' + (isWin?'+':'') + Math.floor(win).toLocaleString('id-ID');
+  const mult = MULTS[idx];
+  const win = b.bet * mult;
+  const div = document.createElement('div');
+  div.className = `score-entry ${mult >= 1 ? 'score-win' : 'score-loss'}`;
+  div.innerHTML = `<b>${mult}x</b> | ${formatIDR(win)}`;
   list.prepend(div);
-  while (list.children.length > 6) list.lastChild.remove();
+  if (list.children.length > 5) list.lastChild.remove();
 }
 
-// ─── CONTROLS ─────────────────────────────────────────────
+// CONTROL FUNCTIONS
+function changeBet(dir) {
+  if (isAuto) return;
+  betIdx = Math.max(0, Math.min(BETS.length - 1, betIdx + dir));
+  document.getElementById('current-bet').innerText = BETS[betIdx].toLocaleString();
+}
+
 function setSpeedMode(m) {
-  speedMode = m; snd('click');
-  document.getElementById('m-normal').classList.toggle('active', m==='normal');
-  document.getElementById('m-turbo').classList.toggle('active', m==='turbo');
-  if (isAuto) { clearInterval(autoTimer); autoTimer = setInterval(spawnBall, PH[speedMode].autoMs); }
+  speedMode = m;
+  document.getElementById('m-normal').classList.toggle('active', m === 'normal');
+  document.getElementById('m-turbo').classList.toggle('active', m === 'turbo');
 }
 
 function toggleAuto() {
   isAuto = !isAuto;
   document.getElementById('m-auto').classList.toggle('active', isAuto);
-  if (isAuto) { spawnBall(); autoTimer = setInterval(spawnBall, PH[speedMode].autoMs); }
-  else clearInterval(autoTimer);
+  if (isAuto) {
+    spawnBall();
+    autoTimer = setInterval(spawnBall, PHYSICS[speedMode].autoMs);
+  } else {
+    stopAuto();
+  }
 }
 
 function stopAuto() {
-  isAuto = false; clearInterval(autoTimer);
-  const btn = document.getElementById('m-auto');
-  if (btn) btn.classList.remove('active');
+  isAuto = false;
+  clearInterval(autoTimer);
+  document.getElementById('m-auto').classList.remove('active');
 }
 
-function changeBet(d) {
-  if (isAuto) return;
-  betIdx = Math.max(0, Math.min(BETS.length-1, betIdx+d));
-  document.getElementById('current-bet').textContent = BETS[betIdx].toLocaleString('id-ID');
-  snd('click');
+function formatIDR(val) {
+  return "IDR " + Math.floor(val).toLocaleString('id-ID');
 }
 
 function showModal(msg) {
   document.getElementById('modal-msg').innerHTML = msg;
   document.getElementById('modal-overlay').style.display = 'block';
-  document.getElementById('neon-modal').style.display    = 'block';
+  document.getElementById('neon-modal').style.display = 'block';
 }
+
 function closeModal() {
   document.getElementById('modal-overlay').style.display = 'none';
-  document.getElementById('neon-modal').style.display    = 'none';
+  document.getElementById('neon-modal').style.display = 'none';
 }
-
-function snd(t) {
-  try { const a = document.getElementById('snd-'+t); if(a){a.currentTime=0;a.play().catch(()=>{})} } catch(e){}
-}
-
-// ─── CLEANUP ──────────────────────────────────────────────
-window.addEventListener('beforeunload', () => {
-  clearInterval(_syncTimer); clearInterval(autoTimer);
-  if (_username) {
-    // sendBeacon agar dikirim meski tab ditutup
-    navigator.sendBeacon(GAS_URL, JSON.stringify({
-      action: 'set_status', username: _username, status: 'OFFLINE'
-    }));
-  }
-});
-
-window.addEventListener('resize', () => { resize(); buildSlots(); });
-
-// ─── ENTRY POINT ──────────────────────────────────────────
-// PENTING: init() dipanggil di sini, BUKAN dari DOMContentLoaded global.js
-// global.js sudah load currentUser secara sync saat <script src="global.js"> dieksekusi
-document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
