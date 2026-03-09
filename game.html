@@ -175,19 +175,23 @@ function loop() {
     const b = balls[i];
     if (b.serverStatus === BALL_ERROR) { balls.splice(i, 1); continue; }
 
-    // Gravitas dan Gesekan Dasar
+    // Gravitas dan Gesekan
     b.vy += ph.grav;
     b.vx *= ph.fric;
     
-    // Mencegah macet secara horizontal
-    if (Math.abs(b.vx) < 0.1) b.vx += (Math.random() - 0.5) * 0.5;
+    // Terminal Velocity (Mencegah bola jatuh terlalu cepat atau menembus batas)
+    if (b.vy > 15) b.vy = 15;
+
+    // Mencegah bola macet / melayang secara horizontal
+    if (Math.abs(b.vy) < 0.3) b.vy += 0.5; // Tarik ke bawah jika kecepatan vertikal habis
+    if (Math.abs(b.vx) < 0.1 && b.y < BH - 50) b.vx += (Math.random() - 0.5) * 1.0;
 
     b.x += b.vx;
     b.y += b.vy;
 
     // Batasan Dinding
-    if (b.x < BALL_R) { b.x = BALL_R; b.vx *= -0.5; }
-    if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx *= -0.5; }
+    if (b.x < BALL_R) { b.x = BALL_R; b.vx *= -0.8; }
+    if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx *= -0.8; }
 
     // Deteksi Tabrakan Paku
     for (let p of pegs) {
@@ -201,24 +205,29 @@ function loop() {
         snd('hit');
 
         const angle = Math.atan2(dy, dx);
-        // Dorong bola keluar dari paku agar tidak tersangkut
+        
+        // Anti-Sangkut: Dorong bola keluar sepenuhnya dari radius paku
         b.x = p.x + Math.cos(angle) * minDist;
         b.y = p.y + Math.sin(angle) * minDist;
 
-        const speed = Math.sqrt(b.vx * b.vx + b.vy * b.vy) * ph.bounce;
+        const speed = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
+        const bounceSpeed = Math.max(speed * ph.bounce, 2.0);
         
-        // Logika Penggiringan ke Target (Bias)
-        let forceX = Math.cos(angle) * speed;
-        let forceY = Math.abs(Math.sin(angle) * speed);
+        let forceX = Math.cos(angle) * bounceSpeed;
+        let forceY = Math.sin(angle) * bounceSpeed;
 
-        if (b.serverStatus === BALL_READY) {
+        // Batasi pantulan ke atas agar bola tidak melayang selamanya
+        if (forceY < -3) forceY = -3;
+
+        // Logika Penggiringan ke Target (Opsional/Lembut)
+        if (b.serverStatus === BALL_READY && b.targetIdx !== undefined) {
           const targetX = (b.targetIdx * slotW) + (slotW / 2);
           const diffX = targetX - b.x;
-          forceX += diffX * 0.05; // Tarikan lembut ke arah slot target
+          forceX += diffX * 0.04;
         }
 
-        b.vx = forceX + (Math.random() - 0.5) * 0.5;
-        b.vy = forceY + 1.5; // Pastikan selalu punya kecepatan jatuh
+        b.vx = forceX + (Math.random() - 0.5);
+        b.vy = forceY + (Math.random() * 0.5);
       }
     }
 
@@ -232,19 +241,10 @@ function loop() {
     ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2);
     ctx.fill();
 
-    // Cek Pendaratan
-    if (b.y > BH - 10) {
-      const currentIdx = Math.floor(b.x / slotW);
-      if (b.serverStatus === BALL_READY) {
-          // Jika sudah sangat dekat bawah, paksa posisi X ke tengah slot target
-          const targetX = (b.targetIdx * slotW) + (slotW / 2);
-          if (Math.abs(b.x - targetX) < 15 || b.y > BH) {
-             onLand(b);
-             balls.splice(i, 1);
-          }
-      } else if (b.y > BH + 20) {
-          balls.splice(i, 1);
-      }
+    // Cek Pendaratan - Pasti mengeksekusi onLand tanpa syarat aneh
+    if (b.y > BH - 5) {
+      onLand(b);
+      balls.splice(i, 1);
     }
   }
 
@@ -273,13 +273,13 @@ function spawnBall() {
   snd('click');
 
   const newBall = {
-    x: BW/2 + (Math.random()-0.5)*10,
+    x: BW/2 + (Math.random()-0.5)*15,
     y: 0,
     vx: (Math.random()-0.5)*2,
     vy: 2,
     bet: bet,
     serverStatus: BALL_WAITING,
-    targetIdx: 0
+    targetIdx: undefined
   };
   balls.push(newBall);
 
@@ -288,10 +288,16 @@ function spawnBall() {
       const tm = parseFloat(res.target_multiplier);
       let possible = [];
       MULTS.forEach((m, idx) => { if (Math.abs(m - tm) < 0.01) possible.push(idx); });
+      
+      // Fallback jika multiplier server tidak terdaftar dengan pas
+      if (possible.length === 0) {
+          let closest = Infinity;
+          MULTS.forEach((m, idx) => {
+              if (Math.abs(m - tm) < closest) { closest = Math.abs(m - tm); possible = [idx]; }
+          });
+      }
+
       newBall.targetIdx = possible[Math.floor(Math.random() * possible.length)];
-      newBall.serverWin = parseFloat(res.win);
-      newBall.serverNewSaldo = parseFloat(res.newSaldo);
-      newBall.serverMult = tm;
       newBall.serverStatus = BALL_READY;
     } else {
       newBall.serverStatus = BALL_ERROR;
@@ -308,25 +314,36 @@ function spawnBall() {
 }
 
 function onLand(b) {
-  if (b.serverNewSaldo !== undefined) _saldo = b.serverNewSaldo;
+  // Kalkulasi fisik slot (kotak mana) secara langsung dari layar
+  let physicalIdx = Math.floor(b.x / slotW);
+  if (physicalIdx < 0) physicalIdx = 0;
+  if (physicalIdx >= MULTS.length) physicalIdx = MULTS.length - 1;
+
+  const actualMult = MULTS[physicalIdx];
+  const winAmount = b.bet * actualMult;
+
+  // Update Balance berdasar hasil fisik jatuhnya bola (Akurat 100%)
+  _saldo += winAmount;
   _renderS();
 
-  const idx = b.targetIdx;
-  const slotEl = document.getElementById('slot-' + idx);
+  // Highlight Box Multiplier
+  const slotEl = document.getElementById('slot-' + physicalIdx);
   if (slotEl) {
     slotEl.classList.add('active');
     setTimeout(() => slotEl.classList.remove('active'), 400);
   }
 
-  if (b.serverMult >= 1) {
-    snd('win');
-    createParticles((idx * slotW) + slotW/2, BH - 10, b.serverMult >= 3 ? '#f5e642' : '#ff0077');
+  // Effect and Sound
+  if (actualMult > 0) {
+    if (actualMult >= 1) snd('win');
+    createParticles((physicalIdx * slotW) + slotW/2, BH - 10, actualMult >= 3 ? '#f5e642' : (actualMult >= 1 ? '#ff0077' : '#0044ff'));
   }
 
+  // Floating Score Notification
   const list = document.getElementById('score-list');
   const div  = document.createElement('div');
   div.className = 'score-entry';
-  div.innerHTML = `<b>${b.serverMult}x</b> | +${Math.floor(b.serverWin).toLocaleString('id-ID')}`;
+  div.innerHTML = `<b>${actualMult}x</b> | +${Math.floor(winAmount).toLocaleString('id-ID')}`;
   list.prepend(div);
   if (list.children.length > 5) list.lastChild.remove();
 }
