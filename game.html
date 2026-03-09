@@ -103,10 +103,9 @@ let canvas, ctx, BW, BH, pegs = [], balls = [], slotW, particles = [];
 let speedMode = 'normal', isAuto = false, autoTimer = null, betIdx = 0;
 let _saldo = getStoredSaldo();
 
-// ── FISIKA OPTIMAL ───────────────────────────────────────────
 const PH = {
-  normal: { grav: 0.25, fric: 0.992, bounce: 0.5, autoMs: 1200 },
-  turbo:  { grav: 0.75, fric: 0.985, bounce: 0.4, autoMs: 300  }
+  normal: { grav: 0.28, fric: 0.992, bounce: 0.52, autoMs: 1200 },
+  turbo:  { grav: 0.85, fric: 0.985, bounce: 0.45, autoMs: 300  }
 };
 
 const BALL_WAITING = 'waiting';
@@ -120,17 +119,6 @@ function init() {
   resize();
   _renderS();
   loop();
-
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && balls.length === 0) {
-      apiCall({ action: 'get_saldo', username: getUsername() }).then(res => {
-        if (res && res.result === 'SUCCESS') {
-          _saldo = parseFloat(res.saldo) || _saldo;
-          _renderS();
-        }
-      });
-    }
-  });
 }
 
 function resize() {
@@ -146,12 +134,12 @@ function resize() {
 function buildPegs() {
   pegs = [];
   const spacingX = (BW * 0.88) / ROWS;
-  const spacingY = (BH * 0.72) / ROWS;
+  const spacingY = (BH * 0.68) / ROWS; // Dipersempit agar area bawah lebih padat
   for (let r = 0; r < ROWS; r++) {
     const count  = r + 2;
     const startX = (BW - (count - 1) * spacingX) / 2;
     for (let c = 0; c < count; c++) {
-      pegs.push({ x: startX + c * spacingX, y: 60 + r * spacingY, glow: 0 });
+      pegs.push({ x: startX + c * spacingX, y: 50 + r * spacingY, glow: 0 });
     }
   }
 }
@@ -168,28 +156,12 @@ function buildSlots() {
   });
 }
 
-function createParticles(x, y, color) {
-  for (let i = 0; i < 14; i++) {
-    particles.push({
-      x, y,
-      vx: (Math.random() - 0.5) * 6,
-      vy: (Math.random() - 0.5) * 6 - 2,
-      life: 1.0, color,
-      size: Math.random() * 3 + 1
-    });
-  }
-}
-
-// ══════════════════════════════════════════════════════════════
-// LOGIKA LOOP DENGAN FISIKA "SMART COLLISION"
-// ══════════════════════════════════════════════════════════════
 function loop() {
   ctx.fillStyle = '#02030d';
   ctx.fillRect(0, 0, BW, BH);
 
   const ph = PH[speedMode];
-  const lastPeg = pegs[pegs.length - 1];
-  const EXIT_Y = lastPeg.y + 10;
+  const lastPegY = pegs[pegs.length - 1].y;
 
   pegs.forEach(p => {
     p.glow *= 0.85;
@@ -198,6 +170,84 @@ function loop() {
     ctx.arc(p.x, p.y, PEG_R + (p.glow * 2), 0, Math.PI * 2);
     ctx.fill();
   });
+
+  for (let i = balls.length - 1; i >= 0; i--) {
+    const b = balls[i];
+    if (b.serverStatus === BALL_ERROR) { balls.splice(i, 1); continue; }
+
+    // FISIKA KHUSUS ZONA BAWAH (Mencegah Melayang)
+    let currentGrav = ph.grav;
+    let currentFric = ph.fric;
+
+    if (b.y > lastPegY + 10) {
+        // Bola sudah melewati paku terakhir: tarik ke bawah lebih kuat
+        currentGrav = ph.grav * 1.8; 
+        currentFric = 0.94; // Gesekan lebih tinggi agar tidak meluncur liar
+    }
+
+    if (b.serverStatus === BALL_WAITING && b.y > BH * 0.75) {
+        b.vy *= 0.85;
+    } else {
+        b.vy += currentGrav;
+    }
+
+    b.vx *= currentFric;
+    b.x += b.vx;
+    b.y += b.vy;
+
+    if (b.x < BALL_R) { b.x = BALL_R; b.vx *= -0.5; }
+    if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx *= -0.5; }
+
+    // Collision paku
+    for (let p of pegs) {
+      const dx = b.x - p.x;
+      const dy = b.y - p.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const minDist = BALL_R + PEG_R;
+
+      if (dist < minDist) {
+        const angle = Math.atan2(dy, dx);
+        b.x = p.x + Math.cos(angle) * minDist;
+        b.y = p.y + Math.sin(angle) * minDist;
+
+        const speed = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
+        const bounceAngle = angle + (Math.random() - 0.5) * 0.2;
+        
+        let bias = 0;
+        if (b.serverStatus === BALL_READY) {
+            const targetX = (b.targetIdx * slotW) + (slotW / 2);
+            bias = (targetX - b.x) * 0.08; 
+        }
+
+        b.vx = Math.cos(bounceAngle) * speed * ph.bounce + bias;
+        b.vy = Math.abs(Math.sin(bounceAngle) * speed * ph.bounce);
+        if (b.vy < 2) b.vy = 2;
+
+        p.glow = 1.0;
+        snd('hit');
+      }
+    }
+
+    // Render Bola
+    ctx.beginPath();
+    const grad = ctx.createRadialGradient(b.x-2, b.y-2, 1, b.x, b.y, BALL_R);
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.4, '#ff0077');
+    grad.addColorStop(1, '#550022');
+    ctx.fillStyle = grad;
+    ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Landing: Check lebih dalam ke dalam slot
+    if (b.y > BH - 5) {
+      if (b.serverStatus === BALL_READY) {
+        onLand(b);
+        balls.splice(i, 1);
+      } else if (b.y > BH + 50) {
+        balls.splice(i, 1);
+      }
+    }
+  }
 
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
@@ -209,82 +259,6 @@ function loop() {
   }
   ctx.globalAlpha = 1.0;
 
-  for (let i = balls.length - 1; i >= 0; i--) {
-    const b = balls[i];
-    if (b.serverStatus === BALL_ERROR) { balls.splice(i, 1); continue; }
-
-    // Efek menunggu server: melambat di udara
-    if (b.serverStatus === BALL_WAITING && b.y > BH * 0.7) {
-        b.vy *= 0.9;
-    } else {
-        b.vy += ph.grav;
-    }
-
-    b.vx *= ph.fric;
-    b.x += b.vx;
-    b.y += b.vy;
-
-    // Batas dinding
-    if (b.x < BALL_R) { b.x = BALL_R; b.vx *= -0.5; }
-    if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx *= -0.5; }
-
-    // Collision dengan Paku
-    for (let p of pegs) {
-      const dx = b.x - p.x;
-      const dy = b.y - p.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      const minDist = BALL_R + PEG_R;
-
-      if (dist < minDist) {
-        // Resolve overlap
-        const angle = Math.atan2(dy, dx);
-        b.x = p.x + Math.cos(angle) * minDist;
-        b.y = p.y + Math.sin(angle) * minDist;
-
-        // Fisika Pantulan Realistis
-        const speed = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
-        const bounceAngle = angle + (Math.random() - 0.5) * 0.2; // Sedikit noise random
-        
-        // BIAS HALUS: Jika server sudah jawab, tambahkan gaya dorong sangat kecil ke arah target
-        // Ini dilakukan saat benturan agar terlihat seperti pantulan alami
-        let bias = 0;
-        if (b.serverStatus === BALL_READY) {
-            const targetX = (b.targetIdx * slotW) + (slotW / 2);
-            bias = (targetX - b.x) * 0.05; // Bias 5% setiap pantulan
-        }
-
-        b.vx = Math.cos(bounceAngle) * speed * ph.bounce + bias;
-        b.vy = Math.abs(Math.sin(bounceAngle) * speed * ph.bounce);
-        
-        // Minimal bounce ke atas sedikit biar tidak nempel
-        if (b.vy < 1.5) b.vy = 1.5;
-
-        p.glow = 1.0;
-        snd('hit');
-      }
-    }
-
-    // Gambar Bola
-    ctx.beginPath();
-    const grad = ctx.createRadialGradient(b.x-2, b.y-2, 1, b.x, b.y, BALL_R);
-    grad.addColorStop(0, '#ffffff');
-    grad.addColorStop(0.4, '#ff0077');
-    grad.addColorStop(1, '#550022');
-    ctx.fillStyle = grad;
-    ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Landing
-    if (b.y > BH + BALL_R) {
-      if (b.serverStatus === BALL_READY) {
-        onLand(b);
-        balls.splice(i, 1);
-      } else if (b.y > BH + 100) { 
-        // Safety net jika server delay parah
-        balls.splice(i, 1);
-      }
-    }
-  }
   requestAnimationFrame(loop);
 }
 
@@ -299,9 +273,9 @@ function spawnBall() {
   snd('click');
 
   const newBall = {
-    x: BW/2 + (Math.random()-0.5)*30,
+    x: BW/2 + (Math.random()-0.5)*20,
     y: -20,
-    vx: (Math.random()-0.5)*4,
+    vx: (Math.random()-0.5)*2,
     vy: 2,
     bet: bet,
     serverStatus: BALL_WAITING,
@@ -314,7 +288,6 @@ function spawnBall() {
       const tm = parseFloat(res.target_multiplier);
       let possible = [];
       MULTS.forEach((m, idx) => { if (Math.abs(m - tm) < 0.01) possible.push(idx); });
-      
       newBall.targetIdx = possible[Math.floor(Math.random() * possible.length)];
       newBall.serverWin = parseFloat(res.win);
       newBall.serverNewSaldo = parseFloat(res.newSaldo);
