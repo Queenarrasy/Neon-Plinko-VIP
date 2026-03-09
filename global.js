@@ -433,3 +433,18 @@ window.addEventListener('beforeunload', function() {
 });
 
 document.addEventListener('DOMContentLoaded', initGlobalSync);
+
+// ═══════════════════════════════════════════════════════════
+//  ALIAS — index.html dan file lain yang pakai apiLogin()
+//  Di global.js v5.0 login ada di AuthAPI.login()
+//  Alias ini menjembatani agar tidak perlu ubah semua file
+// ═══════════════════════════════════════════════════════════
+async function apiLogin(username, password) {
+    return await AuthAPI.login(username, password);
+}
+async function apiRegister(data) {
+    return await AuthAPI.register(data);
+}
+function apiLogout(redirectUrl) {
+    AuthAPI.logout();
+}
