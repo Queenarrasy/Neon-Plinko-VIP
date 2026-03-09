@@ -150,9 +150,12 @@ function setupCanvas() {
     ctx = canvas.getContext('2d');
     const wrap = document.getElementById('board-wrapper');
     const dpr = window.devicePixelRatio || 1;
-    BW = wrap.clientWidth; BH = wrap.clientHeight;
-    canvas.width = BW * dpr; canvas.height = BH * dpr;
-    canvas.style.width = BW + 'px'; canvas.style.height = BH + 'px';
+    BW = wrap.clientWidth; 
+    BH = wrap.clientHeight;
+    canvas.width = BW * dpr; 
+    canvas.height = BH * dpr;
+    canvas.style.width = BW + 'px'; 
+    canvas.style.height = BH + 'px';
     ctx.scale(dpr, dpr);
 
     pegs = [];
@@ -162,7 +165,7 @@ function setupCanvas() {
         const count = r + 2;
         const startX = (BW - (count - 1) * spX) / 2;
         for (let c = 0; c < count; c++) {
-            pegs.push({ x: startX + c * spX, y: 40 + r * spY, glow: 0 });
+            pegs.push({ x: startX + c * spX, y: 50 + r * spY, glow: 0 });
         }
     }
 
@@ -186,46 +189,50 @@ async function spawnBall() {
         return;
     }
 
-    // Ambil keputusan dari server (Sheet Admin)
-    const res = await apiCall({ action: 'game_play', username: getUsername(), bet: bet });
-    if (!res || res.result !== 'SUCCESS') {
-        showModal("Gagal menghubungkan ke server.");
-        return;
+    // Call API Server
+    try {
+        const res = await apiCall({ action: 'game_play', username: getUsername(), bet: bet });
+        if (!res || res.result !== 'SUCCESS') {
+            showModal("Server Sibuk...");
+            return;
+        }
+
+        setSaldo(getSaldo() - bet);
+        updateSaldoUI();
+
+        const ball = {
+            x: BW / 2 + (Math.random() - 0.5) * 20,
+            y: 5, // Mulai sedikit di bawah atas agar gravitasi langsung bekerja
+            vx: (Math.random() - 0.5) * 2,
+            vy: 2, // Berikan kecepatan awal ke bawah
+            bet: bet,
+            targetMult: res.target_multiplier,
+            targetSlotIdx: null,
+            targetX: 0,
+            isDone: false
+        };
+
+        const possibleSlots = [];
+        MULTS.forEach((m, i) => { if(m === ball.targetMult) possibleSlots.push(i); });
+        ball.targetSlotIdx = possibleSlots[Math.floor(Math.random() * possibleSlots.length)];
+        ball.targetX = (ball.targetSlotIdx + 0.5) * slotW;
+
+        balls.push(ball);
+    } catch(e) {
+        console.error(e);
     }
-
-    // Potong saldo visual segera
-    setSaldo(getSaldo() - bet);
-    updateSaldoUI();
-
-    const ball = {
-        x: BW / 2 + (Math.random() - 0.5) * 15,
-        y: -10,
-        vx: (Math.random() - 0.5) * 2,
-        vy: 0,
-        bet: bet,
-        targetMult: res.target_multiplier,
-        targetSlotIdx: null,
-        targetX: 0,
-        isDone: false
-    };
-
-    // Tentukan slot tujuan berdasarkan multiplier server
-    const possibleSlots = [];
-    MULTS.forEach((m, i) => { if(m === ball.targetMult) possibleSlots.push(i); });
-    ball.targetSlotIdx = possibleSlots[Math.floor(Math.random() * possibleSlots.length)];
-    ball.targetX = (ball.targetSlotIdx + 0.5) * slotW;
-
-    balls.push(ball);
 }
 
 function updatePhysics() {
-    const gravity = speedMode === 'turbo' ? 0.4 : 0.25;
-    const bounce = 0.45;
+    const gravity = speedMode === 'turbo' ? 0.35 : 0.22;
+    const bounce = 0.4;
+    const friction = 0.99;
 
     balls.forEach(b => {
         if (b.isDone) return;
 
         b.vy += gravity;
+        b.vx *= friction;
         b.x += b.vx;
         b.y += b.vy;
 
@@ -235,48 +242,60 @@ function updatePhysics() {
             const dy = b.y - p.y;
             const dist = Math.sqrt(dx*dx + dy*dy);
             if (dist < BALL_R + PEG_R) {
-                const angle = Math.atan2(dy, dx);
-                const speed = Math.sqrt(b.vx*b.vx + b.vy*b.vy);
-                b.vx = Math.cos(angle) * speed * bounce + (Math.random()-0.5);
-                b.vy = Math.abs(Math.sin(angle) * speed * bounce);
+                const nx = dx / dist;
+                const ny = dy / dist;
+                
+                // Pantulan fisik mendasar
+                const dot = b.vx * nx + b.vy * ny;
+                b.vx = (b.vx - 2 * dot * nx) * bounce + (Math.random() - 0.5);
+                b.vy = (b.vy - 2 * dot * ny) * bounce;
+
+                // Cegah bola menempel di paku
+                b.x = p.x + nx * (BALL_R + PEG_R);
+                b.y = p.y + ny * (BALL_R + PEG_R);
+                
                 p.glow = 1.0;
-                document.getElementById('snd-hit').cloneNode().play();
+                const s = document.getElementById('snd-hit').cloneNode();
+                s.volume = 0.3;
+                s.play();
             }
         });
 
-        // "Invisible Hand" - Magnetisme halus ke target slot saat sudah di area bawah
-        if (b.y > BH * 0.4) {
-            const pull = (b.targetX - b.x) * 0.04;
-            b.vx += pull;
+        // Magnetisme Halus (Sesuai Winrate Server)
+        if (b.y > BH * 0.45) {
+            const pullStrength = (b.y / BH) * 0.05;
+            b.vx += (b.targetX - b.x) * pullStrength;
         }
 
-        // Dinding
-        if (b.x < BALL_R || b.x > BW - BALL_R) b.vx *= -0.5;
+        // Dinding Samping
+        if (b.x < BALL_R) { b.x = BALL_R; b.vx *= -0.4; }
+        if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx *= -0.4; }
 
-        // Landing
-        if (b.y > BH - 5) {
+        // Landing (Masuk ke Slot)
+        if (b.y > BH - 10) {
             b.isDone = true;
             onBallLand(b);
         }
     });
-    balls = balls.filter(b => !b.isDone);
 }
 
 function onBallLand(b) {
     const win = Math.floor(b.bet * b.targetMult);
+    // Saldo asli sudah diupdate via API game_play biasanya, 
+    // namun kita update visual di sini
     setSaldo(getSaldo() + win);
     updateSaldoUI();
 
-    // Animasi Slot
     const el = document.getElementById('slot-' + b.targetSlotIdx);
-    el.classList.add('active');
-    setTimeout(() => el.classList.remove('active'), 400);
+    if(el) {
+        el.classList.add('active');
+        setTimeout(() => el.classList.remove('active'), 400);
+    }
 
-    // Skor List
     const list = document.getElementById('score-list');
     const entry = document.createElement('div');
     entry.className = 'score-entry';
-    entry.innerHTML = `${b.targetMult}x · <span style="color:#fff">IDR ${win}</span>`;
+    entry.innerHTML = `${b.targetMult}x · <span style="color:#fff">IDR ${win.toLocaleString()}</span>`;
     list.prepend(entry);
     if(list.children.length > 4) list.removeChild(list.lastChild);
 
@@ -286,31 +305,32 @@ function onBallLand(b) {
 function draw() {
     ctx.clearRect(0, 0, BW, BH);
 
-    // Pegs
+    // Render Paku
     pegs.forEach(p => {
         ctx.beginPath();
         ctx.arc(p.x, p.y, PEG_R, 0, Math.PI*2);
-        ctx.fillStyle = p.glow > 0 ? `rgba(255,255,255,${0.3 + p.glow*0.7})` : '#444';
+        ctx.fillStyle = p.glow > 0 ? `rgba(245,230,66,${0.3 + p.glow*0.7})` : '#4a4a4a';
         ctx.fill();
         if(p.glow > 0) p.glow -= 0.05;
     });
 
-    // Balls
+    // Render Bola
     balls.forEach(b => {
+        ctx.save();
         ctx.beginPath();
         ctx.arc(b.x, b.y, BALL_R, 0, Math.PI*2);
         ctx.fillStyle = '#ff0077';
-        ctx.shadowBlur = 10;
+        ctx.shadowBlur = 15;
         ctx.shadowColor = '#ff0077';
         ctx.fill();
-        ctx.shadowBlur = 0;
+        ctx.restore();
     });
 
     updatePhysics();
     requestAnimationFrame(draw);
 }
 
-// ── UTILS ──
+// ── UI CONTROLS ──
 function changeBet(d) {
     if (isAuto) return;
     betIdx = Math.max(0, Math.min(BETS.length - 1, betIdx + d));
@@ -321,6 +341,10 @@ function setSpeed(m) {
     speedMode = m;
     document.getElementById('m-normal').classList.toggle('active', m === 'normal');
     document.getElementById('m-turbo').classList.toggle('active', m === 'turbo');
+    if(isAuto) {
+        clearInterval(autoTimer);
+        autoTimer = setInterval(spawnBall, speedMode === 'turbo' ? 350 : 900);
+    }
 }
 
 function toggleAuto() {
@@ -333,7 +357,7 @@ function toggleAuto() {
         play.innerText = "STOP AUTO";
         play.classList.add('stop-mode');
         spawnBall();
-        autoTimer = setInterval(spawnBall, speedMode === 'turbo' ? 400 : 1000);
+        autoTimer = setInterval(spawnBall, speedMode === 'turbo' ? 350 : 900);
     } else {
         stopAuto();
     }
@@ -370,10 +394,13 @@ function closeModal() {
 
 window.onload = () => {
     setupCanvas();
-    draw();
     updateSaldoUI();
+    requestAnimationFrame(draw);
 };
-window.onresize = setupCanvas;
+
+window.onresize = () => {
+    setupCanvas();
+};
 </script>
 </body>
 </html>
