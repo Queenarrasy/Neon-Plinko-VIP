@@ -104,7 +104,7 @@ let speedMode = 'normal', isAuto = false, autoTimer = null, betIdx = 0;
 let _saldo = getStoredSaldo();
 
 const PH = {
-  normal: { grav: 0.35, fric: 0.99, bounce: 0.5, autoMs: 1000 },
+  normal: { grav: 0.35, fric: 0.985, bounce: 0.5, autoMs: 1000 },
   turbo:  { grav: 0.9, fric: 0.98, bounce: 0.4, autoMs: 250 }
 };
 
@@ -176,24 +176,27 @@ function loop() {
     b.vy += ph.grav;
     b.vx *= ph.fric;
     
-    if (b.vy > 15) b.vy = 15;
-    if (Math.abs(b.vy) < 0.3) b.vy += 0.5;
-    
-    // MAGNET PENGGIRING (WINRATE): Aktif jika data server sudah ada
+    // ANTI-STUCK: Jika bola bergerak terlalu pelan secara vertikal, dorong ke bawah
+    if (Math.abs(b.vy) < 0.2) b.vy += 0.5;
+    // ANTI-JUMP: Batasi kecepatan maksimal agar tidak melompat keluar canvas
+    if (b.vy > 12) b.vy = 12;
+    if (Math.abs(b.vx) > 8) b.vx = Math.sign(b.vx) * 8;
+
+    // MAGNET PENGGIRING (Halus)
     if (b.serverStatus === BALL_READY && b.targetIdx !== undefined) {
       const targetX = (b.targetIdx * slotW) + (slotW / 2);
-      // Semakin dekat ke bawah, tarikan magnet semakin kuat dan agresif
-      const power = b.y > (BH * 0.6) ? 0.25 : 0.08; 
-      b.vx += (targetX - b.x) * power;
+      // Kekuatan magnet dihitung berdasarkan jarak sisa ke dasar agar tidak melompat tiba-tiba
+      const distToBottom = (BH - b.y) / BH;
+      const pullStrength = b.y > (BH * 0.4) ? 0.08 : 0.03;
+      b.vx += (targetX - b.x) * pullStrength;
     }
 
     b.x += b.vx;
     b.y += b.vy;
 
-    if (b.x < BALL_R) { b.x = BALL_R; b.vx *= -0.8; }
-    if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx *= -0.8; }
+    if (b.x < BALL_R) { b.x = BALL_R; b.vx *= -0.5; }
+    if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx *= -0.5; }
 
-    // TABRAKAN PAKU
     for (let p of pegs) {
       const dx = b.x - p.x;
       const dy = b.y - p.y;
@@ -204,22 +207,18 @@ function loop() {
         p.glow = 1.0;
         snd('hit');
         const angle = Math.atan2(dy, dx);
-        b.x = p.x + Math.cos(angle) * minDist;
-        b.y = p.y + Math.sin(angle) * minDist;
+        b.x = p.x + Math.cos(angle) * (minDist + 0.1);
+        b.y = p.y + Math.sin(angle) * (minDist + 0.1);
 
         const speed = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
-        const bounceSpeed = Math.max(speed * ph.bounce, 2.0);
+        const bounceSpeed = Math.max(speed * ph.bounce, 1.5);
         
-        let forceX = Math.cos(angle) * bounceSpeed;
-        let forceY = Math.sin(angle) * bounceSpeed;
-        if (forceY < -3) forceY = -3;
-
-        b.vx = forceX + (Math.random() - 0.5);
-        b.vy = forceY + (Math.random() * 0.5);
+        // Memastikan bola selalu memantul dengan arah yang benar
+        b.vx = Math.cos(angle) * bounceSpeed + (Math.random() - 0.5) * 0.5;
+        b.vy = Math.sin(angle) * bounceSpeed + 0.5; // Tambahan gravitasi saat pantul
       }
     }
 
-    // DRAW BOLA
     ctx.beginPath();
     const grad = ctx.createRadialGradient(b.x-2, b.y-2, 1, b.x, b.y, BALL_R);
     grad.addColorStop(0, '#ffffff');
@@ -229,7 +228,6 @@ function loop() {
     ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2);
     ctx.fill();
 
-    // LANDING
     if (b.y > BH - 5) {
       onLand(b);
       balls.splice(i, 1);
@@ -259,10 +257,10 @@ function spawnBall() {
   snd('click');
 
   const newBall = {
-    x: BW/2 + (Math.random()-0.5)*15,
+    x: BW/2 + (Math.random()-0.5)*10,
     y: 0,
     vx: (Math.random()-0.5)*2,
-    vy: 2,
+    vy: 1,
     bet: bet,
     serverStatus: BALL_WAITING,
     targetIdx: undefined,
@@ -270,11 +268,10 @@ function spawnBall() {
   };
   balls.push(newBall);
 
-  // PANGGIL ADMIN API
   apiCall({ action: 'game_play', username: user, bet: bet, saldoAwal: saldoAwal }).then(res => {
     if (res && res.result === 'SUCCESS') {
       const tm = parseFloat(res.target_multiplier);
-      newBall.serverMult = tm; // HASIL MUTLAK DARI ADMIN
+      newBall.serverMult = tm;
       
       let possible = [];
       MULTS.forEach((m, idx) => { if (Math.abs(m - tm) < 0.01) possible.push(idx); });
@@ -297,21 +294,14 @@ function spawnBall() {
 }
 
 function onLand(b) {
-  // KEAMANAN KRUSIAL: Jika server gagal memberi data, anggap 0x (kalah) atau kembalikan saldo.
-  // Tapi jika server READY, gunakan serverMult SECARA MUTLAK.
-  if (b.serverStatus !== BALL_READY) {
-    console.error("Ball landed without server confirmation.");
-    return;
-  }
+  if (b.serverStatus !== BALL_READY) return;
 
   const finalMult = b.serverMult; 
   const winAmount = b.bet * finalMult;
 
-  // Update Saldo (100% Mengikuti Admin)
   _saldo += winAmount;
   _renderS();
 
-  // Efek Visual Tetap Mengikuti Letak Bola agar tidak terlihat aneh
   let physicalIdx = Math.floor(b.x / slotW);
   if (physicalIdx < 0) physicalIdx = 0;
   if (physicalIdx >= MULTS.length) physicalIdx = MULTS.length - 1;
@@ -330,7 +320,6 @@ function onLand(b) {
   const list = document.getElementById('score-list');
   const div  = document.createElement('div');
   div.className = 'score-entry';
-  // Notifikasi Skor tetap menampilkan angka asli dari admin
   div.innerHTML = `<b>${finalMult}x</b> | +${Math.floor(winAmount).toLocaleString('id-ID')}`;
   list.prepend(div);
   if (list.children.length > 5) list.lastChild.remove();
@@ -350,7 +339,8 @@ function createParticles(x, y, color) {
 }
 
 function _renderS() {
-  document.getElementById('display-saldo').textContent = 'IDR ' + Math.floor(_saldo).toLocaleString('id-ID');
+  const el = document.getElementById('display-saldo');
+  if(el) el.textContent = 'IDR ' + Math.floor(_saldo).toLocaleString('id-ID');
   storeLocalSaldo(_saldo);
 }
 
@@ -374,7 +364,8 @@ function toggleAuto() {
 function stopAuto() { 
   isAuto = false; 
   clearInterval(autoTimer); 
-  document.getElementById('m-auto').classList.remove('active'); 
+  const btn = document.getElementById('m-auto');
+  if(btn) btn.classList.remove('active'); 
 }
 
 function changeBet(d) {
