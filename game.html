@@ -13,6 +13,8 @@
   --gb:0 0 8px rgba(0,85,255,.65),0 0 24px rgba(0,85,255,.22);
   --gy:0 0 8px rgba(245,230,66,.65),0 0 24px rgba(245,230,66,.22);
   --bp:rgba(255,0,119,.35);--bb:rgba(0,85,255,.35);--by:rgba(245,230,66,.35);
+  /* New Gradient for Ball */
+  --ball-grad: radial-gradient(circle at 30% 30%, #fff, #ff0077 40%, #880033 100%);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{
@@ -78,7 +80,9 @@ html,body{
 .btn-play.stop-mode{background:var(--yellow);color:#000;}
 
 .nav-bottom{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding-top:8px;}
-.nav-btn{display:flex;flex-direction:column;align-items:center;padding:9px 0;border-radius:14px;text-decoration:none;font-weight:700;border:1px solid #222;}
+.nav-btn{display:flex;flex-direction:column;align-items:center;padding:9px 0;border-radius:14px;text-decoration:none;font-size:10px;font-weight:700;border:1px solid #222;transition: 0.2s;}
+.nav-btn i {font-size: 16px; margin-bottom: 4px;}
+.nav-btn:active {transform: scale(0.95);}
 </style>
 </head>
 <body>
@@ -122,16 +126,25 @@ html,body{
   </div>
   <button class="btn-play" id="main-btn" onclick="handlePlay()">PLAY BALL</button>
   <div class="nav-bottom">
-    <a href="withdraw.html" class="nav-btn" style="color:var(--yellow)"><span>WITHDRAW</span></a>
-    <a href="deposit.html" class="nav-btn" style="color:var(--pink)"><span>DEPOSIT</span></a>
-    <a href="reward.html" class="nav-btn" style="color:var(--blue)"><span>REWARD</span></a>
+    <a href="withdraw.html" class="nav-btn" style="color:var(--yellow); border-color: var(--by);">
+        <i class="fa-solid fa-money-bill-transfer"></i>
+        <span>WITHDRAW</span>
+    </a>
+    <a href="deposit.html" class="nav-btn" style="color:var(--pink); border-color: var(--bp);">
+        <i class="fa-solid fa-wallet"></i>
+        <span>DEPOSIT</span>
+    </a>
+    <a href="reward.html" class="nav-btn" style="color:var(--blue); border-color: var(--bb);">
+        <i class="fa-solid fa-gift"></i>
+        <span>REWARD</span>
+    </a>
   </div>
 </div>
 
 <script src="global.js"></script>
 <script>
 // ── CONFIG ──
-const ROWS = 9; // Mengurangi baris agar paku lebih besar dan pas di layar
+const ROWS = 9; 
 const MULTS = [10, 3, 1.5, 0.5, 0.2, 0.2, 0.5, 1.5, 3, 10];
 const BETS = [400, 800, 1000, 2000, 5000, 10000, 20000];
 const BALL_R = 7;
@@ -150,11 +163,9 @@ function setupCanvas() {
     ctx = canvas.getContext('2d');
     const wrap = document.getElementById('board-wrapper');
     
-    // Ukuran Container Real
     BW = wrap.offsetWidth; 
     BH = wrap.offsetHeight;
     
-    // Handle High DPI
     const dpr = window.devicePixelRatio || 1;
     canvas.width = BW * dpr; 
     canvas.height = BH * dpr;
@@ -162,20 +173,18 @@ function setupCanvas() {
     canvas.style.height = BH + 'px';
     ctx.scale(dpr, dpr);
 
-    // Re-generate Paku
     pegs = [];
     const spX = BW / (ROWS + 2);
     const spY = (BH - 40) / ROWS;
     
     for (let r = 0; r < ROWS; r++) {
-        const count = r + 3; // Mulai dari 3 paku di baris atas
+        const count = r + 3; 
         const startX = (BW - (count - 1) * spX) / 2;
         for (let c = 0; c < count; c++) {
             pegs.push({ x: startX + c * spX, y: 30 + r * spY, glow: 0 });
         }
     }
 
-    // Reset Slots UI
     const row = document.getElementById('slot-row');
     row.innerHTML = '';
     slotW = BW / MULTS.length;
@@ -240,7 +249,6 @@ function updatePhysics() {
         b.x += b.vx;
         b.y += b.vy;
 
-        // Tabrakan Paku
         pegs.forEach(p => {
             const dx = b.x - p.x;
             const dy = b.y - p.y;
@@ -252,11 +260,10 @@ function updatePhysics() {
                 b.vx = Math.cos(angle) * speed * bounce + (Math.random()-0.5);
                 b.vy = Math.abs(Math.sin(angle) * speed * bounce);
                 
-                // Dorong keluar agar tidak nyangkut
                 b.x = p.x + Math.cos(angle) * (BALL_R + PEG_R + 1);
                 b.y = p.y + Math.sin(angle) * (BALL_R + PEG_R + 1);
 
-                p.glow = 1.5; // Efek kilau
+                p.glow = 1.5; 
                 try {
                   const s = document.getElementById('snd-hit').cloneNode();
                   s.volume = 0.4;
@@ -265,17 +272,14 @@ function updatePhysics() {
             }
         });
 
-        // Magnetisme ke target slot
         if (b.y > BH * 0.4) {
             const pull = (b.targetX - b.x) * 0.05;
             b.vx += pull;
         }
 
-        // Batas Dinding
         if (b.x < BALL_R) { b.x = BALL_R; b.vx *= -0.5; }
         if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx *= -0.5; }
 
-        // Landing
         if (b.y > BH - 5) {
             b.isDone = true;
             onBallLand(b);
@@ -309,7 +313,6 @@ function draw() {
     if(!ctx) return;
     ctx.clearRect(0, 0, BW, BH);
 
-    // Gambar Paku (Piramida)
     pegs.forEach(p => {
         ctx.beginPath();
         ctx.arc(p.x, p.y, PEG_R, 0, Math.PI*2);
@@ -324,22 +327,35 @@ function draw() {
         if(p.glow > 0) p.glow -= 0.1;
     });
 
-    // Gambar Bola
     balls.forEach(b => {
+        ctx.save();
+        // Efek Outer Glow Bola
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = '#ff0077';
+        
+        // Warna Gradasi Premium pada Bola
+        let grad = ctx.createRadialGradient(b.x - 2, b.y - 2, 1, b.x, b.y, BALL_R);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.3, '#ff0077');
+        grad.addColorStop(1, '#660022');
+        
         ctx.beginPath();
         ctx.arc(b.x, b.y, BALL_R, 0, Math.PI*2);
-        ctx.fillStyle = 'var(--pink)';
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = 'var(--pink)';
+        ctx.fillStyle = grad;
         ctx.fill();
-        ctx.shadowBlur = 0;
+        
+        // Kilauan Putih Kecil di atas bola (Highlighter)
+        ctx.beginPath();
+        ctx.arc(b.x - 2, b.y - 2, 2, 0, Math.PI*2);
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.fill();
+        ctx.restore();
     });
 
     updatePhysics();
     requestAnimationFrame(draw);
 }
 
-// ── UTILS ──
 function changeBet(d) {
     if (isAuto) return;
     betIdx = Math.max(0, Math.min(BETS.length - 1, betIdx + d));
@@ -397,7 +413,6 @@ function closeModal() {
     document.getElementById('neon-modal').style.display = 'none';
 }
 
-// Start Engine
 window.addEventListener('load', () => {
     setupCanvas();
     updateSaldoUI();
