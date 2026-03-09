@@ -163,7 +163,6 @@ function buildSlots() {
   });
 }
 
-// ── LOGIKA PARTIKEL UNTUK KEMENANGAN BESAR ─────────────────────────────
 function createParticles(x, y, color) {
   for (let i = 0; i < 15; i++) {
     particles.push({
@@ -183,7 +182,6 @@ function loop() {
   const ph = PH[speedMode];
   const LAST_PEG_Y = pegs.length > 0 ? pegs[pegs.length - 1].y : BH;
 
-  // Render Pegs
   pegs.forEach(p => {
     p.glow *= 0.88;
     ctx.fillStyle = p.glow > 0.1 ? '#ffffff' : 'rgba(0, 68, 255, 0.3)';
@@ -192,7 +190,6 @@ function loop() {
     ctx.fill();
   });
 
-  // Render Particles
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
     p.x += p.vx; p.y += p.vy; p.vy += 0.1; p.life -= 0.02;
@@ -205,7 +202,6 @@ function loop() {
   }
   ctx.globalAlpha = 1.0;
 
-  // Render & Logic Balls
   for (let i = balls.length - 1; i >= 0; i--) {
     const b = balls[i];
     if (b.serverStatus === BALL_ERROR) { balls.splice(i, 1); continue; }
@@ -213,7 +209,6 @@ function loop() {
     b.vy += ph.grav;
     b.vx *= ph.fric;
 
-    // --- SMOOTH STEERING ---
     if (b.serverStatus === BALL_READY && b.targetIdx !== undefined) {
       const targetX = (b.targetIdx * slotW) + (slotW / 2);
       const dx = targetX - b.x;
@@ -222,7 +217,7 @@ function loop() {
       b.vx += dx * steerPower;
 
       if (b.y > LAST_PEG_Y) {
-        b.x += (targetX - b.x) * 0.1; // Snap akhir
+        b.x += (targetX - b.x) * 0.1; 
         b.vx *= 0.85;
       }
     }
@@ -230,11 +225,9 @@ function loop() {
     b.x += b.vx;
     b.y += b.vy;
 
-    // Dinding
     if (b.x < BALL_R) { b.x = BALL_R; b.vx *= -0.4; }
     else if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx *= -0.4; }
 
-    // Paku
     for (let p of pegs) {
       const dx = b.x - p.x, dy = b.y - p.y;
       const dist = Math.sqrt(dx*dx + dy*dy);
@@ -253,7 +246,6 @@ function loop() {
       }
     }
 
-    // Render Bola
     ctx.beginPath();
     ctx.shadowBlur = 10; ctx.shadowColor = '#ff0077';
     ctx.fillStyle = '#ffffff';
@@ -281,17 +273,29 @@ function spawnBall() {
     vx: (Math.random()-0.5)*3, vy: 1,
     bet: bet, targetIdx: undefined,
     serverStatus: BALL_WAITING,
-    serverMult: 0, serverWin: 0 // Default values
+    serverMult: 0, serverWin: 0,
+    timestamp: Date.now()
   };
   balls.push(newBall);
 
+  // PROTEKSI STABILITAS: Timeout 8 detik agar tidak stuck saat lag
+  const timeoutId = setTimeout(() => {
+    if (newBall.serverStatus === BALL_WAITING) {
+      newBall.serverStatus = BALL_ERROR;
+      _saldo += bet; // Refund otomatis ke saldo tampilan
+      _renderS();
+      console.warn("Server timeout: Refund bet.");
+    }
+  }, 8000);
+
   apiCall({ action: 'game_play', username: getUsername(), bet: bet, saldoAwal: saldoAwal })
   .then(res => {
+    clearTimeout(timeoutId);
     if (res && res.result === 'SUCCESS') {
       let tm = parseFloat(res.target_multiplier);
       let possible = [];
       MULTS.forEach((m, idx) => { if (m === tm) possible.push(idx); });
-      if (possible.length === 0) possible = [Math.floor(MULTS.length/2)]; // Fallback
+      if (possible.length === 0) possible = [Math.floor(MULTS.length/2)];
       
       newBall.targetIdx = possible[Math.floor(Math.random() * possible.length)];
       newBall.serverWin = parseFloat(res.win) || 0;
@@ -301,26 +305,25 @@ function spawnBall() {
     } else {
       newBall.serverStatus = BALL_ERROR;
       _saldo += bet; _renderS();
-      showModal(res.message || "SERVER ERROR."); stopAuto();
+      showModal(res.message || "SERVER BUSY: SALDO REFUNDED."); stopAuto();
     }
   }).catch(() => {
-    newBall.serverStatus = BALL_ERROR;
-    _saldo += bet; _renderS();
+    clearTimeout(timeoutId);
+    if (newBall.serverStatus !== BALL_ERROR) {
+      newBall.serverStatus = BALL_ERROR;
+      _saldo += bet; _renderS();
+    }
     stopAuto();
   });
 }
 
 function onLand(b) {
-  // VALIDASI: Jika data server belum siap, gunakan fallback agar tidak muncul NaN/undefined
   const mult = b.serverStatus === BALL_READY ? b.serverMult : 0;
   const win = b.serverStatus === BALL_READY ? b.serverWin : 0;
   const idx = b.targetIdx !== undefined ? b.targetIdx : Math.floor(MULTS.length/2);
 
   if (b.serverStatus === BALL_READY) {
     _saldo = b.serverNewSaldo;
-  } else {
-    // Jika bola mendarat tapi server belum merespon (jarang tapi mungkin)
-    // Saldo akan diupdate saat api call selesai atau via visibilitychange
   }
   _renderS();
 
