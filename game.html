@@ -1,411 +1,443 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>NEON PLINKO VIP</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<style>
-:root {
-  --pink:#ff0077; --blue:#0044ff; --yellow:#f5e642;
-  --bg:#02030d; --dark-blue:#050614;
-  --gp:0 0 15px rgba(255,0,119,0.7);
-  --gb:0 0 20px rgba(0,68,255,0.8);
-  --gy:0 0 15px rgba(245,230,66,0.7);
-  --header-h:65px; --slot-h:45px;
-}
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{width:100vw;height:100vh;overflow:hidden;background:var(--bg);color:#fff;font-family:'Outfit',sans-serif;display:flex;flex-direction:column}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+    <title>NEON PLINKO VIP</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Orbitron:wght@400;700;900&family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-pink: #ff0077;
+            --neon-blue: #00f2ff;
+            --neon-purple: #bc13fe;
+            --neon-yellow: #f5e642;
+            --dark-bg: #02030d;
+            --glass: rgba(255, 255, 255, 0.05);
+            --header-h: 70px;
+        }
 
-/* HEADER */
-.header{height:var(--header-h);background:rgba(2,3,13,0.95);border-bottom:2px solid var(--blue);box-shadow:var(--gb);display:flex;align-items:center;padding:0 15px;justify-content:space-between;z-index:100;flex-shrink:0}
-.profile-btn{color:var(--blue);font-size:24px;text-shadow:var(--gb);cursor:pointer}
-.balance-container{background:rgba(0,0,0,0.6);border:1px solid var(--pink);border-radius:12px;padding:5px 20px;text-align:center;box-shadow:inset 0 0 10px rgba(255,0,119,0.3);min-width:140px}
-#display-saldo{font-family:'Cinzel Decorative',serif;font-size:16px;color:var(--yellow);text-shadow:var(--gy);font-weight:900}
-#tier-badge{font-size:9px;text-align:center;letter-spacing:1px;margin-top:2px;font-weight:700;color:#aaa}
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { 
+            width: 100vw; height: 100vh; overflow: hidden; 
+            background: var(--dark-bg); color: #fff; 
+            font-family: 'Outfit', sans-serif; display: flex; flex-direction: column;
+        }
 
-/* BOARD AREA */
-#board-wrapper{flex:1;position:relative;background:radial-gradient(circle at center,#070a24 0%,#02030d 100%);overflow:hidden;display:flex;flex-direction:column;min-height:0}
-#plinko-canvas{flex:1;display:block;width:100%;height:100%}
+        /* BG ANIMATION */
+        .bg-glow {
+            position: fixed; top: 50%; left: 50%; width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(0, 242, 255, 0.05) 0%, transparent 70%);
+            transform: translate(-50%, -50%); z-index: -1; pointer-events: none;
+        }
 
-/* SCORE LIST */
-#floating-score{position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.8);border:1px solid var(--blue);border-radius:8px;padding:5px;width:110px;box-shadow:var(--gb);z-index:20}
-.score-entry{font-size:10px;border-bottom:1px solid rgba(0,68,255,0.3);padding:3px 0;text-align:center;animation:slideIn .3s ease-out}
-.score-win{color:var(--yellow)!important}
-.score-loss{color:rgba(255,255,255,0.4)!important}
+        /* HEADER */
+        .header {
+            height: var(--header-h); background: rgba(5, 6, 20, 0.9);
+            border-bottom: 2px solid var(--neon-blue); display: flex;
+            align-items: center; padding: 0 15px; justify-content: space-between;
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.3); z-index: 100;
+        }
 
-/* MULTIPLIER SLOTS */
-.multiplier-row{height:var(--slot-h);display:flex;width:100%;padding:0 4px;z-index:10;gap:4px;flex-shrink:0;margin-bottom:5px}
-.slot{flex:1;height:35px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;transition:all .15s;border-radius:6px;border:1px solid rgba(255,255,255,0.1);text-shadow:0 1px 2px rgba(0,0,0,0.8)}
-.s-high{background:linear-gradient(to bottom, #ff0077, #990033);color:#fff;border-color:#ff66aa}
-.s-mid{background:linear-gradient(to bottom, #f5e642, #b5a91d);color:#000;border-color:#fff}
-.s-low{background:linear-gradient(to bottom, #0044ff, #002288);color:#fff;border-color:#6699ff}
-.slot.active{transform:translateY(-10px) scale(1.15);filter:brightness(1.5);box-shadow:0 0 25px #fff;border:2px solid #fff;z-index:100}
+        .user-info { display: flex; align-items: center; gap: 10px; }
+        .user-icon { 
+            width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--neon-blue);
+            display: flex; align-items: center; justify-content: center; background: var(--glass);
+            color: var(--neon-blue); font-size: 20px; box-shadow: 0 0 10px var(--neon-blue);
+        }
 
-/* CONTROLS */
-.controls{padding:15px;background:linear-gradient(to top,#02030d 20%,#0a0b1e 100%);border-top:2px solid var(--blue);display:flex;flex-direction:column;gap:10px;box-shadow:0 -10px 20px rgba(0,68,255,0.2);flex-shrink:0}
-.mode-row{display:flex;gap:8px}
-.btn-mode{flex:1;padding:12px;border-radius:10px;border:1px solid var(--blue);background:rgba(0,68,255,0.1);color:var(--blue);font-size:11px;font-weight:bold;cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;gap:6px}
-.btn-mode.active{background:var(--blue);color:#fff;box-shadow:var(--gb)}
-.bet-row{display:flex;align-items:center;justify-content:space-between;background:rgba(0,68,255,0.1);border-radius:15px;padding:8px 20px;border:1px solid var(--blue)}
-.bet-btn{background:none;border:none;color:var(--pink);font-size:28px;cursor:pointer;text-shadow:var(--gp)}
-#current-bet{font-family:'Cinzel Decorative';font-size:22px;color:var(--yellow);text-shadow:var(--gy);font-weight:900}
-.btn-play{width:100%;padding:18px;border-radius:15px;border:none;font-family:'Cinzel Decorative';font-weight:900;font-size:20px;color:#fff;cursor:pointer;background:linear-gradient(90deg,var(--blue),var(--pink));box-shadow:var(--gb);transition:.2s;text-shadow: 0 2px 4px rgba(0,0,0,0.5)}
-.btn-play:active{transform:scale(0.96)}
+        .balance-box {
+            background: linear-gradient(145deg, #0a0b1e, #1a1b3a);
+            border: 1px solid var(--neon-pink); border-radius: 12px;
+            padding: 5px 15px; text-align: center; min-width: 130px;
+            box-shadow: inset 0 0 10px rgba(255, 0, 119, 0.2);
+        }
+        #display-saldo { 
+            font-family: 'Orbitron', sans-serif; color: var(--neon-yellow); 
+            font-weight: 900; font-size: 16px; text-shadow: 0 0 10px rgba(245, 230, 66, 0.5);
+        }
+        .tier-label { font-size: 8px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
 
-/* NAV */
-.nav-bottom{display:flex;gap:10px}
-.nav-btn{flex:1;padding:10px;text-align:center;border-radius:10px;text-decoration:none;font-size:10px;font-weight:bold;border:1px solid var(--blue);color:#fff;background:rgba(0,68,255,0.15);display:flex;flex-direction:column;align-items:center;gap:4px}
+        /* GAME BOARD */
+        #game-area { flex: 1; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+        #plinko-canvas { flex: 1; width: 100%; touch-action: none; }
 
-/* MODAL */
-#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:2000;backdrop-filter:blur(5px)}
-#neon-modal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#050614;border:2px solid var(--blue);border-radius:20px;padding:30px;text-align:center;z-index:2001;box-shadow:var(--gb);width:80%;max-width:320px}
+        /* MULTIPLIER SLOTS */
+        .slot-row {
+            display: flex; height: 45px; gap: 4px; padding: 0 5px; margin-bottom: 5px;
+        }
+        .slot {
+            flex: 1; border-radius: 6px; display: flex; align-items: center; justify-content: center;
+            font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 10px;
+            border: 1px solid rgba(255,255,255,0.1); transition: 0.2s;
+        }
+        .s-low { background: #0044ff22; color: #00f2ff; border-color: #00f2ff55; }
+        .s-mid { background: #ff007722; color: #ff0077; border-color: #ff007755; }
+        .s-high { background: #f5e64222; color: #f5e642; border-color: #f5e64255; }
+        .slot.active { transform: translateY(-8px) scale(1.1); filter: brightness(1.5); box-shadow: 0 0 20px #fff; border: 2px solid #fff; }
 
-@keyframes slideIn{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:translateX(0)}}
-</style>
+        /* CONTROLS */
+        .controls {
+            background: #050614; padding: 15px; border-top: 1px solid var(--neon-purple);
+            display: flex; flex-direction: column; gap: 12px;
+        }
+
+        .mode-tabs { display: flex; gap: 8px; }
+        .btn-tab {
+            flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #333;
+            background: #111; color: #888; font-size: 11px; font-weight: 700;
+            cursor: pointer; transition: 0.3s;
+        }
+        .btn-tab.active { 
+            background: var(--neon-purple); color: #fff; border-color: var(--neon-purple);
+            box-shadow: 0 0 15px var(--neon-purple);
+        }
+
+        .bet-selector {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #0a0b1e; border-radius: 12px; padding: 8px 15px;
+            border: 1px solid #1a1b3a;
+        }
+        .bet-nav { font-size: 24px; color: var(--neon-blue); cursor: pointer; }
+        .bet-display { text-align: center; }
+        .bet-display span { font-size: 9px; color: #888; display: block; }
+        .bet-display b { font-family: 'Orbitron'; font-size: 18px; color: var(--neon-yellow); }
+
+        .btn-drop {
+            width: 100%; padding: 18px; border-radius: 15px; border: none;
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-pink));
+            color: #fff; font-family: 'Cinzel Decorative'; font-weight: 900;
+            font-size: 20px; text-transform: uppercase; cursor: pointer;
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.4); transition: 0.2s;
+        }
+        .btn-drop:active { transform: scale(0.96); filter: brightness(1.2); }
+
+        /* NAV BOTTOM (MENU REWARD ADA DI SINI) */
+        .nav-bottom { display: flex; gap: 10px; }
+        .nav-item {
+            flex: 1; padding: 12px 5px; background: var(--glass); border: 1px solid #1a1b3a;
+            border-radius: 12px; display: flex; flex-direction: column; align-items: center;
+            gap: 5px; color: #fff; text-decoration: none; font-size: 10px; transition: 0.3s;
+        }
+        .nav-item i { font-size: 18px; color: var(--neon-blue); }
+        .nav-item.special { border-color: var(--neon-yellow); }
+        .nav-item.special i { color: var(--neon-yellow); }
+        .nav-item:active { background: rgba(0, 242, 255, 0.1); }
+
+        /* SCORE LIST */
+        #history-list {
+            position: absolute; top: 10px; right: 10px; width: 90px;
+            display: flex; flex-direction: column; gap: 5px; z-index: 10;
+        }
+        .history-item {
+            background: rgba(0,0,0,0.6); font-size: 9px; padding: 4px;
+            border-radius: 4px; text-align: center; border-left: 3px solid var(--neon-blue);
+            animation: slideIn 0.3s ease-out;
+        }
+        .h-win { border-left-color: var(--neon-yellow); color: var(--neon-yellow); }
+
+        @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    </style>
 </head>
 <body>
 
-<div id="modal-overlay"></div>
-<div id="neon-modal">
-  <div style="font-family:'Cinzel Decorative';color:var(--blue);margin-bottom:15px;font-size:18px;">ALERT</div>
-  <p id="modal-msg" style="color:#ddeeff;margin-bottom:20px;font-size:14px;line-height:1.6;"></p>
-  <button class="btn-mode active" onclick="closeModal()" style="width:100%">OK</button>
-</div>
+<div class="bg-glow"></div>
 
 <div class="header">
-  <div class="profile-btn" onclick="location.href='profil.html'"><i class="fa-solid fa-user-astronaut"></i></div>
-  <div class="balance-container">
-    <div style="font-size:8px;color:var(--blue);letter-spacing:1px;font-weight:bold">VAULT BALANCE</div>
-    <div id="display-saldo">IDR 0</div>
-    <div id="tier-badge">LOADING...</div>
-  </div>
-  <div class="profile-btn" style="color:var(--yellow)" onclick="syncSaldoUI()"><i class="fa-solid fa-rotate"></i></div>
+    <div class="user-info">
+        <div class="user-icon" onclick="location.href='profil.html'"><i class="fa-solid fa-user-ninja"></i></div>
+        <div>
+            <div class="tier-label" id="tier-name">MEMBER</div>
+            <div id="user-display-name" style="font-size: 11px; font-weight: 700;">PLAYER</div>
+        </div>
+    </div>
+    
+    <div class="balance-box" onclick="syncSaldo()">
+        <div class="tier-label">VAULT BALANCE</div>
+        <div id="display-saldo">IDR 0</div>
+    </div>
+
+    <div class="user-icon" style="border-color: var(--neon-yellow); color: var(--neon-yellow); shadow: 0 0 10px var(--neon-yellow);" onclick="location.href='deposit.html'">
+        <i class="fa-solid fa-bolt"></i>
+    </div>
 </div>
 
-<div id="board-wrapper">
-  <canvas id="plinko-canvas"></canvas>
-  <div id="floating-score"><div id="score-list"></div></div>
+<div id="game-area">
+    <canvas id="plinko-canvas"></canvas>
+    <div id="history-list"></div>
 </div>
 
-<div class="multiplier-row" id="slot-row"></div>
+<div class="slot-row" id="slots-container"></div>
 
 <div class="controls">
-  <div class="mode-row">
-    <button class="btn-mode active" id="m-normal" onclick="setSpeedMode('normal')"><i class="fa-solid fa-bolt"></i> NORMAL</button>
-    <button class="btn-mode" id="m-turbo" onclick="setSpeedMode('turbo')"><i class="fa-solid fa-gauge-high"></i> TURBO</button>
-    <button class="btn-mode" id="m-auto" onclick="toggleAuto()"><i class="fa-solid fa-sync-alt"></i> AUTO</button>
-  </div>
-  <div class="bet-row">
-    <button class="bet-btn" onclick="changeBet(-1)"><i class="fa-solid fa-circle-minus"></i></button>
-    <div style="text-align:center">
-      <div style="font-size:9px;color:var(--blue);opacity:.8;font-weight:bold">BET AMOUNT</div>
-      <div id="current-bet">400</div>
+    <div class="mode-tabs">
+        <button class="btn-tab active" id="mode-normal" onclick="setSpeed('normal')">NORMAL</button>
+        <button class="btn-tab" id="mode-turbo" onclick="setSpeed('turbo')">TURBO</button>
+        <button class="btn-tab" id="mode-auto" onclick="toggleAuto()">AUTO</button>
     </div>
-    <button class="bet-btn" onclick="changeBet(1)"><i class="fa-solid fa-circle-plus"></i></button>
-  </div>
-  <button class="btn-play" id="main-btn" onclick="spawnBall()">DROP NEON BALL</button>
-  <div class="nav-bottom">
-    <a href="deposit.html" class="nav-btn"><i class="fa-solid fa-wallet"></i> DEPOSIT</a>
-    <a href="withdraw.html" class="nav-btn"><i class="fa-solid fa-money-bill-wave"></i> WITHDRAW</a>
-  </div>
+
+    <div class="bet-selector">
+        <i class="fa-solid fa-circle-minus bet-nav" onclick="changeBet(-1)"></i>
+        <div class="bet-display">
+            <span>BET AMOUNT</span>
+            <b id="bet-value">400</b>
+        </div>
+        <i class="fa-solid fa-circle-plus bet-nav" onclick="changeBet(1)"></i>
+    </div>
+
+    <button class="btn-drop" id="btn-drop" onclick="dropBall()">DROP NEON BALL</button>
+
+    <div class="nav-bottom">
+        <a href="deposit.html" class="nav-item">
+            <i class="fa-solid fa-wallet"></i>
+            DEPOSIT
+        </a>
+        <a href="reward.html" class="nav-item special">
+            <i class="fa-solid fa-gift"></i>
+            REWARD
+        </a>
+        <a href="withdraw.html" class="nav-item">
+            <i class="fa-solid fa-money-bill-transfer"></i>
+            WITHDRAW
+        </a>
+    </div>
 </div>
 
 <script src="global.js"></script>
 <script>
-/**
- * NEON PLINKO VIP ENGINE v8.0
- * Fully Synchronized with Google Sheets & global.js
- */
+    /**
+     * NEON PLINKO ENGINE v5.0
+     * Optimized for Mobile & Real-time Sheet Sync
+     */
+    const canvas = document.getElementById('plinko-canvas');
+    const ctx = canvas.getContext('2d');
+    const ROWS = 10;
+    const MULTIPLIERS = [10, 3, 1.5, 0.5, 0.2, 0.2, 0.5, 1.5, 3, 10];
+    const BETS = [400, 800, 1000, 2000, 5000, 10000, 25000, 50000];
+    
+    let balls = [];
+    let pegs = [];
+    let particles = [];
+    let currentBetIdx = 0;
+    let speedMode = 'normal';
+    let isAuto = false;
+    let autoInterval = null;
+    let _saldo = 0;
+    let _username = "";
 
-const ROWS = 10;
-const MULTS = [10, 5, 2, 1.2, 0.5, 0.5, 1.2, 2, 5, 10];
-const BETS = [400, 800, 1000, 2000, 5000, 10000, 25000, 50000];
-const BALL_R = 7, PEG_R = 3.5;
+    const PHYSICS = {
+        normal: { grav: 0.4, fric: 0.98, bounce: 0.5, interval: 700 },
+        turbo: { grav: 0.9, fric: 0.96, bounce: 0.4, interval: 250 }
+    };
 
-let canvas, ctx, BW, BH;
-let pegs = [], balls = [], slotW = 0;
-let speedMode = 'normal', isAuto = false, autoTimer = null, betIdx = 0;
-let _saldo = 0, _username = '';
+    // INIT
+    window.onload = async () => {
+        const user = requireLogin('index.html');
+        if(!user) return;
+        
+        _username = user.username;
+        _saldo = parseFloat(user.saldo);
+        document.getElementById('user-display-name').innerText = _username.toUpperCase();
+        
+        updateSaldoUI();
+        initBoard();
+        renderSlots();
+        requestAnimationFrame(gameLoop);
+        
+        // Background Sync status
+        apiSetStatus(_username, 'ONLINE');
+    };
 
-const PHYSICS = {
-  normal: { grav: 0.45, fric: 0.99, bounce: 0.5, autoMs: 800 },
-  turbo: { grav: 1.0, fric: 0.98, bounce: 0.35, autoMs: 250 }
-};
+    function initBoard() {
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = canvas.offsetWidth * dpr;
+        canvas.height = canvas.offsetHeight * dpr;
+        ctx.scale(dpr, dpr);
 
-window.addEventListener('load', init);
+        pegs = [];
+        const spacingX = canvas.offsetWidth / (ROWS + 2);
+        const spacingY = canvas.offsetHeight / (ROWS + 1);
 
-async function init() {
-  const user = requireLogin('index.html');
-  if (!user) return;
-
-  _username = user.username;
-  _saldo = parseFloat(user.saldo) || 0;
-
-  canvas = document.getElementById('plinko-canvas');
-  ctx = canvas.getContext('2d');
-
-  window.addEventListener('resize', resize);
-  resize();
-  buildSlots();
-  renderProfileUI(user);
-  
-  // Start Game Loop
-  update();
-  
-  // Background Sync
-  syncSaldoUI();
-  apiSetStatus(_username, 'ONLINE');
-}
-
-function resize() {
-  const wrap = document.getElementById('board-wrapper');
-  BW = wrap.offsetWidth;
-  BH = wrap.offsetHeight;
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = BW * dpr;
-  canvas.height = BH * dpr;
-  ctx.scale(dpr, dpr);
-  slotW = BW / MULTS.length;
-  createPegs();
-}
-
-function createPegs() {
-  pegs = [];
-  const spacingX = BW / (ROWS + 2);
-  const spacingY = (BH * 0.85) / ROWS;
-  
-  for (let r = 0; r < ROWS; r++) {
-    const rowCount = r + 3;
-    const startX = (BW - (rowCount - 1) * spacingX) / 2;
-    for (let c = 0; c < rowCount; c++) {
-      pegs.push({
-        x: startX + c * spacingX,
-        y: 60 + r * spacingY,
-        glow: 0
-      });
-    }
-  }
-}
-
-function buildSlots() {
-  const container = document.getElementById('slot-row');
-  container.innerHTML = '';
-  MULTS.forEach((m, i) => {
-    const div = document.createElement('div');
-    div.className = `slot ${m >= 5 ? 's-high' : m >= 1.2 ? 's-mid' : 's-low'}`;
-    div.id = `slot-${i}`;
-    div.innerHTML = m + 'x';
-    container.appendChild(div);
-  });
-}
-
-function renderProfileUI(data) {
-  document.getElementById('display-saldo').innerText = formatIDR(_saldo);
-  const badge = document.getElementById('tier-badge');
-  badge.innerText = `✧ ${data.tier || 'MEMBER'} ✧`;
-  badge.style.color = data.tier === 'GOLD' ? '#f5e642' : '#0044ff';
-}
-
-async function syncSaldoUI() {
-  const res = await apiGetSaldo(_username);
-  if (res && res.result === 'SUCCESS') {
-    _saldo = parseFloat(res.saldo);
-    renderProfileUI(res);
-  }
-}
-
-// SPAWN BALL WITH SERVER VALIDATION
-async function spawnBall() {
-  const bet = BETS[betIdx];
-  if (_saldo < bet) {
-    showModal("SALDO TIDAK CUKUP! <br> Silakan isi deposit Anda.");
-    stopAuto();
-    return;
-  }
-
-  // Pre-bet local deduction (responsiveness)
-  const snapshotSaldo = _saldo;
-  _saldo -= bet;
-  document.getElementById('display-saldo').innerText = formatIDR(_saldo);
-
-  const ball = {
-    x: BW / 2 + (Math.random() - 0.5) * 20,
-    y: -20,
-    vx: (Math.random() - 0.5) * 2,
-    vy: 2,
-    bet: bet,
-    status: 'WAITING',
-    targetIdx: null,
-    finalSaldo: 0
-  };
-  balls.push(ball);
-
-  try {
-    const res = await apiGamePlay(_username, bet, snapshotSaldo);
-    if (res && res.result === 'SUCCESS') {
-      ball.status = 'READY';
-      ball.finalSaldo = parseFloat(res.newSaldo);
-      const targetMult = parseFloat(res.target_multiplier);
-      
-      // Find valid indices for the target multiplier
-      const possibleIndices = [];
-      MULTS.forEach((m, idx) => {
-        if (Math.abs(m - targetMult) < 0.01) possibleIndices.push(idx);
-      });
-      ball.targetIdx = possibleIndices[Math.floor(Math.random() * possibleIndices.length)];
-    } else {
-      balls = balls.filter(b => b !== ball);
-      _saldo = snapshotSaldo;
-      renderProfileUI({tier: 'MEMBER'});
-      showModal(res.message || "Server Error");
-    }
-  } catch (e) {
-    balls = balls.filter(b => b !== ball);
-    _saldo = snapshotSaldo;
-    showModal("Koneksi Terputus");
-  }
-}
-
-function update() {
-  ctx.clearRect(0, 0, BW, BH);
-  const ph = PHYSICS[speedMode];
-
-  // Draw Pegs
-  pegs.forEach(p => {
-    p.glow *= 0.9;
-    ctx.fillStyle = `rgba(0, 68, 255, ${0.2 + p.glow})`;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, PEG_R + (p.glow * 2), 0, Math.PI * 2);
-    ctx.fill();
-    // Tiny white center
-    ctx.fillStyle = "#fff";
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 1, 0, Math.PI * 2);
-    ctx.fill();
-  });
-
-  // Balls Physics
-  for (let i = balls.length - 1; i >= 0; i--) {
-    const b = balls[i];
-    b.vy += ph.grav;
-    b.vx *= ph.fric;
-
-    // Directing ball to target
-    if (b.status === 'READY' && b.y > BH * 0.3) {
-      const targetX = (b.targetIdx * slotW) + (slotW / 2);
-      const diff = targetX - b.x;
-      b.vx += diff * 0.02; 
+        for (let i = 0; i < ROWS; i++) {
+            const rowPegs = i + 2;
+            const startX = (canvas.offsetWidth - (rowPegs - 1) * spacingX) / 2;
+            for (let j = 0; j < rowPegs; j++) {
+                pegs.push({ x: startX + j * spacingX, y: 50 + i * spacingY, r: 3 });
+            }
+        }
     }
 
-    b.x += b.vx;
-    b.y += b.vy;
-
-    // Wall bounce
-    if (b.x < BALL_R || b.x > BW - BALL_R) b.vx *= -0.5;
-
-    // Peg collision
-    pegs.forEach(p => {
-      const dx = b.x - p.x;
-      const dy = b.y - p.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < BALL_R + PEG_R) {
-        p.glow = 1.0;
-        const angle = Math.atan2(dy, dx);
-        const speed = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
-        b.vx = Math.cos(angle) * speed * ph.bounce;
-        b.vy = Math.sin(angle) * speed * ph.bounce + 0.2;
-      }
-    });
-
-    // Draw Ball (Neon Style)
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = "#ff0077";
-    ctx.fillStyle = "#fff";
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-
-    // Scoring
-    if (b.y > BH) {
-      handleLanding(b);
-      balls.splice(i, 1);
+    function renderSlots() {
+        const container = document.getElementById('slots-container');
+        container.innerHTML = '';
+        MULTIPLIERS.forEach((m, i) => {
+            const div = document.createElement('div');
+            div.className = `slot ${m >= 3 ? 's-high' : m >= 1 ? 's-mid' : 's-low'}`;
+            div.id = `slot-${i}`;
+            div.innerText = m + 'x';
+            container.appendChild(div);
+        });
     }
-  }
 
-  requestAnimationFrame(update);
-}
+    async function syncSaldo() {
+        const res = await apiGetSaldo(_username);
+        if(res && res.result === 'SUCCESS') {
+            _saldo = parseFloat(res.saldo);
+            document.getElementById('tier-name').innerText = res.tier;
+            updateSaldoUI();
+        }
+    }
 
-function handleLanding(b) {
-  if (b.status !== 'READY') return;
-  
-  _saldo = b.finalSaldo;
-  document.getElementById('display-saldo').innerText = formatIDR(_saldo);
-  
-  const idx = b.targetIdx;
-  const slot = document.getElementById(`slot-${idx}`);
-  if (slot) {
-    slot.classList.add('active');
-    setTimeout(() => slot.classList.remove('active'), 400);
-  }
+    function updateSaldoUI() {
+        document.getElementById('display-saldo').innerText = 'IDR ' + Math.floor(_saldo).toLocaleString('id-ID');
+    }
 
-  // Update Score History
-  const list = document.getElementById('score-list');
-  const mult = MULTS[idx];
-  const win = b.bet * mult;
-  const div = document.createElement('div');
-  div.className = `score-entry ${mult >= 1 ? 'score-win' : 'score-loss'}`;
-  div.innerHTML = `<b>${mult}x</b> | ${formatIDR(win)}`;
-  list.prepend(div);
-  if (list.children.length > 5) list.lastChild.remove();
-}
+    function changeBet(dir) {
+        if(isAuto) return;
+        currentBetIdx = Math.max(0, Math.min(BETS.length - 1, currentBetIdx + dir));
+        document.getElementById('bet-value').innerText = BETS[currentBetIdx].toLocaleString();
+    }
 
-// CONTROL FUNCTIONS
-function changeBet(dir) {
-  if (isAuto) return;
-  betIdx = Math.max(0, Math.min(BETS.length - 1, betIdx + dir));
-  document.getElementById('current-bet').innerText = BETS[betIdx].toLocaleString();
-}
+    function setSpeed(mode) {
+        speedMode = mode;
+        document.getElementById('mode-normal').className = mode === 'normal' ? 'btn-tab active' : 'btn-tab';
+        document.getElementById('mode-turbo').className = mode === 'turbo' ? 'btn-tab active' : 'btn-tab';
+        if(isAuto) {
+            clearInterval(autoInterval);
+            autoInterval = setInterval(dropBall, PHYSICS[speedMode].interval);
+        }
+    }
 
-function setSpeedMode(m) {
-  speedMode = m;
-  document.getElementById('m-normal').classList.toggle('active', m === 'normal');
-  document.getElementById('m-turbo').classList.toggle('active', m === 'turbo');
-}
+    function toggleAuto() {
+        isAuto = !isAuto;
+        document.getElementById('mode-auto').className = isAuto ? 'btn-tab active' : 'btn-tab';
+        if(isAuto) {
+            dropBall();
+            autoInterval = setInterval(dropBall, PHYSICS[speedMode].interval);
+        } else {
+            clearInterval(autoInterval);
+        }
+    }
 
-function toggleAuto() {
-  isAuto = !isAuto;
-  document.getElementById('m-auto').classList.toggle('active', isAuto);
-  if (isAuto) {
-    spawnBall();
-    autoTimer = setInterval(spawnBall, PHYSICS[speedMode].autoMs);
-  } else {
-    stopAuto();
-  }
-}
+    async function dropBall() {
+        const bet = BETS[currentBetIdx];
+        if(_saldo < bet) {
+            alert("Saldo tidak cukup!");
+            if(isAuto) toggleAuto();
+            return;
+        }
 
-function stopAuto() {
-  isAuto = false;
-  clearInterval(autoTimer);
-  document.getElementById('m-auto').classList.remove('active');
-}
+        // Snapshot saldo untuk GAS
+        const saldoAwal = _saldo;
+        _saldo -= bet; 
+        updateSaldoUI();
 
-function formatIDR(val) {
-  return "IDR " + Math.floor(val).toLocaleString('id-ID');
-}
+        const ball = {
+            x: canvas.offsetWidth / 2 + (Math.random() - 0.5) * 10,
+            y: 0, vx: 0, vy: 2, r: 6,
+            color: '#00f2ff',
+            bet: bet,
+            status: 'PENDING'
+        };
+        balls.push(ball);
 
-function showModal(msg) {
-  document.getElementById('modal-msg').innerHTML = msg;
-  document.getElementById('modal-overlay').style.display = 'block';
-  document.getElementById('neon-modal').style.display = 'block';
-}
+        // Panggil Server
+        try {
+            const res = await apiGamePlay(_username, bet, saldoAwal);
+            if(res && res.result === 'SUCCESS') {
+                ball.targetMult = res.target_multiplier;
+                ball.finalSaldo = res.newSaldo;
+                ball.status = 'READY';
+                
+                // Cari index slot target
+                const possibleIndices = [];
+                MULTIPLIERS.forEach((m, idx) => { if(m === res.target_multiplier) possibleIndices.push(idx); });
+                ball.targetIdx = possibleIndices[Math.floor(Math.random() * possibleIndices.length)];
+            } else {
+                ball.status = 'ERROR';
+            }
+        } catch(e) { ball.status = 'ERROR'; }
+    }
 
-function closeModal() {
-  document.getElementById('modal-overlay').style.display = 'none';
-  document.getElementById('neon-modal').style.display = 'none';
-}
+    function gameLoop() {
+        ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
+        const config = PHYSICS[speedMode];
+
+        // Draw Pegs
+        ctx.fillStyle = "rgba(0, 242, 255, 0.2)";
+        pegs.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        // Update Balls
+        for (let i = balls.length - 1; i >= 0; i--) {
+            const b = balls[i];
+            b.vy += config.grav;
+            b.vx *= config.fric;
+
+            // Simple Magnetism to Target Slot
+            if (b.status === 'READY' && b.y > canvas.offsetHeight * 0.4) {
+                const targetX = (b.targetIdx * (canvas.offsetWidth / MULTIPLIERS.length)) + (canvas.offsetWidth / MULTIPLIERS.length / 2);
+                b.vx += (targetX - b.x) * 0.02;
+            }
+
+            b.x += b.vx;
+            b.y += b.vy;
+
+            // Peg Collision
+            pegs.forEach(p => {
+                const dist = Math.hypot(b.x - p.x, b.y - p.y);
+                if (dist < b.r + p.r) {
+                    const angle = Math.atan2(b.y - p.y, b.x - p.x);
+                    const force = 1.2;
+                    b.vx += Math.cos(angle) * force;
+                    b.vy = Math.abs(Math.sin(angle)) * force + 2;
+                    b.vx *= config.bounce;
+                }
+            });
+
+            // Wall Collision
+            if (b.x < b.r || b.x > canvas.offsetWidth - b.r) b.vx *= -1;
+
+            // Draw Ball
+            ctx.shadowBlur = 10; ctx.shadowColor = b.color;
+            ctx.fillStyle = b.color;
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Landing
+            if (b.y > canvas.offsetHeight) {
+                if(b.status === 'READY') onBallLand(b);
+                balls.splice(i, 1);
+            }
+        }
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    function onBallLand(ball) {
+        _saldo = ball.finalSaldo;
+        updateSaldoUI();
+
+        // Slot Animation
+        const slotEl = document.getElementById(`slot-${ball.targetIdx}`);
+        slotEl.classList.add('active');
+        setTimeout(() => slotEl.classList.remove('active'), 400);
+
+        // History
+        const list = document.getElementById('history-list');
+        const item = document.createElement('div');
+        const isWin = ball.targetMult >= 1;
+        item.className = `history-item ${isWin ? 'h-win' : ''}`;
+        item.innerHTML = `<b>${ball.targetMult}x</b><br>IDR ${(ball.bet * ball.targetMult).toLocaleString()}`;
+        list.prepend(item);
+        if(list.children.length > 5) list.lastChild.remove();
+    }
 </script>
+
 </body>
 </html>
