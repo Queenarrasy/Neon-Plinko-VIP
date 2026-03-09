@@ -1,113 +1,204 @@
 /**
  * ============================================================
- * NEON PLINKO VIP — Global JS API Connector
- * Versi: 4.0 — Unified API + Master Panel Support
+ * NEON PLINKO VIP — Global JS Ultra Sync
+ * Version: 4.1 — Full Integration (Profile, WD, Depo, Reward, Game)
  * ============================================================
  */
 
 const API_CONFIG = {
-    // Masukkan URL Web App Google Apps Script Anda di sini
-    URL: "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
+    URL: "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec", // Ganti dengan URL deployment Anda
+    KURS_USDT: 16800, // Contoh kurs 1 USD ke IDR
+    ADMIN_WA: "6289510249551" // Nomor WA Admin untuk konfirmasi USDT
 };
 
-/**
- * Core Request Handler
- * Mendukung POST (Default) dan GET (Fallback)
- */
-async function callApi(action, payload = {}, method = "POST") {
-    try {
-        const fullPayload = { action, ...payload };
+const UserSession = {
+    data: null,
+    isAutoPlaying: false
+};
 
-        if (method === "POST") {
-            const response = await fetch(API_CONFIG.URL, {
-                method: "POST",
-                mode: "no-cors", // Penting untuk Apps Script jika tidak memakai library CORS
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(fullPayload)
-            });
-            
-            // Apps Script doPost dengan no-cors tidak mengembalikan body secara langsung
-            // Jika butuh return data, disarankan menggunakan doGet (GET) atau setting khusus.
-            return { result: "SUCCESS", message: "Request sent (POST mode)" };
-        } else {
-            // Menggunakan GET untuk mendapatkan return data JSON
-            const jsonString = encodeURIComponent(JSON.stringify(fullPayload));
-            const response = await fetch(`${API_CONFIG.URL}?data=${jsonString}`);
-            const result = await response.json();
-            return result;
-        }
+// ─── CORE ENGINE ─────────────────────────────────────────────
+
+async function callApi(action, payload = {}) {
+    try {
+        const jsonString = encodeURIComponent(JSON.stringify({ action, ...payload }));
+        const response = await fetch(`${API_CONFIG.URL}?data=${jsonString}`);
+        const result = await response.json();
+        if (result.result === "SUCCESS") return result;
+        throw new Error(result.message || "Terjadi kesalahan sistem");
     } catch (error) {
         console.error("API Error:", error);
-        return { result: "ERROR", message: error.message };
+        throw error;
     }
 }
 
-// ─── FUNGSI UNTUK USER (FRONTEND) ───────────────────────────
+// ─── 1. PROFILE & AUTH ───────────────────────────────────────
 
-const UserAPI = {
-    login: (username, password) => 
-        callApi("login", { username, password }, "GET"),
+const ProfileAPI = {
+    async sync() {
+        if (!UserSession.data) return;
+        const res = await callApi("get_profile", { username: UserSession.data.username });
+        UserSession.data = res.data;
+        this.updateUI();
+    },
 
-    register: (userData) => 
-        callApi("register", userData, "GET"),
+    updateUI() {
+        const d = UserSession.data;
+        // Update elemen HTML jika ada (contoh ID: profile-saldo)
+        if (document.getElementById("profile-saldo")) 
+            document.getElementById("profile-saldo").innerText = formatIDR(d.saldo);
+        if (document.getElementById("profile-tier")) 
+            document.getElementById("profile-tier").innerText = d.tier;
+    }
+};
 
-    getProfile: (username) => 
-        callApi("get_profile", { username }, "GET"),
+// ─── 2. WITHDRAW ──────────────────────────────────────────────
 
-    getSaldo: (username) => 
-        callApi("get_saldo", { username }, "GET"),
+const WdAPI = {
+    async submit(jumlah) {
+        const d = UserSession.data;
+        if (jumlah < 50000) throw new Error("Minimal penarikan IDR 50.000");
+        if (d.saldo < jumlah) throw new Error("Saldo tidak mencukupi");
 
-    playGame: (username, bet, saldoAwal) => 
-        callApi("game_play", { username, bet, saldoAwal }, "GET"),
+        const res = await callApi("withdraw", {
+            username: d.username,
+            namaLengkap: d.namaLengkap,
+            bank: d.bank,
+            rekening: d.nomorRekening,
+            jumlah: jumlah,
+            tanggal: new Date().toLocaleString("id-ID")
+        });
 
-    deposit: (username, nominalIDR, method) => 
-        callApi("deposit", { username, nominalIDR, method, tanggal: new Date().toLocaleString() }, "GET"),
+        await ProfileAPI.sync(); // Potong saldo langsung di tampilan
+        return res;
+    },
 
-    withdraw: (username, jumlah, bank, rek, nama) => 
-        callApi("withdraw", { username, jumlah, bank, rekening: rek, namaLengkap: nama }, "GET"),
+    async getHistory(username) {
+        return await callApi("get_withdraw_history", { username });
+    }
+};
 
-    claimDaily: (username) => 
-        callApi("claim_daily", { username }, "GET"),
+// ─── 3. DEPOSIT ───────────────────────────────────────────────
 
-    getReferrals: (username) => 
-        callApi("get_referrals", { username }, "GET"),
+const DepoAPI = {
+    async submitQRIS(nominal) {
+        if (nominal < 20000) throw new Error("Minimal deposit QRIS IDR 20.000");
+        return await callApi("deposit", {
+            username: UserSession.data.username,
+            nominalIDR: nominal,
+            method: "QRIS",
+            tanggal: new Date().toLocaleString("id-ID")
+        });
+    },
+
+    async submitCrypto(nominalUSD) {
+        if (nominalUSD < 10) throw new Error("Minimal deposit USDT $10");
         
-    claimReferral: (username) => 
-        callApi("claim_referral", { username }, "GET")
+        const fee = 2;
+        const netUSD = nominalUSD - fee;
+        const nominalIDR = netUSD * API_CONFIG.KURS_USDT;
+        const nominalCryptoText = `${nominalIDR} (${netUSD})`;
+
+        // Integrasi WhatsApp Admin
+        const msg = `Konfirmasi wallet address: Saya ingin deposit USDT\nUsername: ${UserSession.data.username}\nNominal: $${nominalUSD}\nTerima Bersih: $${netUSD}`;
+        window.open(`https://wa.me/${API_CONFIG.ADMIN_WA}?text=${encodeURIComponent(msg)}`, '_blank');
+
+        return await callApi("deposit", {
+            username: UserSession.data.username,
+            nominalCrypto: nominalCryptoText,
+            method: "USDT",
+            tanggal: new Date().toLocaleString("id-ID")
+        });
+    },
+
+    async getHistory(username) {
+        return await callApi("get_deposit_history", { username });
+    }
 };
 
-// ─── FUNGSI UNTUK MASTER PANEL (ADMIN) ──────────────────────
+// ─── 4. REWARD & INBOX ────────────────────────────────────────
 
-const AdminAPI = {
-    getAllUsers: () => 
-        callApi("getAllUsers", {}, "GET"),
+const RewardAPI = {
+    async claimDaily() {
+        return await callApi("claim_daily", { username: UserSession.data.username });
+    },
 
-    getPendingDeposits: () => 
-        callApi("get_pending_deposits", {}, "GET"),
+    async getInbox() {
+        return await callApi("get_inbox", { username: UserSession.data.username });
+    },
 
-    approveDeposit: (row) => 
-        callApi("approve_deposit", { row }, "GET"),
+    async claimInbox(id, amount) {
+        const res = await callApi("claim_inbox", { 
+            id, 
+            username: UserSession.data.username,
+            saldo: amount 
+        });
+        await ProfileAPI.sync();
+        return res;
+    },
 
-    updateWinrate: (targetUser, newRate) => 
-        callApi("updateWinrate", { targetUser, newRate }, "GET"),
+    async getReferralStatus() {
+        return await callApi("get_referrals", { username: UserSession.data.username });
+    },
 
-    adjustSaldo: (targetUser, amount) => 
-        callApi("adminUpdateSaldo", { targetUser, amount }, "GET"),
-
-    setMaxwin: (targetUser, maxwin) => 
-        callApi("setMaxwinLimit", { targetUser, maxwin }, "GET"),
-
-    setGlobalPanic: (minutes) => 
-        callApi("set_global_panic", { minutes }, "GET")
+    async claimReferral() {
+        const res = await callApi("claim_referral", { username: UserSession.data.username });
+        await ProfileAPI.sync();
+        return res;
+    }
 };
 
-/**
- * Helper: Format Rupiah
- */
-function formatIDR(number) {
+// ─── 5. GAME ENGINE (LOCK SERVICE & WINRATE) ──────────────────
+
+const GameEngine = {
+    // Dipanggil setiap kali bola dilepas (drop)
+    async processPlay(betAmount) {
+        if (UserSession.isAutoPlaying && betAmount <= 0) return;
+        
+        const currentSaldo = UserSession.data.saldo;
+
+        try {
+            // Backend menangani Mode Kuras/Normal/Gacor & SessionMinutes
+            const res = await callApi("game_play", {
+                username: UserSession.data.username,
+                bet: betAmount,
+                saldoAwal: currentSaldo
+            });
+
+            // Update saldo di memori lokal agar tidak delay
+            UserSession.data.saldo = res.newSaldo;
+            ProfileAPI.updateUI();
+
+            return {
+                multiplier: res.target_multiplier,
+                winAmount: res.win,
+                newSaldo: res.newSaldo
+            };
+        } catch (e) {
+            alert(e.message);
+            return null;
+        }
+    },
+
+    toggleAuto(status) {
+        UserSession.isAutoPlaying = status;
+        // UI Logic: Disable input bet jika status true
+        document.getElementById("bet-input").disabled = status;
+    }
+};
+
+// ─── UTILS ────────────────────────────────────────────────────
+
+function formatIDR(num) {
     return new Intl.NumberFormat("id-ID", {
         style: "currency",
         currency: "IDR",
-        minimumFractionDigits: 0
-    }).format(number);
+        maximumFractionDigits: 0
+    }).format(num);
+}
+
+// Inisialisasi Session Start saat halaman dimuat
+async function initSession() {
+    if (UserSession.data) {
+        await callApi("set_session_start", { username: UserSession.data.username });
+    }
 }
