@@ -45,7 +45,7 @@ html,body{
 #display-saldo{font-family:'Cinzel Decorative',serif;font-size:15px;font-weight:900;color:#fff;text-shadow:var(--gp);}
 
 /* ── BOARD ── */
-#board-wrapper{flex:0 0 42vh;height:42vh;position:relative;overflow:hidden;background:#02030d;}
+#board-wrapper{flex:0 0 45vh;height:45vh;position:relative;overflow:hidden;background:#02030d;}
 #plinko-canvas{display:block;width:100%;height:100%;touch-action:none;}
 
 /* ── SCORE LIST ── */
@@ -131,11 +131,11 @@ html,body{
 <script src="global.js"></script>
 <script>
 // ── CONFIG ──
-const ROWS = 10;
+const ROWS = 9; // Mengurangi baris agar paku lebih besar dan pas di layar
 const MULTS = [10, 3, 1.5, 0.5, 0.2, 0.2, 0.5, 1.5, 3, 10];
 const BETS = [400, 800, 1000, 2000, 5000, 10000, 20000];
-const BALL_R = 6.5;
-const PEG_R = 4.5;
+const BALL_R = 7;
+const PEG_R = 4;
 
 let canvas, ctx, BW, BH, slotW;
 let pegs = [], balls = [];
@@ -149,26 +149,33 @@ function setupCanvas() {
     canvas = document.getElementById('plinko-canvas');
     ctx = canvas.getContext('2d');
     const wrap = document.getElementById('board-wrapper');
+    
+    // Ukuran Container Real
+    BW = wrap.offsetWidth; 
+    BH = wrap.offsetHeight;
+    
+    // Handle High DPI
     const dpr = window.devicePixelRatio || 1;
-    BW = wrap.clientWidth; 
-    BH = wrap.clientHeight;
     canvas.width = BW * dpr; 
     canvas.height = BH * dpr;
     canvas.style.width = BW + 'px'; 
     canvas.style.height = BH + 'px';
     ctx.scale(dpr, dpr);
 
+    // Re-generate Paku
     pegs = [];
-    const spX = BW / (ROWS + 1.5);
-    const spY = (BH - 60) / ROWS;
+    const spX = BW / (ROWS + 2);
+    const spY = (BH - 40) / ROWS;
+    
     for (let r = 0; r < ROWS; r++) {
-        const count = r + 2;
+        const count = r + 3; // Mulai dari 3 paku di baris atas
         const startX = (BW - (count - 1) * spX) / 2;
         for (let c = 0; c < count; c++) {
-            pegs.push({ x: startX + c * spX, y: 50 + r * spY, glow: 0 });
+            pegs.push({ x: startX + c * spX, y: 30 + r * spY, glow: 0 });
         }
     }
 
+    // Reset Slots UI
     const row = document.getElementById('slot-row');
     row.innerHTML = '';
     slotW = BW / MULTS.length;
@@ -189,7 +196,6 @@ async function spawnBall() {
         return;
     }
 
-    // Call API Server
     try {
         const res = await apiCall({ action: 'game_play', username: getUsername(), bet: bet });
         if (!res || res.result !== 'SUCCESS') {
@@ -201,10 +207,10 @@ async function spawnBall() {
         updateSaldoUI();
 
         const ball = {
-            x: BW / 2 + (Math.random() - 0.5) * 20,
-            y: 5, // Mulai sedikit di bawah atas agar gravitasi langsung bekerja
+            x: BW / 2 + (Math.random() - 0.5) * 10,
+            y: -10,
             vx: (Math.random() - 0.5) * 2,
-            vy: 2, // Berikan kecepatan awal ke bawah
+            vy: 2,
             bet: bet,
             targetMult: res.target_multiplier,
             targetSlotIdx: null,
@@ -219,20 +225,18 @@ async function spawnBall() {
 
         balls.push(ball);
     } catch(e) {
-        console.error(e);
+        console.error("Spawn Error:", e);
     }
 }
 
 function updatePhysics() {
-    const gravity = speedMode === 'turbo' ? 0.35 : 0.22;
-    const bounce = 0.4;
-    const friction = 0.99;
+    const gravity = speedMode === 'turbo' ? 0.38 : 0.25;
+    const bounce = 0.45;
 
     balls.forEach(b => {
         if (b.isDone) return;
 
         b.vy += gravity;
-        b.vx *= friction;
         b.x += b.vx;
         b.y += b.vy;
 
@@ -242,47 +246,46 @@ function updatePhysics() {
             const dy = b.y - p.y;
             const dist = Math.sqrt(dx*dx + dy*dy);
             if (dist < BALL_R + PEG_R) {
-                const nx = dx / dist;
-                const ny = dy / dist;
+                const angle = Math.atan2(dy, dx);
+                const speed = Math.sqrt(b.vx*b.vx + b.vy*b.vy);
                 
-                // Pantulan fisik mendasar
-                const dot = b.vx * nx + b.vy * ny;
-                b.vx = (b.vx - 2 * dot * nx) * bounce + (Math.random() - 0.5);
-                b.vy = (b.vy - 2 * dot * ny) * bounce;
+                b.vx = Math.cos(angle) * speed * bounce + (Math.random()-0.5);
+                b.vy = Math.abs(Math.sin(angle) * speed * bounce);
+                
+                // Dorong keluar agar tidak nyangkut
+                b.x = p.x + Math.cos(angle) * (BALL_R + PEG_R + 1);
+                b.y = p.y + Math.sin(angle) * (BALL_R + PEG_R + 1);
 
-                // Cegah bola menempel di paku
-                b.x = p.x + nx * (BALL_R + PEG_R);
-                b.y = p.y + ny * (BALL_R + PEG_R);
-                
-                p.glow = 1.0;
-                const s = document.getElementById('snd-hit').cloneNode();
-                s.volume = 0.3;
-                s.play();
+                p.glow = 1.5; // Efek kilau
+                try {
+                  const s = document.getElementById('snd-hit').cloneNode();
+                  s.volume = 0.4;
+                  s.play();
+                } catch(e){}
             }
         });
 
-        // Magnetisme Halus (Sesuai Winrate Server)
-        if (b.y > BH * 0.45) {
-            const pullStrength = (b.y / BH) * 0.05;
-            b.vx += (b.targetX - b.x) * pullStrength;
+        // Magnetisme ke target slot
+        if (b.y > BH * 0.4) {
+            const pull = (b.targetX - b.x) * 0.05;
+            b.vx += pull;
         }
 
-        // Dinding Samping
-        if (b.x < BALL_R) { b.x = BALL_R; b.vx *= -0.4; }
-        if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx *= -0.4; }
+        // Batas Dinding
+        if (b.x < BALL_R) { b.x = BALL_R; b.vx *= -0.5; }
+        if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx *= -0.5; }
 
-        // Landing (Masuk ke Slot)
-        if (b.y > BH - 10) {
+        // Landing
+        if (b.y > BH - 5) {
             b.isDone = true;
             onBallLand(b);
         }
     });
+    balls = balls.filter(b => !b.isDone);
 }
 
 function onBallLand(b) {
     const win = Math.floor(b.bet * b.targetMult);
-    // Saldo asli sudah diupdate via API game_play biasanya, 
-    // namun kita update visual di sini
     setSaldo(getSaldo() + win);
     updateSaldoUI();
 
@@ -303,34 +306,40 @@ function onBallLand(b) {
 }
 
 function draw() {
+    if(!ctx) return;
     ctx.clearRect(0, 0, BW, BH);
 
-    // Render Paku
+    // Gambar Paku (Piramida)
     pegs.forEach(p => {
         ctx.beginPath();
         ctx.arc(p.x, p.y, PEG_R, 0, Math.PI*2);
-        ctx.fillStyle = p.glow > 0 ? `rgba(245,230,66,${0.3 + p.glow*0.7})` : '#4a4a4a';
+        const intensity = 0.2 + (p.glow * 0.5);
+        ctx.fillStyle = p.glow > 0 ? `rgba(245, 230, 66, ${intensity})` : '#444';
+        if(p.glow > 0) {
+            ctx.shadowBlur = 10 * p.glow;
+            ctx.shadowColor = 'var(--yellow)';
+        }
         ctx.fill();
-        if(p.glow > 0) p.glow -= 0.05;
+        ctx.shadowBlur = 0;
+        if(p.glow > 0) p.glow -= 0.1;
     });
 
-    // Render Bola
+    // Gambar Bola
     balls.forEach(b => {
-        ctx.save();
         ctx.beginPath();
         ctx.arc(b.x, b.y, BALL_R, 0, Math.PI*2);
-        ctx.fillStyle = '#ff0077';
+        ctx.fillStyle = 'var(--pink)';
         ctx.shadowBlur = 15;
-        ctx.shadowColor = '#ff0077';
+        ctx.shadowColor = 'var(--pink)';
         ctx.fill();
-        ctx.restore();
+        ctx.shadowBlur = 0;
     });
 
     updatePhysics();
     requestAnimationFrame(draw);
 }
 
-// ── UI CONTROLS ──
+// ── UTILS ──
 function changeBet(d) {
     if (isAuto) return;
     betIdx = Math.max(0, Math.min(BETS.length - 1, betIdx + d));
@@ -341,10 +350,6 @@ function setSpeed(m) {
     speedMode = m;
     document.getElementById('m-normal').classList.toggle('active', m === 'normal');
     document.getElementById('m-turbo').classList.toggle('active', m === 'turbo');
-    if(isAuto) {
-        clearInterval(autoTimer);
-        autoTimer = setInterval(spawnBall, speedMode === 'turbo' ? 350 : 900);
-    }
 }
 
 function toggleAuto() {
@@ -357,7 +362,7 @@ function toggleAuto() {
         play.innerText = "STOP AUTO";
         play.classList.add('stop-mode');
         spawnBall();
-        autoTimer = setInterval(spawnBall, speedMode === 'turbo' ? 350 : 900);
+        autoTimer = setInterval(spawnBall, speedMode === 'turbo' ? 380 : 1000);
     } else {
         stopAuto();
     }
@@ -392,15 +397,14 @@ function closeModal() {
     document.getElementById('neon-modal').style.display = 'none';
 }
 
-window.onload = () => {
+// Start Engine
+window.addEventListener('load', () => {
     setupCanvas();
     updateSaldoUI();
-    requestAnimationFrame(draw);
-};
+    draw();
+});
 
-window.onresize = () => {
-    setupCanvas();
-};
+window.addEventListener('resize', setupCanvas);
 </script>
 </body>
 </html>
