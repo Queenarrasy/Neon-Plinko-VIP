@@ -7,157 +7,509 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root { --pink: #ff0077; --blue: #0044ff; --yellow: #f5e642; --dark-blue: #050614; --bg: #02030d; --gp: 0 0 15px rgba(255, 0, 119, 0.7); --gb: 0 0 20px rgba(0, 68, 255, 0.8); --gy: 0 0 15px rgba(245, 230, 66, 0.7); --header-h: 60px; --slot-h: 42px; }
+:root {
+  --pink: #ff0077;
+  --blue: #0044ff;
+  --yellow: #f5e642;
+  --dark-blue: #050614;
+  --bg: #02030d;
+  --gp: 0 0 15px rgba(255, 0, 119, 0.7);
+  --gb: 0 0 20px rgba(0, 68, 255, 0.8);
+  --gy: 0 0 15px rgba(245, 230, 66, 0.7);
+  --header-h: 60px;
+  --slot-h: 42px;
+}
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 body { width: 100vw; height: 100vh; overflow: hidden; background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; display: flex; flex-direction: column; }
 
-/* Header */
-.header { height: var(--header-h); background: rgba(2, 3, 13, 0.95); border-bottom: 2px solid var(--blue); box-shadow: var(--gb); display: flex; align-items: center; padding: 0 15px; justify-content: space-between; z-index: 100; }
+/* ── LOADING OVERLAY ─────────────────────────────────────── */
+#loading {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(2,3,13,0.75);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+  backdrop-filter: blur(4px);
+}
+.spin {
+  width: 48px; height: 48px;
+  border: 4px solid rgba(0,68,255,0.3);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+#loading p { font-size: 13px; color: var(--blue); letter-spacing: 1px; }
+
+/* ── TOAST ───────────────────────────────────────────────── */
+#toast {
+  display: none;
+  position: fixed;
+  bottom: 30px; left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 28px;
+  border-radius: 10px;
+  font-weight: bold;
+  color: #fff;
+  z-index: 9998;
+  font-size: 14px;
+  pointer-events: none;
+  text-align: center;
+  max-width: 90vw;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  transition: opacity 0.4s;
+}
+
+/* ── HEADER ──────────────────────────────────────────────── */
+.header {
+  height: var(--header-h);
+  background: rgba(2, 3, 13, 0.95);
+  border-bottom: 2px solid var(--blue);
+  box-shadow: var(--gb);
+  display: flex; align-items: center;
+  padding: 0 15px;
+  justify-content: space-between;
+  z-index: 100;
+  flex-shrink: 0;
+}
 .profile-btn { color: var(--blue); font-size: 24px; text-shadow: var(--gb); cursor: pointer; }
-.balance-container { background: rgba(0, 0, 0, 0.6); border: 1px solid var(--pink); border-radius: 12px; padding: 5px 20px; text-align: center; box-shadow: inset 0 0 10px rgba(255, 0, 119, 0.3); }
-#display-saldo { font-family: 'Cinzel Decorative', serif; font-size: 18px; color: var(--yellow); text-shadow: var(--gy); font-weight: 900; }
+.balance-container {
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--pink);
+  border-radius: 12px;
+  padding: 5px 20px;
+  text-align: center;
+  box-shadow: inset 0 0 10px rgba(255, 0, 119, 0.3);
+  cursor: pointer;
+  transition: 0.2s;
+}
+.balance-container:active { transform: scale(0.97); }
+#display-saldo {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 18px;
+  color: var(--yellow);
+  text-shadow: var(--gy);
+  font-weight: 900;
+}
 
-/* Game Board */
-#board-wrapper { flex: 1; position: relative; background: radial-gradient(circle at center, #070a24 0%, #02030d 100%); overflow: hidden; display: flex; flex-direction: column; }
+/* ── TIER BADGE ───────────────────────────────────────────── */
+#tier-badge {
+  font-size: 9px;
+  text-align: center;
+  letter-spacing: 1px;
+  margin-top: 2px;
+  font-weight: 700;
+}
+
+/* ── BOARD ───────────────────────────────────────────────── */
+#board-wrapper {
+  flex: 1;
+  position: relative;
+  background: radial-gradient(circle at center, #070a24 0%, #02030d 100%);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
 #plinko-canvas { flex: 1; display: block; width: 100%; }
-#floating-score { position: absolute; top: 10px; right: 10px; background: rgba(0, 0, 0, 0.8); border: 1px solid var(--blue); border-radius: 8px; padding: 5px; width: 95px; box-shadow: var(--gb); z-index: 20; }
-.score-entry { font-size: 10px; border-bottom: 1px solid rgba(0, 68, 255, 0.3); padding: 3px 0; text-align: center; color: var(--pink); animation: slideIn 0.3s ease-out; }
 
-/* Slot Row Fix */
-.multiplier-row { height: var(--slot-h); display: flex; width: 100%; padding: 0 2px; margin-top: -5px; z-index: 10; gap: 2px; }
-.slot { flex: 1; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; transition: all 0.15s ease; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); }
+#floating-score {
+  position: absolute;
+  top: 10px; right: 10px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid var(--blue);
+  border-radius: 8px;
+  padding: 5px;
+  width: 110px;
+  box-shadow: var(--gb);
+  z-index: 20;
+}
+.score-entry {
+  font-size: 10px;
+  border-bottom: 1px solid rgba(0, 68, 255, 0.3);
+  padding: 3px 0;
+  text-align: center;
+  color: var(--pink);
+  animation: slideIn 0.3s ease-out;
+}
+.score-win  { color: var(--yellow) !important; }
+.score-loss { color: rgba(255,255,255,0.4) !important; }
+
+/* ── SLOTS ───────────────────────────────────────────────── */
+.multiplier-row {
+  height: var(--slot-h);
+  display: flex;
+  width: 100%;
+  padding: 0 2px;
+  margin-top: -5px;
+  z-index: 10;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.slot {
+  flex: 1;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 900;
+  transition: all 0.15s ease;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
 .s-high { background: var(--pink); color: #fff; }
-.s-mid { background: var(--yellow); color: #000; }
-.s-low { background: var(--blue); color: #fff; }
-.slot.active { transform: translateY(-8px) scale(1.1); filter: brightness(1.8); box-shadow: 0 0 25px #fff; border: 2px solid #fff; }
+.s-mid  { background: var(--yellow); color: #000; }
+.s-low  { background: var(--blue); color: #fff; }
+.slot.active {
+  transform: translateY(-8px) scale(1.1);
+  filter: brightness(1.8);
+  box-shadow: 0 0 25px #fff;
+  border: 2px solid #fff;
+}
 
-/* Controls */
-.controls { padding: 15px 15px 35px 15px; background: linear-gradient(to top, #02030d 20%, #0a0b1e 100%); border-top: 2px solid var(--blue); display: flex; flex-direction: column; gap: 10px; box-shadow: 0 -10px 20px rgba(0, 68, 255, 0.2); }
+/* ── CONTROLS ────────────────────────────────────────────── */
+.controls {
+  padding: 12px 15px 28px 15px;
+  background: linear-gradient(to top, #02030d 20%, #0a0b1e 100%);
+  border-top: 2px solid var(--blue);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 -10px 20px rgba(0, 68, 255, 0.2);
+  flex-shrink: 0;
+}
 .mode-row { display: flex; gap: 8px; }
-.btn-mode { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--blue); background: rgba(0, 68, 255, 0.1); color: var(--blue); font-size: 10px; font-weight: bold; cursor: pointer; }
+.btn-mode {
+  flex: 1; padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--blue);
+  background: rgba(0, 68, 255, 0.1);
+  color: var(--blue);
+  font-size: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.2s;
+}
 .btn-mode.active { background: var(--blue); color: #fff; box-shadow: var(--gb); }
-.bet-row { display: flex; align-items: center; justify-content: space-between; background: rgba(0, 68, 255, 0.08); border-radius: 12px; padding: 6px 15px; border: 1px solid var(--blue); }
-.bet-btn { background: none; border: none; color: var(--pink); font-size: 26px; cursor: pointer; text-shadow: var(--gp); }
+.btn-mode:active { transform: scale(0.97); }
+
+.bet-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0, 68, 255, 0.08);
+  border-radius: 12px;
+  padding: 6px 15px;
+  border: 1px solid var(--blue);
+}
+.bet-btn { background: none; border: none; color: var(--pink); font-size: 26px; cursor: pointer; text-shadow: var(--gp); transition: 0.15s; }
+.bet-btn:active { transform: scale(0.88); }
 #current-bet { font-family: 'Cinzel Decorative'; font-size: 20px; color: var(--yellow); text-shadow: var(--gy); }
-.btn-play { width: 100%; padding: 16px; border-radius: 12px; border: none; font-family: 'Cinzel Decorative'; font-weight: 900; font-size: 18px; color: #fff; cursor: pointer; background: linear-gradient(90deg, var(--blue), var(--pink)); box-shadow: var(--gb); transition: 0.3s; }
+
+.btn-play {
+  width: 100%; padding: 16px;
+  border-radius: 12px;
+  border: none;
+  font-family: 'Cinzel Decorative';
+  font-weight: 900;
+  font-size: 18px;
+  color: #fff;
+  cursor: pointer;
+  background: linear-gradient(90deg, var(--blue), var(--pink));
+  box-shadow: var(--gb);
+  transition: 0.2s;
+}
+.btn-play:active { transform: scale(0.98); filter: brightness(1.15); }
+.btn-play:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
 .nav-bottom { display: flex; gap: 8px; }
-.nav-btn { flex: 1; padding: 8px; text-align: center; border-radius: 8px; text-decoration: none; font-size: 9px; font-weight: bold; border: 1px solid var(--blue); color: #fff; background: rgba(0, 68, 255, 0.15); display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.nav-btn {
+  flex: 1; padding: 8px;
+  text-align: center;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 9px;
+  font-weight: bold;
+  border: 1px solid var(--blue);
+  color: #fff;
+  background: rgba(0, 68, 255, 0.15);
+  display: flex; flex-direction: column;
+  align-items: center; gap: 4px;
+  transition: 0.2s;
+}
+.nav-btn:active { background: rgba(0,68,255,0.35); }
 .nav-btn i { font-size: 12px; color: var(--blue); }
 
-#modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:1000; backdrop-filter: blur(3px); }
-#neon-modal { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background: #050614; border: 2px solid var(--blue); border-radius: 15px; padding: 25px; text-align: center; z-index:1001; box-shadow: var(--gb); width: 85%; }
+/* ── MODAL ───────────────────────────────────────────────── */
+#modal-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 1000;
+  backdrop-filter: blur(3px);
+}
+#neon-modal {
+  display: none;
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  background: #050614;
+  border: 2px solid var(--blue);
+  border-radius: 15px;
+  padding: 25px;
+  text-align: center;
+  z-index: 1001;
+  box-shadow: var(--gb);
+  width: 85%;
+}
+.modal-btn-row { display: flex; gap: 10px; margin-top: 15px; justify-content: center; }
 
+/* ── WINRATE INDICATOR ───────────────────────────────────── */
+#wr-bar-wrap {
+  position: absolute;
+  top: 10px; left: 10px;
+  background: rgba(0,0,0,0.75);
+  border: 1px solid rgba(0,68,255,0.5);
+  border-radius: 8px;
+  padding: 5px 8px;
+  z-index: 20;
+  font-size: 9px;
+  color: rgba(255,255,255,0.6);
+  min-width: 70px;
+}
+#wr-bar-fill {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--pink), var(--yellow));
+  margin-top: 3px;
+  transition: width 0.5s;
+}
+
+/* ── ANIMATIONS ──────────────────────────────────────────── */
 @keyframes slideIn { from { opacity:0; transform:translateX(10px); } to { opacity:1; transform:translateX(0); } }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+.pulsing { animation: pulse 1s ease-in-out infinite; }
 </style>
 </head>
 <body>
 
-<audio id="snd-hit" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3" preload="auto"></audio>
-<audio id="snd-win" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3" preload="auto"></audio>
+<!-- AUDIO -->
+<audio id="snd-hit"   src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3" preload="auto"></audio>
+<audio id="snd-win"   src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3" preload="auto"></audio>
 <audio id="snd-click" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3" preload="auto"></audio>
 
+<!-- LOADING -->
+<div id="loading"><div class="spin"></div><p>CONNECTING...</p></div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- MODAL -->
 <div id="modal-overlay"></div>
 <div id="neon-modal">
-  <div class="modal-title" style="font-family:'Cinzel Decorative'; color:var(--blue); margin-bottom:15px;"><i class="fa-solid fa-triangle-exclamation"></i> SYSTEM ALERT</div>
-  <p id="modal-msg" style="color:#ddeeff; margin-bottom:20px; font-size:14px;"></p>
-  <button class="btn-mode active" onclick="closeModal()" style="width:120px; margin: 0 auto;">OK</button>
-</div>
-
-<div class="header">
-  <div class="profile-btn" onclick="location.href='profil.html'"><i class="fa-solid fa-user-shield"></i></div>
-  <div class="balance-container">
-    <div style="font-size:8px; color:var(--blue); letter-spacing: 1px;">VAULT BALANCE</div>
-    <div id="display-saldo">IDR 0</div>
+  <div class="modal-title" style="font-family:'Cinzel Decorative';color:var(--blue);margin-bottom:15px;">
+    <i class="fa-solid fa-triangle-exclamation"></i> <span id="modal-title-txt">SYSTEM ALERT</span>
   </div>
-  <div class="profile-btn" style="color:var(--yellow)"><i class="fa-solid fa-gem"></i></div>
+  <p id="modal-msg" style="color:#ddeeff;margin-bottom:10px;font-size:14px;line-height:1.6;"></p>
+  <div class="modal-btn-row">
+    <button class="btn-mode active" onclick="closeModal()" style="width:110px;">OK</button>
+    <button class="btn-mode" id="modal-btn2" onclick="closeModal()" style="width:110px;display:none;">BATAL</button>
+  </div>
 </div>
 
+<!-- HEADER -->
+<div class="header">
+  <div class="profile-btn" onclick="location.href='profil.html'">
+    <i class="fa-solid fa-user-shield"></i>
+  </div>
+  <div class="balance-container" onclick="syncSaldoUI()" title="Tap untuk refresh saldo">
+    <div style="font-size:8px;color:var(--blue);letter-spacing:1px;">VAULT BALANCE</div>
+    <div id="display-saldo">IDR 0</div>
+    <div id="tier-badge" style="color:#aaa;">MEMBER</div>
+  </div>
+  <div class="profile-btn" style="color:var(--yellow);">
+    <i class="fa-solid fa-gem"></i>
+  </div>
+</div>
+
+<!-- BOARD -->
 <div id="board-wrapper">
   <canvas id="plinko-canvas"></canvas>
+
+  <!-- Winrate indicator -->
+  <div id="wr-bar-wrap">
+    <span id="wr-label">WR --</span>
+    <div style="background:rgba(255,255,255,0.1);border-radius:2px;height:4px;margin-top:3px;">
+      <div id="wr-bar-fill" style="width:50%;"></div>
+    </div>
+  </div>
+
+  <!-- Score floating -->
   <div id="floating-score"><div id="score-list"></div></div>
 </div>
 
+<!-- SLOT ROW -->
 <div class="multiplier-row" id="slot-row"></div>
 
+<!-- CONTROLS -->
 <div class="controls">
   <div class="mode-row">
-    <button class="btn-mode active" id="m-normal" onclick="setSpeedMode('normal')"><i class="fa-solid fa-gauge-high"></i> NORMAL</button>
-    <button class="btn-mode" id="m-turbo" onclick="setSpeedMode('turbo')"><i class="fa-solid fa-bolt-lightning"></i> TURBO</button>
-    <button class="btn-mode" id="m-auto" onclick="toggleAuto()"><i class="fa-solid fa-rotate"></i> AUTO</button>
+    <button class="btn-mode active" id="m-normal" onclick="setSpeedMode('normal')">
+      <i class="fa-solid fa-gauge-high"></i> NORMAL
+    </button>
+    <button class="btn-mode" id="m-turbo" onclick="setSpeedMode('turbo')">
+      <i class="fa-solid fa-bolt-lightning"></i> TURBO
+    </button>
+    <button class="btn-mode" id="m-auto" onclick="toggleAuto()">
+      <i class="fa-solid fa-rotate"></i> AUTO
+    </button>
   </div>
   <div class="bet-row">
     <button class="bet-btn" onclick="changeBet(-1)"><i class="fa-solid fa-square-minus"></i></button>
     <div style="text-align:center">
-      <div style="font-size:9px; color:var(--blue); opacity: 0.8;">BET AMOUNT</div>
+      <div style="font-size:9px;color:var(--blue);opacity:0.8;">BET AMOUNT</div>
       <div id="current-bet">400</div>
     </div>
     <button class="bet-btn" onclick="changeBet(1)"><i class="fa-solid fa-square-plus"></i></button>
   </div>
-  <button class="btn-play" id="main-btn" onclick="spawnBall()"><i class="fa-solid fa-meteor"></i> DROP BALL</button>
+  <button class="btn-play" id="main-btn" onclick="spawnBall()">
+    <i class="fa-solid fa-meteor"></i> DROP BALL
+  </button>
   <div class="nav-bottom">
     <a href="withdraw.html" class="nav-btn"><i class="fa-solid fa-money-bill-transfer"></i> WITHDRAW</a>
-    <a href="deposit.html" class="nav-btn"><i class="fa-solid fa-building-columns"></i> DEPOSIT</a>
-    <a href="reward.html" class="nav-btn"><i class="fa-solid fa-trophy"></i> REWARD</a>
+    <a href="deposit.html"  class="nav-btn"><i class="fa-solid fa-building-columns"></i> DEPOSIT</a>
+    <a href="reward.html"   class="nav-btn"><i class="fa-solid fa-trophy"></i> REWARD</a>
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════════
+     GLOBAL.JS — wajib ada sebelum script game
+     ════════════════════════════════════════════════════════ -->
 <script src="global.js"></script>
+
 <script>
 // ═══════════════════════════════════════════════════════════════
-//  NEON PLINKO VIP — game.html v7.0 FINAL
-//  
-//  FIX UTAMA:
-//  [1] spawnBall: simpan serverNewSaldo + serverWin dari respons server
-//  [2] onLand: saldo dari b.serverNewSaldo (100% server, bukan lokal)  
-//  [3] onLand: highlight slot dari b.targetIdx (server), bukan posisi fisik
-//  [4] Magnet: dikurangi drastis, hanya aktif di zona bawah
-//  [5] Landing check: b.y > BH + BALL_R (bukan BH - 2)
-//  [6] Fisika landing zona: vx mati pelan, jatuh natural
+//  NEON PLINKO VIP — game.html v7.1
+//  Fully integrated with global.js (apiGamePlay, apiGetSaldo,
+//  apiSetSessionStart, apiSetStatus, requireLogin, currentUser)
 // ═══════════════════════════════════════════════════════════════
 
+/* ── KONSTANTA GAME ───────────────────────────────────────── */
 const ROWS   = 10;
+// Multiplier sesuai GAS: WIN_MULTS [1.5,3,10] | LOSS_MULTS [0.2,0.5]
 const MULTS  = [10, 3, 1.5, 0.5, 0.2, 0.2, 0.5, 1.5, 3, 10];
 const BETS   = [400, 800, 1000, 1200, 1600, 2000, 4000, 8000, 10000, 20000];
 const BALL_R = 6, PEG_R = 3;
-
-let canvas, ctx, BW, BH, pegs = [], balls = [], slotW, particles = [];
-let speedMode = 'normal', isAuto = false, autoTimer = null, betIdx = 0;
-let _saldo = typeof getStoredSaldo === 'function' ? getStoredSaldo() : 0;
-
-const PH = {
-  normal: { grav: 0.42, fric: 0.99, bounce: 0.55, autoMs: 600 },
-  turbo:  { grav: 0.95, fric: 0.98, bounce: 0.40, autoMs: 150 }
-};
 
 const BALL_WAITING = 'waiting';
 const BALL_READY   = 'ready';
 const BALL_ERROR   = 'error';
 
-// ── INIT ─────────────────────────────────────────────────────
-function init() {
-  if (typeof requireLogin === 'function' && !requireLogin()) return;
+/* ── STATE ────────────────────────────────────────────────── */
+let canvas, ctx, BW, BH;
+let pegs = [], balls = [], slotW, particles = [];
+let speedMode = 'normal', isAuto = false, autoTimer = null, betIdx = 0;
+let _saldo    = 0;   // saldo lokal (inisialisasi dari session/server)
+let _username = '';
+let _winrate  = 50;
+let _syncTimer = null;
+
+/* ── PHYSICS PRESET ───────────────────────────────────────── */
+const PH = {
+  normal: { grav: 0.42, fric: 0.99, bounce: 0.55, autoMs: 700 },
+  turbo:  { grav: 0.95, fric: 0.98, bounce: 0.40, autoMs: 200 }
+};
+
+// ═══════════════════════════════════════════════════════════
+//  INIT — dipanggil setelah DOM ready
+// ═══════════════════════════════════════════════════════════
+async function init() {
+  // 1. Cek login via global.js
+  const user = requireLogin('index.html');
+  if (!user) return;
+
+  _username = user.username || '';
+  _saldo    = parseFloat(user.saldo) || 0;
+
+  // 2. Tampilkan saldo & tier dari session
+  _renderS();
+  _renderTier(user.tier || 'MEMBER');
+
+  // 3. Setup canvas
   canvas = document.getElementById('plinko-canvas');
   ctx    = canvas.getContext('2d');
   resize();
-  _renderS();
+  buildSlots();
+
+  // 4. Catat session start + set ONLINE di server
+  await apiSetSessionStart(_username);
+  await apiSetStatus(_username, 'ONLINE');
+
+  // 5. Sync saldo fresh dari server (non-blocking)
+  syncSaldoUI();
+
+  // 6. Auto-sync saldo setiap 10 detik (saat tidak ada bola aktif)
+  _syncTimer = setInterval(() => {
+    if (balls.length === 0) syncSaldoUI();
+  }, 10000);
+
+  // 7. Start game loop
   loop();
 
-  // Sync saldo fresh dari server saat kembali ke tab
+  // 8. Sync saldo saat tab aktif kembali
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && balls.length === 0) {
-      if (typeof apiCall === 'function') {
-        apiCall({ action: 'get_saldo', username: getUsername() }).then(res => {
-          if (res && res.result === 'SUCCESS') {
-            _saldo = parseFloat(res.saldo) || _saldo;
-            _renderS();
-          }
-        });
-      }
+      syncSaldoUI();
     }
   });
 }
 
-// ── RESIZE & BUILD ───────────────────────────────────────────
+/* ── SYNC SALDO DARI SERVER ──────────────────────────────── */
+async function syncSaldoUI() {
+  if (!_username) return;
+  // apiGetSaldo dari global.js: GET action=get_saldo
+  const res = await apiGetSaldo(_username);
+  if (res && res.result === 'SUCCESS') {
+    _saldo   = parseFloat(res.saldo) || _saldo;
+    _winrate = parseFloat(res.winrate) || _winrate;
+    _renderS();
+    _renderTier(res.tier || 'MEMBER');
+    _renderWR(_winrate);
+  }
+}
+
+/* ── RENDER HELPERS ──────────────────────────────────────── */
+function _renderS() {
+  const el = document.getElementById('display-saldo');
+  if (el) el.textContent = 'IDR ' + Math.floor(_saldo).toLocaleString('id-ID');
+}
+
+function _renderTier(tier) {
+  const map = {
+    MEMBER:   ['#aaa',    '👤'],
+    SILVER:   ['#c0c0c0', '🥈'],
+    GOLD:     ['#ffd700', '🥇'],
+    PLATINUM: ['#e5e4e2', '💎'],
+    DIAMOND:  ['#b9f2ff', '💠'],
+  };
+  const [color, icon] = map[tier] || map.MEMBER;
+  const el = document.getElementById('tier-badge');
+  if (el) { el.textContent = icon + ' ' + tier; el.style.color = color; }
+}
+
+function _renderWR(wr) {
+  const el  = document.getElementById('wr-label');
+  const bar = document.getElementById('wr-bar-fill');
+  if (el)  el.textContent = 'WR ' + Math.round(wr) + '%';
+  if (bar) bar.style.width = Math.min(100, Math.max(0, wr)) + '%';
+}
+
+/* ── RESIZE & BUILD PEGS ─────────────────────────────────── */
 function resize() {
   const wrap = document.getElementById('board-wrapper');
   BW = wrap.offsetWidth;
@@ -170,7 +522,6 @@ function resize() {
   ctx.scale(DPR, DPR);
   slotW = BW / MULTS.length;
   buildPegs();
-  buildSlots();
 }
 
 function buildPegs() {
@@ -192,31 +543,30 @@ function buildSlots() {
   MULTS.forEach((m, i) => {
     const s = document.createElement('div');
     s.className = 'slot ' + (m >= 3 ? 's-high' : m >= 1 ? 's-mid' : 's-low');
-    s.id = 'slot-' + i;
+    s.id        = 'slot-' + i;
     s.innerHTML = m + 'x';
     row.appendChild(s);
   });
 }
 
-// ── PARTICLES ────────────────────────────────────────────────
+/* ── PARTICLES ───────────────────────────────────────────── */
 function createParticles(x, y, color) {
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < 14; i++) {
     particles.push({
       x, y,
-      vx: (Math.random() - 0.5) * 6,
-      vy: (Math.random() - 1)   * 6,
+      vx: (Math.random() - 0.5) * 7,
+      vy: (Math.random() - 1.2) * 7,
       size: Math.random() * 2.5 + 1,
       color, life: 1.0
     });
   }
 }
 
-// ── GAME LOOP ────────────────────────────────────────────────
+/* ── GAME LOOP ───────────────────────────────────────────── */
 function loop() {
   ctx.clearRect(0, 0, BW, BH);
   const ph = PH[speedMode];
 
-  // Batas zona paku terakhir
   const lastPeg    = pegs.length > 0 ? pegs[pegs.length - 1] : { y: BH * 0.85 };
   const LAST_PEG_Y = lastPeg.y + PEG_R + BALL_R + 2;
 
@@ -231,12 +581,14 @@ function loop() {
     ctx.fill();
   });
 
-  // Update & render bola
+  // Proses setiap bola
   for (let i = balls.length - 1; i >= 0; i--) {
     const b = balls[i];
+
+    // Hapus bola error
     if (b.serverStatus === BALL_ERROR) { balls.splice(i, 1); continue; }
 
-    // [WAITING] Rem halus di 80% board bawah — tunggu server jawab
+    // Rem halus saat menunggu server (zona 80% bawah)
     if (b.serverStatus === BALL_WAITING) {
       const brakeY = BH * 0.80;
       if (b.y > brakeY) {
@@ -250,20 +602,19 @@ function loop() {
     if (b.vy > 14) b.vy = 14;
 
     if (b.y < LAST_PEG_Y) {
-      // ═══ ZONA PAKU — fisika murni ═══
+      // ═══ ZONA PAKU ═══
       b.vx *= ph.fric;
 
-      // Anti-stuck: dorong bola jika nyaris berhenti di paku
+      // Anti-stuck
       if (Math.abs(b.vy) < 0.3 && b.y < BH * 0.8) {
         b.vx += (Math.random() - 0.5) * 0.4;
         b.vy += 0.4;
       }
 
-      // [FIX #4] Steer sangat lemah — tidak terlihat di layar
-      // Hanya mulai aktif di 70% bawah board, max force ~0.004
+      // Steer lemah ke target (hanya di zona bawah)
       if (b.serverStatus === BALL_READY && b.targetIdx !== undefined) {
         const tx   = (b.targetIdx * slotW) + (slotW / 2);
-        const prog = Math.max(0, (b.y - BH * 0.4) / (BH * 0.6)); // 0 di 40%, 1 di bawah
+        const prog = Math.max(0, (b.y - BH * 0.4) / (BH * 0.6));
         b.vx += (tx - b.x) * 0.006 * prog * prog;
       }
 
@@ -274,7 +625,7 @@ function loop() {
       if (b.x < BALL_R)         { b.x = BALL_R;      b.vx =  Math.abs(b.vx) * 0.4; }
       else if (b.x > BW-BALL_R) { b.x = BW - BALL_R; b.vx = -Math.abs(b.vx) * 0.4; }
 
-      // Collision paku: push-out + refleksi, 1 paku/frame
+      // Collision paku
       for (let pi = 0; pi < pegs.length; pi++) {
         const p = pegs[pi];
         if (Math.abs(p.y - b.y) > BALL_R + PEG_R + 2) continue;
@@ -299,11 +650,9 @@ function loop() {
       }
 
     } else {
-      // ═══ ZONA LANDING — di bawah paku terakhir ═══
-      // vx mati pelan, bola jatuh lurus natural ke slot
+      // ═══ ZONA LANDING ═══
       b.vx *= 0.78;
 
-      // Steer kecil sebagai penjaga posisi
       if (b.serverStatus === BALL_READY && b.targetIdx !== undefined) {
         const tx = (b.targetIdx * slotW) + (slotW / 2);
         b.vx += (tx - b.x) * 0.012;
@@ -316,7 +665,7 @@ function loop() {
       else if (b.x > BW-BALL_R) { b.x = BW - BALL_R; b.vx = -Math.abs(b.vx) * 0.3; }
     }
 
-    // Render bola — gradient radial
+    // Render bola
     const hx = b.x - b.vx * 1.4;
     const hy = b.y - b.vy * 0.8;
     const gr = ctx.createRadialGradient(hx, hy, 0.5, b.x, b.y, BALL_R);
@@ -328,7 +677,7 @@ function loop() {
     ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2);
     ctx.fill();
 
-    // [FIX #5] Landing check yang benar: b.y > BH + BALL_R
+    // Cek landing
     if (b.y > BH + BALL_R && b.serverStatus === BALL_READY) {
       onLand(b);
       balls.splice(i, 1);
@@ -345,21 +694,32 @@ function loop() {
     ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
   }
   ctx.globalAlpha = 1.0;
+
   requestAnimationFrame(loop);
 }
 
-// ── SPAWN BALL ───────────────────────────────────────────────
-// [FIX #1] Simpan serverNewSaldo + serverWin dari respons server
-function spawnBall() {
-  const bet  = BETS[betIdx];
-  const user = typeof getUsername === 'function' ? getUsername() : null;
-  if (_saldo < bet) { showModal('SALDO TIDAK CUKUP.'); stopAuto(); return; }
+// ═══════════════════════════════════════════════════════════
+//  SPAWN BALL — kirim ke GAS via apiGamePlay (global.js)
+// ═══════════════════════════════════════════════════════════
+async function spawnBall() {
+  const bet = BETS[betIdx];
 
+  // Validasi lokal sebelum kirim ke server
+  if (_saldo < bet) {
+    showModal('SALDO TIDAK CUKUP!<br><small>Silakan deposit terlebih dahulu.</small>');
+    stopAuto();
+    return;
+  }
+
+  // Snapshot saldo SEBELUM bet (untuk dikirim ke server sesuai rumus GAS)
   const saldoAwal = _saldo;
+
+  // Kurangi saldo lokal sementara (agar terasa responsif)
   _saldo -= bet;
   _renderS();
   snd('click');
 
+  // Buat objek bola
   const newBall = {
     x: BW/2 + (Math.random()-0.5)*15,
     y: -10,
@@ -370,69 +730,73 @@ function spawnBall() {
     targetIdx:      undefined,
     serverMult:     0,
     serverWin:      0,
-    serverNewSaldo: undefined   // ← FIX #1: field baru, diisi dari server
+    serverNewSaldo: undefined
   };
   balls.push(newBall);
 
-  if (typeof apiCall === 'function') {
-    apiCall({
-      action:    'game_play',
-      username:  user,
-      bet:       bet,
-      saldoAwal: saldoAwal
-    }).then(res => {
-      if (res && res.result === 'SUCCESS') {
-        const tm       = parseFloat(res.target_multiplier);
-        const win      = parseFloat(res.win);
-        const newSaldo = parseFloat(res.newSaldo);
+  try {
+    // Panggil apiGamePlay dari global.js
+    // Signature: apiGamePlay(username, bet, saldoAwal)
+    // GAS: newSaldo = (saldoAwal - bet) + (bet × multiplier)
+    const res = await apiGamePlay(_username, bet, saldoAwal);
 
-        // Jika server jawab nilai tidak valid → refund, batalkan bola
-        if (isNaN(tm) || isNaN(win) || isNaN(newSaldo)) {
-          newBall.serverStatus = BALL_ERROR;
-          _saldo = saldoAwal; _renderS();
-          return;
-        }
+    if (res && res.result === 'SUCCESS') {
+      const tm       = parseFloat(res.target_multiplier);
+      const win      = parseFloat(res.win);
+      const newSaldo = parseFloat(res.newSaldo);
 
-        // Cari semua slot index yang cocok dengan multiplier
-        const possible = [];
-        MULTS.forEach((m, idx) => { if (Math.abs(m - tm) < 0.01) possible.push(idx); });
-
-        newBall.targetIdx      = possible.length > 0
-          ? possible[Math.floor(Math.random() * possible.length)]
-          : Math.floor(MULTS.length / 2);
-        newBall.serverMult     = tm;
-        newBall.serverWin      = win;
-        newBall.serverNewSaldo = newSaldo;  // ← FIX #1: simpan saldo baru dari server
-        newBall.serverStatus   = BALL_READY;
-
-      } else {
+      // Jika server jawab tidak valid → refund saldo, batalkan bola
+      if (isNaN(tm) || isNaN(win) || isNaN(newSaldo)) {
         newBall.serverStatus = BALL_ERROR;
-        _saldo = saldoAwal; _renderS();
-        if (res && res.message) showModal(res.message);
-        stopAuto();
+        _saldo = saldoAwal;
+        _renderS();
+        return;
       }
-    }).catch(() => {
+
+      // Cari semua slot index yang cocok dengan multiplier
+      const possible = [];
+      MULTS.forEach((m, idx) => { if (Math.abs(m - tm) < 0.01) possible.push(idx); });
+
+      newBall.targetIdx      = possible.length > 0
+        ? possible[Math.floor(Math.random() * possible.length)]
+        : Math.floor(MULTS.length / 2);
+      newBall.serverMult     = tm;
+      newBall.serverWin      = win;
+      newBall.serverNewSaldo = newSaldo; // saldo PASTI dari server
+      newBall.serverStatus   = BALL_READY;
+
+    } else {
+      // Server tolak (saldo kurang, error dsb)
       newBall.serverStatus = BALL_ERROR;
-      _saldo = saldoAwal; _renderS();
+      _saldo = saldoAwal; // refund
+      _renderS();
+      if (res && res.message) showModal(res.message);
       stopAuto();
-    });
+    }
+
+  } catch (err) {
+    // Network error
+    newBall.serverStatus = BALL_ERROR;
+    _saldo = saldoAwal;
+    _renderS();
+    showModal('Koneksi bermasalah. Coba lagi.');
+    stopAuto();
   }
 }
 
-// ── ON LAND ──────────────────────────────────────────────────
-// [FIX #2] Saldo MUTLAK dari server — bukan perhitungan lokal
-// [FIX #3] Highlight slot dari targetIdx server — bukan posisi fisik
+// ═══════════════════════════════════════════════════════════
+//  ON LAND — saldo 100% dari server, slot dari targetIdx
+// ═══════════════════════════════════════════════════════════
 function onLand(b) {
   if (b.serverStatus !== BALL_READY) return;
 
-  // [FIX #2] Update saldo dari server (bukan _saldo += winAmount lokal)
+  // Update saldo MUTLAK dari server
   if (b.serverNewSaldo !== undefined && !isNaN(b.serverNewSaldo)) {
     _saldo = b.serverNewSaldo;
   }
   _renderS();
 
-  // [FIX #3] Slot yang berkedip = targetIdx dari server
-  // Bukan realIdx dari posisi fisik b.x — itu yang bikin kotak salah
+  // Highlight slot dari targetIdx server (bukan posisi fisik)
   const idx = (b.targetIdx !== undefined)
     ? Math.max(0, Math.min(MULTS.length - 1, b.targetIdx))
     : Math.max(0, Math.min(MULTS.length - 1, Math.floor(b.x / slotW)));
@@ -440,13 +804,15 @@ function onLand(b) {
   const slotEl = document.getElementById('slot-' + idx);
   if (slotEl) {
     slotEl.classList.add('active');
-    setTimeout(() => slotEl.classList.remove('active'), 400);
+    setTimeout(() => slotEl.classList.remove('active'), 450);
   }
 
   const mult = b.serverMult || 0;
   const win  = b.serverWin  || 0;
+  const isWin = mult >= 1;
 
-  if (mult >= 1) {
+  // Efek suara & partikel
+  if (isWin) {
     snd('win');
     createParticles(
       (idx * slotW) + slotW / 2,
@@ -455,69 +821,97 @@ function onLand(b) {
     );
   }
 
+  // Update score board
   const list = document.getElementById('score-list');
   const div  = document.createElement('div');
-  div.className = 'score-entry';
-  div.innerHTML = '<b>' + mult + 'x</b> | +' + Math.floor(win).toLocaleString('id-ID');
+  div.className = 'score-entry ' + (isWin ? 'score-win' : 'score-loss');
+  div.innerHTML = '<b>' + mult + 'x</b> | ' + (isWin ? '+' : '') + Math.floor(win).toLocaleString('id-ID');
   list.prepend(div);
-  if (list.children.length > 5) list.lastChild.remove();
+  while (list.children.length > 6) list.lastChild.remove();
 }
 
-// ── RENDER SALDO ─────────────────────────────────────────────
-function _renderS() {
-  const el = document.getElementById('display-saldo');
-  if (el) el.textContent = 'IDR ' + Math.floor(_saldo).toLocaleString('id-ID');
-  if (typeof storeLocalSaldo === 'function') storeLocalSaldo(_saldo);
-}
-
-// ── CONTROLS ─────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+//  CONTROLS
+// ═══════════════════════════════════════════════════════════
 function setSpeedMode(m) {
   speedMode = m; snd('click');
   document.getElementById('m-normal').classList.toggle('active', m === 'normal');
   document.getElementById('m-turbo').classList.toggle('active', m === 'turbo');
+  if (isAuto) {
+    clearInterval(autoTimer);
+    autoTimer = setInterval(spawnBall, PH[speedMode].autoMs);
+  }
 }
+
 function toggleAuto() {
   isAuto = !isAuto;
   document.getElementById('m-auto').classList.toggle('active', isAuto);
-  if (isAuto) { spawnBall(); autoTimer = setInterval(spawnBall, PH[speedMode].autoMs); }
-  else clearInterval(autoTimer);
+  if (isAuto) {
+    spawnBall();
+    autoTimer = setInterval(spawnBall, PH[speedMode].autoMs);
+  } else {
+    clearInterval(autoTimer);
+  }
 }
+
 function stopAuto() {
-  isAuto = false; clearInterval(autoTimer);
+  isAuto = false;
+  clearInterval(autoTimer);
   const btn = document.getElementById('m-auto');
   if (btn) btn.classList.remove('active');
 }
+
 function changeBet(d) {
-  if (isAuto) return;
+  if (isAuto) return; // jangan ubah bet saat auto
   betIdx = Math.max(0, Math.min(BETS.length - 1, betIdx + d));
   document.getElementById('current-bet').textContent = BETS[betIdx].toLocaleString('id-ID');
   snd('click');
 }
-function showModal(m) {
-  document.getElementById('modal-msg').textContent = m;
+
+// ═══════════════════════════════════════════════════════════
+//  MODAL
+// ═══════════════════════════════════════════════════════════
+function showModal(msg, title) {
+  document.getElementById('modal-title-txt').textContent = title || 'SYSTEM ALERT';
+  document.getElementById('modal-msg').innerHTML = msg;
   document.getElementById('modal-overlay').style.display = 'block';
-  document.getElementById('neon-modal').style.display = 'block';
+  document.getElementById('neon-modal').style.display    = 'block';
 }
 function closeModal() {
   document.getElementById('modal-overlay').style.display = 'none';
-  document.getElementById('neon-modal').style.display = 'none';
+  document.getElementById('neon-modal').style.display    = 'none';
 }
+
+// ═══════════════════════════════════════════════════════════
+//  SOUND
+// ═══════════════════════════════════════════════════════════
 function snd(t) {
-  try { const a = document.getElementById('snd-' + t); if (a) { a.currentTime = 0; a.play(); } } catch(e) {}
+  try {
+    const a = document.getElementById('snd-' + t);
+    if (a) { a.currentTime = 0; a.play().catch(()=>{}); }
+  } catch(e) {}
 }
 
-window.addEventListener('resize', resize);
-document.addEventListener('DOMContentLoaded', init);
-
-// Set OFFLINE saat tutup/refresh tab
+// ═══════════════════════════════════════════════════════════
+//  CLEANUP SAAT TUTUP TAB
+// ═══════════════════════════════════════════════════════════
 window.addEventListener('beforeunload', () => {
-  const u = typeof getUsername === 'function' ? getUsername() : null;
-  if (u) navigator.sendBeacon(
-    SCRIPT_URL + '?data=' + encodeURIComponent(
-      JSON.stringify({ action: 'set_status', username: u, status: 'OFFLINE' })
-    )
-  );
+  clearInterval(_syncTimer);
+  clearInterval(autoTimer);
+  if (_username) {
+    // Pakai sendBeacon agar request tetap dikirim meski tab ditutup
+    // GAS_URL dari global.js
+    const payload = JSON.stringify({ action: 'set_status', username: _username, status: 'OFFLINE' });
+    navigator.sendBeacon(GAS_URL, payload);
+  }
 });
+
+window.addEventListener('resize', () => { resize(); buildSlots(); });
+
+// ═══════════════════════════════════════════════════════════
+//  ENTRY POINT
+// ═══════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
