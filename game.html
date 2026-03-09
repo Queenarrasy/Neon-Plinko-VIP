@@ -104,8 +104,8 @@ let speedMode = 'normal', isAuto = false, autoTimer = null, betIdx = 0;
 let _saldo = getStoredSaldo();
 
 const PH = {
-  normal: { grav: 0.28, fric: 0.992, bounce: 0.52, autoMs: 1200 },
-  turbo:  { grav: 0.85, fric: 0.985, bounce: 0.45, autoMs: 300  }
+  normal: { grav: 0.35, fric: 0.99, bounce: 0.5, autoMs: 1000 },
+  turbo:  { grav: 0.9, fric: 0.98, bounce: 0.4, autoMs: 250 }
 };
 
 const BALL_WAITING = 'waiting';
@@ -133,13 +133,13 @@ function resize() {
 
 function buildPegs() {
   pegs = [];
-  const spacingX = (BW * 0.88) / ROWS;
-  const spacingY = (BH * 0.68) / ROWS; // Dipersempit agar area bawah lebih padat
+  const spacingX = (BW * 0.9) / (ROWS + 1);
+  const spacingY = (BH * 0.7) / ROWS;
   for (let r = 0; r < ROWS; r++) {
     const count  = r + 2;
     const startX = (BW - (count - 1) * spacingX) / 2;
     for (let c = 0; c < count; c++) {
-      pegs.push({ x: startX + c * spacingX, y: 50 + r * spacingY, glow: 0 });
+      pegs.push({ x: startX + c * spacingX, y: 80 + r * spacingY, glow: 0 });
     }
   }
 }
@@ -161,10 +161,10 @@ function loop() {
   ctx.fillRect(0, 0, BW, BH);
 
   const ph = PH[speedMode];
-  const lastPegY = pegs[pegs.length - 1].y;
-
+  
+  // Render Paku
   pegs.forEach(p => {
-    p.glow *= 0.85;
+    p.glow *= 0.9;
     ctx.fillStyle = p.glow > 0.1 ? '#ffffff' : 'rgba(0, 68, 255, 0.3)';
     ctx.beginPath();
     ctx.arc(p.x, p.y, PEG_R + (p.glow * 2), 0, Math.PI * 2);
@@ -175,30 +175,21 @@ function loop() {
     const b = balls[i];
     if (b.serverStatus === BALL_ERROR) { balls.splice(i, 1); continue; }
 
-    // FISIKA KHUSUS ZONA BAWAH (Mencegah Melayang)
-    let currentGrav = ph.grav;
-    let currentFric = ph.fric;
+    // Gravitas dan Gesekan Dasar
+    b.vy += ph.grav;
+    b.vx *= ph.fric;
+    
+    // Mencegah macet secara horizontal
+    if (Math.abs(b.vx) < 0.1) b.vx += (Math.random() - 0.5) * 0.5;
 
-    if (b.y > lastPegY + 10) {
-        // Bola sudah melewati paku terakhir: tarik ke bawah lebih kuat
-        currentGrav = ph.grav * 1.8; 
-        currentFric = 0.94; // Gesekan lebih tinggi agar tidak meluncur liar
-    }
-
-    if (b.serverStatus === BALL_WAITING && b.y > BH * 0.75) {
-        b.vy *= 0.85;
-    } else {
-        b.vy += currentGrav;
-    }
-
-    b.vx *= currentFric;
     b.x += b.vx;
     b.y += b.vy;
 
+    // Batasan Dinding
     if (b.x < BALL_R) { b.x = BALL_R; b.vx *= -0.5; }
     if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx *= -0.5; }
 
-    // Collision paku
+    // Deteksi Tabrakan Paku
     for (let p of pegs) {
       const dx = b.x - p.x;
       const dy = b.y - p.y;
@@ -206,29 +197,32 @@ function loop() {
       const minDist = BALL_R + PEG_R;
 
       if (dist < minDist) {
+        p.glow = 1.0;
+        snd('hit');
+
         const angle = Math.atan2(dy, dx);
+        // Dorong bola keluar dari paku agar tidak tersangkut
         b.x = p.x + Math.cos(angle) * minDist;
         b.y = p.y + Math.sin(angle) * minDist;
 
-        const speed = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
-        const bounceAngle = angle + (Math.random() - 0.5) * 0.2;
+        const speed = Math.sqrt(b.vx * b.vx + b.vy * b.vy) * ph.bounce;
         
-        let bias = 0;
+        // Logika Penggiringan ke Target (Bias)
+        let forceX = Math.cos(angle) * speed;
+        let forceY = Math.abs(Math.sin(angle) * speed);
+
         if (b.serverStatus === BALL_READY) {
-            const targetX = (b.targetIdx * slotW) + (slotW / 2);
-            bias = (targetX - b.x) * 0.08; 
+          const targetX = (b.targetIdx * slotW) + (slotW / 2);
+          const diffX = targetX - b.x;
+          forceX += diffX * 0.05; // Tarikan lembut ke arah slot target
         }
 
-        b.vx = Math.cos(bounceAngle) * speed * ph.bounce + bias;
-        b.vy = Math.abs(Math.sin(bounceAngle) * speed * ph.bounce);
-        if (b.vy < 2) b.vy = 2;
-
-        p.glow = 1.0;
-        snd('hit');
+        b.vx = forceX + (Math.random() - 0.5) * 0.5;
+        b.vy = forceY + 1.5; // Pastikan selalu punya kecepatan jatuh
       }
     }
 
-    // Render Bola
+    // Gambar Bola
     ctx.beginPath();
     const grad = ctx.createRadialGradient(b.x-2, b.y-2, 1, b.x, b.y, BALL_R);
     grad.addColorStop(0, '#ffffff');
@@ -238,20 +232,26 @@ function loop() {
     ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2);
     ctx.fill();
 
-    // Landing: Check lebih dalam ke dalam slot
-    if (b.y > BH - 5) {
+    // Cek Pendaratan
+    if (b.y > BH - 10) {
+      const currentIdx = Math.floor(b.x / slotW);
       if (b.serverStatus === BALL_READY) {
-        onLand(b);
-        balls.splice(i, 1);
-      } else if (b.y > BH + 50) {
-        balls.splice(i, 1);
+          // Jika sudah sangat dekat bawah, paksa posisi X ke tengah slot target
+          const targetX = (b.targetIdx * slotW) + (slotW / 2);
+          if (Math.abs(b.x - targetX) < 15 || b.y > BH) {
+             onLand(b);
+             balls.splice(i, 1);
+          }
+      } else if (b.y > BH + 20) {
+          balls.splice(i, 1);
       }
     }
   }
 
+  // Efek Partikel
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
-    p.x += p.vx; p.y += p.vy; p.vy += 0.15; p.life -= 0.02;
+    p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.life -= 0.02;
     if (p.life <= 0) { particles.splice(i, 1); continue; }
     ctx.globalAlpha = p.life;
     ctx.fillStyle = p.color;
@@ -273,8 +273,8 @@ function spawnBall() {
   snd('click');
 
   const newBall = {
-    x: BW/2 + (Math.random()-0.5)*20,
-    y: -20,
+    x: BW/2 + (Math.random()-0.5)*10,
+    y: 0,
     vx: (Math.random()-0.5)*2,
     vy: 2,
     bet: bet,
@@ -331,6 +331,19 @@ function onLand(b) {
   if (list.children.length > 5) list.lastChild.remove();
 }
 
+function createParticles(x, y, color) {
+  for (let i = 0; i < 15; i++) {
+    particles.push({
+      x: x, y: y,
+      vx: (Math.random() - 0.5) * 6,
+      vy: (Math.random() - 1) * 6,
+      size: Math.random() * 3 + 1,
+      color: color,
+      life: 1.0
+    });
+  }
+}
+
 function _renderS() {
   document.getElementById('display-saldo').textContent = 'IDR ' + Math.floor(_saldo).toLocaleString('id-ID');
   storeLocalSaldo(_saldo);
@@ -341,30 +354,47 @@ function setSpeedMode(m) {
   document.getElementById('m-normal').classList.toggle('active', m === 'normal');
   document.getElementById('m-turbo').classList.toggle('active', m === 'turbo');
 }
+
 function toggleAuto() {
   isAuto = !isAuto;
   document.getElementById('m-auto').classList.toggle('active', isAuto);
-  if (isAuto) { spawnBall(); autoTimer = setInterval(spawnBall, PH[speedMode].autoMs); }
-  else clearInterval(autoTimer);
+  if (isAuto) { 
+    spawnBall(); 
+    autoTimer = setInterval(spawnBall, PH[speedMode].autoMs); 
+  } else {
+    clearInterval(autoTimer);
+  }
 }
-function stopAuto() { isAuto = false; clearInterval(autoTimer); document.getElementById('m-auto').classList.remove('active'); }
+
+function stopAuto() { 
+  isAuto = false; 
+  clearInterval(autoTimer); 
+  document.getElementById('m-auto').classList.remove('active'); 
+}
+
 function changeBet(d) {
   if (isAuto) return;
   betIdx = Math.max(0, Math.min(BETS.length - 1, betIdx + d));
   document.getElementById('current-bet').textContent = BETS[betIdx].toLocaleString('id-ID');
   snd('click');
 }
+
 function showModal(m) {
   document.getElementById('modal-msg').textContent = m;
   document.getElementById('modal-overlay').style.display = 'block';
   document.getElementById('neon-modal').style.display = 'block';
 }
+
 function closeModal() {
   document.getElementById('modal-overlay').style.display = 'none';
   document.getElementById('neon-modal').style.display = 'none';
 }
+
 function snd(t) {
-  try { const a = document.getElementById('snd-' + t); a.currentTime = 0; a.play(); } catch(e) {}
+  try { 
+    const a = document.getElementById('snd-' + t); 
+    if(a) { a.currentTime = 0; a.play(); }
+  } catch(e) {}
 }
 
 window.addEventListener('resize', resize);
