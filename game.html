@@ -139,7 +139,7 @@ function buildPegs() {
     const count  = r + 2;
     const startX = (BW - (count - 1) * spacingX) / 2;
     for (let c = 0; c < count; c++) {
-      pegs.push({ x: startX + c * spacingX, y: 80 + r * spacingY, glow: 0 });
+      pegs.push({ x: startX + c * spacingX, y: 80 + r * spacingY, row: r, glow: 0 });
     }
   }
 }
@@ -162,7 +162,6 @@ function loop() {
 
   const ph = PH[speedMode];
   
-  // Render Paku
   pegs.forEach(p => {
     p.glow *= 0.9;
     ctx.fillStyle = p.glow > 0.1 ? '#ffffff' : 'rgba(0, 68, 255, 0.3)';
@@ -175,25 +174,33 @@ function loop() {
     const b = balls[i];
     if (b.serverStatus === BALL_ERROR) { balls.splice(i, 1); continue; }
 
-    // Gravitas dan Gesekan
     b.vy += ph.grav;
     b.vx *= ph.fric;
     
-    // Terminal Velocity (Mencegah bola jatuh terlalu cepat atau menembus batas)
     if (b.vy > 15) b.vy = 15;
-
-    // Mencegah bola macet / melayang secara horizontal
-    if (Math.abs(b.vy) < 0.3) b.vy += 0.5; // Tarik ke bawah jika kecepatan vertikal habis
+    if (Math.abs(b.vy) < 0.3) b.vy += 0.5;
     if (Math.abs(b.vx) < 0.1 && b.y < BH - 50) b.vx += (Math.random() - 0.5) * 1.0;
+
+    // --- LOGIKA WINRATE ADMIN (STEERING) ---
+    // Jika bola sudah melewati paku terakhir, paksa ke target index
+    if (b.serverStatus === BALL_READY && b.targetIdx !== undefined) {
+      const lastPegY = 80 + (ROWS-1) * ((BH * 0.7) / ROWS);
+      if (b.y > lastPegY) {
+         const targetX = (b.targetIdx * slotW) + (slotW / 2);
+         const distToTarget = targetX - b.x;
+         // Tarikan magnet halus tapi pasti
+         b.vx += distToTarget * 0.15; 
+         // Sedikit perlambatan horizontal agar tidak over-shoot
+         b.vx *= 0.85; 
+      }
+    }
 
     b.x += b.vx;
     b.y += b.vy;
 
-    // Batasan Dinding
     if (b.x < BALL_R) { b.x = BALL_R; b.vx *= -0.8; }
     if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx *= -0.8; }
 
-    // Deteksi Tabrakan Paku
     for (let p of pegs) {
       const dx = b.x - p.x;
       const dy = b.y - p.y;
@@ -203,10 +210,7 @@ function loop() {
       if (dist < minDist) {
         p.glow = 1.0;
         snd('hit');
-
         const angle = Math.atan2(dy, dx);
-        
-        // Anti-Sangkut: Dorong bola keluar sepenuhnya dari radius paku
         b.x = p.x + Math.cos(angle) * minDist;
         b.y = p.y + Math.sin(angle) * minDist;
 
@@ -216,14 +220,13 @@ function loop() {
         let forceX = Math.cos(angle) * bounceSpeed;
         let forceY = Math.sin(angle) * bounceSpeed;
 
-        // Batasi pantulan ke atas agar bola tidak melayang selamanya
         if (forceY < -3) forceY = -3;
 
-        // Logika Penggiringan ke Target (Opsional/Lembut)
+        // Giring bola secara halus di setiap paku berdasarkan target server
         if (b.serverStatus === BALL_READY && b.targetIdx !== undefined) {
           const targetX = (b.targetIdx * slotW) + (slotW / 2);
-          const diffX = targetX - b.x;
-          forceX += diffX * 0.04;
+          const pull = (targetX - b.x) * 0.06; // Tarikan per pantulan
+          forceX += pull;
         }
 
         b.vx = forceX + (Math.random() - 0.5);
@@ -231,7 +234,6 @@ function loop() {
       }
     }
 
-    // Gambar Bola
     ctx.beginPath();
     const grad = ctx.createRadialGradient(b.x-2, b.y-2, 1, b.x, b.y, BALL_R);
     grad.addColorStop(0, '#ffffff');
@@ -241,14 +243,12 @@ function loop() {
     ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2);
     ctx.fill();
 
-    // Cek Pendaratan - Pasti mengeksekusi onLand tanpa syarat aneh
     if (b.y > BH - 5) {
       onLand(b);
       balls.splice(i, 1);
     }
   }
 
-  // Efek Partikel
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
     p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.life -= 0.02;
@@ -258,7 +258,6 @@ function loop() {
     ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
   }
   ctx.globalAlpha = 1.0;
-
   requestAnimationFrame(loop);
 }
 
@@ -273,23 +272,25 @@ function spawnBall() {
   snd('click');
 
   const newBall = {
-    x: BW/2 + (Math.random()-0.5)*15,
+    x: BW/2 + (Math.random()-0.5)*20,
     y: 0,
     vx: (Math.random()-0.5)*2,
     vy: 2,
     bet: bet,
     serverStatus: BALL_WAITING,
-    targetIdx: undefined
+    targetIdx: undefined,
+    serverMult: 0 // Simpan multiplier asli dari admin
   };
   balls.push(newBall);
 
   apiCall({ action: 'game_play', username: user, bet: bet, saldoAwal: saldoAwal }).then(res => {
     if (res && res.result === 'SUCCESS') {
       const tm = parseFloat(res.target_multiplier);
+      newBall.serverMult = tm;
+      
       let possible = [];
       MULTS.forEach((m, idx) => { if (Math.abs(m - tm) < 0.01) possible.push(idx); });
       
-      // Fallback jika multiplier server tidak terdaftar dengan pas
       if (possible.length === 0) {
           let closest = Infinity;
           MULTS.forEach((m, idx) => {
@@ -314,36 +315,35 @@ function spawnBall() {
 }
 
 function onLand(b) {
-  // Kalkulasi fisik slot (kotak mana) secara langsung dari layar
+  // 1. Tentukan kotak visual mana yang dimasuki bola secara fisik
   let physicalIdx = Math.floor(b.x / slotW);
   if (physicalIdx < 0) physicalIdx = 0;
   if (physicalIdx >= MULTS.length) physicalIdx = MULTS.length - 1;
 
-  const actualMult = MULTS[physicalIdx];
-  const winAmount = b.bet * actualMult;
+  // 2. LOGIKA KRUSIAL: Jika server sudah memberi hasil, gunakan HASIL SERVER
+  // Ini menjamin saldo tetap sinkron dengan admin meskipun visual meleset 1 kotak
+  const finalMult = (b.serverStatus === BALL_READY) ? b.serverMult : MULTS[physicalIdx];
+  const winAmount = b.bet * finalMult;
 
-  // Update Balance berdasar hasil fisik jatuhnya bola (Akurat 100%)
   _saldo += winAmount;
   _renderS();
 
-  // Highlight Box Multiplier
+  // Highlight Box (Gunakan index fisik agar pendaratan terlihat nyata)
   const slotEl = document.getElementById('slot-' + physicalIdx);
   if (slotEl) {
     slotEl.classList.add('active');
     setTimeout(() => slotEl.classList.remove('active'), 400);
   }
 
-  // Effect and Sound
-  if (actualMult > 0) {
-    if (actualMult >= 1) snd('win');
-    createParticles((physicalIdx * slotW) + slotW/2, BH - 10, actualMult >= 3 ? '#f5e642' : (actualMult >= 1 ? '#ff0077' : '#0044ff'));
+  if (finalMult > 0) {
+    if (finalMult >= 1) snd('win');
+    createParticles((physicalIdx * slotW) + slotW/2, BH - 10, finalMult >= 3 ? '#f5e642' : (finalMult >= 1 ? '#ff0077' : '#0044ff'));
   }
 
-  // Floating Score Notification
   const list = document.getElementById('score-list');
   const div  = document.createElement('div');
   div.className = 'score-entry';
-  div.innerHTML = `<b>${actualMult}x</b> | +${Math.floor(winAmount).toLocaleString('id-ID')}`;
+  div.innerHTML = `<b>${finalMult}x</b> | +${Math.floor(winAmount).toLocaleString('id-ID')}`;
   list.prepend(div);
   if (list.children.length > 5) list.lastChild.remove();
 }
