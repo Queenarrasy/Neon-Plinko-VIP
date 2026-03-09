@@ -193,6 +193,11 @@ var isAuto    = false;
 var autoTimer = null;
 var betIdx    = 0;
 
+// _displaySaldo: saldo yang ditampilkan ke user.
+// Hanya turun saat spawn (dikurangi bet), naik saat ball land (ditambah winAmount).
+// Tidak pernah set langsung dari server di tengah permainan agar tidak loncat naik.
+var _displaySaldo = 0;
+
 // ── CANVAS SETUP ─────────────────────────────────────────────
 function setupCanvas() {
     canvas = document.getElementById('plinko-canvas');
@@ -236,9 +241,9 @@ function setupCanvas() {
 // ── SPAWN BALL — TIDAK BLOCKING ──────────────────────────────
 function spawnBall() {
     var bet      = BETS[betIdx];
-    var saldoNow = getSaldo();
 
-    if (saldoNow < bet) {
+    // Saldo tersedia = saldo session - semua bet yang masih pending
+    if (_displaySaldo < bet) {
         showModal('Saldo tidak cukup!\nDeposit dulu untuk terus bermain.', 'SALDO HABIS');
         stopAuto();
         return;
@@ -247,11 +252,12 @@ function spawnBall() {
     // Auto mode: jaga jarak — skip kalau bola terlalu banyak
     if (isAuto && balls.length >= MAX_AUTO_BALLS) return;
 
-    var ph        = PHYSICS[speedMode];
-    var saldoAwal = saldoNow;
+    var ph = PHYSICS[speedMode];
 
-    // Kurangi saldo lokal SEGERA (UI responsif, tidak menunggu server)
-    syncSaldoUI(saldoNow - bet);
+    // Tambah ke pending — UI akan tampilkan saldo dikurangi ini
+    // Kurangi display saldo LANGSUNG saat spawn (responsif)
+    _displaySaldo = Math.max(0, _displaySaldo - bet);
+    updateSaldoDisplay();
 
     // Buat bola langsung — status WAIT
     var ball = {
@@ -260,32 +266,36 @@ function spawnBall() {
         vx:              (Math.random() - 0.5) * 2.0,
         vy:              ph.initVy,
         bet:             bet,
-        saldoAwal:       saldoAwal,
         status:          ST_WAIT,
         targetMult:      null,
         targetSlotIdx:   null,
-        targetX:         BW / 2,  // default tengah, diupdate saat server reply
+        targetX:         BW / 2,
         serverNewSaldo:  null,
         serverWinAmount: null,
-        waitAtBottom:    false,   // flag: apakah bola sedang diam menunggu di bawah
+        waitAtBottom:    false,
         isDone:          false
     };
 
     balls.push(ball);
 
-    // Kirim ke server PARALEL — tidak menunggu, tidak memblokir spawn berikutnya
+    // Kirim ke server PARALEL — tidak memblokir spawn berikutnya
     GameEngine.processPlay(bet)
         .then(function(res) {
-            if (ball.isDone) return; // Bola sudah selesai (sangat jarang)
+            if (ball.isDone) {
+                // Bola sudah buang sebelum server reply — tidak perlu update display
+                return;
+            }
 
             if (!res || res.result !== 'SUCCESS') {
-                // Gagal — refund saldo lokal
-                syncSaldoUI(saldoAwal);
+                // Gagal — kembalikan pending, saldo tidak berubah
+                // Error/gagal — kembalikan display saldo
+                _displaySaldo += bet;
+                updateSaldoDisplay();
                 ball.isDone = true;
                 return;
             }
 
-            // Tentukan slot target dari multiplier yang dikirim server
+            // Tentukan slot target dari multiplier server
             var slots = [];
             MULTS.forEach(function(m, i) {
                 if (m === res.multiplier) slots.push(i);
@@ -300,11 +310,13 @@ function spawnBall() {
             ball.targetX         = (tIdx + 0.5) * slotW;
             ball.serverNewSaldo  = res.newSaldo;
             ball.serverWinAmount = res.winAmount;
-            ball.status          = ST_READY;  // Bola sekarang tahu ke mana harus pergi
+            ball.status          = ST_READY;
         })
         .catch(function() {
             if (!ball.isDone) {
-                syncSaldoUI(saldoAwal);
+                // Network error — kembalikan display saldo
+                _displaySaldo += bet;
+                updateSaldoDisplay();
                 ball.isDone = true;
             }
         });
@@ -398,10 +410,22 @@ function updatePhysics() {
 
 // ── LANDING ──────────────────────────────────────────────────
 function onBallLand(b) {
-    // Saldo FINAL dari server — 100% authoritative
+    // Kurangi pendingBets — bet ini sudah selesai
+    // Tambah winAmount ke display saldo (tidak pernah loncat dari server value)
+    var winAmt2 = (b.serverWinAmount !== null && b.serverWinAmount !== undefined)
+        ? b.serverWinAmount
+        : Math.floor(b.bet * (b.targetMult || 0));
+    _displaySaldo += winAmt2;
+
+    // Simpan saldo server ke session (dipakai untuk re-sync saat tidak ada bola aktif)
     if (b.serverNewSaldo !== null && b.serverNewSaldo !== undefined) {
-        syncSaldoUI(b.serverNewSaldo);
+        if (typeof _session !== 'undefined' && _session) {
+            _session.saldo = b.serverNewSaldo;
+            try { localStorage.setItem('plinko_session', JSON.stringify(_session)); } catch(e) {}
+        }
     }
+
+    updateSaldoDisplay();
 
     // Highlight slot target
     var el = document.getElementById('slot-' + b.targetSlotIdx);
@@ -555,21 +579,41 @@ function closeModal() {
     document.getElementById('neon-modal').style.display    = 'none';
 }
 
+// ── SALDO DISPLAY ─────────────────────────────────────────────
+// Tampilkan saldo = saldo session (dari server) - pending bets
+// Tidak pernah "naik" di tengah permainan, selalu konsisten
+function updateSaldoDisplay() {
+    var el = document.getElementById('display-saldo');
+    if (el) el.textContent = 'IDR ' + Math.floor(Math.max(0, _displaySaldo)).toLocaleString('id-ID');
+}
+
 // ── INIT ─────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', function() {
     var sess = requireLogin('index.html');
     if (!sess) return;
 
     setupCanvas();
-    syncSaldoUI(sess.saldo || 0);
+
+    // Inisialisasi _displaySaldo dari session cache
+    _displaySaldo = sess.saldo || 0;
+    if (typeof _session !== 'undefined' && _session) {
+        _session.saldo = _displaySaldo;
+    }
+    updateSaldoDisplay();
+
     document.getElementById('current-bet').textContent = BETS[betIdx].toLocaleString('id-ID');
 
     var u = getUsername();
     callApiSilent('set_session_start', { username: u }).catch(function(){});
     callApiSilent('set_status', { username: u, status: 'ONLINE' }).catch(function(){});
 
-    // Sync saldo terbaru dari server di background
-    ProfileAPI.sync().catch(function(){});
+    // Sync saldo terbaru dari server — hanya update display jika tidak ada bola aktif
+    ProfileAPI.sync().then(function() {
+        if (balls.length === 0) {
+            _displaySaldo = getSaldo();
+            updateSaldoDisplay();
+        }
+    }).catch(function(){});
 
     draw();
 });
