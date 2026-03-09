@@ -210,32 +210,17 @@ function createParticles(x, y, color) {
 //
 // ══════════════════════════════════════════════════════════════
 function loop() {
-  // ── Clear frame: solid penuh → ZERO ghosting ─────────────
+  // Clear solid — zero ghosting, zero afterimage
   ctx.fillStyle = '#02030d';
   ctx.fillRect(0, 0, BW, BH);
 
   const ph = PH[speedMode];
 
-  // Batas paku terakhir (center paku baris-10 + jari2)
+  // Y batas baris paku terakhir
   const lastPeg    = pegs.length > 0 ? pegs[pegs.length - 1] : { y: BH * 0.85 };
   const LAST_PEG_Y = lastPeg.y + PEG_R + BALL_R + 2;
 
-  // ── Gambar slot divider (dinding antar kotak) ─────────────
-  // Dinding tipis ini berfungsi sebagai "channel" fisik:
-  // bola yang masuk ke gap antara divider akan terhalang
-  // secara natural tanpa perlu steer paksa apapun.
-  ctx.strokeStyle = 'rgba(0, 68, 255, 0.18)';
-  ctx.lineWidth   = 1.5;
-  const divH = 22; // tinggi divider dari batas paku ke bawah
-  for (let di = 1; di < MULTS.length; di++) {
-    const dx = di * slotW;
-    ctx.beginPath();
-    ctx.moveTo(dx, LAST_PEG_Y);
-    ctx.lineTo(dx, LAST_PEG_Y + divH);
-    ctx.stroke();
-  }
-
-  // ── Gambar paku ──────────────────────────────────────────
+  // ── Paku ─────────────────────────────────────────────────
   pegs.forEach(p => {
     p.glow *= 0.84;
     ctx.fillStyle = p.glow > 0.12 ? '#ffffff' : 'rgba(0, 68, 255, 0.38)';
@@ -260,101 +245,113 @@ function loop() {
     const b = balls[i];
     if (b.serverStatus === BALL_ERROR) { balls.splice(i, 1); continue; }
 
-    // ── [WAITING] Rem halus di 78% board ─────────────────
+    // [WAITING] Rem halus di 80% board — tunggu server jawab
     if (b.serverStatus === BALL_WAITING) {
-      const brakeY = BH * 0.78;
+      const brakeY = BH * 0.80;
       if (b.y > brakeY) {
-        const t = Math.min(1, (b.y - brakeY) / (BH * 0.19));
-        b.vy *= (1 - t * 0.72);
-        if (b.vy < 0.10) b.vy = 0.10;
+        const t = Math.min(1, (b.y - brakeY) / (BH * 0.18));
+        b.vy *= (1 - t * 0.75);
+        if (b.vy < 0.08) b.vy = 0.08;
       }
     }
 
-    // ── Gravitasi & friction horizontal ──────────────────
+    // ── Gravitasi ────────────────────────────────────────
     b.vy += ph.grav;
     if (b.vy > 13) b.vy = 13;
-    b.vx *= ph.fric;
 
-    // ── STEER: bias halus ke target ───────────────────────
-    // FILOSOFI: bola bergerak SEMUA lewat fisika nyata.
-    // Steer di zona paku sangat lemah (tidak terlihat).
-    // Di zona landing TIDAK ada steer tambahan sama sekali —
-    // bola masuk slot lewat divider wall fisik + momentum sendiri.
-    // Hasilnya: gerakan 100% natural, tidak ada tarikan paksa.
-    if (b.serverStatus === BALL_READY && b.targetIdx !== undefined) {
-      if (b.y < LAST_PEG_Y) {
-        // Hanya di zona paku: bias sangat kecil, naik perlahan
+    if (b.y < LAST_PEG_Y) {
+      // ════════════════════════════════════════════════
+      // ZONA PAKU — fisika bebas murni
+      // Steer sangat lemah: hanya 0.005 max di baris bawah.
+      // Di layar tidak terlihat — hanya bias sangat halus.
+      // ════════════════════════════════════════════════
+      b.vx *= ph.fric;
+
+      if (b.serverStatus === BALL_READY && b.targetIdx !== undefined) {
         const targetX = (b.targetIdx * slotW) + (slotW / 2);
         const diff    = targetX - b.x;
-        const prog    = Math.max(0, b.y / BH);
-        // Kekuatan max ~0.004 di baris paku terakhir — hampir tidak terasa
-        b.vx += diff * 0.008 * prog * prog;
+        const prog    = Math.max(0, b.y / BH); // 0..~0.85
+        // Kurva: hampir 0 di atas, max 0.005 di baris terakhir paku
+        b.vx += diff * 0.007 * prog * prog;
       }
-      // Zona landing: NOOP — bola jatuh bebas ke slot via momentum + divider
-    }
 
-    // ── Update posisi ────────────────────────────────────
-    b.x += b.vx;
-    b.y += b.vy;
+      b.x += b.vx;
+      b.y += b.vy;
 
-    // ── Batas dinding kiri/kanan ─────────────────────────
-    if (b.x < BALL_R)         { b.x = BALL_R;      b.vx =  Math.abs(b.vx) * 0.35; }
-    else if (b.x > BW-BALL_R) { b.x = BW - BALL_R; b.vx = -Math.abs(b.vx) * 0.35; }
+      // Batas dinding
+      if (b.x < BALL_R)         { b.x = BALL_R;      b.vx =  Math.abs(b.vx) * 0.4; }
+      else if (b.x > BW-BALL_R) { b.x = BW - BALL_R; b.vx = -Math.abs(b.vx) * 0.4; }
 
-    // ── Collision divider (dinding slot) ─────────────────
-    // Di zona landing, bola bertabrakan dengan divider tipis.
-    // Ini membuatnya "terperangkap" di slot yang tepat secara natural
-    // seperti plinko fisik — tanpa magic/teleport.
-    if (b.serverStatus === BALL_READY && b.targetIdx !== undefined && b.y > LAST_PEG_Y) {
-      const slotLeft  = b.targetIdx * slotW;
-      const slotRight = slotLeft + slotW;
-      // Dinding kiri slot
-      if (b.x - BALL_R < slotLeft && b.vx < 0) {
-        b.x  = slotLeft + BALL_R;
-        b.vx = Math.abs(b.vx) * 0.35; // pantul lemah ke dalam
-      }
-      // Dinding kanan slot
-      if (b.x + BALL_R > slotRight && b.vx > 0) {
-        b.x  = slotRight - BALL_R;
-        b.vx = -Math.abs(b.vx) * 0.35;
-      }
-    }
-
-    // ── Collision paku: push-out + refleksi fisik ────────
-    // 1 paku per frame (break), skip paku jauh (optimasi Y)
-    let hit = false;
-    for (let pi = 0; pi < pegs.length; pi++) {
-      const p = pegs[pi];
-      if (Math.abs(p.y - b.y) > BALL_R + PEG_R + 2) continue;
-      const dx = b.x - p.x, dy = b.y - p.y;
-      const d  = Math.sqrt(dx*dx + dy*dy);
-      const mD = BALL_R + PEG_R;
-      if (d < mD && d > 0.001) {
-        const ov = mD - d, nx = dx/d, ny = dy/d;
-        b.x += nx * ov; b.y += ny * ov;
-        const dot = b.vx*nx + b.vy*ny;
-        if (dot < 0) {
-          b.vx = (b.vx - 2*dot*nx) * ph.bounce + (Math.random()-0.5) * 0.5;
-          b.vy = (b.vy - 2*dot*ny) * ph.bounce;
-          if (b.vy < 0.8) b.vy = 0.8;
-          if (b.vy > 13)  b.vy = 13;
+      // Collision paku: push-out + refleksi, 1 paku/frame
+      let hit = false;
+      for (let pi = 0; pi < pegs.length; pi++) {
+        const p = pegs[pi];
+        if (Math.abs(p.y - b.y) > BALL_R + PEG_R + 2) continue;
+        const dx = b.x - p.x, dy = b.y - p.y;
+        const d  = Math.sqrt(dx * dx + dy * dy);
+        const mD = BALL_R + PEG_R;
+        if (d < mD && d > 0.001) {
+          const ov = mD - d, nx = dx/d, ny = dy/d;
+          b.x += nx * ov;
+          b.y += ny * ov;
+          const dot = b.vx*nx + b.vy*ny;
+          if (dot < 0) {
+            b.vx = (b.vx - 2*dot*nx) * ph.bounce + (Math.random()-0.5) * 0.5;
+            b.vy = (b.vy - 2*dot*ny) * ph.bounce;
+            if (b.vy < 0.8) b.vy = 0.8;
+            if (b.vy > 13)  b.vy = 13;
+          }
+          p.glow = 1.0;
+          if (!hit) { snd('hit'); hit = true; }
+          break;
         }
-        p.glow = 1.0;
-        if (!hit) { snd('hit'); hit = true; }
-        break;
       }
+
+    } else {
+      // ════════════════════════════════════════════════
+      // ZONA LANDING — di bawah paku terakhir
+      //
+      // Tidak ada paku di sini. Tidak ada steer, tidak ada magnet,
+      // tidak ada divider, tidak ada snap, tidak ada lerp.
+      //
+      // Yang terjadi: vx mati pelan karena friction tinggi,
+      // bola melambat horizontal dan jatuh lurus ke bawah.
+      // Hasilnya terlihat persis seperti bola menggelinding
+      // masuk ke slot — natural, tidak ada gerakan aneh.
+      //
+      // Slot yang "berkedip" = targetIdx dari server (bukan posisi fisik),
+      // tapi bola secara visual jatuh bebas ke manapun.
+      // ════════════════════════════════════════════════
+
+      // Friction tinggi: vx mati dalam ~10 frame
+      b.vx *= 0.78;
+
+      // Tetap beri dorongan kecil ke arah target
+      // agar bola tidak terlalu jauh melenceng (tapi sangat halus)
+      if (b.serverStatus === BALL_READY && b.targetIdx !== undefined) {
+        const targetX = (b.targetIdx * slotW) + (slotW / 2);
+        const diff    = targetX - b.x;
+        // Sangat kecil — hanya "penjaga" posisi, tidak terasa
+        b.vx += diff * 0.012;
+      }
+
+      b.x += b.vx;
+      b.y += b.vy;
+
+      // Batas dinding kiri/kanan canvas
+      if (b.x < BALL_R)         { b.x = BALL_R;      b.vx =  Math.abs(b.vx) * 0.3; }
+      else if (b.x > BW-BALL_R) { b.x = BW - BALL_R; b.vx = -Math.abs(b.vx) * 0.3; }
     }
 
-    // ── Render bola: gradient radial seperti bola nyata ──
-    // Titik highlight bergeser sesuai arah gerak → terlihat bergulir
-    const spinX = b.x - b.vx * 1.2;
-    const spinY = b.y - b.vy * 0.8;
-    const grad  = ctx.createRadialGradient(spinX, spinY, 0.5, b.x, b.y, BALL_R);
-    grad.addColorStop(0,   '#ffffff');
-    grad.addColorStop(0.4, '#ff4499');
-    grad.addColorStop(1,   '#aa0044');
+    // ── Render bola: gradient radial — terlihat bergulir ─
+    const hx = b.x - b.vx * 1.5;
+    const hy  = b.y - b.vy * 0.9;
+    const gr  = ctx.createRadialGradient(hx, hy, 0.5, b.x, b.y, BALL_R);
+    gr.addColorStop(0,   '#ffffff');
+    gr.addColorStop(0.35,'#ff4499');
+    gr.addColorStop(1,   '#990033');
     ctx.beginPath();
-    ctx.fillStyle = grad;
+    ctx.fillStyle = gr;
     ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2);
     ctx.fill();
 
