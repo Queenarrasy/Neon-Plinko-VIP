@@ -13,7 +13,6 @@
             --neon-pink: #ff0077;
             --neon-yellow: #f5e642;
             --dark-space: #010412;
-            --glass-blue: rgba(0, 18, 255, 0.15);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -23,149 +22,148 @@
             font-family: 'Outfit', sans-serif; display: flex; flex-direction: column;
         }
 
-        /* BG VORTEX */
         .bg-vortex {
             position: fixed; top: 50%; left: 50%; width: 150vw; height: 150vw;
-            background: radial-gradient(circle, rgba(0, 18, 255, 0.1) 0%, transparent 70%);
-            transform: translate(-50%, -50%); z-index: -1; animation: pulse 8s infinite;
+            background: radial-gradient(circle, rgba(0, 18, 255, 0.15) 0%, transparent 70%);
+            transform: translate(-50%, -50%); z-index: -1; animation: pulse 6s infinite;
         }
+        @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
         /* HEADER */
         .header {
-            height: 75px; background: rgba(1, 4, 18, 0.95);
-            border-bottom: 3px solid var(--deep-blue); display: flex;
+            height: 70px; background: rgba(1, 4, 18, 0.9);
+            border-bottom: 2px solid var(--deep-blue); display: flex;
             align-items: center; padding: 0 15px; justify-content: space-between;
-            box-shadow: 0 5px 25px rgba(0, 18, 255, 0.4); z-index: 100;
+            box-shadow: 0 0 20px rgba(0, 18, 255, 0.5); z-index: 100;
         }
 
-        .balance-container {
-            background: linear-gradient(180deg, #050a2e, #010412);
-            border: 1px solid var(--deep-blue); border-radius: 12px;
-            padding: 5px 15px; text-align: right; min-width: 140px;
+        .user-box { display: flex; align-items: center; gap: 10px; }
+        .user-avatar { 
+            width: 42px; height: 42px; border-radius: 10px; border: 2px solid var(--neon-cyan);
+            display: flex; align-items: center; justify-content: center; background: rgba(0, 242, 255, 0.1);
+            color: var(--neon-cyan); box-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .balance-pill {
+            background: #050a2e; border: 1.5px solid var(--neon-yellow);
+            border-radius: 10px; padding: 6px 15px; text-align: right;
+            box-shadow: inset 0 0 10px rgba(245, 230, 66, 0.2);
         }
         #display-saldo { 
             font-family: 'Orbitron', sans-serif; color: var(--neon-yellow); 
-            font-weight: 900; font-size: 16px;
+            font-weight: 700; font-size: 15px; text-shadow: 0 0 5px var(--neon-yellow);
         }
 
-        /* FLOATING SCORE BOARD */
-        .floating-score {
-            position: absolute; top: 90px; left: 15px; width: 110px;
-            background: rgba(0, 18, 255, 0.1); backdrop-filter: blur(5px);
-            border: 1px solid var(--deep-blue); border-radius: 10px;
-            padding: 8px; z-index: 10; pointer-events: none;
+        /* SCOREBOARD */
+        .floating-stats {
+            position: absolute; top: 85px; left: 15px;
+            background: rgba(0, 18, 255, 0.15); backdrop-filter: blur(8px);
+            border-left: 4px solid var(--neon-cyan); border-radius: 6px;
+            padding: 10px; z-index: 10; width: 120px;
         }
-        .score-row { display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 4px; }
-        .score-val { color: var(--neon-cyan); font-family: 'Orbitron'; }
+        .stat-item { font-size: 10px; margin-bottom: 5px; color: #aaa; text-transform: uppercase; }
+        .stat-item b { display: block; font-family: 'Orbitron'; color: #fff; font-size: 13px; margin-top: 2px; }
 
         /* GAME AREA */
-        #game-area { flex: 1; position: relative; overflow: hidden; display: flex; flex-direction: column; }
-        #plinko-canvas { flex: 1; width: 100%; filter: drop-shadow(0 0 10px var(--deep-blue)); }
+        #game-area { flex: 1; position: relative; }
+        #plinko-canvas { width: 100%; height: 100%; touch-action: none; }
 
-        /* SLOTS (KOTAK MULTIPLAYER) */
-        .slot-container { display: flex; height: 45px; gap: 3px; padding: 0 5px; margin-bottom: 10px; }
-        .slot {
-            flex: 1; border-radius: 6px; display: flex; align-items: center; justify-content: center;
-            font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 10px;
-            border: 1px solid rgba(0, 242, 255, 0.2); background: rgba(0, 18, 255, 0.05);
-            color: var(--neon-cyan); transition: 0.1s;
+        /* SLOTS */
+        .slot-row { display: flex; height: 48px; gap: 4px; padding: 0 8px; margin-bottom: 12px; }
+        .multiplier-pocket {
+            flex: 1; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 11px;
+            border: 1px solid rgba(0, 242, 255, 0.3); background: rgba(0, 18, 255, 0.1);
+            color: var(--neon-cyan); transition: 0.2s;
         }
-        
-        /* EFEK BERKEDIP */
-        @keyframes neonBlink {
-            0% { background: var(--neon-pink); box-shadow: 0 0 20px var(--neon-pink); color: #fff; }
-            50% { background: var(--deep-blue); box-shadow: 0 0 40px var(--neon-cyan); color: #fff; }
-            100% { background: transparent; box-shadow: none; }
+        .pocket-blink { animation: pocket-flash 0.5s ease-out; }
+        @keyframes pocket-flash {
+            0% { background: var(--neon-pink); transform: scale(1.2); box-shadow: 0 0 30px var(--neon-pink); }
+            100% { background: rgba(0, 18, 255, 0.1); transform: scale(1); }
         }
-        .slot.blink { animation: neonBlink 0.6s ease-out; border-color: #fff; transform: scale(1.1); z-index: 2; }
 
-        /* CUSTOM ALERT BOX */
-        #custom-alert {
+        /* CUSTOM ALERT */
+        #neon-popup {
             display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 80%; max-width: 300px; background: #02061a; border: 2px solid var(--neon-pink);
-            border-radius: 20px; padding: 20px; z-index: 1000; text-align: center;
-            box-shadow: 0 0 50px rgba(255, 0, 119, 0.4); animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            width: 85%; max-width: 320px; background: #02061a; border: 3px solid var(--deep-blue);
+            border-top-color: var(--neon-pink); border-radius: 20px; padding: 25px; z-index: 2000;
+            text-align: center; box-shadow: 0 0 50px rgba(0, 18, 255, 0.5);
         }
-        @keyframes popIn { from { transform: translate(-50%, -50%) scale(0.5); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
-        #alert-msg { color: #fff; margin-bottom: 20px; font-weight: 600; }
-        .btn-alert {
-            background: var(--neon-pink); color: #fff; border: none; padding: 10px 30px;
-            border-radius: 10px; font-family: 'Orbitron'; font-weight: 700; cursor: pointer;
-            box-shadow: 0 0 15px var(--neon-pink);
+        .btn-confirm {
+            background: linear-gradient(90deg, var(--deep-blue), var(--neon-pink));
+            color: #fff; border: none; padding: 12px 40px; border-radius: 12px;
+            font-family: 'Orbitron'; font-weight: 700; margin-top: 20px; box-shadow: 0 5px 15px rgba(255, 0, 119, 0.3);
         }
 
         /* CONTROLS */
-        .controls-panel {
-            background: #02061a; padding: 15px; border-top: 2px solid var(--deep-blue);
-            display: flex; flex-direction: column; gap: 12px; border-radius: 20px 20px 0 0;
+        .control-dock {
+            background: #02061a; padding: 20px 15px; border-top: 2px solid var(--deep-blue);
+            border-radius: 25px 25px 0 0; display: flex; flex-direction: column; gap: 15px;
         }
-        .btn-main-drop {
-            width: 100%; padding: 18px; border-radius: 15px; border: none;
-            background: linear-gradient(135deg, var(--deep-blue), var(--electric-blue));
-            color: #fff; font-family: 'Orbitron'; font-weight: 900; font-size: 20px;
-            text-transform: uppercase; box-shadow: 0 5px 20px var(--deep-blue);
+        .stake-picker {
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(255,255,255,0.05); padding: 12px; border-radius: 15px;
+            border: 1px solid var(--deep-blue);
         }
-
-        .nav-link {
-            flex: 1; padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--deep-blue);
-            border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px;
-            color: #fff; text-decoration: none; font-size: 10px;
+        .btn-drop-main {
+            width: 100%; padding: 20px; border-radius: 18px; border: none;
+            background: linear-gradient(135deg, var(--deep-blue) 0%, #0066ff 50%, var(--neon-pink) 100%);
+            color: #fff; font-family: 'Orbitron'; font-weight: 900; font-size: 22px;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.5); box-shadow: 0 8px 20px rgba(0, 18, 255, 0.4);
         }
-        .nav-link i { font-size: 18px; color: var(--neon-cyan); }
     </style>
 </head>
 <body>
 
 <div class="bg-vortex"></div>
 
-<div id="custom-alert">
-    <div style="color: var(--neon-yellow); font-family: 'Orbitron'; margin-bottom: 10px;">SYSTEM ALERT</div>
-    <div id="alert-msg">Pesan Alert</div>
-    <button class="btn-alert" onclick="closeAlert()">CONFIRM</button>
+<div id="neon-popup">
+    <div style="color: var(--neon-yellow); font-family: 'Orbitron'; font-size: 18px; margin-bottom: 10px;">SYSTEM MESSAGE</div>
+    <div id="popup-text" style="font-size: 14px; line-height: 1.5;"></div>
+    <button class="btn-confirm" onclick="closePopup()">OK, GOT IT</button>
 </div>
 
 <header class="header">
-    <div class="user-info">
-        <div class="user-icon" onclick="location.href='profil.html'"><i class="fa-solid fa-user-shield"></i></div>
+    <div class="user-box">
+        <div class="user-avatar" onclick="location.href='profil.html'"><i class="fa-solid fa-user-ninja"></i></div>
         <div>
-            <div style="font-size: 8px; color: var(--neon-cyan);" id="tier-name">MEMBER</div>
-            <div id="user-display-name" style="font-size: 12px; font-weight: 800;">PLAYER</div>
+            <div id="user-display-name" style="font-size: 13px; font-weight: 700; letter-spacing: 0.5px;">PLAYER</div>
+            <div id="tier-name" style="font-size: 9px; color: var(--neon-pink); font-weight: 700;">VIP MEMBER</div>
         </div>
     </div>
-    <div class="balance-container" onclick="syncSaldo()">
+    <div class="balance-pill" onclick="syncSaldo()">
+        <div style="font-size: 8px; color: #888; margin-bottom: 2px;">VAULT</div>
         <div id="display-saldo">IDR 0</div>
     </div>
 </header>
 
-<div class="floating-score">
-    <div class="score-row"><span>WIN TOT</span> <span class="score-val" id="score-win">0</span></div>
-    <div class="score-row"><span>BALLS</span> <span class="score-val" id="score-count">0</span></div>
+<div class="floating-stats">
+    <div class="stat-item">Session Win <b id="stat-win">0</b></div>
+    <div class="stat-item">Balls Dropped <b id="stat-balls">0</b></div>
 </div>
 
 <main id="game-area">
     <canvas id="plinko-canvas"></canvas>
-    <div id="history-bar"></div>
 </main>
 
-<div class="slot-container" id="slots-ui"></div>
+<div class="slot-row" id="pockets-container"></div>
 
-<section class="controls-panel">
-    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 12px;">
-        <i class="fa-solid fa-circle-minus" style="font-size: 24px; color: var(--neon-pink);" onclick="changeBet(-1)"></i>
+<section class="control-dock">
+    <div class="stake-picker">
+        <i class="fa-solid fa-minus-circle" style="font-size: 28px; color: var(--neon-pink);" onclick="changeBet(-1)"></i>
         <div style="text-align: center;">
-            <div style="font-size: 9px; color: #888;">STAKE</div>
-            <b id="bet-text" style="font-family: 'Orbitron'; font-size: 18px;">400</b>
+            <div style="font-size: 10px; color: #888;">STAKE AMOUNT</div>
+            <b id="bet-display" style="font-family: 'Orbitron'; font-size: 20px;">400</b>
         </div>
-        <i class="fa-solid fa-circle-plus" style="font-size: 24px; color: var(--neon-cyan);" onclick="changeBet(1)"></i>
+        <i class="fa-solid fa-plus-circle" style="font-size: 28px; color: var(--neon-cyan);" onclick="changeBet(1)"></i>
     </div>
 
-    <button class="btn-main-drop" id="btn-drop" onclick="dropBall()">DROP BALL</button>
+    <button class="btn-drop-main" id="launch-btn" onclick="dropBall()">DROP NEON BALL</button>
 
-    <nav style="display: flex; gap: 8px;">
-        <a href="deposit.html" class="nav-link"><i class="fa-solid fa-plus"></i>DEPO</a>
-        <a href="reward.html" class="nav-link" style="border-color: var(--neon-pink);"><i class="fa-solid fa-gift" style="color: var(--neon-pink);"></i>REWARD</a>
-        <a href="withdraw.html" class="nav-link"><i class="fa-solid fa-wallet"></i>WD</a>
-    </nav>
+    <div style="display: flex; gap: 10px;">
+        <a href="deposit.html" class="nav-link" style="flex:1; text-align:center; text-decoration:none; background:rgba(255,255,255,0.05); padding:12px; border-radius:12px; border:1px solid var(--deep-blue); color:#fff; font-size:11px;"><i class="fa-solid fa-wallet" style="margin-right:5px; color:var(--neon-cyan)"></i> DEPO</a>
+        <a href="reward.html" class="nav-link" style="flex:1; text-align:center; text-decoration:none; background:rgba(255,255,255,0.05); padding:12px; border-radius:12px; border:1px solid var(--neon-pink); color:#fff; font-size:11px;"><i class="fa-solid fa-gift" style="margin-right:5px; color:var(--neon-pink)"></i> REWARD</a>
+    </div>
 </section>
 
 <script src="global.js"></script>
@@ -177,148 +175,186 @@
     const BETS = [400, 800, 1000, 2000, 5000, 10000, 25000, 50000];
     
     let balls = [], pegs = [], _saldo = 0, _username = "", currentBetIdx = 0;
-    let totalWinSession = 0, ballCount = 0;
+    let sessionWin = 0, ballCounter = 0;
 
     window.onload = async () => {
         const user = requireLogin('index.html');
         if(!user) return;
-        _username = user.username; _saldo = parseFloat(user.saldo);
+        _username = user.username;
+        _saldo = parseFloat(user.saldo);
         document.getElementById('user-display-name').innerText = _username.toUpperCase();
-        updateSaldoUI(); initCanvas(); createSlots(); animate();
+        
+        updateSaldoUI();
+        initGamePhysics();
+        createMultiplierUI();
+        renderFrame();
     };
 
-    function showAlert(msg) {
-        document.getElementById('alert-msg').innerText = msg;
-        document.getElementById('custom-alert').style.display = 'block';
+    function showPopup(msg) {
+        document.getElementById('popup-text').innerText = msg;
+        document.getElementById('neon-popup').style.display = 'block';
     }
-    function closeAlert() { document.getElementById('custom-alert').style.display = 'none'; }
+    function closePopup() { document.getElementById('neon-popup').style.display = 'none'; }
 
-    function initCanvas() {
+    function initGamePhysics() {
         const dpr = window.devicePixelRatio || 1;
         const rect = canvas.getBoundingClientRect();
-        canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
         ctx.scale(dpr, dpr);
+
         pegs = [];
         const spacingX = rect.width / (ROWS + 2);
-        const spacingY = rect.height / (ROWS + 1.2);
+        const spacingY = (rect.height - 50) / (ROWS + 1);
+
         for (let i = 0; i < ROWS; i++) {
-            const rowPegs = i + 2;
-            const startX = (rect.width - (rowPegs - 1) * spacingX) / 2;
-            for (let j = 0; j < rowPegs; j++) {
-                pegs.push({ x: startstartX + j * spacingX, y: 40 + i * spacingY, r: 3, glow: 0 });
+            const rowCount = i + 2;
+            const rowWidth = (rowCount - 1) * spacingX;
+            const startX = (rect.width - rowWidth) / 2;
+            for (let j = 0; j < rowCount; j++) {
+                pegs.push({ 
+                    x: startX + (j * spacingX), 
+                    y: 50 + (i * spacingY), 
+                    r: 3.5, 
+                    light: 0 
+                });
             }
         }
     }
-    
-    // Fallback if typo in logic
-    let startstartX = 0; 
 
-    function createSlots() {
-        const ui = document.getElementById('slots-ui');
-        ui.innerHTML = '';
+    function createMultiplierUI() {
+        const container = document.getElementById('pockets-container');
+        container.innerHTML = '';
         MULTIPLIERS.forEach((m, i) => {
-            const d = document.createElement('div');
-            d.className = 'slot';
-            d.id = `pocket-${i}`;
-            d.innerText = m + 'x';
-            ui.appendChild(d);
+            const pocket = document.createElement('div');
+            pocket.className = 'multiplier-pocket';
+            pocket.id = `mult-${i}`;
+            pocket.innerText = m + 'x';
+            container.appendChild(pocket);
         });
     }
 
     async function dropBall() {
-        const bet = BETS[currentBetIdx];
-        if(_saldo < bet) {
-            showAlert("SALDO TIDAK CUKUP!");
+        const stake = BETS[currentBetIdx];
+        if(_saldo < stake) {
+            showPopup("INSUFFICIENT BALANCE! PLEASE TOP UP TO CONTINUE.");
             return;
         }
-        const initialSaldo = _saldo; _saldo -= bet; updateSaldoUI();
-        
+
+        const startSaldo = _saldo;
+        _saldo -= stake;
+        updateSaldoUI();
+
         const ball = {
-            x: canvas.offsetWidth / (window.devicePixelRatio || 1) / 2,
-            y: -10, vx: (Math.random()-0.5)*2, vy: 2, r: 6,
-            bet: bet, status: 'WAITING'
+            x: canvas.width / (window.devicePixelRatio || 1) / 2 + (Math.random() * 4 - 2),
+            y: 0, vx: 0, vy: 2, r: 6.5,
+            stake: stake, status: 'WAITING'
         };
         balls.push(ball);
 
         try {
-            const res = await apiGamePlay(_username, bet, initialSaldo);
+            const res = await apiGamePlay(_username, stake, startSaldo);
             if(res && res.result === 'SUCCESS') {
-                ball.targetIdx = findSlotIndex(res.target_multiplier);
-                ball.finalSaldo = res.newSaldo;
-                ball.targetMult = res.target_multiplier;
+                ball.targetIdx = getSlotIndex(res.target_multiplier);
+                ball.newSaldo = res.newSaldo;
+                ball.multValue = res.target_multiplier;
                 ball.status = 'READY';
             }
         } catch(e) { ball.status = 'ERROR'; }
     }
 
-    function findSlotIndex(mult) {
+    function getSlotIndex(val) {
         const matches = [];
-        MULTIPLIERS.forEach((m, i) => { if(m === mult) matches.push(i); });
+        MULTIPLIERS.forEach((m, i) => { if(m === val) matches.push(i); });
         return matches[Math.floor(Math.random() * matches.length)];
     }
 
-    function animate() {
-        const w = canvas.offsetWidth / (window.devicePixelRatio || 1);
-        const h = canvas.offsetHeight / (window.devicePixelRatio || 1);
+    function renderFrame() {
+        const w = canvas.width / (window.devicePixelRatio || 1);
+        const h = canvas.height / (window.devicePixelRatio || 1);
         ctx.clearRect(0, 0, w, h);
 
+        // Render Paku
         pegs.forEach(p => {
-            ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-            ctx.fillStyle = p.glow > 0 ? `rgba(245, 230, 66, ${p.glow})` : 'rgba(0, 18, 255, 0.3)';
-            ctx.fill(); if(p.glow > 0) p.glow -= 0.05;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fillStyle = p.light > 0 ? `rgba(245, 230, 66, ${p.light})` : 'rgba(0, 102, 255, 0.2)';
+            ctx.fill();
+            if(p.light > 0) p.light -= 0.04;
         });
 
+        // Update Bola
         for (let i = balls.length - 1; i >= 0; i--) {
-            const b = balls[i]; b.vy += 0.35; b.x += b.vx; b.y += b.vy;
+            const b = balls[i];
+            b.vy += 0.38; // Gravitasi
+            b.x += b.vx;
+            b.y += b.vy;
 
-            if (b.status === 'READY' && b.y > h * 0.4) {
+            // Koreksi Magnetik Server (Kunci Kemenangan)
+            if (b.status === 'READY' && b.y > h * 0.45) {
                 const targetX = (b.targetIdx * (w / MULTIPLIERS.length)) + (w / MULTIPLIERS.length / 2);
-                b.vx += (targetX - b.x) * 0.025;
+                b.vx += (targetX - b.x) * 0.032;
             }
 
+            // Tabrakan Paku
             pegs.forEach(p => {
                 const dist = Math.hypot(b.x - p.x, b.y - p.y);
                 if (dist < b.r + p.r) {
-                    p.glow = 1; b.vx = (b.x - p.x) * 0.5; b.vy = Math.abs(b.y - p.y) * 0.5 + 1.5;
+                    p.light = 1;
+                    b.vx = (b.x - p.x) * 0.6;
+                    b.vy = Math.abs(b.y - p.y) * 0.4 + 1.2;
                 }
             });
 
-            ctx.shadowBlur = 10; ctx.shadowColor = varColor(b.status);
-            ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-            ctx.fill(); ctx.shadowBlur = 0;
+            // Visual Bola Neon
+            ctx.save();
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = b.status === 'READY' ? var(--neon-cyan) : var(--neon-pink);
+            ctx.fillStyle = "#fff";
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
 
+            // Bola Keluar Layar
             if (b.y > h) {
-                if(b.status === 'READY') handleLand(b);
+                if(b.status === 'READY') onBallLanded(b);
                 balls.splice(i, 1);
             }
         }
-        requestAnimationFrame(animate);
+        requestAnimationFrame(renderFrame);
     }
 
-    function varColor(s) { return s === 'READY' ? '#00f2ff' : '#ff0077'; }
+    function onBallLanded(ball) {
+        _saldo = ball.newSaldo;
+        updateSaldoUI();
 
-    function handleLand(ball) {
-        _saldo = ball.finalSaldo; updateSaldoUI();
-        const pocket = document.getElementById(`pocket-${ball.targetIdx}`);
-        pocket.classList.add('blink');
-        setTimeout(() => pocket.classList.remove('blink'), 600);
+        const el = document.getElementById(`mult-${ball.targetIdx}`);
+        el.classList.add('pocket-blink');
+        setTimeout(() => el.classList.remove('pocket-blink'), 500);
 
-        totalWinSession += (ball.bet * ball.targetMult);
-        ballCount++;
-        document.getElementById('score-win').innerText = Math.round(totalWinSession).toLocaleString();
-        document.getElementById('score-count').innerText = ballCount;
+        sessionWin += (ball.stake * ball.multValue);
+        ballCounter++;
+        document.getElementById('stat-win').innerText = Math.floor(sessionWin).toLocaleString();
+        document.getElementById('stat-balls').innerText = ballCounter;
     }
 
-    function updateSaldoUI() { document.getElementById('display-saldo').innerText = 'IDR ' + Math.floor(_saldo).toLocaleString('id-ID'); }
-    function changeBet(dir) {
-        currentBetIdx = Math.max(0, Math.min(BETS.length - 1, currentBetIdx + dir));
-        document.getElementById('bet-text').innerText = BETS[currentBetIdx].toLocaleString();
+    function updateSaldoUI() {
+        document.getElementById('display-saldo').innerText = 'IDR ' + Math.floor(_saldo).toLocaleString('id-ID');
     }
+
+    function changeBet(val) {
+        currentBetIdx = Math.max(0, Math.min(BETS.length - 1, currentBetIdx + val));
+        document.getElementById('bet-display').innerText = BETS[currentBetIdx].toLocaleString();
+    }
+
     async function syncSaldo() {
         const res = await apiGetSaldo(_username);
-        if(res && res.result === 'SUCCESS') { _saldo = parseFloat(res.saldo); updateSaldoUI(); }
+        if(res && res.result === 'SUCCESS') {
+            _saldo = parseFloat(res.saldo);
+            updateSaldoUI();
+        }
     }
 </script>
-
 </body>
 </html>
