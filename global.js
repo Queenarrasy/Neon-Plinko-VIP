@@ -1,7 +1,7 @@
 /**
  * ============================================================
  * NEON PLINKO VIP — Global JS Ultra Master Sync
- * Version: 4.6 — Plinko Sync & Engine Integration
+ * Version: 4.8 — Full Profile Auto-Fill & Sync (FINAL)
  * ============================================================
  */
 
@@ -19,28 +19,17 @@ const UserSession = {
     isAutoPlaying: false
 };
 
-// ─── BRIDGE FUNCTIONS (PENTING: Agar Game Plinko Bisa Jalan) ──
-// Fungsi ini menghubungkan panggilan 'apiCall' di HTML ke 'callApi' di Global
+// ─── BRIDGE FUNCTIONS (Agar Game Plinko Bisa Jalan) ──────────
 async function apiCall(payload) {
     const { action, ...rest } = payload;
     return await callApi(action, rest);
 }
 
-// Fungsi getSaldo & setSaldo agar Game Plinko bisa membaca/tulis saldo lokal
-function getSaldo() {
-    return UserSession.saldo;
-}
+function getSaldo() { return UserSession.saldo; }
+function setSaldo(nominal) { syncSaldoUI(nominal); }
+function getUsername() { return UserSession.username; }
 
-function setSaldo(nominal) {
-    syncSaldoUI(nominal);
-}
-
-function getUsername() {
-    return UserSession.username;
-}
-
-// ─── CORE ENGINE ─────────────────────────────────────────────
-
+// ─── CORE ENGINE (Fetch & Response) ──────────────────────────
 async function callApi(action, payload = {}) {
     try {
         const jsonString = encodeURIComponent(JSON.stringify({ action, ...payload }));
@@ -60,22 +49,24 @@ async function callApi(action, payload = {}) {
     }
 }
 
-// Sinkronisasi Saldo ke UI dan Storage
+// Sinkronisasi Saldo ke Semua UI Elemen
 function syncSaldoUI(nominal) {
     const val = Math.max(0, parseFloat(nominal) || 0);
     UserSession.saldo = val;
     localStorage.setItem('user_saldo', val);
     
-    // Update elemen saldo (ID: display-saldo & profile-saldo)
-    const displays = ['display-saldo', 'profile-saldo', 'admin-display-saldo'];
+    // Update elemen saldo di berbagai lokasi (Header, Profile, Admin)
+    const displays = ['display-saldo', 'profile-saldo', 'admin-display-saldo', 'header-saldo'];
     displays.forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.innerText = id.includes('profile') ? formatIDR(val) : 'IDR ' + Math.floor(val).toLocaleString('id-ID');
+        if (el) {
+            // Khusus profile-saldo biasanya pakai format IDR penuh
+            el.innerText = id.includes('profile') ? formatIDR(val) : 'IDR ' + Math.floor(val).toLocaleString('id-ID');
+        }
     });
 }
 
-// ─── 1. AUTH & PROFILE ───────────────────────────────────────
-
+// ─── 1. AUTH & PROFILE (DENGAN LOGIKA AUTO-FILL) ──────────────
 const AuthAPI = {
     async login(username, password) {
         const res = await callApi("login", { username, password });
@@ -99,20 +90,50 @@ const AuthAPI = {
 const ProfileAPI = {
     async sync() {
         if (!UserSession.username) return;
-        const res = await callApi("get_profile", { username: UserSession.username });
-        if (res.data) {
-            syncSaldoUI(res.data.saldo);
-            UserSession.tier = res.data.tier;
-            localStorage.setItem('user_tier', res.data.tier);
-            
-            const tierEl = document.getElementById("profile-tier");
-            if (tierEl) tierEl.innerText = res.data.tier;
+        
+        try {
+            const res = await callApi("get_profile", { username: UserSession.username });
+            if (res.data) {
+                const d = res.data;
+                
+                // 1. Update Saldo & Tier ke Storage
+                syncSaldoUI(d.saldo);
+                UserSession.tier = d.tier;
+                localStorage.setItem('user_tier', d.tier);
+
+                // 2. AUTO-FILL DATA KE HTML
+                // Script ini akan mencari ID di HTML Anda dan mengisinya secara otomatis
+                const profileMap = {
+                    "profile-username": d.username,
+                    "profile-nama": d.namaLengkap,
+                    "profile-phone": d.phone,
+                    "profile-bank": d.bank,
+                    "profile-rekening": d.nomorRekening,
+                    "profile-tier": d.tier,
+                    "profile-refcode": d.refCode,
+                    "display-username": d.username,
+                    "info-total-depo": formatIDR(d.totalDepo),
+                    "info-total-wd": formatIDR(d.totalWD)
+                };
+
+                for (let id in profileMap) {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        if (el.tagName === 'INPUT') {
+                            el.value = profileMap[id];
+                        } else {
+                            el.innerText = profileMap[id];
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("Gagal sinkronisasi profil:", e);
         }
     }
 };
 
-// ─── 2. GAME ENGINE (SYNC WITH APP SCRIPT) ───────────────────
-
+// ─── 2. GAME ENGINE (Logika Bermain) ──────────────────────────
 const GameEngine = {
     async processPlay(betAmount) {
         if (!UserSession.username || UserSession.saldo < betAmount) return null;
@@ -136,14 +157,13 @@ const GameEngine = {
                 newSaldo: res.newSaldo
             };
         } catch (e) {
-            alert("Koneksi bermasalah: " + e.message);
+            console.error("Game Play Error:", e);
             return null;
         }
     }
 };
 
 // ─── 3. TRANSAKSI (WD & DEPO) ────────────────────────────────
-
 const TransaksiAPI = {
     async withdraw(jumlah) {
         const res = await callApi("withdraw", {
@@ -151,7 +171,7 @@ const TransaksiAPI = {
             jumlah: jumlah,
             tanggal: new Date().toLocaleString("id-ID")
         });
-        await ProfileAPI.sync();
+        await ProfileAPI.sync(); // Refresh data setelah WD
         return res;
     },
     async depositQRIS(nominal) {
@@ -169,7 +189,6 @@ const TransaksiAPI = {
 };
 
 // ─── 4. REWARDS & INBOX ──────────────────────────────────────
-
 const RewardAPI = {
     async claimDaily() {
         const res = await callApi("claim_daily", { username: UserSession.username });
@@ -194,34 +213,18 @@ const RewardAPI = {
     }
 };
 
-// ─── 5. MASTER PANEL (ADMIN ONLY) ────────────────────────────
-
+// ─── 5. MASTER PANEL (Hanya Admin) ───────────────────────────
 const AdminAPI = {
-    async getAllPlayers() {
-        return await callApi("getAllUsers");
-    },
-    async getPendingDeposits() {
-        return await callApi("get_pending_deposits");
-    },
-    async approveDeposit(rowIdx) {
-        return await callApi("approve_deposit", { row: rowIdx });
-    },
-    async updateWinrate(targetUser, newRate) {
-        return await callApi("updateWinrate", { targetUser, newRate });
-    },
-    async adjustSaldo(targetUser, amount) {
-        return await callApi("adminUpdateSaldo", { targetUser, amount });
-    },
-    async setMaxwin(targetUser, maxwin) {
-        return await callApi("setMaxwinLimit", { targetUser, maxwin });
-    },
-    async togglePanicMode(minutes) {
-        return await callApi("set_global_panic", { minutes });
-    }
+    async getAllPlayers() { return await callApi("getAllUsers"); },
+    async getPendingDeposits() { return await callApi("get_pending_deposits"); },
+    async approveDeposit(rowIdx) { return await callApi("approve_deposit", { row: rowIdx }); },
+    async updateWinrate(targetUser, newRate) { return await callApi("updateWinrate", { targetUser, newRate }); },
+    async adjustSaldo(targetUser, amount) { return await callApi("adminUpdateSaldo", { targetUser, amount }); },
+    async setMaxwin(targetUser, maxwin) { return await callApi("setMaxwinLimit", { targetUser, maxwin }); },
+    async togglePanicMode(minutes) { return await callApi("set_global_panic", { minutes }); }
 };
 
 // ─── UTILS ───────────────────────────────────────────────────
-
 function formatIDR(num) {
     return new Intl.NumberFormat("id-ID", {
         style: "currency",
@@ -230,20 +233,26 @@ function formatIDR(num) {
     }).format(num);
 }
 
-// ─── INITIALIZATION ──────────────────────────────────────────
-
+// ─── INITIALIZATION (Dijalankan saat halaman terbuka) ────────
 async function initGlobalSync() {
     if (UserSession.username) {
+        // Isi username ke UI segera sebelum fetch selesai agar tidak kosong
+        const userDisplays = ["profile-username", "display-username"];
+        userDisplays.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = UserSession.username;
+        });
+
         try {
             await callApi("set_status", { username: UserSession.username, status: "ONLINE" });
-            await callApi("set_session_start", { username: UserSession.username });
             await ProfileAPI.sync();
         } catch (e) {
-            console.warn("Sync failed, check internet.");
+            console.warn("Koneksi bermasalah, menggunakan data cache.");
         }
     }
 }
 
+// Auto-Logout / Offline saat browser ditutup
 window.addEventListener('beforeunload', () => {
     if (UserSession.username) {
         const payload = JSON.stringify({ action: "set_status", username: UserSession.username, status: "OFFLINE" });
