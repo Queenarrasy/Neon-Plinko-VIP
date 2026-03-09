@@ -216,118 +216,96 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 <script src="global.js"></script>
 <script>
 /**
- * ────────────────────────────────────────────────────────────
- * PROFILE CONTROLLER - FULL INTEGRATION
- * ────────────────────────────────────────────────────────────
+ * PROFIL CONTROLLER v5.0
+ * Menggunakan AuthAPI, ProfileAPI dari global.js v5.0
  */
 
-// Inisialisasi halaman saat dimuat
-window.addEventListener('load', async () => {
-    const username = localStorage.getItem('username');
-    if (!username) {
-        location.href = 'index.html';
-        return;
+// ── INIT ─────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async function() {
+    // Cek login — redirect ke index.html jika belum login
+    const sess = requireLogin('index.html');
+    if (!sess) return;
+
+    // Isi data dari session cache dulu (tampil instan)
+    renderProfileFromSession(sess);
+
+    // Fetch data terbaru dari server
+    try {
+        const data = await ProfileAPI.sync();
+        if (data) renderProfileFromData(data);
+    } catch(e) {
+        showModal('ERROR KONEKSI', 'Gagal memuat data server. Menampilkan data cache.', '#ff0077');
     }
-
-    // Siapkan sesi data global
-    UserSession.data = { username: username };
-
-    // Jalankan Sinkronisasi Profile
-    await syncProfileData();
 });
 
-// Fungsi untuk mengambil data terbaru dari Sheet
-async function syncProfileData() {
-    try {
-        // Panggil fungsi sync dari global.js (Action: get_profile)
-        await ProfileAPI.sync();
-        const data = UserSession.data;
-
-        if (data) {
-            // Update elemen UI Profile
-            document.getElementById('profile-username').innerText = data.username;
-            document.getElementById('profile-tier').innerText = (data.tier || 'MEMBER').toUpperCase();
-            document.getElementById('display-saldo').innerText = formatIDR(data.saldo || 0);
-            
-            // Update elemen Data Akun
-            document.getElementById('profile-fullname').innerText = data.namaLengkap || '—';
-            document.getElementById('profile-phone').innerText = data.phone || '—';
-            document.getElementById('profile-bank').innerText = data.bank || '—';
-            document.getElementById('profile-rek').innerText = data.nomorRekening || '—';
-            
-            // Update Statistik
-            document.getElementById('total-depo').innerText = formatIDR(data.totalDepo || 0);
-            document.getElementById('total-wd').innerText = formatIDR(data.totalWD || 0);
-            
-            // Update Referral
-            document.getElementById('profile-refcode').innerText = data.refCode || '—';
-
-            // Sinkronkan status ONLINE ke Sheet
-            await callApi("set_status", { username: data.username, status: "ONLINE" });
-        }
-    } catch (error) {
-        console.error("Sync Error:", error);
-        showModal('ERROR KONEKSI', 'Gagal memuat data dari server VIP.', '#ff0077');
-    }
+// Render dari session (instan, tanpa fetch)
+function renderProfileFromSession(sess) {
+    setText('profile-username', sess.username      || '—');
+    setText('profile-tier',     (sess.tier || 'MEMBER').toUpperCase());
+    setText('display-saldo',    formatIDR(sess.saldo || 0));
+    setText('profile-fullname', sess.fullname      || '—');
+    setText('profile-phone',    sess.phone         || '—');
+    setText('profile-bank',     sess.bank          || '—');
+    setText('profile-rek',      sess.rekening      || '—');
+    setText('total-depo',       formatIDR(sess.totalDepo || 0));
+    setText('total-wd',         formatIDR(sess.totalWD   || 0));
+    setText('profile-refcode',  sess.refCode       || '—');
 }
 
-// Fungsi Logout Akun
-async function userLogout() {
-    const username = localStorage.getItem('username');
-    try {
-        // Beritahu server bahwa pemain OFFLINE
-        if (username) {
-            await callApi("set_status", { username: username, status: "OFFLINE" });
-        }
-    } catch (e) {
-        console.log("Offline sync failed");
-    } finally {
-        localStorage.clear();
-        location.href = 'index.html';
-    }
+// Render dari data server (lengkap)
+function renderProfileFromData(d) {
+    setText('profile-username', d.username         || '—');
+    setText('profile-tier',     (d.tier || 'MEMBER').toUpperCase());
+    setText('display-saldo',    formatIDR(d.saldo  || 0));
+    setText('profile-fullname', d.namaLengkap      || '—');
+    setText('profile-phone',    d.phone            || '—');
+    setText('profile-bank',     d.bank             || '—');
+    setText('profile-rek',      d.nomorRekening    || '—');
+    setText('total-depo',       formatIDR(d.totalDepo || 0));
+    setText('total-wd',         formatIDR(d.totalWD   || 0));
+    setText('profile-refcode',  d.refCode          || '—');
 }
 
-// UI HELPER FUNCTIONS
-function closeModal(){
-    document.getElementById('neon-modal').style.display='none';
-    document.getElementById('modal-overlay').style.display='none';
+function setText(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
 }
 
-function showLogoutModal(){
-    document.getElementById('logout-overlay').style.display='block';
-    document.getElementById('logout-modal').style.display='block';
+// ── LOGOUT ────────────────────────────────────────────────────
+function showLogoutModal() {
+    document.getElementById('logout-overlay').style.display = 'block';
+    document.getElementById('logout-modal').style.display   = 'block';
+}
+function closeLogout() {
+    document.getElementById('logout-overlay').style.display = 'none';
+    document.getElementById('logout-modal').style.display   = 'none';
+}
+function confirmLogout() {
+    closeLogout();
+    AuthAPI.logout(); // clearSession + set OFFLINE + redirect index.html
 }
 
-function closeLogout(){
-    document.getElementById('logout-overlay').style.display='none';
-    document.getElementById('logout-modal').style.display='none';
+// ── MODAL ─────────────────────────────────────────────────────
+function closeModal() {
+    document.getElementById('neon-modal').style.display     = 'none';
+    document.getElementById('modal-overlay').style.display  = 'none';
 }
-
-function confirmLogout(){
-    userLogout();
-}
-
-function copyRefCode(){
-    const code = document.getElementById('profile-refcode').innerText;
-    if(code && code !== '—' && code !== '---'){
-        navigator.clipboard.writeText(code).then(() => {
-            showModal('BERHASIL ✅', 'Kode referral disalin!', '#f5e642');
-        }).catch(() => {
-            showModal('KODE REF', code, '#f5e642');
-        });
-    }
-}
-
-function showModal(title, msg, color){
-    document.getElementById('modal-title').innerText = title;
-    document.getElementById('modal-msg').innerText = msg;
+function showModal(title, msg, color) {
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-msg').textContent   = msg;
     const m = document.getElementById('neon-modal');
-    if(color){
-        m.style.borderColor = color;
-        m.style.boxShadow = '0 0 20px ' + color;
-    }
-    document.getElementById('neon-modal').style.display = 'block';
+    if (color) { m.style.borderColor = color; m.style.boxShadow = '0 0 20px ' + color; }
+    m.style.display = 'block';
     document.getElementById('modal-overlay').style.display = 'block';
+}
+
+// ── COPY REF CODE ─────────────────────────────────────────────
+function copyRefCode() {
+    const code = document.getElementById('profile-refcode').textContent;
+    if (!code || code === '—') return;
+    navigator.clipboard.writeText(code)
+        .then(function()  { showModal('BERHASIL ✅', 'Kode referral disalin!', '#f5e642'); })
+        .catch(function() { showModal('KODE REF', code, '#f5e642'); });
 }
 </script>
 </body>
