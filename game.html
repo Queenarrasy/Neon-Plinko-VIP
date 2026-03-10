@@ -272,7 +272,6 @@ function spawnBall() {
         targetX:         BW / 2,
         serverNewSaldo:  null,
         serverWinAmount: null,
-        bounceCount:     0,
         isDone:          false
     };
 
@@ -329,14 +328,6 @@ function updatePhysics() {
     balls.forEach(function(b) {
         if (b.isDone) return;
 
-        // ── Jika bola sudah bouncing di bawah dan server baru reply ──
-        // Langsung selesaikan tanpa tunggu bola jatuh lagi
-        if (b.bounceCount > 0 && b.status === ST_READY) {
-            b.isDone = true;
-            onBallLand(b);
-            return;
-        }
-
         // ── Gravitasi & gerak ──
         b.vy += ph.grav;
         b.x  += b.vx;
@@ -374,46 +365,50 @@ function updatePhysics() {
             b.vx += (b.targetX - b.x) * steer;
         }
 
-        // ── Rem halus zona bawah — berlaku untuk SEMUA bola ──
-        // Lebih kuat jika masih WAIT (bola belum tahu ke mana)
+        // ── Rem zona bawah ──
+        // ST_WAIT: rem kuat agar bola bergerak sangat pelan di bawah
+        //          sehingga server punya waktu reply sebelum bola keluar
+        // ST_READY: rem ringan saja — bola sudah tahu ke mana
         if (progY > ph.brakeY) {
-            var brakeMult = (b.status === ST_WAIT) ? ph.brakeFric : (ph.brakeFric + 0.05);
+            var brakeMult = (b.status === ST_WAIT) ? ph.brakeFric : (ph.brakeFric + 0.06);
             b.vx *= brakeMult;
             b.vy *= brakeMult;
+            // Jaga kecepatan turun minimum agar bola tidak berhenti di udara
             if (b.vy < ph.minVy) b.vy = ph.minVy;
         }
 
         // ── Batas kiri-kanan ──
-        if (b.x < BALL_R)      { b.x = BALL_R;      b.vx =  Math.abs(b.vx) * 0.65; }
-        if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx = -Math.abs(b.vx) * 0.65; }
+        if (b.x < BALL_R)      { b.x = BALL_R;      b.vx =  Math.abs(b.vx) * 0.6; }
+        if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx = -Math.abs(b.vx) * 0.6; }
 
-        // ── Menyentuh dasar ──
-        if (b.y >= BH - BALL_R) {
-            b.y = BH - BALL_R;
-
+        // ── Keluar dari bawah canvas → landing ──
+        // Bola dianggap "masuk slot" saat melewati batas bawah canvas.
+        // Tidak ada bounce — bola selalu turun dan keluar.
+        if (b.y >= BH + BALL_R) {
             if (b.status === ST_READY) {
-                // Server sudah reply — landing normal
+                // Normal landing — semua data sudah ada
                 b.isDone = true;
                 onBallLand(b);
-
             } else {
-                // Server belum reply — BOUNCE BACK UP, jangan freeze
-                b.bounceCount++;
-
-                if (b.bounceCount <= 4) {
-                    // Pantul ke atas dengan energi berkurang
-                    // Makin banyak bounce, makin lemah pantulnya
-                    var energy = Math.max(0.25, 0.65 - (b.bounceCount - 1) * 0.12);
-                    b.vy = -(Math.abs(b.vy) * energy + 1.2);
-                    b.vx *= 0.25; // Hampir tidak bergerak horizontal
-                } else {
-                    // Sudah 4+ bounce dan server masih belum reply
-                    // Oscilasi kecil di tempat (terlihat natural, tidak freeze)
-                    b.vy = -1.5;
-                    b.vx = 0;
-                    b.y  = BH - BALL_R - 4;
+                // Server belum reply — tunggu di tepi bawah canvas
+                // (bola sudah tidak terlihat, tapi proses tetap jalan)
+                b.y  = BH + BALL_R;
+                b.vy = 0;
+                b.vx = 0;
+                // Cek terus setiap frame — begitu ST_READY, langsung landing
+                if (b.status === ST_READY) {
+                    b.isDone = true;
+                    onBallLand(b);
                 }
             }
+        }
+    });
+
+    // Cek bola yang sudah di luar canvas dan menunggu server
+    balls.forEach(function(b) {
+        if (!b.isDone && b.y >= BH + BALL_R && b.status === ST_READY) {
+            b.isDone = true;
+            onBallLand(b);
         }
     });
 
