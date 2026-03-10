@@ -128,18 +128,8 @@ html,body{
 <script>
 /**
  * ================================================================
- * GAME.HTML v6.0 — Neon Plinko VIP
- * ARSITEKTUR: Multi-ball paralel, ZERO blocking
- *
- * Cara kerja:
- * [1] Tekan PLAY → bola LANGSUNG dibuat & mulai jatuh
- * [2] Request ke server dikirim PARALEL (async, tidak blocking)
- * [3] Saat server reply → status bola berubah ST_WAIT → ST_READY
- *     → bola mulai di-steer ke slot target
- * [4] Jika server belum reply saat bola hampir mendarat →
- *     bola di-rem lembut sampai data tiba
- * [5] Saldo FINAL = dari server (100% server-authoritative)
- *     Winrate & MaxWinLimit diatur sepenuhnya oleh admin
+ * GAME.HTML v6.1 — Neon Plinko VIP (Smoothed & Synced)
+ * ARSITEKTUR: Multi-ball paralel, ZERO blocking, Auto-Sync
  * ================================================================
  */
 
@@ -150,19 +140,17 @@ var BETS   = [400, 800, 1000, 2000, 5000, 10000, 20000];
 var BALL_R = 7;
 var PEG_R  = 4;
 
-// Status bola
-var ST_WAIT  = 'wait';   // Server belum reply — bola berjalan bebas
-var ST_READY = 'ready';  // Server sudah reply — bola di-steer ke target
+var ST_WAIT  = 'wait';  
+var ST_READY = 'ready'; 
 
-// Parameter physics per mode
 var PHYSICS = {
     normal: {
         grav:       0.28,
         bounce:     0.45,
         initVy:     2.5,
-        steerStart: 0.50,   // Mulai steer di 50% tinggi board
-        steerMax:   0.22,   // Kuat — 4x lebih besar dari sebelumnya
-        lockY:      0.82,   // Di 82% board ke bawah: hard-lock X ke target slot
+        steerStart: 0.50,
+        steerMax:   0.22,
+        lockY:      0.82,
         brakeY:     0.75,
         brakeFric:  0.88,
         minVy:      0.35
@@ -180,10 +168,7 @@ var PHYSICS = {
     }
 };
 
-// Interval auto mode (ms) — jarak antar spawn
 var AUTO_MS = { normal: 950, turbo: 440 };
-
-// Batas bola di layar bersamaan saat auto (agar tidak terlalu rapat)
 var MAX_AUTO_BALLS = 3;
 
 // ── STATE ────────────────────────────────────────────────────
@@ -194,10 +179,6 @@ var speedMode = 'normal';
 var isAuto    = false;
 var autoTimer = null;
 var betIdx    = 0;
-
-// _displaySaldo: saldo yang ditampilkan ke user.
-// Hanya turun saat spawn (dikurangi bet), naik saat ball land (ditambah winAmount).
-// Tidak pernah set langsung dari server di tengah permainan agar tidak loncat naik.
 var _displaySaldo = 0;
 
 // ── CANVAS SETUP ─────────────────────────────────────────────
@@ -215,7 +196,6 @@ function setupCanvas() {
     canvas.style.height = BH + 'px';
     ctx.scale(dpr, dpr);
 
-    // Build pegs
     pegs = [];
     var spX = BW / (ROWS + 2);
     var spY = (BH - 40) / ROWS;
@@ -227,7 +207,6 @@ function setupCanvas() {
         }
     }
 
-    // Build slot row
     var row = document.getElementById('slot-row');
     row.innerHTML = '';
     slotW = BW / MULTS.length;
@@ -240,28 +219,23 @@ function setupCanvas() {
     });
 }
 
-// ── SPAWN BALL — TIDAK BLOCKING ──────────────────────────────
+// ── SPAWN BALL ───────────────────────────────────────────────
 function spawnBall() {
-    var bet      = BETS[betIdx];
+    var bet = BETS[betIdx];
 
-    // Saldo tersedia = saldo session - semua bet yang masih pending
     if (_displaySaldo < bet) {
         showModal('Saldo tidak cukup!\nDeposit dulu untuk terus bermain.', 'SALDO HABIS');
         stopAuto();
         return;
     }
 
-    // Auto mode: jaga jarak — skip kalau bola terlalu banyak
     if (isAuto && balls.length >= MAX_AUTO_BALLS) return;
 
     var ph = PHYSICS[speedMode];
 
-    // Tambah ke pending — UI akan tampilkan saldo dikurangi ini
-    // Kurangi display saldo LANGSUNG saat spawn (responsif)
     _displaySaldo = Math.max(0, _displaySaldo - bet);
     updateSaldoDisplay();
 
-    // Buat bola langsung — status WAIT
     var ball = {
         x:               BW / 2 + (Math.random() - 0.5) * 24,
         y:               -BALL_R,
@@ -279,24 +253,17 @@ function spawnBall() {
 
     balls.push(ball);
 
-    // Kirim ke server PARALEL — tidak memblokir spawn berikutnya
     GameEngine.processPlay(bet)
         .then(function(res) {
-            if (ball.isDone) {
-                // Bola sudah buang sebelum server reply — tidak perlu update display
-                return;
-            }
+            if (ball.isDone) return;
 
             if (!res || res.result !== 'SUCCESS') {
-                // Gagal — kembalikan pending, saldo tidak berubah
-                // Error/gagal — kembalikan display saldo
                 _displaySaldo += bet;
                 updateSaldoDisplay();
                 ball.isDone = true;
                 return;
             }
 
-            // Tentukan slot target dari multiplier server
             var slots = [];
             MULTS.forEach(function(m, i) {
                 if (m === res.multiplier) slots.push(i);
@@ -305,7 +272,6 @@ function spawnBall() {
                 ? slots[Math.floor(Math.random() * slots.length)]
                 : Math.floor(MULTS.length / 2);
 
-            // Update bola dengan hasil server
             ball.targetMult      = res.multiplier;
             ball.targetSlotIdx   = tIdx;
             ball.targetX         = (tIdx + 0.5) * slotW;
@@ -315,7 +281,6 @@ function spawnBall() {
         })
         .catch(function() {
             if (!ball.isDone) {
-                // Network error — kembalikan display saldo
                 _displaySaldo += bet;
                 updateSaldoDisplay();
                 ball.isDone = true;
@@ -330,12 +295,10 @@ function updatePhysics() {
     balls.forEach(function(b) {
         if (b.isDone) return;
 
-        // ── Gravitasi & gerak ──
         b.vy += ph.grav;
         b.x  += b.vx;
         b.y  += b.vy;
 
-        // ── Peg collision ──
         for (var pi = 0; pi < pegs.length; pi++) {
             var p    = pegs[pi];
             var dx   = b.x - p.x;
@@ -349,10 +312,15 @@ function updatePhysics() {
                 b.x   = p.x + Math.cos(ang) * (BALL_R + PEG_R + 1);
                 b.y   = p.y + Math.sin(ang) * (BALL_R + PEG_R + 1);
                 p.glow = 1.5;
+                
+                // Mencegah micro-stuttering dari audio yang menumpuk
                 try {
-                    var s = document.getElementById('snd-hit').cloneNode();
-                    s.volume = 0.3;
-                    s.play();
+                    var sHit = document.getElementById('snd-hit').cloneNode();
+                    sHit.volume = 0.3;
+                    var playPromise = sHit.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(function() {}); 
+                    }
                 } catch(e) {}
                 break;
             }
@@ -360,30 +328,32 @@ function updatePhysics() {
 
         var progY = b.y / BH;
 
-        // ── Steer & Lock ke target — hanya kalau ST_READY ──
         if (b.status === ST_READY) {
             var dx2target = b.targetX - b.x;
 
             if (progY > ph.lockY) {
-                // ZONA LOCK (82%+ board):
-                // Hard-lock posisi X langsung ke target slot.
-                // Pastikan bola secara visual memang masuk ke slot yang benar.
-                b.x  += dx2target * 0.35;  // Tarik X langsung ke target
-                b.vx  = dx2target * 0.4;   // Override vx agar tidak lari lagi
+                // ZONA LOCK: Menarik bola lebih mulus ke slot target
+                b.x  += dx2target * 0.25;  
+                b.vx  = dx2target * 0.3;   
             } else if (progY > ph.steerStart) {
-                // ZONA STEER (50%–82% board):
-                // Force proporsional — makin ke bawah makin kuat
                 var prog  = (progY - ph.steerStart) / (ph.lockY - ph.steerStart);
                 var steer = ph.steerMax * prog;
                 b.vx += dx2target * steer;
-                // Batasi vx agar tidak overshoot
                 var maxVx = Math.abs(dx2target) * 0.6 + 1.5;
                 if (b.vx >  maxVx) b.vx =  maxVx;
                 if (b.vx < -maxVx) b.vx = -maxVx;
             }
+        } else if (b.status === ST_WAIT) {
+            // TAHAN BOLA (Mencegah Desync): Jika server delay, pantulkan bola ringan 
+            // di atas slot target sampai data server tiba agar tidak jatuh gaib duluan.
+            if (progY > ph.lockY - 0.05) {
+                b.y = BH * (ph.lockY - 0.05); 
+                b.vy = -1.5; 
+                b.vx += (Math.random() - 0.5) * 1.5; 
+            }
         }
 
-        // ── Rem zona bawah ──
+        // Rem zona bawah
         if (progY > ph.brakeY) {
             var brakeMult = (b.status === ST_WAIT) ? ph.brakeFric : (ph.brakeFric + 0.06);
             b.vx *= brakeMult;
@@ -391,36 +361,11 @@ function updatePhysics() {
             if (b.vy < ph.minVy) b.vy = ph.minVy;
         }
 
-        // ── Batas kiri-kanan ──
         if (b.x < BALL_R)      { b.x = BALL_R;      b.vx =  Math.abs(b.vx) * 0.6; }
         if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx = -Math.abs(b.vx) * 0.6; }
 
-        // ── Keluar dari bawah canvas → landing ──
-        // Bola dianggap "masuk slot" saat melewati batas bawah canvas.
-        // Tidak ada bounce — bola selalu turun dan keluar.
+        // Keluar dari bawah canvas → HANYA KELUAR KALAU SUDAH PAS
         if (b.y >= BH + BALL_R) {
-            if (b.status === ST_READY) {
-                // Normal landing — semua data sudah ada
-                b.isDone = true;
-                onBallLand(b);
-            } else {
-                // Server belum reply — tunggu di tepi bawah canvas
-                // (bola sudah tidak terlihat, tapi proses tetap jalan)
-                b.y  = BH + BALL_R;
-                b.vy = 0;
-                b.vx = 0;
-                // Cek terus setiap frame — begitu ST_READY, langsung landing
-                if (b.status === ST_READY) {
-                    b.isDone = true;
-                    onBallLand(b);
-                }
-            }
-        }
-    });
-
-    // Cek bola yang sudah di luar canvas dan menunggu server
-    balls.forEach(function(b) {
-        if (!b.isDone && b.y >= BH + BALL_R && b.status === ST_READY) {
             b.isDone = true;
             onBallLand(b);
         }
@@ -431,14 +376,11 @@ function updatePhysics() {
 
 // ── LANDING ──────────────────────────────────────────────────
 function onBallLand(b) {
-    // Kurangi pendingBets — bet ini sudah selesai
-    // Tambah winAmount ke display saldo (tidak pernah loncat dari server value)
     var winAmt2 = (b.serverWinAmount !== null && b.serverWinAmount !== undefined)
         ? b.serverWinAmount
         : Math.floor(b.bet * (b.targetMult || 0));
     _displaySaldo += winAmt2;
 
-    // Simpan saldo server ke session (dipakai untuk re-sync saat tidak ada bola aktif)
     if (b.serverNewSaldo !== null && b.serverNewSaldo !== undefined) {
         if (typeof _session !== 'undefined' && _session) {
             _session.saldo = b.serverNewSaldo;
@@ -448,14 +390,12 @@ function onBallLand(b) {
 
     updateSaldoDisplay();
 
-    // Highlight slot target
     var el = document.getElementById('slot-' + b.targetSlotIdx);
     if (el) {
         el.classList.add('active');
         setTimeout(function() { el.classList.remove('active'); }, 450);
     }
 
-    // Score list
     var mult   = b.targetMult   !== null ? b.targetMult : 0;
     var winAmt = (b.serverWinAmount !== null && b.serverWinAmount !== undefined)
         ? b.serverWinAmount
@@ -469,9 +409,15 @@ function onBallLand(b) {
     list.prepend(entry);
     if (list.children.length > 5) list.removeChild(list.lastChild);
 
-    // Sound
     if (mult >= 1) {
-        try { document.getElementById('snd-win').play(); } catch(e) {}
+        try { 
+            var sWin = document.getElementById('snd-win').cloneNode();
+            sWin.volume = 0.6;
+            var playWin = sWin.play();
+            if (playWin !== undefined) {
+                playWin.catch(function(){});
+            }
+        } catch(e) {}
     }
 }
 
@@ -480,7 +426,6 @@ function draw() {
     if (!ctx) return;
     ctx.clearRect(0, 0, BW, BH);
 
-    // Draw pegs
     pegs.forEach(function(p) {
         ctx.beginPath();
         ctx.arc(p.x, p.y, PEG_R, 0, Math.PI * 2);
@@ -497,16 +442,13 @@ function draw() {
         if (p.glow > 0) p.glow -= 0.08;
     });
 
-    // Draw balls
     balls.forEach(function(b) {
         ctx.save();
 
-        // Glow: biru = menunggu server, pink = sudah siap
         var glowColor = b.status === ST_READY ? '#ff0077' : '#4466ff';
         ctx.shadowBlur  = 18;
         ctx.shadowColor = glowColor;
 
-        // Gradient bola
         var grad = ctx.createRadialGradient(b.x - 2.5, b.y - 2.5, 1, b.x, b.y, BALL_R);
         if (b.status === ST_READY) {
             grad.addColorStop(0,   '#ffffff');
@@ -523,7 +465,6 @@ function draw() {
         ctx.fillStyle = grad;
         ctx.fill();
 
-        // Highlight spekuler
         ctx.shadowBlur = 0;
         ctx.beginPath();
         ctx.arc(b.x - 2.5, b.y - 2.5, 2.2, 0, Math.PI * 2);
@@ -554,10 +495,8 @@ function setSpeed(m) {
     }
 }
 
-// Auto spawn dengan cek batas bola
 function tryAutoSpawn() {
     if (!isAuto) return;
-    // Hanya spawn kalau jumlah bola aktif di bawah batas
     var activeBalls = balls.filter(function(b) { return !b.isDone; }).length;
     if (activeBalls < MAX_AUTO_BALLS) spawnBall();
 }
@@ -584,7 +523,6 @@ function stopAuto() {
 
 function handlePlay() {
     if (isAuto) { stopAuto(); return; }
-    // Manual: langsung spawn — bisa ditekan berkali-kali
     spawnBall();
 }
 
@@ -601,8 +539,6 @@ function closeModal() {
 }
 
 // ── SALDO DISPLAY ─────────────────────────────────────────────
-// Tampilkan saldo = saldo session (dari server) - pending bets
-// Tidak pernah "naik" di tengah permainan, selalu konsisten
 function updateSaldoDisplay() {
     var el = document.getElementById('display-saldo');
     if (el) el.textContent = 'IDR ' + Math.floor(Math.max(0, _displaySaldo)).toLocaleString('id-ID');
@@ -610,13 +546,12 @@ function updateSaldoDisplay() {
 
 // ── INIT ─────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', function() {
-    var sess = requireLogin('index.html');
-    if (!sess) return;
+    var sess = (typeof requireLogin === 'function') ? requireLogin('index.html') : null;
+    if (typeof requireLogin === 'function' && !sess) return;
 
     setupCanvas();
 
-    // Inisialisasi _displaySaldo dari session cache
-    _displaySaldo = sess.saldo || 0;
+    _displaySaldo = (sess && sess.saldo) ? sess.saldo : 0;
     if (typeof _session !== 'undefined' && _session) {
         _session.saldo = _displaySaldo;
     }
@@ -624,17 +559,22 @@ window.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('current-bet').textContent = BETS[betIdx].toLocaleString('id-ID');
 
-    var u = getUsername();
-    callApiSilent('set_session_start', { username: u }).catch(function(){});
-    callApiSilent('set_status', { username: u, status: 'ONLINE' }).catch(function(){});
-
-    // Sync saldo terbaru dari server — hanya update display jika tidak ada bola aktif
-    ProfileAPI.sync().then(function() {
-        if (balls.length === 0) {
-            _displaySaldo = getSaldo();
-            updateSaldoDisplay();
+    if (typeof getUsername === 'function') {
+        var u = getUsername();
+        if (typeof callApiSilent === 'function') {
+            callApiSilent('set_session_start', { username: u }).catch(function(){});
+            callApiSilent('set_status', { username: u, status: 'ONLINE' }).catch(function(){});
         }
-    }).catch(function(){});
+    }
+
+    if (typeof ProfileAPI !== 'undefined' && ProfileAPI.sync) {
+        ProfileAPI.sync().then(function() {
+            if (balls.length === 0) {
+                if (typeof getSaldo === 'function') _displaySaldo = getSaldo();
+                updateSaldoDisplay();
+            }
+        }).catch(function(){});
+    }
 
     draw();
 });
