@@ -157,21 +157,23 @@ var ST_READY = 'ready';  // Server sudah reply — bola di-steer ke target
 // Parameter physics per mode
 var PHYSICS = {
     normal: {
-        grav:       0.28,   // Gravitasi per frame
-        bounce:     0.45,   // Koefisien pantul peg
-        initVy:     2.5,    // Kecepatan awal turun
-        steerStart: 0.42,   // Mulai steer di % tinggi board (dari atas)
-        steerMax:   0.055,  // Kekuatan steer maksimal
-        brakeY:     0.75,   // Mulai rem di % tinggi board (bila masih WAIT)
-        brakeFric:  0.88,   // Faktor rem per frame
-        minVy:      0.35    // Kecepatan turun minimum saat nge-rem
+        grav:       0.28,
+        bounce:     0.45,
+        initVy:     2.5,
+        steerStart: 0.50,   // Mulai steer di 50% tinggi board
+        steerMax:   0.22,   // Kuat — 4x lebih besar dari sebelumnya
+        lockY:      0.82,   // Di 82% board ke bawah: hard-lock X ke target slot
+        brakeY:     0.75,
+        brakeFric:  0.88,
+        minVy:      0.35
     },
     turbo: {
         grav:       0.60,
         bounce:     0.42,
         initVy:     5.0,
-        steerStart: 0.42,
-        steerMax:   0.058,
+        steerStart: 0.50,
+        steerMax:   0.24,
+        lockY:      0.82,
         brakeY:     0.75,
         brakeFric:  0.84,
         minVy:      0.55
@@ -358,22 +360,34 @@ function updatePhysics() {
 
         var progY = b.y / BH;
 
-        // ── Steer ke target — hanya kalau ST_READY ──
-        if (b.status === ST_READY && progY > ph.steerStart) {
-            var prog  = (progY - ph.steerStart) / (1.0 - ph.steerStart);
-            var steer = ph.steerMax * prog * prog;
-            b.vx += (b.targetX - b.x) * steer;
+        // ── Steer & Lock ke target — hanya kalau ST_READY ──
+        if (b.status === ST_READY) {
+            var dx2target = b.targetX - b.x;
+
+            if (progY > ph.lockY) {
+                // ZONA LOCK (82%+ board):
+                // Hard-lock posisi X langsung ke target slot.
+                // Pastikan bola secara visual memang masuk ke slot yang benar.
+                b.x  += dx2target * 0.35;  // Tarik X langsung ke target
+                b.vx  = dx2target * 0.4;   // Override vx agar tidak lari lagi
+            } else if (progY > ph.steerStart) {
+                // ZONA STEER (50%–82% board):
+                // Force proporsional — makin ke bawah makin kuat
+                var prog  = (progY - ph.steerStart) / (ph.lockY - ph.steerStart);
+                var steer = ph.steerMax * prog;
+                b.vx += dx2target * steer;
+                // Batasi vx agar tidak overshoot
+                var maxVx = Math.abs(dx2target) * 0.6 + 1.5;
+                if (b.vx >  maxVx) b.vx =  maxVx;
+                if (b.vx < -maxVx) b.vx = -maxVx;
+            }
         }
 
         // ── Rem zona bawah ──
-        // ST_WAIT: rem kuat agar bola bergerak sangat pelan di bawah
-        //          sehingga server punya waktu reply sebelum bola keluar
-        // ST_READY: rem ringan saja — bola sudah tahu ke mana
         if (progY > ph.brakeY) {
             var brakeMult = (b.status === ST_WAIT) ? ph.brakeFric : (ph.brakeFric + 0.06);
             b.vx *= brakeMult;
             b.vy *= brakeMult;
-            // Jaga kecepatan turun minimum agar bola tidak berhenti di udara
             if (b.vy < ph.minVy) b.vy = ph.minVy;
         }
 
