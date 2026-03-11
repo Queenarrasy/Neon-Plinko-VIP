@@ -128,8 +128,8 @@ html,body{
 <script>
 /**
  * ================================================================
- * GAME.HTML v6.1 — Neon Plinko VIP (Smoothed & Synced)
- * ARSITEKTUR: Multi-ball paralel, ZERO blocking, Auto-Sync
+ * GAME.HTML v6.2 — Neon Plinko VIP (Smoothed & Synced)
+ * ARSITEKTUR: Multi-ball paralel, Natural Physics Drop, Auto-Sync
  * ================================================================
  */
 
@@ -146,25 +146,19 @@ var ST_READY = 'ready';
 var PHYSICS = {
     normal: {
         grav:       0.28,
-        bounce:     0.45,
-        initVy:     2.5,
-        steerStart: 0.50,
-        steerMax:   0.22,
-        lockY:      0.82,
-        brakeY:     0.75,
-        brakeFric:  0.88,
-        minVy:      0.35
+        bounce:     0.55,
+        initVy:     1.5,
+        steerStart: 0.30,
+        steerForce: 0.02,
+        maxVx:      4.0
     },
     turbo: {
         grav:       0.60,
-        bounce:     0.42,
-        initVy:     5.0,
-        steerStart: 0.50,
-        steerMax:   0.24,
-        lockY:      0.82,
-        brakeY:     0.75,
-        brakeFric:  0.84,
-        minVy:      0.55
+        bounce:     0.50,
+        initVy:     3.0,
+        steerStart: 0.30,
+        steerForce: 0.04,
+        maxVx:      6.0
     }
 };
 
@@ -245,7 +239,7 @@ function spawnBall() {
         status:          ST_WAIT,
         targetMult:      null,
         targetSlotIdx:   null,
-        targetX:         BW / 2,
+        targetX:         null,
         serverNewSaldo:  null,
         serverWinAmount: null,
         isDone:          false
@@ -313,7 +307,6 @@ function updatePhysics() {
                 b.y   = p.y + Math.sin(ang) * (BALL_R + PEG_R + 1);
                 p.glow = 1.5;
                 
-                // Mencegah micro-stuttering dari audio yang menumpuk
                 try {
                     var sHit = document.getElementById('snd-hit').cloneNode();
                     sHit.volume = 0.3;
@@ -328,43 +321,30 @@ function updatePhysics() {
 
         var progY = b.y / BH;
 
-        if (b.status === ST_READY) {
+        if (b.status === ST_READY && b.targetX !== null) {
             var dx2target = b.targetX - b.x;
 
-            if (progY > ph.lockY) {
-                // ZONA LOCK: Menarik bola lebih mulus ke slot target
-                b.x  += dx2target * 0.25;  
-                b.vx  = dx2target * 0.3;   
-            } else if (progY > ph.steerStart) {
-                var prog  = (progY - ph.steerStart) / (ph.lockY - ph.steerStart);
-                var steer = ph.steerMax * prog;
-                b.vx += dx2target * steer;
-                var maxVx = Math.abs(dx2target) * 0.6 + 1.5;
-                if (b.vx >  maxVx) b.vx =  maxVx;
-                if (b.vx < -maxVx) b.vx = -maxVx;
-            }
-        } else if (b.status === ST_WAIT) {
-            // TAHAN BOLA (Mencegah Desync): Jika server delay, pantulkan bola ringan 
-            // di atas slot target sampai data server tiba agar tidak jatuh gaib duluan.
-            if (progY > ph.lockY - 0.05) {
-                b.y = BH * (ph.lockY - 0.05); 
-                b.vy = -1.5; 
-                b.vx += (Math.random() - 0.5) * 1.5; 
+            // Tarikan halus ke arah targetX (magnet effect) langsung jatuh natural
+            if (progY > ph.steerStart) {
+                var prog = (progY - ph.steerStart) / (1.0 - ph.steerStart);
+                b.vx += dx2target * ph.steerForce * prog;
+
+                if (b.vx >  ph.maxVx) b.vx =  ph.maxVx;
+                if (b.vx < -ph.maxVx) b.vx = -ph.maxVx;
             }
         }
 
-        // Rem zona bawah
-        if (progY > ph.brakeY) {
-            var brakeMult = (b.status === ST_WAIT) ? ph.brakeFric : (ph.brakeFric + 0.06);
-            b.vx *= brakeMult;
-            b.vy *= brakeMult;
-            if (b.vy < ph.minVy) b.vy = ph.minVy;
-        }
+        // Air resistance / friction horizontal tipis agar tidak meluncur liar
+        b.vx *= 0.98;
 
+        // Batasi kecepatan jatuh maksimal agar tidak tembus map
+        if (b.vy > 10) b.vy = 10;
+
+        // Bouncing dinding luar
         if (b.x < BALL_R)      { b.x = BALL_R;      b.vx =  Math.abs(b.vx) * 0.6; }
         if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx = -Math.abs(b.vx) * 0.6; }
 
-        // Keluar dari bawah canvas → HANYA KELUAR KALAU SUDAH PAS
+        // Mendarat & eksekusi hasil
         if (b.y >= BH + BALL_R) {
             b.isDone = true;
             onBallLand(b);
