@@ -128,8 +128,8 @@ html,body{
 <script>
 /**
  * ================================================================
- * GAME.HTML v7.0 — Neon Plinko VIP (Strict Sync Edition)
- * PERBAIKAN: Jaminan bola masuk kotak sesuai data server.
+ * GAME.HTML v6.2 — Neon Plinko VIP (Natural Physics Fix)
+ * ARSITEKTUR: Instant-Fall, Smooth Correction, Precision Sync
  * ================================================================
  */
 
@@ -143,12 +143,32 @@ var ST_WAIT  = 'wait';
 var ST_READY = 'ready'; 
 
 var PHYSICS = {
-    normal: { grav: 0.28, bounce: 0.55, initVy: 1.5, steerStart: 0.30, steerForce: 0.02, maxVx: 4.0 },
-    turbo:  { grav: 0.60, bounce: 0.50, initVy: 3.0, steerStart: 0.30, steerForce: 0.04, maxVx: 6.0 }
+    normal: {
+        grav:       0.35,  /* Lebih berat agar jatuh mulus */
+        bounce:     0.40,
+        initVy:     3.0,
+        steerStart: 0.20,  /* Koreksi dimulai lebih awal agar halus */
+        steerMax:   0.15,
+        lockY:      0.75,
+        brakeY:     0.85,
+        brakeFric:  0.92,
+        minVy:      0.80
+    },
+    turbo: {
+        grav:       0.65,
+        bounce:     0.38,
+        initVy:     5.5,
+        steerStart: 0.20,
+        steerMax:   0.18,
+        lockY:      0.75,
+        brakeY:     0.85,
+        brakeFric:  0.88,
+        minVy:      1.20
+    }
 };
 
-var AUTO_MS = { normal: 950, turbo: 440 };
-var MAX_AUTO_BALLS = 5; 
+var AUTO_MS = { normal: 900, turbo: 400 };
+var MAX_AUTO_BALLS = 5;
 
 var canvas, ctx, BW, BH, slotW;
 var pegs      = [];
@@ -175,12 +195,12 @@ function setupCanvas() {
 
     pegs = [];
     var spX = BW / (ROWS + 2);
-    var spY = (BH - 40) / ROWS;
+    var spY = (BH - 60) / ROWS;
     for (var r = 0; r < ROWS; r++) {
         var cnt    = r + 3;
         var startX = (BW - (cnt - 1) * spX) / 2;
         for (var c = 0; c < cnt; c++) {
-            pegs.push({ x: startX + c * spX, y: 30 + r * spY, glow: 0 });
+            pegs.push({ x: startX + c * spX, y: 40 + r * spY, glow: 0 });
         }
     }
 
@@ -208,39 +228,37 @@ function spawnBall() {
     _displaySaldo -= bet;
     updateSaldoDisplay();
 
-    // Inisialisasi bola dalam status WAIT
     var ball = {
-        x: BW / 2 + (Math.random() - 0.5) * 20,
-        y: -BALL_R,
-        vx: (Math.random() - 0.5) * 2,
-        vy: ph.initVy,
-        bet: bet,
-        status: ST_WAIT,
-        targetMult: null,
-        targetSlotIdx: null,
-        targetX: null,
+        x:               BW / 2 + (Math.random() - 0.5) * 10,
+        y:               -BALL_R,
+        vx:              (Math.random() - 0.5) * 1.5,
+        vy:              ph.initVy,
+        bet:             bet,
+        status:          ST_WAIT,
+        targetMult:      null,
+        targetSlotIdx:   null,
+        targetX:         BW / 2,
+        serverNewSaldo:  null,
         serverWinAmount: null,
-        isDone: false
+        isDone:          false
     };
     balls.push(ball);
 
-    // LAPOR KE SERVER
-    GameEngine.processPlay(bet).then(function(res) {
-        if (res && res.result === 'SUCCESS') {
-            // Cari index kotak yang sesuai multiplier dari server
-            var validSlots = [];
-            MULTS.forEach(function(m, i) { if (m === res.multiplier) validSlots.push(i); });
-            var tIdx = validSlots[Math.floor(Math.random() * validSlots.length)];
+    GameEngine.processPlay(bet)
+        .then(function(res) {
+            if (ball.isDone || !res || res.result !== 'SUCCESS') return;
+            var slots = [];
+            MULTS.forEach(function(m, i) { if (m === res.multiplier) slots.push(i); });
+            var tIdx = slots[Math.floor(Math.random() * slots.length)];
 
-            ball.targetMult = res.multiplier;
-            ball.targetSlotIdx = tIdx;
-            ball.targetX = (tIdx + 0.5) * slotW;
+            ball.targetMult      = res.multiplier;
+            ball.targetSlotIdx   = tIdx;
+            ball.targetX         = (tIdx + 0.5) * slotW;
+            ball.serverNewSaldo  = res.newSaldo;
             ball.serverWinAmount = res.winAmount;
-            ball.status = ST_READY; // SEKARANG BOLA SIAP MASUK KOTAK
-        } else {
-            ball.isDone = true; // Gagal server, hapus bola
-        }
-    }).catch(function() { ball.isDone = true; });
+            ball.status          = ST_READY;
+        })
+        .catch(function() { ball.isDone = true; _displaySaldo += bet; updateSaldoDisplay(); });
 }
 
 function updatePhysics() {
@@ -249,99 +267,119 @@ function updatePhysics() {
     balls.forEach(function(b) {
         if (b.isDone) return;
 
-        // SYNC GUARD: Jika bola sudah mendekati dasar tapi data server belum datang, 
-        // kita "tahan" gravitasi nya agar tidak masuk kotak kosong.
-        if (b.y > BH * 0.85 && b.status === ST_WAIT) {
-            b.vy *= 0.5; // Melambat drastis menunggu data
-        } else {
-            b.vy += ph.grav;
-        }
+        b.vy += ph.grav;
+        b.x  += b.vx;
+        b.y  += b.vy;
 
-        b.x += b.vx;
-        b.y += b.vy;
-
-        // Tabrakan Paku
-        pegs.forEach(function(p) {
-            var dx = b.x - p.x, dy = b.y - p.y;
-            var dist = Math.sqrt(dx*dx + dy*dy);
+        // Peg Collision
+        for (var pi = 0; pi < pegs.length; pi++) {
+            var p    = pegs[pi];
+            var dx   = b.x - p.x;
+            var dy   = b.y - p.y;
+            var dist = Math.sqrt(dx * dx + dy * dy);
             if (dist < BALL_R + PEG_R) {
                 var ang = Math.atan2(dy, dx);
-                var spd = Math.sqrt(b.vx*b.vx + b.vy*b.vy);
-                b.vx = Math.cos(ang) * spd * ph.bounce + (Math.random()-0.5);
-                b.vy = Math.abs(Math.sin(ang) * spd * ph.bounce) + 0.2;
-                b.x = p.x + Math.cos(ang) * (BALL_R + PEG_R + 1);
-                b.y = p.y + Math.sin(ang) * (BALL_R + PEG_R + 1);
+                var spd = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
+                b.vx  = Math.cos(ang) * spd * ph.bounce + (Math.random() - 0.5) * 0.5;
+                b.vy  = Math.abs(Math.sin(ang) * spd * ph.bounce) + 0.1;
+                b.x   = p.x + Math.cos(ang) * (BALL_R + PEG_R + 0.5);
+                b.y   = p.y + Math.sin(ang) * (BALL_R + PEG_R + 0.5);
                 p.glow = 1.2;
-                playSnd('snd-hit', 0.2);
+                try {
+                    var sHit = document.getElementById('snd-hit').cloneNode();
+                    sHit.volume = 0.2; sHit.play().catch(function(){});
+                } catch(e) {}
+                break;
             }
-        });
-
-        // Magnet ke Target (Hanya jika ST_READY)
-        if (b.status === ST_READY && b.y > BH * ph.steerStart) {
-            var dx2t = b.targetX - b.x;
-            b.vx += dx2t * ph.steerForce;
         }
 
-        b.vx *= 0.98;
-        if (b.x < BALL_R || b.x > BW - BALL_R) b.vx *= -0.6;
+        var progY = b.y / BH;
 
-        // Mendarat
-        if (b.y >= BH) {
-            if (b.status === ST_READY) {
-                b.isDone = true;
-                onBallLand(b);
-            } else if (b.y > BH + 20) {
-                // Keamanan jika server benar-benar putus
-                b.isDone = true; 
-                _displaySaldo += b.bet; // Refund
-                updateSaldoDisplay();
+        // Natural Steering (No Hovering)
+        if (b.status === ST_READY) {
+            var dx2target = b.targetX - b.x;
+            if (progY > ph.lockY) {
+                // Final Landing Phase: Snapping to Slot
+                b.x += dx2target * 0.15;
+                b.vx = dx2target * 0.2;
+            } else if (progY > ph.steerStart) {
+                // Gradual Steering during mid-fall
+                var power = (progY - ph.steerStart) / (ph.lockY - ph.steerStart);
+                b.vx += dx2target * (ph.steerMax * power * 0.1);
             }
+        }
+
+        // Brake near bottom for smooth entry
+        if (progY > ph.brakeY) {
+            b.vx *= ph.brakeFric;
+            if (b.vy < ph.minVy) b.vy = ph.minVy;
+        }
+
+        // Walls
+        if (b.x < BALL_R) { b.x = BALL_R; b.vx *= -0.5; }
+        if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx *= -0.5; }
+
+        if (b.y >= BH - 15) {
+            b.isDone = true;
+            onBallLand(b);
         }
     });
-    balls = balls.filter(function(b){ return !b.isDone; });
+    balls = balls.filter(function(b) { return !b.isDone; });
 }
 
 function onBallLand(b) {
-    var winAmt = b.serverWinAmount || 0;
+    if (b.targetSlotIdx === null) return;
+    
+    // Sync Saldo Precision
+    var winAmt = (b.serverWinAmount !== null) ? b.serverWinAmount : 0;
     _displaySaldo += winAmt;
+    if (b.serverNewSaldo !== null) _displaySaldo = b.serverNewSaldo;
     updateSaldoDisplay();
 
-    // Animasi Nyala Kotak
-    var slotEl = document.getElementById('slot-' + b.targetSlotIdx);
-    if (slotEl) {
-        slotEl.classList.add('active');
-        setTimeout(function(){ slotEl.classList.remove('active'); }, 400);
+    // Blink Animation
+    var el = document.getElementById('slot-' + b.targetSlotIdx);
+    if (el) {
+        el.classList.add('active');
+        setTimeout(function() { el.classList.remove('active'); }, 400);
     }
 
-    // List Score
+    // Floating Score Update
     var list = document.getElementById('score-list');
     var entry = document.createElement('div');
     entry.className = 'score-entry';
-    var color = b.targetMult >= 3 ? 'var(--pink)' : 'var(--yellow)';
-    entry.innerHTML = `<span style="color:${color}">${b.targetMult}x</span> <span style="color:#fff">IDR ${winAmt.toLocaleString()}</span>`;
+    var color = b.targetMult >= 3 ? 'var(--pink)' : b.targetMult >= 1 ? 'var(--yellow)' : '#7799ff';
+    entry.innerHTML = '<span style="color:'+color+'">'+(b.targetMult||0)+'x</span> <span style="color:#fff">IDR '+winAmt.toLocaleString('id-ID')+'</span>';
     list.prepend(entry);
     if (list.children.length > 5) list.removeChild(list.lastChild);
-    if (b.targetMult >= 1) playSnd('snd-win', 0.5);
+
+    if (winAmt > 0) {
+        try { var sWin = document.getElementById('snd-win').cloneNode(); sWin.volume = 0.5; sWin.play().catch(function(){}); } catch(e){}
+    }
 }
 
 function draw() {
     ctx.clearRect(0, 0, BW, BH);
     pegs.forEach(function(p) {
         ctx.beginPath();
-        ctx.arc(p.x, p.y, PEG_R, 0, Math.PI*2);
-        ctx.fillStyle = p.glow > 0 ? `rgba(245,230,66,${0.3+p.glow})` : '#333';
+        ctx.arc(p.x, p.y, PEG_R, 0, Math.PI * 2);
+        if (p.glow > 0) {
+            ctx.shadowBlur = 10 * p.glow; ctx.shadowColor = '#f5e642';
+            ctx.fillStyle = 'rgba(245,230,66,'+(0.3 + p.glow*0.7)+')';
+            p.glow -= 0.05;
+        } else {
+            ctx.shadowBlur = 0; ctx.fillStyle = '#333';
+        }
         ctx.fill();
-        if (p.glow > 0) p.glow -= 0.05;
     });
 
     balls.forEach(function(b) {
         ctx.save();
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = b.status === ST_READY ? 'var(--pink)' : 'var(--blue)';
-        ctx.beginPath();
-        ctx.arc(b.x, b.y, BALL_R, 0, Math.PI*2);
-        ctx.fillStyle = b.status === ST_READY ? 'var(--pink)' : '#fff';
-        ctx.fill();
+        ctx.shadowBlur = 15; ctx.shadowColor = b.status === ST_READY ? varColor('--pink') : varColor('--blue');
+        var grad = ctx.createRadialGradient(b.x-2, b.y-2, 1, b.x, b.y, BALL_R);
+        grad.addColorStop(0, '#fff');
+        grad.addColorStop(1, b.status === ST_READY ? '#ff0077' : '#0055ff');
+        ctx.beginPath(); ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2);
+        ctx.fillStyle = grad; ctx.fill();
         ctx.restore();
     });
 
@@ -349,49 +387,46 @@ function draw() {
     requestAnimationFrame(draw);
 }
 
-function playSnd(id, vol) {
-    try {
-        var s = document.getElementById(id).cloneNode();
-        s.volume = vol;
-        s.play();
-    } catch(e){}
-}
+function varColor(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
 
 function changeBet(d) {
     if (isAuto) return;
     betIdx = Math.max(0, Math.min(BETS.length - 1, betIdx + d));
-    document.getElementById('current-bet').textContent = BETS[betIdx].toLocaleString();
+    document.getElementById('current-bet').textContent = BETS[betIdx].toLocaleString('id-ID');
 }
 
 function setSpeed(m) {
     speedMode = m;
-    document.getElementById('m-normal').classList.toggle('active', m==='normal');
-    document.getElementById('m-turbo').classList.toggle('active', m==='turbo');
+    document.getElementById('m-normal').classList.toggle('active', m === 'normal');
+    document.getElementById('m-turbo').classList.toggle('active',  m === 'turbo');
     if (isAuto) { clearInterval(autoTimer); autoTimer = setInterval(tryAutoSpawn, AUTO_MS[speedMode]); }
 }
 
-function tryAutoSpawn() {
-    if (isAuto && balls.length < MAX_AUTO_BALLS) spawnBall();
-}
+function tryAutoSpawn() { if (isAuto && balls.length < MAX_AUTO_BALLS) spawnBall(); }
 
 function toggleAuto() {
-    isAuto = !isAuto;
-    var btn = document.getElementById('m-auto');
-    var main = document.getElementById('main-btn');
-    btn.classList.toggle('active', isAuto);
-    btn.textContent = isAuto ? '🔄 AUTO: ON' : '🔄 AUTO: OFF';
-    main.textContent = isAuto ? 'STOP AUTO' : 'PLAY BALL';
-    main.classList.toggle('stop-mode', isAuto);
-    if (isAuto) { spawnBall(); autoTimer = setInterval(tryAutoSpawn, AUTO_MS[speedMode]); }
-    else clearInterval(autoTimer);
+    if (isAuto) { stopAuto(); return; }
+    isAuto = true;
+    document.getElementById('m-auto').classList.add('active');
+    document.getElementById('m-auto').textContent = '🔄 AUTO: ON';
+    document.getElementById('main-btn').textContent = 'STOP AUTO';
+    document.getElementById('main-btn').classList.add('stop-mode');
+    spawnBall();
+    autoTimer = setInterval(tryAutoSpawn, AUTO_MS[speedMode]);
+}
+
+function stopAuto() {
+    isAuto = false; clearInterval(autoTimer); autoTimer = null;
+    document.getElementById('m-auto').classList.remove('active');
+    document.getElementById('m-auto').textContent = '🔄 AUTO: OFF';
+    document.getElementById('main-btn').textContent = 'PLAY BALL';
+    document.getElementById('main-btn').classList.remove('stop-mode');
 }
 
 function handlePlay() { if (isAuto) stopAuto(); else spawnBall(); }
 
-function stopAuto() { if (isAuto) toggleAuto(); }
-
 function showModal(msg, title) {
-    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-title').textContent = title || 'INFO';
     document.getElementById('modal-msg').textContent = msg;
     document.getElementById('modal-overlay').style.display = 'block';
     document.getElementById('neon-modal').style.display = 'block';
@@ -403,15 +438,19 @@ function closeModal() {
 }
 
 function updateSaldoDisplay() {
-    document.getElementById('display-saldo').textContent = 'IDR ' + Math.floor(_displaySaldo).toLocaleString();
+    var el = document.getElementById('display-saldo');
+    if (el) el.textContent = 'IDR ' + Math.floor(_displaySaldo).toLocaleString('id-ID');
 }
 
 window.addEventListener('DOMContentLoaded', function() {
+    var sess = (typeof requireLogin === 'function') ? requireLogin('index.html') : null;
     setupCanvas();
-    if (typeof getSaldo === 'function') _displaySaldo = getSaldo();
+    _displaySaldo = (sess && sess.saldo) ? sess.saldo : 0;
     updateSaldoDisplay();
+    document.getElementById('current-bet').textContent = BETS[betIdx].toLocaleString('id-ID');
     draw();
 });
+
 window.addEventListener('resize', setupCanvas);
 </script>
 </body>
