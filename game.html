@@ -4,327 +4,375 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NEON PLINKO VIP</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
         :root {
             --neon-pink: #ff007f;
             --neon-blue: #00d4ff;
             --neon-yellow: #fde047;
-            --bg-dark: #050b18;
-            --panel-bg: rgba(13, 25, 48, 0.9);
+            --deep-blue: #050a30;
+            --glass: rgba(255, 255, 255, 0.1);
         }
 
         body {
-            margin: 0; padding: 0;
-            background: var(--bg-dark);
+            margin: 0;
+            background: var(--deep-blue);
             color: #fff;
-            font-family: 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Rajdhani', sans-serif;
             overflow-x: hidden;
-            display: flex; flex-direction: column; align-items: center;
+            background: radial-gradient(circle at center, #101844 0%, #050a30 100%);
         }
 
         /* Header & Saldo */
-        header {
-            width: 100%; padding: 15px;
-            background: var(--panel-bg);
+        .header-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 25px;
+            background: rgba(0, 0, 0, 0.5);
             border-bottom: 2px solid var(--neon-blue);
-            display: flex; justify-content: space-between; align-items: center;
             box-shadow: 0 0 15px var(--neon-blue);
         }
 
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 24px;
+            color: var(--neon-pink);
+            text-shadow: 0 0 10px var(--neon-pink);
+        }
+
         .balance-box {
-            background: #000; border: 1px solid var(--neon-yellow);
-            padding: 8px 15px; border-radius: 20px;
-            color: var(--neon-yellow); font-weight: bold; font-size: 1.1em;
+            background: var(--glass);
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: 1px solid var(--neon-yellow);
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        /* Game Container */
-        #game-container {
-            position: relative; margin: 20px auto;
-            width: 100%; max-width: 500px;
-            aspect-ratio: 4/5;
+        #header-saldo {
+            color: var(--neon-yellow);
+            font-weight: bold;
+            font-size: 1.2rem;
         }
 
-        canvas { width: 100%; height: 100%; filter: drop-shadow(0 0 5px var(--neon-blue)); }
+        /* Game Layout */
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            gap: 20px;
+        }
 
-        /* Controls */
+        #plinko-canvas {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            border: 2px solid var(--glass);
+            box-shadow: inset 0 0 50px rgba(0, 212, 255, 0.1);
+        }
+
+        /* Sidebar / Controls */
         .controls {
-            width: 90%; max-width: 400px;
-            background: var(--panel-bg);
-            padding: 20px; border-radius: 15px;
-            border: 1px solid var(--neon-pink);
-            margin-bottom: 30px;
+            width: 100%;
+            max-width: 500px;
+            background: var(--glass);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
-        .input-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; color: var(--neon-blue); font-size: 0.9em; }
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label { display: block; margin-bottom: 5px; color: var(--neon-blue); }
+
         input {
-            width: 100%; background: #000; border: 1px solid var(--neon-blue);
-            color: #fff; padding: 10px; border-radius: 5px; outline: none; box-sizing: border-box;
+            width: 100%;
+            padding: 12px;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--neon-pink);
+            color: #fff;
+            border-radius: 8px;
+            font-size: 1rem;
+            box-sizing: border-box;
         }
 
-        .btn-play {
-            width: 100%; padding: 15px; border: none; border-radius: 8px;
-            background: var(--neon-pink); color: #fff; font-weight: bold;
-            cursor: pointer; font-size: 1.2em; text-transform: uppercase;
-            box-shadow: 0 0 15px var(--neon-pink); transition: 0.3s;
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
         }
-        .btn-play:disabled { background: #444; box-shadow: none; cursor: not-allowed; }
 
-        /* Menu Buttons */
-        .menu-grid {
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px;
+        .btn {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: 'Orbitron';
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-transform: uppercase;
         }
-        .menu-btn {
-            background: transparent; border: 1px solid var(--neon-blue);
-            color: var(--neon-blue); padding: 8px; border-radius: 5px;
-            font-size: 0.8em; cursor: pointer; text-align: center; transition: 0.3s;
-        }
-        .menu-btn:hover { background: var(--neon-blue); color: #000; }
 
-        /* Modal / Pop-up Styling */
-        .modal {
-            display: none; position: fixed; z-index: 1000;
+        .btn-play { background: var(--neon-pink); color: white; grid-column: span 2; font-size: 1.2rem; }
+        .btn-play:hover { box-shadow: 0 0 20px var(--neon-pink); transform: scale(1.02); }
+        .btn-play:disabled { background: #555; cursor: not-allowed; }
+
+        .btn-nav { background: var(--glass); border: 1px solid var(--neon-blue); color: var(--neon-blue); }
+        .btn-nav:hover { background: var(--neon-blue); color: #000; }
+
+        /* Pop Up Neon Custom */
+        .modal-overlay {
+            position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85);
-            backdrop-filter: blur(5px);
+            display: none; justify-content: center; align-items: center;
+            z-index: 10000;
         }
-        .modal-content {
-            background: var(--panel-bg); margin: 15% auto;
-            padding: 25px; border: 2px solid var(--neon-yellow);
-            width: 80%; max-width: 400px; border-radius: 15px;
-            box-shadow: 0 0 30px var(--neon-yellow);
-            position: relative; text-align: center;
+
+        .neon-modal {
+            background: var(--deep-blue);
+            border: 3px solid var(--neon-pink);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 0 30px var(--neon-pink);
+            animation: modalPop 0.3s ease-out;
         }
-        .close-modal {
-            position: absolute; top: 10px; right: 15px;
-            color: #fff; font-size: 24px; cursor: pointer;
+
+        @keyframes modalPop {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
         }
-        .modal-content h2 { color: var(--neon-yellow); margin-top: 0; }
-        
-        /* Toast & Glow */
-        #toast { text-transform: uppercase; letter-spacing: 1px; }
+
+        .neon-modal h2 { color: var(--neon-yellow); margin-top: 0; }
+        .btn-close { 
+            margin-top: 20px; 
+            background: transparent; 
+            border: 1px solid var(--neon-yellow); 
+            color: var(--neon-yellow); 
+            padding: 8px 20px;
+            cursor: pointer;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            #plinko-canvas { width: 100% !important; height: auto !important; }
+        }
     </style>
 </head>
 <body>
 
-<header>
-    <div><i class="fas fa-user-circle"></i> <span id="header-username">Loading...</span></div>
-    <div class="balance-box" id="header-saldo">IDR 0</div>
-</header>
-
-<div id="game-container"></div>
-
-<div class="controls">
-    <div class="input-group">
-        <label>BET AMOUNT (IDR)</label>
-        <input type="number" id="bet-input" value="10000" min="1000">
+    <div id="loading" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:99999; justify-content:center; align-items:center;">
+        <div style="color:var(--neon-blue); font-family:'Orbitron';">LOADING SESSION...</div>
     </div>
-    <button class="btn-play" id="btn-drop">DROP BALL</button>
 
-    <div class="menu-grid">
-        <div class="menu-btn" onclick="openModal('profile')"><i class="fas fa-user"></i><br>Profil</div>
-        <div class="menu-btn" onclick="openModal('deposit')"><i class="fas fa-wallet"></i><br>Depo</div>
-        <div class="menu-btn" onclick="openModal('withdraw')"><i class="fas fa-money-bill-transfer"></i><br>WD</div>
-        <div class="menu-btn" onclick="openModal('reward')"><i class="fas fa-gift"></i><br>Bonus</div>
+    <div class="header-nav">
+        <div class="logo">ARGLOW</div>
+        <div class="balance-box">
+            <i class="fas fa-wallet" style="color:var(--neon-yellow)"></i>
+            <span id="header-saldo">Rp 0</span>
+        </div>
     </div>
-</div>
 
-<div id="gameModal" class="modal">
-    <div class="modal-content">
-        <span class="close-modal" onclick="closeModal()">&times;</span>
-        <div id="modal-body"></div>
+    <div class="main-container">
+        <canvas id="plinko-canvas" width="450" height="550"></canvas>
+
+        <div class="controls">
+            <div class="input-group">
+                <label><i class="fas fa-coins"></i> JUMLAH BET (IDR)</label>
+                <input type="number" id="bet-amount" value="10000" min="5000">
+            </div>
+
+            <button class="btn btn-play" id="btn-play-trigger">
+                <i class="fas fa-play"></i> DROP BALL
+            </button>
+
+            <div class="btn-grid">
+                <button class="btn btn-nav" onclick="location.href='profile.html'"><i class="fas fa-user"></i> Profil</button>
+                <button class="btn btn-nav" onclick="location.href='deposit.html'"><i class="fas fa-plus"></i> Depo</button>
+                <button class="btn btn-nav" onclick="location.href='withdraw.html'"><i class="fas fa-minus"></i> WD</button>
+                <button class="btn btn-nav" onclick="location.href='reward.html'"><i class="fas fa-gift"></i> Reward</button>
+            </div>
+        </div>
     </div>
-</div>
 
-<div id="loading" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; justify-content:center; align-items:center;">
-    <div style="color:var(--neon-blue); font-weight:bold;">SYNCHRONIZING...</div>
-</div>
+    <div class="modal-overlay" id="neon-modal-overlay">
+        <div class="neon-modal">
+            <h2 id="modal-title">BIG WIN!</h2>
+            <p id="modal-msg">Selamat anda memenangkan sesuatu.</p>
+            <button class="btn-close" onclick="closeNeonModal()">CLOSE</button>
+        </div>
+    </div>
 
-<script src="global.js"></script>
-<script>
-    // Audio Context & Sounds
-    const sounds = {
-        drop: new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3'),
-        hit: new Audio('https://assets.mixkit.co/active_storage/sfx/2004/2004-preview.mp3'),
-        win: new Audio('https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3')
-    };
+    <audio id="snd-drop" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
+    <audio id="snd-hit" src="https://assets.mixkit.co/active_storage/sfx/2004/2004-preview.mp3"></audio>
+    <audio id="snd-win" src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3"></audio>
+    <audio id="snd-fail" src="https://assets.mixkit.co/active_storage/sfx/2513/2513-preview.mp3"></audio>
 
-    function playSound(name) {
-        const s = sounds[name].cloneNode();
-        s.volume = 0.4;
-        s.play().catch(e => {});
-    }
+    <script src="global.js"></script>
+    <script>
+        // Logika Game Plinko dengan Physics Sederhana
+        const canvas = document.getElementById('plinko-canvas');
+        const ctx = canvas.getContext('2d');
+        const btnPlay = document.getElementById('btn-play-trigger');
+        
+        // Config Physics
+        const ROWS = 8;
+        const PIN_RADIUS = 3;
+        const BALL_RADIUS = 8;
+        const pins = [];
+        const balls = [];
+        const buckets = [10, 3, 1.5, 0.5, 0.2, 0.5, 1.5, 3, 10]; // Multiplier visual
 
-    // Matter.js Plinko Logic
-    const { Engine, Render, Runner, Bodies, Composite, Events } = Matter;
-    const engine = Engine.create();
-    const world = engine.world;
-    const container = document.getElementById('game-container');
-    
-    const render = Render.create({
-        element: container,
-        engine: engine,
-        options: {
-            width: 500, height: 600,
-            wireframes: false, background: 'transparent'
+        // Suara
+        const sounds = {
+            drop: document.getElementById('snd-drop'),
+            hit: document.getElementById('snd-hit'),
+            win: document.getElementById('snd-win'),
+            fail: document.getElementById('snd-fail')
+        };
+
+        function playSnd(name) {
+            try { sounds[name].currentTime = 0; sounds[name].play(); } catch(e) {}
         }
-    });
 
-    // Create Pegs (Pasak)
-    const rows = 8;
-    for (let i = 0; i < rows; i++) {
-        const rowPegs = i + 3;
-        const spacing = 500 / (rowPegs + 1);
-        for (let j = 0; j < rowPegs; j++) {
-            const x = (j + 1) * spacing;
-            const y = 80 + i * 55;
-            const peg = Bodies.circle(x, y, 5, { 
-                isStatic: true,
-                render: { fillStyle: '#00d4ff' }
+        // Init Pins
+        for (let i = 2; i <= ROWS + 1; i++) {
+            for (let j = 0; j < i; j++) {
+                pins.push({
+                    x: canvas.width / 2 + (j - (i - 1) / 2) * 45,
+                    y: i * 50
+                });
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw Pins
+            ctx.fillStyle = "#00d4ff";
+            pins.forEach(p => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, PIN_RADIUS, 0, Math.PI * 2);
+                ctx.fill();
+                // Glow pins
+                ctx.shadowBlur = 5;
+                ctx.shadowColor = "#00d4ff";
             });
-            Composite.add(world, peg);
-        }
-    }
 
-    // Create Buckets (Multipliers)
-    const multipliers = [10, 3, 1.5, 0.5, 0.2, 0.5, 1.5, 3, 10];
-    const bucketWidth = 500 / multipliers.length;
-    const buckets = [];
+            // Draw Buckets (Visual Multiplier)
+            const bucketW = canvas.width / buckets.length;
+            buckets.forEach((m, i) => {
+                ctx.strokeStyle = i % 2 === 0 ? "#ff007f" : "#fde047";
+                ctx.lineWidth = 2;
+                ctx.strokeRect(i * bucketW + 5, canvas.height - 40, bucketW - 10, 30);
+                ctx.fillStyle = "#fff";
+                ctx.font = "bold 12px Orbitron";
+                ctx.textAlign = "center";
+                ctx.fillText("x"+m, i * bucketW + bucketW/2, canvas.height - 20);
+            });
 
-    multipliers.forEach((m, i) => {
-        const x = i * bucketWidth + bucketWidth/2;
-        const bucket = Bodies.rectangle(x, 580, bucketWidth - 5, 30, {
-            isStatic: true,
-            isSensor: true,
-            label: `bucket_${m}`,
-            render: { fillStyle: m >= 1 ? '#ff007f' : '#444' }
-        });
-        Composite.add(world, bucket);
-        buckets.push(bucket);
-    });
+            // Draw Balls
+            balls.forEach((b, index) => {
+                b.y += b.vy;
+                b.x += b.vx;
+                b.vy += 0.2; // Gravity
 
-    Render.run(render);
-    Runner.run(Runner.create(), engine);
-
-    // Gameplay Function
-    document.getElementById('btn-drop').addEventListener('click', async () => {
-        const bet = parseFloat(document.getElementById('bet-input').value);
-        if (bet < 1000) return showToast("Minimal Bet IDR 1.000", "warning");
-        if (getSaldo() < bet) return showToast("Saldo tidak cukup!", "error");
-
-        setLoading(true);
-        document.getElementById('btn-drop').disabled = true;
-
-        // 1. Get Result from Backend (Global.js v5.0)
-        const playResult = await GameEngine.processPlay(bet);
-        
-        if (!playResult || playResult.result !== "SUCCESS") {
-            setLoading(false);
-            document.getElementById('btn-drop').disabled = false;
-            return;
-        }
-
-        // 2. Visual Drop
-        playSound('drop');
-        const startX = 250 + (Math.random() * 10 - 5);
-        const ball = Bodies.circle(startX, 20, 10, {
-            restitution: 0.5,
-            friction: 0.01,
-            render: { fillStyle: '#fde047', strokeStyle: '#fff', lineWidth: 2 }
-        });
-        
-        Composite.add(world, ball);
-        setLoading(false);
-
-        // 3. Collision Handling
-        Events.on(engine, 'collisionStart', (event) => {
-            event.pairs.forEach(pair => {
-                if (pair.bodyA === ball || pair.bodyB === ball) {
-                    playSound('hit');
-                }
-                
-                const other = pair.bodyA === ball ? pair.bodyB : pair.bodyA;
-                if (other.label && other.label.startsWith('bucket_')) {
-                    const m = parseFloat(other.label.split('_')[1]);
-                    
-                    // Logic untuk memastikan bola jatuh ke multiplier yang SESUAI hasil server
-                    // Catatan: Dalam prakteknya, kita bisa "menipu" jalur bola atau 
-                    // cukup sync saldo. Di sini kita sync saldo akhir.
-                    
-                    if (!ball.processed) {
-                        ball.processed = true;
-                        setTimeout(() => {
-                            Composite.remove(world, ball);
-                            if (playResult.multiplier >= 1) playSound('win');
-                            showToast(`RESULT: x${playResult.multiplier} (IDR ${playResult.winAmount})`, 
-                                playResult.multiplier >= 1 ? "success" : "warning");
-                            document.getElementById('btn-drop').disabled = false;
-                        }, 500);
+                // Collision with pins
+                pins.forEach(p => {
+                    const dist = Math.hypot(b.x - p.x, b.y - p.y);
+                    if (dist < BALL_RADIUS + PIN_RADIUS) {
+                        playSnd('hit');
+                        b.vy *= -0.4;
+                        b.vx += (Math.random() - 0.5) * 4;
+                        b.y -= 2;
                     }
+                });
+
+                // Draw Ball
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = "#ff007f";
+                ctx.fillStyle = "#ff007f";
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, BALL_RADIUS, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                // Check Bottom
+                if (b.y > canvas.height - 50) {
+                    finishPlay(b.targetMult, b.winAmount);
+                    balls.splice(index, 1);
                 }
             });
-        });
-    });
 
-    // Modal UI Logic
-    function openModal(type) {
-        const body = document.getElementById('modal-body');
-        const user = loadSession();
-        
-        if (type === 'profile') {
-            body.innerHTML = `
-                <h2>MY PROFILE</h2>
-                <p>Username: ${user.username}</p>
-                <p>Tier: <span style="color:var(--neon-pink)">${user.tier}</span></p>
-                <p>Winrate: ${user.winrate}%</p>
-                <button class="btn-play" onclick="AuthAPI.logout()" style="background:#444">LOGOUT</button>
-            `;
-        } else if (type === 'deposit') {
-            body.innerHTML = `
-                <h2>DEPOSIT</h2>
-                <input type="number" id="depo-amt" placeholder="Nominal IDR" style="margin-bottom:10px">
-                <button class="btn-play" onclick="handleDepoAction()">KONFIRMASI DEPOSIT</button>
-            `;
-        } else if (type === 'withdraw') {
-            body.innerHTML = `
-                <h2>WITHDRAW</h2>
-                <input type="number" id="wd-amt" placeholder="Nominal (Min 50rb)" style="margin-bottom:10px">
-                <button class="btn-play" onclick="handleWdAction()" style="background:var(--neon-blue)">TARIK SALDO</button>
-            `;
-        } else if (type === 'reward') {
-            body.innerHTML = `
-                <h2>REWARDS</h2>
-                <button class="btn-play" onclick="RewardAPI.claimDaily()">KLAIM HARIAN (1.000)</button>
-                <br><br>
-                <button class="btn-play" onclick="RewardAPI.claimReferral()" style="background:var(--neon-blue)">BONUS MINGGUAN</button>
-            `;
+            requestAnimationFrame(draw);
         }
-        document.getElementById('gameModal').style.display = 'block';
-    }
 
-    async function handleDepoAction() {
-        const amt = document.getElementById('depo-amt').value;
-        await TransaksiAPI.depositQRIS(amt);
-        closeModal();
-    }
+        async function handleDropBall() {
+            const amount = parseFloat(document.getElementById('bet-amount').value);
+            if (amount < 5000) return showToast("Minimal bet IDR 5.000", "warning");
+            if (getSaldo() < amount) return showToast("Saldo tidak cukup!", "error");
 
-    async function handleWdAction() {
-        const amt = document.getElementById('wd-amt').value;
-        await TransaksiAPI.withdraw(amt);
-        closeModal();
-    }
+            btnPlay.disabled = true;
+            playSnd('drop');
 
-    function closeModal() {
-        document.getElementById('gameModal').style.display = 'none';
-    }
+            // Panggil API dari Global JS v5.0
+            const res = await GameEngine.processPlay(amount);
+            
+            if (res && res.result === "SUCCESS") {
+                // Tambahkan bola ke canvas
+                balls.push({
+                    x: canvas.width / 2 + (Math.random() - 0.5) * 10,
+                    y: 20,
+                    vx: 0,
+                    vy: 2,
+                    targetMult: res.multiplier,
+                    winAmount: res.winAmount
+                });
+            } else {
+                btnPlay.disabled = false;
+                showToast("Gagal memproses game.", "error");
+            }
+        }
 
-    // Auto Login Check
-    window.onload = () => {
-        requireLogin('index.html');
-        initGlobalSync();
-    };
-</script>
+        function finishPlay(mult, win) {
+            btnPlay.disabled = false;
+            if (mult >= 1.5) {
+                playSnd('win');
+                openNeonModal("BIG WIN!", `Anda mendapatkan multiplier x${mult}\nKemenangan: ${formatIDR(win)}`);
+            } else {
+                playSnd('fail');
+                showToast(`Multiplier x${mult}. Coba lagi!`, "info");
+            }
+        }
+
+        // Custom Modal Logic
+        function openNeonModal(title, msg) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-msg').textContent = msg;
+            document.getElementById('neon-modal-overlay').style.display = 'flex';
+        }
+
+        function closeNeonModal() {
+            document.getElementById('neon-modal-overlay').style.display = 'none';
+        }
+
+        btnPlay.addEventListener('click', handleDropBall);
+        draw();
+    </script>
 </body>
 </html>
