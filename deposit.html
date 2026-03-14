@@ -13,26 +13,36 @@
             --gp: 0 0 8px rgba(255, 0, 119, .5), 0 0 22px rgba(255, 0, 119, .15);
             --gb: 0 0 8px rgba(0, 85, 255, .5), 0 0 22px rgba(0, 85, 255, .15);
         }
-        body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; margin: 0; padding: 20px; }
+        body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; margin: 0; padding: 20px; padding-bottom: 80px; }
         .container { max-width: 500px; margin: auto; }
-        h2 { font-family: 'Cinzel Decorative'; text-align: center; color: var(--blue); text-shadow: var(--gb); }
+        h2 { font-family: 'Cinzel Decorative'; text-align: center; color: var(--blue); text-shadow: var(--gb); margin-bottom: 30px; }
         
         .method-selector { display: flex; gap: 10px; margin-bottom: 20px; }
-        .btn-method { flex: 1; padding: 15px; border: 1px solid var(--blue); background: var(--card); color: #fff; cursor: pointer; border-radius: 8px; }
-        .btn-method.active { background: var(--blue); box-shadow: var(--gb); }
+        .btn-method { flex: 1; padding: 15px; border: 1px solid rgba(0, 85, 255, 0.3); background: var(--card); color: #fff; cursor: pointer; border-radius: 12px; transition: 0.3s; font-family: 'Outfit'; font-weight: 600; }
+        .btn-method.active { background: var(--blue); border-color: var(--blue); box-shadow: var(--gb); }
 
-        .form-group { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
-        label { display: block; margin-bottom: 10px; font-weight: 600; color: var(--yellow); }
-        input { width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--blue); color: #fff; border-radius: 6px; box-sizing: border-box; }
+        .form-group { background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; backdrop-filter: blur(10px); }
+        label { display: block; margin-bottom: 12px; font-weight: 600; color: var(--yellow); font-size: 0.9rem; }
+        input { width: 100%; padding: 15px; background: rgba(0,0,0,0.4); border: 1px solid rgba(0, 85, 255, 0.5); color: #fff; border-radius: 10px; box-sizing: border-box; font-size: 1rem; outline: none; transition: 0.3s; }
+        input:focus { border-color: var(--blue); box-shadow: var(--gb); }
         
-        .info-box { font-size: 13px; background: rgba(0,85,255,0.1); padding: 10px; border-radius: 6px; margin-top: 10px; border-left: 3px solid var(--blue); }
+        .info-box { font-size: 12px; background: rgba(0,85,255,0.1); padding: 12px; border-radius: 8px; margin-top: 15px; border-left: 3px solid var(--blue); line-height: 1.5; }
         
-        .btn-deposit { width: 100%; padding: 15px; background: var(--pink); border: none; color: #fff; font-weight: 700; border-radius: 8px; cursor: pointer; box-shadow: var(--gp); margin-top: 10px; }
+        .btn-deposit { width: 100%; padding: 18px; background: var(--pink); border: none; color: #fff; font-weight: 800; border-radius: 12px; cursor: pointer; box-shadow: var(--gp); margin-top: 10px; font-size: 1rem; letter-spacing: 1px; transition: 0.3s; }
+        .btn-deposit:active { transform: scale(0.98); }
         
-        .history-section { margin-top: 30px; }
-        .history-item { background: var(--card); padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 3px solid var(--yellow); }
-        .status-proses { color: var(--yellow); font-weight: bold; }
-        .status-berhasil { color: #00ff88; font-weight: bold; }
+        .history-section { margin-top: 40px; }
+        .history-title { color: var(--blue); font-size: 0.9rem; font-weight: 700; border-bottom: 1px solid rgba(0, 85, 255, 0.2); padding-bottom: 10px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        .history-item { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 12px; border-left: 4px solid var(--yellow); border: 1px solid rgba(255,255,255,0.03); }
+        .status-proses { color: var(--yellow); font-weight: 700; text-shadow: 0 0 5px rgba(245,230,66,0.3); }
+        .status-berhasil { color: #00ff88; font-weight: 700; text-shadow: 0 0 5px rgba(0,255,136,0.3); }
+        .status-gagal { color: #ff4444; font-weight: 700; }
+
+        /* Nav Bar Bottom */
+        .nav-bar { position: fixed; bottom: 0; left: 0; width: 100%; height: 70px; background: rgba(5, 6, 20, 0.95); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(10px); z-index: 1000; }
+        .nav-item { color: #555; text-decoration: none; text-align: center; font-size: 0.7rem; flex: 1; }
+        .nav-item.active { color: var(--blue); }
+        .nav-item i { font-size: 1.2rem; display: block; margin-bottom: 4px; }
     </style>
 </head>
 <body>
@@ -41,32 +51,40 @@
     <h2>TOP UP SALDO</h2>
 
     <div class="method-selector">
-        <button class="btn-method active" onclick="switchMethod('QRIS')"><i class="fa-solid fa-qrcode"></i> QRIS</button>
-        <button class="btn-method" onclick="switchMethod('USDT')"><i class="fa-brands fa-bitcoin"></i> USDT</button>
+        <button id="method-qris" class="btn-method active" onclick="switchMethod('QRIS')"><i class="fa-solid fa-qrcode"></i> QRIS</button>
+        <button id="method-usdt" class="btn-method" onclick="switchMethod('USDT')"><i class="fa-brands fa-bitcoin"></i> USDT</button>
     </div>
 
     <div class="form-group" id="qris-form">
-        <label>Nominal Deposit (Min. 20,000)</label>
-        <input type="number" id="amount-qris" placeholder="Contoh: 50000">
-        <div class="info-box">Saldo akan masuk otomatis setelah admin melakukan verifikasi.</div>
+        <label>Nominal Deposit (IDR)</label>
+        <input type="number" id="amount-qris" placeholder="Min. 20,000" min="20000">
+        <div class="info-box"><i class="fa-solid fa-circle-info"></i> Saldo akan masuk otomatis ke akun Anda setelah admin melakukan verifikasi pembayaran.</div>
     </div>
 
     <div class="form-group" id="usdt-form" style="display:none;">
-        <label>Nominal USDT (Min. $10)</label>
-        <input type="number" id="amount-usdt" placeholder="Contoh: 10" oninput="calculateUSDT()">
+        <label>Nominal USDT (Tether)</label>
+        <input type="number" id="amount-usdt" placeholder="Min. $10" oninput="calculateUSDT()">
         <div id="usdt-calc" class="info-box" style="color: var(--yellow);">
             Estimasi: Rp 0 (Setelah potong fee $2)
         </div>
-        <p style="font-size: 11px; margin-top: 10px; opacity: 0.7;">*Kurs USDT saat ini: Rp 16.000. Biaya admin $2 per transaksi.</p>
+        <p style="font-size: 11px; margin-top: 10px; opacity: 0.7; line-height: 1.4;">*Kurs USDT: Rp 16.000. Biaya admin jaringan $2 per transaksi. Pastikan gunakan jaringan TRC20.</p>
     </div>
 
-    <button class="btn-deposit" onclick="handleDeposit()">KONFIRMASI DEPOSIT</button>
+    <button id="btn-submit" class="btn-deposit" onclick="handleDeposit()">KONFIRMASI DEPOSIT</button>
 
     <div class="history-section">
-        <h4 style="color: var(--blue); border-bottom: 1px solid var(--blue); padding-bottom: 5px;">RIWAYAT TERAKHIR</h4>
+        <div class="history-title"><i class="fa-solid fa-clock-rotate-left"></i> RIWAYAT TERAKHIR</div>
         <div id="depo-history">
-            </div>
+             <div style="text-align:center; opacity:0.5; padding:20px; font-size:13px;">Memuat riwayat...</div>
+        </div>
     </div>
+</div>
+
+<div class="nav-bar">
+    <a href="game.html" class="nav-item"><i class="fas fa-gamepad"></i>PLAY</a>
+    <a href="deposit.html" class="nav-item active"><i class="fas fa-wallet"></i>DEPO</a>
+    <a href="reward.html" class="nav-item"><i class="fas fa-gift"></i>REWARD</a>
+    <a href="profil.html" class="nav-item"><i class="fas fa-user"></i>PROFIL</a>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -76,11 +94,12 @@
 let currentMethod = 'QRIS';
 const KURS_USDT = 16000;
 const ADMIN_WA = "6281234567890"; // GANTI DENGAN NOMOR WA ANDA
+const user = localStorage.getItem('user_neon'); // Ambil session dari config.js pattern
 
 function switchMethod(m) {
     currentMethod = m;
-    document.querySelectorAll('.btn-method').forEach(b => b.classList.remove('active'));
-    event.target.classList.add('active');
+    document.getElementById('method-qris').classList.toggle('active', m === 'QRIS');
+    document.getElementById('method-usdt').classList.toggle('active', m === 'USDT');
     document.getElementById('qris-form').style.display = m === 'QRIS' ? 'block' : 'none';
     document.getElementById('usdt-form').style.display = m === 'USDT' ? 'block' : 'none';
 }
@@ -90,85 +109,88 @@ function calculateUSDT() {
     if (amt >= 10) {
         const net = amt - 2;
         const idr = net * KURS_USDT;
-        document.getElementById('usdt-calc').innerText = `Diterima: Rp ${idr.toLocaleString()} (${net} USDT)`;
+        document.getElementById('usdt-calc').innerHTML = `<i class="fa-solid fa- calculator"></i> Diterima: <b>Rp ${idr.toLocaleString('id-ID')}</b> (${net} USDT)`;
     } else {
-        document.getElementById('usdt-calc').innerText = "Minimal $10";
+        document.getElementById('usdt-calc').innerText = "Minimal deposit USDT adalah $10";
     }
 }
 
 async function handleDeposit() {
-    const user = await getPlayerData(); // Fungsi dari config.js
     if (!user) return alert("Silakan login kembali.");
 
-    let amount = 0;
+    const btn = document.getElementById('btn-submit');
     let nominalIDR = 0;
-    let nominalCrypto = "-";
+    let detailMetode = currentMethod;
 
     if (currentMethod === 'QRIS') {
-        amount = parseInt(document.getElementById('amount-qris').value);
-        if (isNaN(amount) || amount < 20000) return alert("Minimal Deposit QRIS Rp 20.000");
-        nominalIDR = amount;
+        nominalIDR = parseInt(document.getElementById('amount-qris').value);
+        if (isNaN(nominalIDR) || nominalIDR < 20000) return alert("Minimal Deposit QRIS Rp 20.000");
     } else {
-        const usdtAmount = parseFloat(document.getElementById('amount-usdt').value);
-        if (isNaN(usdtAmount) || usdtAmount < 10) return alert("Minimal Deposit USDT $10");
+        const usdtInp = parseFloat(document.getElementById('amount-usdt').value);
+        if (isNaN(usdtInp) || usdtInp < 10) return alert("Minimal Deposit USDT $10");
         
-        const netUSDT = usdtAmount - 2;
+        const netUSDT = usdtInp - 2;
         nominalIDR = netUSDT * KURS_USDT;
-        nominalCrypto = `${nominalIDR} (${netUSDT})`;
-        amount = nominalIDR;
+        detailMetode = `USDT ($${usdtInp})`;
 
-        // Buka WhatsApp Otomatis
-        const msg = `Halo Admin, saya mau konfirmasi deposit USDT.\nUsername: ${user.username}\nJumlah: $${usdtAmount}\nTerima Bersih: $${netUSDT}`;
+        // Buka WA (Opsional, tapi bagus untuk konfirmasi)
+        const msg = `Halo Admin, saya konfirmasi depo USDT.\nUser: ${user}\nTotal: $${usdtInp}\nNet: $${netUSDT}`;
         window.open(`https://wa.me/${ADMIN_WA}?text=${encodeURIComponent(msg)}`, '_blank');
     }
 
-    // KIRIM KE SUPABASE (Tabel transactions)
-    const { error } = await _supabase.from('transactions').insert([{
-        username: user.username,
-        fullname: user.fullname,
-        type: 'DEPOSIT',
-        method: currentMethod,
-        nominal_idr: nominalIDR,
-        nominal_crypto: nominalCrypto,
-        amount: amount,
-        status: 'PROSES'
-    }]);
+    btn.disabled = true;
+    btn.innerText = "MENGIRIM...";
 
-    if (!error) {
-        alert("Permintaan deposit berhasil dikirim! Menunggu persetujuan admin.");
+    try {
+        // Masukkan ke tabel 'deposits' sesuai SQL Master
+        const { error } = await _supabase.from('deposits').insert([{
+            username: user,
+            nominal: nominalIDR,
+            metode: detailMetode,
+            status: 'PROSES'
+        }]);
+
+        if (error) throw error;
+
+        alert("Berhasil! Silakan lakukan pembayaran. Admin akan memverifikasi dalam beberapa menit.");
         location.reload();
-    } else {
-        alert("Gagal mengirim data: " + error.message);
+    } catch (err) {
+        alert("Gagal: " + err.message);
+        btn.disabled = false;
+        btn.innerText = "KONFIRMASI DEPOSIT";
     }
 }
 
 async function loadHistory() {
-    const user = localStorage.getItem('user_session');
+    if (!user) return;
+    
     const { data, error } = await _supabase
-        .from('transactions')
+        .from('deposits')
         .select('*')
         .eq('username', user)
-        .eq('type', 'DEPOSIT')
-        .order('tanggal', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(5);
 
-    if (data) {
-        const container = document.getElementById('depo-history');
+    const container = document.getElementById('depo-history');
+    if (data && data.length > 0) {
         container.innerHTML = data.map(item => `
             <div class="history-item">
-                <div style="display:flex; justify-content:space-between; font-size:12px;">
-                    <span>${new Date(item.tanggal).toLocaleString()}</span>
+                <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:8px; opacity:0.7;">
+                    <span>${new Date(item.created_at).toLocaleString('id-ID')}</span>
                     <span class="status-${item.status.toLowerCase()}">${item.status}</span>
                 </div>
-                <div style="margin-top:5px; font-weight:bold;">
-                    ${item.method === 'USDT' ? '$' + item.nominal_crypto.split('(')[1].replace(')','') : 'Rp ' + item.nominal_idr.toLocaleString()}
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-weight:700; font-size:1.1rem;">Rp ${item.nominal.toLocaleString('id-ID')}</span>
+                    <span style="font-size:11px; background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:5px;">${item.metode}</span>
                 </div>
-                <div style="font-size:10px; opacity:0.6;">Metode: ${item.method}</div>
             </div>
         `).join('');
+    } else {
+        container.innerHTML = '<div style="text-align:center; opacity:0.3; padding:20px; font-size:12px;">Belum ada riwayat deposit.</div>';
     }
 }
 
+// Jalankan load data saat halaman siap
 window.onload = loadHistory;
 </script>
 
