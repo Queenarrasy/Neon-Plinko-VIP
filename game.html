@@ -5,73 +5,89 @@
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
     <title>NEON PLINKO — EXCLUSIVE</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Outfit:wght@300;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js"></script>
+    <script src="global.js"></script>
     <style>
-        :root { --pink: #ff0077; --blue: #00d4ff; --yellow: #fbff00; --bg: #02030d; }
+        :root { 
+            --pink: #ff0077; --blue: #0055ff; --cyan: #00f2ff; --yellow: #f5e642; --bg: #02030d; 
+            --gp: 0 0 10px rgba(255, 0, 119, 0.5), 0 0 20px rgba(255, 0, 119, 0.2);
+            --gb: 0 0 10px rgba(0, 85, 255, 0.5), 0 0 20px rgba(0, 85, 255, 0.2);
+        }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         
         body { 
             background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; 
-            height: 100vh; height: 100dvh; /* Mengikuti tinggi layar HP terbaru */
-            overflow: hidden; display: flex; flex-direction: column; 
-            background: radial-gradient(circle at center, #0a0c1f 0%, #02030d 100%); 
+            height: 100vh; height: 100dvh; overflow: hidden; display: flex; flex-direction: column; 
+            background-image: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(0,85,255,0.08) 0%, transparent 70%);
         }
 
-        /* Header - Tinggi Tetap */
+        /* Header - Sinkron dengan Deposit */
         .header { 
-            height: 60px; padding: 0 20px; display: flex; justify-content: space-between; 
-            align-items: center; background: rgba(0,0,0,0.8); border-bottom: 2px solid var(--blue); 
+            height: 65px; padding: 0 20px; display: flex; justify-content: space-between; 
+            align-items: center; background: rgba(2, 3, 13, 0.95); border-bottom: 1px solid var(--blue); 
             flex-shrink: 0; z-index: 100;
         }
-        .logo { font-family: 'Cinzel Decorative'; color: var(--pink); font-size: 16px; text-shadow: 0 0 10px var(--pink); }
-        .balance-box { background: rgba(0,212,255,0.1); border: 1px solid var(--blue); padding: 5px 12px; border-radius: 50px; display: flex; align-items: center; gap: 8px; }
+        .logo { font-family: 'Cinzel Decorative'; color: var(--pink); font-size: 14px; letter-spacing: 2px; text-shadow: var(--gp); font-weight: 900; }
+        .balance-box { background: rgba(0,85,255,0.1); border: 1px solid var(--blue); padding: 6px 15px; border-radius: 50px; display: flex; align-items: center; gap: 8px; box-shadow: var(--gb); }
 
-        /* Game Board Area - Dinamis mengikuti sisa layar */
+        /* Game Board Area */
         #game-area { 
             flex: 1; position: relative; display: flex; justify-content: center; 
-            align-items: center; overflow: hidden; min-height: 0; 
+            align-items: center; overflow: hidden; min-height: 0; padding-top: 20px;
         }
         #board-wrapper { position: relative; width: 100%; max-width: 400px; height: 100%; max-height: 480px; }
         canvas { width: 100%; height: 100%; object-fit: contain; }
 
-        .m-bar { position: absolute; bottom: 5px; width: 100%; display: flex; justify-content: center; gap: 3px; padding: 0 10px; }
-        .m-slot { flex: 1; height: 30px; border-radius: 4px; font-size: 9px; font-weight: 800; display: flex; align-items: center; justify-content: center; color: #000; border: 1px solid rgba(255,255,255,0.1); }
-
-        /* Kontrol Game - Compact */
-        .controls { 
-            background: rgba(5,6,20,0.95); padding: 15px 20px 10px 20px; 
-            border-top: 1px solid rgba(0,212,255,0.3); flex-shrink: 0;
+        .m-bar { position: absolute; bottom: 5px; width: 100%; display: flex; justify-content: center; gap: 4px; padding: 0 10px; }
+        .m-slot { 
+            flex: 1; height: 32px; border-radius: 6px; font-size: 10px; font-weight: 900; 
+            display: flex; align-items: center; justify-content: center; color: #fff; 
+            border: 1px solid rgba(255,255,255,0.1); text-shadow: 0 1px 2px rgba(0,0,0,0.5);
         }
-        .bet-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; background: rgba(255,255,255,0.05); padding: 8px 15px; border-radius: 15px; }
-        .mode-row { display: flex; gap: 8px; margin-bottom: 12px; }
-        .mode-btn { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.5); color: #fff; font-size: 11px; font-weight: 800; cursor: pointer; }
-        .mode-btn.active { background: var(--blue); color: #000; box-shadow: 0 0 10px var(--blue); }
-        .mode-btn.auto-active { background: var(--yellow); color: #000; border-color: var(--yellow); }
 
-        .btn-main { width: 100%; padding: 15px; border-radius: 50px; border: none; background: linear-gradient(180deg, var(--pink) 0%, #b30054 100%); color: #fff; font-family: 'Cinzel Decorative'; font-weight: 900; font-size: 18px; box-shadow: 0 4px 0 #7a003a; cursor: pointer; }
-        .btn-main:active { transform: translateY(2px); box-shadow: 0 2px 0 #7a003a; }
-        .btn-stop { background: linear-gradient(180deg, #555 0%, #222 100%); box-shadow: 0 4px 0 #000; }
+        /* Controls */
+        .controls { 
+            background: rgba(5,6,20,0.98); padding: 15px 20px; 
+            border-top: 1px solid rgba(0,85,255,0.2); flex-shrink: 0;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
+        }
+        .bet-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: rgba(255,255,255,0.03); padding: 10px 20px; border-radius: 15px; border: 1px solid rgba(0,85,255,0.1); }
+        .mode-row { display: flex; gap: 10px; margin-bottom: 15px; }
+        .mode-btn { 
+            flex: 1; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); 
+            background: rgba(255,255,255,0.02); color: #fff; font-size: 11px; font-weight: 800; cursor: pointer; transition: 0.3s;
+        }
+        .mode-btn.active { background: rgba(0,85,255,0.2); border-color: var(--blue); color: var(--cyan); box-shadow: var(--gb); }
+        .mode-btn.auto-active { background: rgba(245, 230, 66, 0.15); color: var(--yellow); border-color: var(--yellow); }
 
-        /* Navigation Bar - Tetap di Bawah */
+        .btn-main { 
+            width: 100%; padding: 16px; border-radius: 50px; border: none; 
+            background: linear-gradient(90deg, var(--pink), #b400dc); 
+            color: #fff; font-family: 'Cinzel Decorative'; font-weight: 900; font-size: 18px; 
+            box-shadow: var(--gp); cursor: pointer; text-transform: uppercase;
+        }
+        .btn-main:active { transform: scale(0.98); opacity: 0.9; }
+        .btn-stop { background: linear-gradient(90deg, #444, #111); box-shadow: none; border: 1px solid #666; }
+
+        /* Navigation Bar - Sinkron */
         .nav-bar {
-            height: 70px; background: #000; border-top: 1px solid rgba(255,255,255,0.1);
+            height: 75px; background: #000; border-top: 1px solid var(--blue);
             display: grid; grid-template-columns: repeat(5, 1fr); align-items: center;
             padding-bottom: env(safe-area-inset-bottom); flex-shrink: 0;
         }
-        .nav-item { text-align: center; color: rgba(255,255,255,0.4); text-decoration: none; font-size: 10px; font-weight: 600; }
-        .nav-item i { display: block; font-size: 18px; margin-bottom: 4px; }
-        .nav-item.active { color: var(--blue); text-shadow: 0 0 10px var(--blue); }
+        .nav-item { text-align: center; color: rgba(255,255,255,0.4); text-decoration: none; font-size: 10px; font-weight: 600; transition: 0.3s; }
+        .nav-item i { display: block; font-size: 20px; margin-bottom: 5px; }
+        .nav-item.active { color: var(--pink); text-shadow: var(--gp); }
 
         /* Floating Score */
-        .f-score { position: absolute; font-weight: 900; font-size: 18px; pointer-events: none; z-index: 1000; animation: floatUp 0.8s ease-out forwards; }
-        @keyframes floatUp { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-60px); opacity: 0; } }
+        .f-score { position: absolute; font-weight: 900; font-size: 20px; pointer-events: none; z-index: 1000; animation: floatUp 0.8s ease-out forwards; }
+        @keyframes floatUp { from { transform: translateY(0) scale(1); opacity: 1; } to { transform: translateY(-80px) scale(1.2); opacity: 0; } }
 
-        /* Modal Overlay */
-        #modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; align-items: center; justify-content: center; }
-        .modal-box { background: #050614; border: 2px solid var(--pink); border-radius: 25px; padding: 25px; width: 80%; max-width: 300px; text-align: center; }
+        /* Modal Overlay - Sinkron */
+        #modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .modal-box { background: #0a0b1e; border: 2px solid var(--pink); border-radius: 25px; padding: 30px; width: 85%; max-width: 320px; text-align: center; box-shadow: var(--gp); }
     </style>
 </head>
 <body>
@@ -79,8 +95,8 @@
     <div class="header">
         <div class="logo">NEON PLINKO VIP</div>
         <div class="balance-box">
-            <i class="fa-solid fa-wallet" style="color:var(--blue)"></i>
-            <span id="saldo-text" style="font-weight:800; font-size:14px;">IDR 0</span>
+            <i class="fa-solid fa-wallet" style="color:var(--cyan)"></i>
+            <span id="saldo-text" style="font-weight:800; font-size:14px; color:#fff">IDR 0</span>
         </div>
     </div>
 
@@ -93,11 +109,12 @@
 
     <div class="controls">
         <div class="bet-row">
-            <i class="fa-solid fa-minus-square" style="color:var(--blue); font-size:24px" onclick="changeBet(-1)"></i>
+            <i class="fa-solid fa-square-minus" style="color:var(--blue); font-size:28px; cursor:pointer;" onclick="changeBet(-1)"></i>
             <div style="text-align:center">
-                <div style="font-size:16px; font-weight:800; color:var(--yellow)" id="bet-display">400</div>
+                <div style="font-size:11px; font-weight:600; opacity:0.6; margin-bottom:2px; text-transform:uppercase;">Taruhan</div>
+                <div style="font-size:20px; font-weight:900; color:var(--yellow); text-shadow:0 0 10px rgba(245,230,66,0.3)" id="bet-display">400</div>
             </div>
-            <i class="fa-solid fa-plus-square" style="color:var(--blue); font-size:24px" onclick="changeBet(1)"></i>
+            <i class="fa-solid fa-square-plus" style="color:var(--blue); font-size:28px; cursor:pointer;" onclick="changeBet(1)"></i>
         </div>
 
         <div class="mode-row">
@@ -119,9 +136,9 @@
 
     <div id="modal-overlay">
         <div class="modal-box">
-            <h2 id="m-title" style="color:var(--yellow); font-family:'Cinzel Decorative'; font-size:18px">INFO</h2>
-            <p id="m-msg" style="margin:15px 0; font-size:13px; color:#ccc"></p>
-            <button onclick="closeModal()" style="background:var(--pink); border:none; color:white; padding:10px 25px; border-radius:50px; font-weight:800;">OK</button>
+            <h2 id="m-title" style="color:var(--pink); font-family:'Cinzel Decorative'; font-size:18px">INFO</h2>
+            <p id="m-msg" style="margin:20px 0; font-size:14px; color:#ccc; line-height:1.5;"></p>
+            <button class="btn-main" onclick="closeModal()" style="font-size:14px; padding:12px;">SAYA MENGERTI</button>
         </div>
     </div>
 
@@ -131,29 +148,30 @@
 
 <script>
     const { Engine, Render, Runner, Bodies, Composite, Events } = Matter;
-    const engine = Engine.create({ gravity: { y: 1.8 } });
+    const engine = Engine.create({ gravity: { y: 2.0 } }); // Gravitas sedikit lebih berat agar game lebih cepat
     const world = engine.world;
     
-    const BETS = [400, 800, 1000, 1200, 1400, 1600, 1800, 2000, 4000, 6000, 8000, 10000, 12000, 16000, 18000, 20000];
+    const BETS = [400, 800, 1000, 2000, 5000, 10000, 25000, 50000, 100000, 250000, 500000];
     let betIdx = 0;
     let isTurbo = false;
     let isAuto = false;
     let autoTimer = null;
     let currentSaldo = 0;
     let adminWinrate = 50;
+
     const multiValues = [15, 8, 3, 0.5, 0.2, 0.5, 3, 8, 15];
-    const multiColors = ['#ff0077', '#ff4d94', '#00d4ff', '#1a1b2e', '#1a1b2e', '#1a1b2e', '#00d4ff', '#ff4d94', '#ff0077'];
+    const multiColors = ['#ff0077', '#d6006b', '#0055ff', '#1a1b3a', '#0a0b1e', '#1a1b3a', '#0055ff', '#d6006b', '#ff0077'];
 
     async function init() {
-        const user = localStorage.getItem('user_neon');
+        const user = localStorage.getItem('user_neon') || localStorage.getItem('username');
         if(!user) window.location.href = 'index.html';
         setupPhysics();
         fetchData();
-        setInterval(fetchData, 5000);
+        setInterval(fetchData, 4000); // Sinkron saldo tiap 4 detik
     }
 
     async function fetchData() {
-        const user = localStorage.getItem('user_neon');
+        const user = localStorage.getItem('user_neon') || localStorage.getItem('username');
         const { data } = await _supabase.from('profiles').select('*').eq('username', user).single();
         if(data) {
             currentSaldo = data.saldo;
@@ -169,26 +187,32 @@
             options: { width: 400, height: 480, wireframes: false, background: 'transparent' }
         });
 
+        // Setup Pins (Segitiga)
         for (let r = 0; r < 9; r++) {
             let pins = r + 3;
             for (let c = 0; c < pins; c++) {
-                let x = 200 + (c - pins / 2 + 0.5) * 40;
-                let y = 50 + r * 40;
-                Composite.add(world, Bodies.circle(x, y, 3.5, { isStatic: true, render: { fillStyle: '#fff' } }));
+                let x = 200 + (c - pins / 2 + 0.5) * 42;
+                let y = 60 + r * 42;
+                Composite.add(world, Bodies.circle(x, y, 3.8, { 
+                    isStatic: true, 
+                    render: { fillStyle: '#fff', strokeStyle: '#00d4ff', lineWidth: 2 } 
+                }));
             }
         }
 
+        // Setup Multiplier Slots
         const mBar = document.getElementById('m-bar');
         multiValues.forEach((v, i) => {
             const div = document.createElement('div');
             div.className = 'm-slot';
             div.style.background = multiColors[i];
-            div.style.color = (i >= 3 && i <= 5) ? '#fff' : '#000';
             div.innerText = 'x'+v;
             mBar.appendChild(div);
 
             let x = 40 + i * 40;
-            Composite.add(world, Bodies.rectangle(x, 470, 35, 20, { isStatic: true, isSensor: true, label: 'm_'+v, render: { visible: false } }));
+            Composite.add(world, Bodies.rectangle(x, 470, 35, 20, { 
+                isStatic: true, isSensor: true, label: 'm_'+v, render: { visible: false } 
+            }));
         });
 
         Render.run(render);
@@ -196,22 +220,29 @@
     }
 
     function spawnBall() {
-        if(currentSaldo < BETS[betIdx]) { stopAuto(); return showModal("SALDO KURANG", "Silahkan deposit terlebih dahulu."); }
+        if(currentSaldo < BETS[betIdx]) { 
+            stopAuto(); 
+            return showModal("SALDO KURANG", "Saldo Master tidak cukup untuk melakukan Drop Ball. Silahkan deposit terlebih dahulu."); 
+        }
         
         playS('s-click');
-        const user = localStorage.getItem('user_neon');
+        const user = localStorage.getItem('user_neon') || localStorage.getItem('username');
         currentSaldo -= BETS[betIdx];
         document.getElementById('saldo-text').innerText = "IDR " + currentSaldo.toLocaleString('id-ID');
 
-        let startX = 200 + (Math.random() * 10 - 5);
-        if(Math.random()*100 > adminWinrate) startX = 200 + (Math.random() * 30 - 15);
-        else startX = (Math.random() > 0.5) ? 120 : 280;
+        // Logic Posisi Jatuh Berdasarkan Winrate
+        let startX = 200 + (Math.random() * 8 - 4);
+        if(Math.random()*100 > adminWinrate) {
+            startX = (Math.random() > 0.5) ? 200 + 40 : 200 - 40;
+        }
 
         const ball = Bodies.circle(startX, 10, 8.5, {
-            restitution: 0.5, friction: 0.005, render: { fillStyle: '#fbff00' }
+            restitution: 0.5, friction: 0.002, 
+            render: { fillStyle: '#f5e642', strokeStyle: '#fff', lineWidth: 2 }
         });
         Composite.add(world, ball);
 
+        // Sound Hit Pin
         Events.on(engine, 'collisionStart', (e) => {
             e.pairs.forEach(p => { if(p.bodyA === ball || p.bodyB === ball) playS('s-hit'); });
         });
@@ -229,6 +260,7 @@
                 Composite.remove(world, ball);
                 showScore(ball.position.x, winAmt, mult);
                 
+                // UPDATE KE DATABASE
                 await _supabase.rpc('handle_plinko_win', { u_name: user, bet: BETS[betIdx], win: winAmt });
                 if(mult >= 2) playS('s-win');
                 fetchData();
@@ -239,9 +271,10 @@
     function showScore(x, amt, mult) {
         const el = document.createElement('div');
         el.className = 'f-score';
-        el.style.left = (x - 10) + 'px';
-        el.style.bottom = '80px';
+        el.style.left = (x - 20) + 'px';
+        el.style.bottom = '100px';
         el.style.color = mult < 1 ? '#ff4d4d' : 'var(--yellow)';
+        el.style.textShadow = mult < 1 ? 'none' : '0 0 10px rgba(245,230,66,0.8)';
         el.innerText = (mult < 1 ? "" : "+") + amt.toLocaleString('id-ID');
         document.getElementById('board-wrapper').appendChild(el);
         setTimeout(() => el.remove(), 800);
