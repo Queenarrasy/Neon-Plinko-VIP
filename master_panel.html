@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MASTER PANEL — NEON SYSTEM</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        :root { --pink: #ff0077; --blue: #0044ff; --green: #00ff88; --bg: #02030d; }
+        body { background: var(--bg); color: white; font-family: 'Outfit', sans-serif; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border: 1px solid var(--blue); border-radius: 15px; box-shadow: 0 0 15px rgba(0, 68, 255, 0.3); margin-bottom: 25px; }
+        .card { background: rgba(5, 6, 20, 0.95); border: 1px solid #1a1b2e; border-radius: 15px; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th { text-align: left; color: var(--blue); padding: 12px; border-bottom: 2px solid #1a1b2e; font-size: 12px; }
+        td { padding: 12px; border-bottom: 1px solid #1a1b2e; font-size: 14px; }
+        .btn-approve { background: var(--green); color: black; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .btn-logout { background: transparent; border: 1px solid var(--pink); color: var(--pink); padding: 8px 16px; border-radius: 8px; cursor: pointer; }
+        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; background: #333; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div>
+            <h1 style="margin:0; font-size: 20px; letter-spacing: 2px;">NEON <span style="color:var(--pink)">MASTER</span></h1>
+            <small style="color:var(--blue)">ADMINISTRATION CONTROL</small>
+        </div>
+        <button class="btn-logout" onclick="logout()">LOGOUT</button>
+    </div>
+
+    <div class="card">
+        <h3><i class="fa-solid fa-clock"></i> PENDING DEPOSITS</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>USER</th>
+                    <th>NOMINAL</th>
+                    <th>METODE</th>
+                    <th>AKSI</th>
+                </tr>
+            </thead>
+            <tbody id="list-depo">
+                <tr><td colspan="4" style="text-align:center">Memeriksa database...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    async function initAdmin() {
+        const user = getUsername();
+        if (!user) return window.location.href = 'index.html';
+
+        const { data: profile } = await _supabase.from('profiles').select('role').eq('username', user).single();
+        if (!profile || profile.role !== 'ADMIN') {
+            alert("AKSES DIBLOKIR!");
+            window.location.href = 'game.html';
+            return;
+        }
+        loadData();
+    }
+
+    async function loadData() {
+        const { data: depos } = await _supabase.from('deposits').select('*').eq('status', 'PROSES');
+        const tbody = document.getElementById('list-depo');
+        tbody.innerHTML = (depos && depos.length > 0) ? '' : '<tr><td colspan="4" style="text-align:center">Tidak ada antrean</td></tr>';
+        
+        depos?.forEach(d => {
+            tbody.innerHTML += `
+                <tr>
+                    <td><b>${d.username}</b></td>
+                    <td style="color:var(--green)">IDR ${d.nominal.toLocaleString()}</td>
+                    <td><span class="status-badge">${d.metode}</span></td>
+                    <td><button class="btn-approve" onclick="approve('${d.id}', '${d.username}', ${d.nominal})">APPROVE</button></td>
+                </tr>`;
+        });
+    }
+
+    async function approve(id, user, amt) {
+        if(!confirm("Setujui deposit ini?")) return;
+        const { error } = await _supabase.rpc('approve_deposit_logic', { row_id: id, target_user: user, amount: amt });
+        if(!error) { alert("Berhasil!"); loadData(); }
+        else { alert("Error: " + error.message); }
+    }
+
+    window.onload = initAdmin;
+</script>
+</body>
+</html>
