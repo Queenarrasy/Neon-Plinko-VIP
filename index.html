@@ -4,10 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
     <title>NEON PLINKO VIP — Identity Sync</title>
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
     <style>
         :root {
             --pink: #ff0077; --blue: #0044ff; --cyan: #00f2ff; --yellow: #f5e642;
@@ -16,18 +14,14 @@
             --gb: 0 0 20px rgba(0,68,255,0.8);
             --gy: 0 0 15px rgba(245,230,66,0.7);
         }
-
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
         body {
-            min-height: 100vh; background: var(--bg);
-            color: #fff; font-family: 'Outfit', sans-serif;
-            display: flex; flex-direction: column; align-items: center;
-            justify-content: center; padding: 20px;
+            min-height: 100vh; background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;
             background-image: radial-gradient(circle at 50% 20%, rgba(0,68,255,0.12) 0%, transparent 60%);
         }
 
-        /* Neon Alert Pop-up */
+        /* Neon Pop-up */
         #neon-alert {
             display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
             z-index: 10000; width: 90%; max-width: 350px; padding: 15px; border-radius: 12px;
@@ -37,49 +31,30 @@
         }
         @keyframes slideDown { from { top: -100px; opacity: 0; } to { top: 20px; opacity: 1; } }
 
-        /* Loading Overlay */
         #loading { display: none; position: fixed; inset: 0; background: rgba(2,3,13,0.95); z-index: 9999; align-items: center; justify-content: center; flex-direction: column; gap: 14px; backdrop-filter: blur(5px); }
         .spin { width: 48px; height: 48px; border: 4px solid rgba(0,68,255,0.2); border-top-color: var(--cyan); border-radius: 50%; animation: spin 0.8s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Header */
-        .logo { font-family: 'Cinzel Decorative', serif; font-size: 32px; font-weight: 900; background: linear-gradient(90deg, var(--cyan), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 10px rgba(0,242,255,0.5)); letter-spacing: 2px; }
+        .logo { font-family: 'Cinzel Decorative', serif; font-size: 32px; font-weight: 900; background: linear-gradient(90deg, var(--cyan), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 10px rgba(0,242,255,0.5)); }
         .logo-sub { font-size: 10px; color: var(--yellow); letter-spacing: 4px; margin-bottom: 30px; text-shadow: var(--gy); font-weight: 700; text-transform: uppercase; }
 
-        /* Card System */
-        .card { width: 100%; max-width: 420px; background: rgba(5,6,20,0.95); border: 1px solid rgba(0, 242, 255, 0.2); border-radius: 24px; padding: 30px 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); position: relative; overflow: hidden; }
-        .card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, var(--cyan), transparent); }
-
+        .card { width: 100%; max-width: 420px; background: rgba(5,6,20,0.95); border: 1px solid rgba(0, 242, 255, 0.2); border-radius: 24px; padding: 30px 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
         .tabs { display: flex; margin-bottom: 24px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(0, 242, 255, 0.3); background: rgba(255,255,255,0.02); }
-        .tab-btn { flex: 1; padding: 14px; background: transparent; border: none; color: rgba(255,255,255,0.4); font-weight: 700; cursor: pointer; transition: 0.3s; font-size: 13px; letter-spacing: 1px; }
+        .tab-btn { flex: 1; padding: 14px; background: transparent; border: none; color: rgba(255,255,255,0.4); font-weight: 700; cursor: pointer; transition: 0.3s; font-size: 13px; }
         .tab-btn.active { background: linear-gradient(90deg, var(--blue), var(--cyan)); color: #fff; box-shadow: var(--gb); }
 
-        /* Form Styling */
-        .form-group { margin-bottom: 16px; position: relative; }
+        .form-group { margin-bottom: 16px; }
         .form-label { font-size: 10px; color: var(--cyan); letter-spacing: 1px; margin-bottom: 6px; display: block; font-weight: 700; text-transform: uppercase; }
+        .form-input, .form-select { width: 100%; padding: 12px 16px; background: rgba(0,242,255,0.05); border: 1px solid rgba(0,242,255,0.2); border-radius: 10px; color: #fff; outline: none; transition: 0.3s; font-size: 14px; }
+        .form-select option { background: #050614; }
         
-        .form-input, .form-select {
-            width: 100%; padding: 12px 16px; background: rgba(0,242,255,0.05); border: 1px solid rgba(0,242,255,0.2); border-radius: 10px;
-            color: #fff; outline: none; transition: 0.3s; font-family: 'Outfit'; font-size: 14px;
-        }
-        .form-select option { background: #050614; color: #fff; }
-        .form-input:focus, .form-select:focus { border-color: var(--cyan); box-shadow: 0 0 10px rgba(0,242,255,0.2); }
-        
-        /* Icons & Password Toggle */
         .input-icon { position: relative; }
-        .input-icon i:not(.toggle-pass) { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--cyan); opacity: 0.7; }
-        .input-icon .form-input { padding-left: 42px; }
-        
         .toggle-pass { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.3); cursor: pointer; z-index: 10; padding: 5px; }
 
-        /* Submit Button */
-        .btn-submit {
-            width: 100%; padding: 16px; background: linear-gradient(90deg, var(--blue), var(--pink));
-            border: none; border-radius: 12px; font-family: 'Cinzel Decorative'; font-weight: 900;
-            color: #fff; cursor: pointer; box-shadow: var(--gb); margin-top: 10px;
-            font-size: 15px; letter-spacing: 2px; transition: 0.3s;
-        }
+        .btn-submit { width: 100%; padding: 16px; background: linear-gradient(90deg, var(--blue), var(--pink)); border: none; border-radius: 12px; font-family: 'Cinzel Decorative'; font-weight: 900; color: #fff; cursor: pointer; box-shadow: var(--gb); margin-top: 10px; font-size: 15px; letter-spacing: 2px; transition: 0.3s; }
         .btn-submit:active { transform: scale(0.96); filter: brightness(1.2); }
+
+        .forgot-pass { display: block; text-align: center; margin-top: 15px; color: var(--cyan); font-size: 12px; text-decoration: none; opacity: 0.7; transition: 0.3s; }
+        .forgot-pass:hover { opacity: 1; text-shadow: 0 0 5px var(--cyan); }
     </style>
 </head>
 <body>
@@ -89,10 +64,7 @@
         <p id="alert-msg" style="font-weight: 600; font-size: 14px;"></p>
     </div>
 
-    <div id="loading">
-        <div class="spin"></div>
-        <p style="margin-top:10px; font-weight:700; letter-spacing:2px; color:var(--cyan);">SYNCING DATA...</p>
-    </div>
+    <div id="loading"><div class="spin"></div><p style="margin-top:10px; font-weight:700; color:var(--cyan);">SYNCING...</p></div>
 
     <div class="logo">NEON PLINKO</div>
     <div class="logo-sub">V I P &nbsp; S Y S T E M</div>
@@ -106,20 +78,17 @@
         <div id="panel-login">
             <div class="form-group">
                 <label class="form-label">Username</label>
-                <div class="input-icon">
-                    <i class="fa-solid fa-user"></i>
-                    <input type="text" id="l-username" class="form-input" placeholder="Masukkan Username">
-                </div>
+                <input type="text" id="l-username" class="form-input" placeholder="Username">
             </div>
             <div class="form-group">
                 <label class="form-label">Password</label>
                 <div class="input-icon">
-                    <i class="fa-solid fa-lock"></i>
-                    <input type="password" id="l-password" class="form-input" placeholder="Masukkan Password">
+                    <input type="password" id="l-password" class="form-input" placeholder="Password">
                     <i class="fa-solid fa-eye toggle-pass" onclick="togglePass('l-password', this)"></i>
                 </div>
             </div>
             <button class="btn-submit" onclick="handleLogin()">ENTER THE GRID</button>
+            <a href="https://wa.me/NOMOR_WA_MASTER" target="_blank" class="forgot-pass">Lupa Password? Hubungi Admin</a>
         </div>
 
         <div id="panel-register" style="display:none">
@@ -128,24 +97,24 @@
                 <input type="text" id="r-username" class="form-input" placeholder="Min. 4 Karakter">
             </div>
             <div class="form-group">
-                <label class="form-label">Password</label>
+                <label class="form-label">Password (Min. 6 Karakter)</label>
                 <div class="input-icon">
                     <input type="password" id="r-password" class="form-input" placeholder="Min. 6 Karakter">
                     <i class="fa-solid fa-eye toggle-pass" onclick="togglePass('r-password', this)"></i>
                 </div>
             </div>
             <div class="form-group">
-                <label class="form-label">Nomor WhatsApp / Telepon</label>
+                <label class="form-label">Nomor WhatsApp</label>
                 <input type="number" id="r-phone" class="form-input" placeholder="08xxxxxxxxxx">
             </div>
             <div class="form-group">
-                <label class="form-label">Nama Lengkap (Sesuai Rekening)</label>
-                <input type="text" id="r-fullname" class="form-input" placeholder="Nama Lengkap">
+                <label class="form-label">Nama Lengkap</label>
+                <input type="text" id="r-fullname" class="form-input" placeholder="Sesuai Rekening">
             </div>
             <div class="form-group">
-                <label class="form-label">Pilih Bank / E-Wallet</label>
+                <label class="form-label">Metode Pembayaran</label>
                 <select id="r-bank" class="form-select">
-                    <option value="" disabled selected>Pilih Metode Pembayaran</option>
+                    <option value="" disabled selected>Pilih Bank/E-Wallet</option>
                     <option value="DANA">DANA</option>
                     <option value="GOPAY">GOPAY</option>
                     <option value="BCA">BCA</option>
@@ -162,7 +131,7 @@
             </div>
             <div class="form-group">
                 <label class="form-label">Kode Referral (Opsional)</label>
-                <input type="text" id="r-ref" class="form-input" placeholder="Masukkan Kode Referral">
+                <input type="text" id="r-ref" class="form-input" placeholder="Kode Reff">
             </div>
             <button class="btn-submit" onclick="handleRegister()">CREATE IDENTITY</button>
         </div>
@@ -176,43 +145,29 @@
     <script src="config.js"></script>
 
     <script>
-        // Audio Logic
         function playSnd(id) {
             const s = document.getElementById(id);
-            s.currentTime = 0;
-            s.play().catch(() => {});
+            s.currentTime = 0; s.play().catch(()=>{});
         }
 
-        // Custom Pop-up Logic
         function customAlert(msg, type='info') {
             const box = document.getElementById('neon-alert');
             const icon = document.getElementById('alert-icon');
             const text = document.getElementById('alert-msg');
-            
             box.style.borderColor = type === 'error' ? 'var(--pink)' : 'var(--cyan)';
             box.style.boxShadow = type === 'error' ? 'var(--gp)' : 'var(--gb)';
             icon.className = type === 'error' ? 'fa-solid fa-triangle-exclamation' : 'fa-solid fa-circle-check';
             icon.style.color = type === 'error' ? 'var(--pink)' : 'var(--cyan)';
-            
             text.innerText = msg;
             box.style.display = 'block';
-            
-            if(type === 'error') playSnd('snd-error');
-            else playSnd('snd-success');
-
+            if(type === 'error') playSnd('snd-error'); else playSnd('snd-success');
             setTimeout(() => { box.style.display = 'none'; }, 3000);
         }
 
-        // UI Interactions
         function togglePass(id, el) {
             const input = document.getElementById(id);
-            if(input.type === 'password') {
-                input.type = 'text';
-                el.className = 'fa-solid fa-eye-slash toggle-pass';
-            } else {
-                input.type = 'password';
-                el.className = 'fa-solid fa-eye toggle-pass';
-            }
+            input.type = input.type === 'password' ? 'text' : 'password';
+            el.className = input.type === 'password' ? 'fa-solid fa-eye toggle-pass' : 'fa-solid fa-eye-slash toggle-pass';
             playSnd('snd-click');
         }
 
@@ -224,36 +179,21 @@
             document.getElementById('tab-register').classList.toggle('active', tab === 'register');
         }
 
-        // Handle LOGIN
         async function handleLogin() {
             const u = document.getElementById('l-username').value.trim().toLowerCase();
             const p = document.getElementById('l-password').value;
             const loader = document.getElementById('loading');
-
-            if(!u || !p) return customAlert("Harap lengkapi semua data!", "error");
-            
+            if(!u || !p) return customAlert("Isi Username & Password!", "error");
             loader.style.display = 'flex';
-            
             try {
                 const { data, error } = await _supabase.from('profiles').select('*').eq('username', u).single();
-
-                if (error || !data || data.password !== p) throw new Error("Akses ditolak: Data tidak cocok!");
-
+                if (error || !data || data.password !== p) throw new Error("Akses ditolak: Data salah!");
                 localStorage.setItem('user_neon', u);
-                customAlert("Neural Link Established! Dialing...", "success");
-
-                setTimeout(() => {
-                    window.location.href = (data.role === 'ADMIN') ? 'master_panel.html' : 'game.html';
-                }, 1500);
-
-            } catch (err) {
-                customAlert(err.message, "error");
-            } finally {
-                loader.style.display = 'none';
-            }
+                customAlert("Neural Link Established!", "success");
+                setTimeout(() => { window.location.href = (data.role === 'ADMIN') ? 'master_panel.html' : 'game.html'; }, 1500);
+            } catch (err) { customAlert(err.message, "error"); } finally { loader.style.display = 'none'; }
         }
 
-        // Handle REGISTER
         async function handleRegister() {
             const u = document.getElementById('r-username').value.trim().toLowerCase();
             const p = document.getElementById('r-password').value;
@@ -263,34 +203,25 @@
             const rk = document.getElementById('r-rek').value.trim();
             const ref = document.getElementById('r-ref').value.trim();
 
-            if(!u || !p || !ph || !fn || !bk || !rk) return customAlert("Data belum lengkap!", "error");
-            if(u.length < 4) return customAlert("Username minimal 4 karakter!", "error");
+            if(!u || !p || !ph || !fn || !bk || !rk) return customAlert("Data tidak lengkap!", "error");
+            
+            // VALIDASI PANJANG PASSWORD SESUAI INSTRUKSI MASTER
+            if(p.length < 6) return customAlert("Password minimal 6 karakter!", "error");
 
             const loader = document.getElementById('loading');
             loader.style.display = 'flex';
-
             try {
-                // Cek ketersediaan username
                 const { data: exist } = await _supabase.from('profiles').select('username').eq('username', u).single();
                 if(exist) throw new Error("Username sudah terpakai!");
-
-                // Simpan ke Supabase
                 const { error } = await _supabase.from('profiles').insert([{
                     username: u, password: p, nomor_telp: ph, nama_lengkap: fn,
                     bank_name: bk, rekening: rk, referral_kode: ref,
                     saldo: 0, winrate: 50, role: 'MEMBER'
                 }]);
-
                 if(error) throw error;
-
-                customAlert("Identitas Terdaftar! Silakan Login.", "success");
+                customAlert("Identity Created! Password tersimpan.", "success");
                 setTimeout(() => { switchTab('login'); }, 2000);
-
-            } catch (err) {
-                customAlert(err.message, "error");
-            } finally {
-                loader.style.display = 'none';
-            }
+            } catch (err) { customAlert(err.message, "error"); } finally { loader.style.display = 'none'; }
         }
     </script>
 </body>
