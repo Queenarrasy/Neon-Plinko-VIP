@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NEON PLINKO VIP — ENGINE</title>
+    <title>NEON PLINKO VIP — 3D ENGINE</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Cinzel+Decorative:wght@700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;800&family=Cinzel+Decorative:wght@900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
@@ -14,178 +14,202 @@
     <style>
         :root { 
             --pink: #ff0077; --blue: #00d4ff; --yellow: #f5e642; --bg: #02030d;
-            --glass: rgba(255, 255, 255, 0.03);
-            --neon-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+            --shadow-blue: 0 0 20px rgba(0, 212, 255, 0.6), inset 0 0 10px rgba(0, 212, 255, 0.4);
+            --shadow-pink: 0 0 20px rgba(255, 0, 119, 0.6), inset 0 0 10px rgba(255, 0, 119, 0.4);
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { 
             background: var(--bg); color: white; font-family: 'Outfit', sans-serif; 
             margin: 0; overflow: hidden; height: 100vh;
-            background-image: radial-gradient(circle at top right, rgba(255, 0, 119, 0.1), transparent),
-                              radial-gradient(circle at bottom left, rgba(0, 212, 255, 0.1), transparent);
+            background: radial-gradient(circle at center, #0a0c1f 0%, #02030d 100%);
         }
 
-        /* --- TOP BAR --- */
+        /* --- 3D PERSPECTIVE CONTAINER --- */
+        #main-stage {
+            perspective: 1000px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* --- TOP BAR (GLASS) --- */
         .top-bar {
+            width: 90%; margin-top: 15px; padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
             display: flex; justify-content: space-between; align-items: center;
-            padding: 15px 20px; background: rgba(5, 6, 20, 0.9);
-            border-bottom: 1px solid rgba(0, 212, 255, 0.3); backdrop-filter: blur(10px);
-            position: fixed; top: 0; width: 100%; z-index: 100;
+            z-index: 100; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        .logo { font-family: 'Cinzel Decorative', serif; font-weight: 900; color: var(--pink); font-size: 18px; text-shadow: 0 0 10px var(--pink); }
-        .saldo-container { background: var(--glass); border: 1px solid var(--blue); padding: 5px 15px; border-radius: 50px; display: flex; align-items: center; gap: 8px; box-shadow: var(--neon-shadow); }
-        .saldo-label { font-size: 10px; color: var(--blue); text-transform: uppercase; font-weight: 800; }
-        #display-saldo { color: #fff; font-weight: 700; font-size: 14px; }
 
-        /* --- GAME AREA --- */
-        #game-area { width: 100%; height: calc(100vh - 180px); margin-top: 60px; display: flex; align-items: center; justify-content: center; position: relative; }
-        #game-canvas { width: 100%; max-width: 500px; max-height: 100%; filter: drop-shadow(0 0 20px rgba(0, 212, 255, 0.1)); }
+        /* --- 3D GAME BOARD --- */
+        #game-container {
+            position: relative;
+            width: 100%; max-width: 500px;
+            height: 65vh;
+            margin-top: 20px;
+            transform: rotateX(15deg); /* Efek miring 3D */
+            background: rgba(0, 212, 255, 0.02);
+            border-radius: 30px;
+            border: 2px solid rgba(0, 212, 255, 0.1);
+            box-shadow: inset 0 0 50px rgba(0, 212, 255, 0.05);
+        }
+
+        #game-canvas { width: 100%; height: 100%; }
+
+        /* --- MULTIPLIER SLOTS (3D LOOK) --- */
+        .slot-container {
+            position: absolute; bottom: 20px; width: 100%;
+            display: flex; justify-content: center; gap: 5px; padding: 0 10px;
+        }
+        .slot {
+            flex: 1; height: 35px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px; font-weight: 800;
+            text-shadow: 0 0 5px black;
+            transform: translateZ(20px);
+            border-bottom: 4px solid rgba(0,0,0,0.5); /* Shadow bawah biar 3D */
+        }
 
         /* --- CONTROLS --- */
         .controls {
-            position: fixed; bottom: 70px; width: 100%; padding: 15px 20px;
-            background: linear-gradient(to top, var(--bg), transparent);
-            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            position: fixed; bottom: 85px; width: 100%;
+            display: flex; flex-direction: column; align-items: center; gap: 15px;
         }
-        .bet-box { background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1); padding: 10px 20px; border-radius: 15px; display: flex; align-items: center; gap: 15px; }
-        .bet-input { background: transparent; border: none; color: var(--yellow); font-size: 18px; font-weight: 800; width: 100px; text-align: center; outline: none; }
+        .bet-card {
+            background: #050614; padding: 10px 25px; border-radius: 50px;
+            border: 1px solid var(--blue); box-shadow: var(--shadow-blue);
+            display: flex; align-items: center; gap: 20px;
+        }
+        .bet-card input {
+            background: none; border: none; color: white; font-size: 20px;
+            font-weight: 800; width: 80px; text-align: center; outline: none;
+        }
+
         .drop-btn {
-            background: linear-gradient(45deg, var(--blue), var(--pink));
-            border: none; padding: 15px 50px; color: white; font-weight: 900;
-            border-radius: 50px; cursor: pointer; text-transform: uppercase;
-            letter-spacing: 2px; box-shadow: 0 0 20px rgba(255, 0, 119, 0.4);
-            transition: 0.3s; font-family: 'Cinzel Decorative';
+            background: linear-gradient(180deg, var(--pink) 0%, #b30054 100%);
+            border: none; padding: 18px 60px; color: white; font-weight: 900;
+            border-radius: 20px; cursor: pointer; font-size: 18px;
+            box-shadow: 0 8px 0 #7a003a, 0 15px 25px rgba(255, 0, 119, 0.4);
+            transition: 0.1s; transform: translateY(0);
         }
-        .drop-btn:active { transform: scale(0.95); filter: brightness(1.3); }
+        .drop-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 4px 0 #7a003a, 0 10px 15px rgba(255, 0, 119, 0.4);
+        }
 
-        /* --- VIP NAV BAR --- */
-        .vip-nav {
-            position: fixed; bottom: 0; width: 100%; height: 70px;
-            background: rgba(5, 6, 20, 0.95); border-top: 1px solid rgba(255, 255, 255, 0.05);
+        /* --- NAV BAR --- */
+        .nav-bar {
+            position: fixed; bottom: 0; width: 100%; height: 75px;
+            background: rgba(5,6,20,0.9); border-top: 1px solid rgba(255,255,255,0.05);
             display: grid; grid-template-columns: repeat(5, 1fr); align-items: center;
-            backdrop-filter: blur(15px); padding-bottom: env(safe-area-inset-bottom);
+            backdrop-filter: blur(20px);
         }
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: rgba(255,255,255,0.4); text-decoration: none; transition: 0.3s; font-size: 20px; }
-        .nav-item.active { color: var(--cyan); text-shadow: 0 0 10px var(--blue); }
-        .nav-item span { font-size: 9px; font-weight: 700; margin-top: 5px; text-transform: uppercase; }
-        .nav-center { width: 50px; height: 50px; background: var(--pink); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; margin-top: -30px; border: 4px solid var(--bg); box-shadow: 0 0 15px var(--pink); }
+        .nav-item { text-align: center; color: rgba(255,255,255,0.3); text-decoration: none; font-size: 11px; font-weight: 600; }
+        .nav-item i { font-size: 22px; display: block; margin-bottom: 4px; }
+        .nav-item.active { color: var(--blue); }
 
-        /* --- NOTIFICATION POPUP --- */
-        #win-popup {
-            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            z-index: 2000; background: rgba(5, 6, 20, 0.98); border: 2px solid var(--yellow);
-            padding: 30px; border-radius: 20px; text-align: center; width: 280px;
-            box-shadow: 0 0 50px rgba(245, 230, 66, 0.3); animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        /* --- POPUP WIN --- */
+        #win-modal {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+            z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(10px);
         }
-        @keyframes pop { from { transform: translate(-50%, -50%) scale(0.5); opacity: 0; } }
+        .win-box {
+            background: #050614; padding: 40px; border-radius: 30px;
+            border: 2px solid var(--yellow); box-shadow: 0 0 50px rgba(245, 230, 66, 0.2);
+            text-align: center;
+        }
     </style>
 </head>
 <body>
 
-<div class="top-bar">
-    <div class="logo">NEON PLINKO</div>
-    <div class="saldo-container">
-        <div class="saldo-label">Wallet</div>
-        <div id="display-saldo">IDR 0</div>
+<div id="main-stage">
+    <div class="top-bar">
+        <div style="font-family:'Cinzel Decorative'; color:var(--pink); font-size:20px; text-shadow:0 0 10px var(--pink)">NEON</div>
+        <div style="background:rgba(0,0,0,0.5); padding:8px 20px; border-radius:30px; border:1px solid var(--blue)">
+            <span style="font-size:10px; color:var(--blue); display:block; line-height:1">BALANCE</span>
+            <span id="display-saldo" style="font-weight:800; font-size:16px">IDR 0</span>
+        </div>
     </div>
-</div>
 
-<div id="game-area">
-    <canvas id="game-canvas"></canvas>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+    </div>
 </div>
 
 <div class="controls">
-    <div class="bet-box">
-        <i class="fa-solid fa-minus" style="color:var(--blue)" onclick="adjustBet(-1000)"></i>
-        <input type="number" id="bet-amount" class="bet-input" value="1000" readonly>
-        <i class="fa-solid fa-plus" style="color:var(--pink)" onclick="adjustBet(1000)"></i>
+    <div class="bet-card">
+        <i class="fa-solid fa-minus" style="color:var(--blue)" onclick="adjBet(-5000)"></i>
+        <input type="number" id="bet-amt" value="5000" readonly>
+        <i class="fa-solid fa-plus" style="color:var(--blue)" onclick="adjBet(5000)"></i>
     </div>
-    <button class="drop-btn" id="btn-drop" onclick="dropBall()">DROP BALL</button>
+    <button class="drop-btn" onclick="dropBall()">DROP BALL</button>
 </div>
 
-<nav class="vip-nav">
-    <a href="deposit.html" class="nav-item">
-        <i class="fa-solid fa-wallet"></i>
-        <span>Deposit</span>
-    </a>
-    <a href="withdraw.html" class="nav-item">
-        <i class="fa-solid fa-money-bill-transfer"></i>
-        <span>Withdraw</span>
-    </a>
-    <a href="game.html" class="nav-item active">
-        <div class="nav-center"><i class="fa-solid fa-play"></i></div>
-    </a>
-    <a href="reward.html" class="nav-item">
-        <i class="fa-solid fa-gift"></i>
-        <span>Reward</span>
-    </a>
-    <a href="profil.html" class="nav-item">
-        <i class="fa-solid fa-user-gear"></i>
-        <span>Profile</span>
-    </a>
+<nav class="nav-bar">
+    <a href="deposit.html" class="nav-item"><i class="fa-solid fa-plus-circle"></i>Deposit</a>
+    <a href="withdraw.html" class="nav-item"><i class="fa-solid fa-hand-holding-dollar"></i>WD</a>
+    <a href="game.html" class="nav-item active"><i class="fa-solid fa-gamepad"></i>Play</a>
+    <a href="reward.html" class="nav-item"><i class="fa-solid fa-trophy"></i>Reward</a>
+    <a href="profil.html" class="nav-item"><i class="fa-solid fa-user"></i>Profil</a>
 </nav>
 
-<div id="win-popup">
-    <i class="fa-solid fa-trophy" style="font-size: 50px; color: var(--yellow); margin-bottom: 15px;"></i>
-    <h2 style="margin: 0; font-size: 14px; opacity: 0.7;">BIG WIN!</h2>
-    <div id="win-amt" style="font-size: 28px; font-weight: 800; color: #fff; margin: 10px 0;">IDR 0</div>
-    <button onclick="closeWin()" class="drop-btn" style="padding: 10px 30px; font-size: 12px;">CLAIM</button>
+<div id="win-modal">
+    <div class="win-box">
+        <i class="fa-solid fa-crown" style="font-size:60px; color:var(--yellow); margin-bottom:20px"></i>
+        <h3 style="color:var(--yellow); letter-spacing:5px">BIG WIN</h3>
+        <h1 id="win-total" style="font-size:40px; margin:10px 0">IDR 0</h1>
+        <button onclick="closeWin()" class="drop-btn" style="padding:10px 40px">COLLECT</button>
+    </div>
 </div>
 
 <audio id="snd-hit" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
-<audio id="snd-win" src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3"></audio>
 
 <script>
-    const { Engine, Render, Runner, Bodies, Composite, Events, Body } = Matter;
+    const { Engine, Render, Runner, Bodies, Composite, Events } = Matter;
     const engine = Engine.create();
     const world = engine.world;
-    let currentWinrate = 50;
     let isDropping = false;
 
     async function init() {
         const user = localStorage.getItem('user_neon');
-        if(!user) window.location.href = 'index.html';
+        const { data } = await _supabase.from('profiles').select('*').eq('username', user).single();
+        document.getElementById('display-saldo').innerText = "IDR " + data.saldo.toLocaleString();
         
-        // Fetch Real Data from Supabase
-        const { data, error } = await _supabase.from('profiles').select('*').eq('username', user).single();
-        if(data) {
-            document.getElementById('display-saldo').innerText = "IDR " + data.saldo.toLocaleString();
-            currentWinrate = data.winrate;
-        }
-
-        setupCanvas();
-    }
-
-    function setupCanvas() {
         const canvas = document.getElementById('game-canvas');
         const render = Render.create({
             canvas: canvas, engine: engine,
-            options: { width: 600, height: 650, wireframes: false, background: 'transparent' }
+            options: { width: 500, height: 600, wireframes: false, background: 'transparent' }
         });
 
-        // Pins Generation (Cyber Style)
-        const rows = 9;
-        for (let row = 0; row < rows; row++) {
-            const y = 100 + row * 45;
-            const pinsInRow = row + 3;
-            for (let col = 0; col < pinsInRow; col++) {
-                const x = 300 + (col - pinsInRow / 2 + 0.5) * 45;
-                const pin = Bodies.circle(x, y, 5, { 
-                    isStatic: true, 
-                    render: { fillStyle: '#ffffff', glow: true } 
+        // 3D EFFECT PINS (Glossy Circles)
+        const rows = 10;
+        for (let r = 0; r < rows; r++) {
+            let pins = r + 3;
+            for (let c = 0; c < pins; c++) {
+                let x = 250 + (c - pins / 2 + 0.5) * 45;
+                let y = 80 + r * 45;
+                let pin = Bodies.circle(x, y, 6, { 
+                    isStatic: true,
+                    render: { 
+                        fillStyle: '#ffffff',
+                        strokeStyle: '#00d4ff',
+                        lineWidth: 2
+                    }
                 });
                 Composite.add(world, pin);
             }
         }
 
-        // Multipliers (Visual Only for UI)
-        const mults = [5, 2, 1.2, 0.5, 0.2, 0.5, 1.2, 2, 5];
-        mults.forEach((m, i) => {
-            const x = 75 + i * 56;
-            const sensor = Bodies.rectangle(x, 580, 45, 30, {
-                isStatic: true, isSensor: true, label: 'm_' + m,
-                render: { fillStyle: m >= 1 ? '#ff0077' : '#333' }
+        // MULTIPLIERS
+        const multipliers = [10, 5, 2, 0.5, 0.2, 0.5, 2, 5, 10];
+        multipliers.forEach((val, i) => {
+            let x = 50 + i * 50;
+            let sensor = Bodies.rectangle(x, 560, 40, 30, {
+                isStatic: true, isSensor: true, label: 'm_' + val,
+                render: { fillStyle: val >= 1 ? '#ff0077' : '#1a1b2e' }
             });
             Composite.add(world, sensor);
         });
@@ -194,106 +218,92 @@
         Runner.run(Runner.create(), engine);
     }
 
-    function adjustBet(amt) {
-        const input = document.getElementById('bet-amount');
-        let val = parseInt(input.value) + amt;
-        if(val < 1000) val = 1000;
-        input.value = val;
-        document.getElementById('snd-hit').play();
-    }
-
     async function dropBall() {
         if(isDropping) return;
-        const bet = parseInt(document.getElementById('bet-amount').value);
+        const bet = parseInt(document.getElementById('bet-amt').value);
         const user = localStorage.getItem('user_neon');
-
-        // Check Saldo Terbaru
-        const { data: p } = await _supabase.from('profiles').select('saldo').eq('username', user).single();
-        if(p.saldo < bet) return alert("Saldo tidak cukup!");
+        
+        const { data } = await _supabase.from('profiles').select('*').eq('username', user).single();
+        if(data.saldo < bet) return alert("Saldo Kurang!");
 
         isDropping = true;
-        document.getElementById('btn-drop').style.opacity = '0.5';
+        await _supabase.from('profiles').update({ saldo: data.saldo - bet }).eq('username', user);
+        updateUI();
 
-        // Update Saldo (Potong Bet)
-        await _supabase.from('profiles').update({ saldo: p.saldo - bet }).eq('username', user);
-        updateUISaldo();
+        // LOGIC WINRATE MASTER (Silent Bias)
+        let wr = data.winrate;
+        let startX = 250 + (Math.random() * 10 - 5);
+        if(wr > 75) startX = (Math.random() > 0.5) ? 200 : 300; // Arahkan ke pinggir (x10)
 
-        // Logic Manipulasi Winrate Master
-        let offset = (Math.random() * 20 - 10);
-        if(currentWinrate > 70) offset = (Math.random() > 0.5) ? -40 : 40; 
-        if(currentWinrate < 30) offset = 0;
-
-        const ball = Bodies.circle(300 + offset, 30, 10, {
-            restitution: 0.6, friction: 0.05,
-            render: { fillStyle: '#f5e642' }
+        const ball = Bodies.circle(startX, 20, 10, {
+            restitution: 0.5, friction: 0.02,
+            render: { 
+                fillStyle: '#f5e642',
+                strokeStyle: '#fff',
+                lineWidth: 3
+            }
         });
-        
         Composite.add(world, ball);
 
-        // Sound on Hit
         Events.on(engine, 'collisionStart', (e) => {
-            e.pairs.forEach(pair => {
-                if(pair.bodyA === ball || pair.bodyB === ball) {
+            e.pairs.forEach(p => {
+                if(p.bodyA === ball || p.bodyB === ball) {
                     document.getElementById('snd-hit').currentTime = 0;
-                    document.getElementById('snd-hit').play();
+                    document.getElementById('snd-hit').play().catch(()=>{});
                 }
             });
         });
 
-        // Result Detection
-        const checkResult = setInterval(async () => {
-            if(ball.position.y > 550) {
-                clearInterval(checkResult);
-                
-                // Cari sensor terdekat
+        const check = setInterval(async () => {
+            if(ball.position.y > 540) {
+                clearInterval(check);
                 const bodies = Composite.allBodies(world);
-                const sensors = bodies.filter(b => b.label && b.label.startsWith('m_'));
-                let closest = sensors[0];
-                let minDist = 1000;
-                
+                const sensors = bodies.filter(b => b.label?.startsWith('m_'));
+                let target = sensors[0];
+                let min = 1000;
                 sensors.forEach(s => {
-                    const d = Math.abs(s.position.x - ball.position.x);
-                    if(d < minDist) { minDist = d; closest = s; }
+                    let d = Math.abs(s.position.x - ball.position.x);
+                    if(d < min) { min = d; target = s; }
                 });
 
-                const mult = parseFloat(closest.label.split('_')[1]);
+                const mult = parseFloat(target.label.split('_')[1]);
                 const win = Math.floor(bet * mult);
-                
                 Composite.remove(world, ball);
-                await finishRound(win);
+                
+                const { data: p } = await _supabase.from('profiles').select('saldo').eq('username', user).single();
+                await _supabase.from('profiles').update({ saldo: p.saldo + win }).eq('username', user);
+                
+                if(win > 0) {
+                    document.getElementById('win-total').innerText = "IDR " + win.toLocaleString();
+                    document.getElementById('win-modal').style.display = 'flex';
+                } else {
+                    isDropping = false;
+                }
+                updateUI();
             }
         }, 100);
     }
 
-    async function finishRound(win) {
-        const user = localStorage.getItem('user_neon');
-        const { data } = await _supabase.from('profiles').select('saldo').eq('username', user).single();
-        await _supabase.from('profiles').update({ saldo: data.saldo + win }).eq('username', user);
-        
-        if(win > 0) {
-            document.getElementById('win-amt').innerText = "IDR " + win.toLocaleString();
-            document.getElementById('win-popup').style.display = 'block';
-            document.getElementById('snd-win').play();
-        } else {
-            isDropping = false;
-            document.getElementById('btn-drop').style.opacity = '1';
-        }
-        updateUISaldo();
-    }
-
-    async function updateUISaldo() {
+    async function updateUI() {
         const user = localStorage.getItem('user_neon');
         const { data } = await _supabase.from('profiles').select('saldo').eq('username', user).single();
         document.getElementById('display-saldo').innerText = "IDR " + data.saldo.toLocaleString();
     }
 
-    function closeWin() {
-        document.getElementById('win-popup').style.display = 'none';
+    function closeWin() { 
+        document.getElementById('win-modal').style.display = 'none'; 
         isDropping = false;
-        document.getElementById('btn-drop').style.opacity = '1';
     }
 
-    window.onload = init;
+    function adjBet(n) {
+        let b = document.getElementById('bet-amt');
+        let v = parseInt(b.value) + n;
+        if(v < 5000) v = 5000;
+        b.value = v;
+    }
+
+    init();
 </script>
+
 </body>
 </html>
