@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>PROFIL VIP - NEON PLINKO</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -12,12 +12,13 @@
   --card:rgba(255,255,255,.025);
   --gp:0 0 8px rgba(255,0,119,.5),0 0 22px rgba(255,0,119,.15);
   --gb:0 0 8px rgba(0,85,255,.5),0 0 22px rgba(0,85,255,.15);
-  --gy:0 0 8px rgba(245,230,66,.5),0 0 22px rgba(245,230,66,.13);
+  --gy:0 0 8px rgba(245,230,66,.5),0 0 245,230,66,.13;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{
   background:var(--bg);
   color:#dde0f0;font-family:'Outfit',sans-serif;min-height:100vh;overflow-x:hidden;
+  padding-bottom: 80px;
 }
 .header{position:sticky;top:0;z-index:200;padding:13px 18px;background:rgba(2,3,13,.93);
   border-bottom:1px solid var(--blue);backdrop-filter:blur(18px);
@@ -43,7 +44,7 @@ body{
 .profile-name{font-family:'Cinzel Decorative',serif;font-size:15px;font-weight:700;color:#fff;}
 .profile-tier{font-size:9px;font-weight:600;letter-spacing:2px;color:var(--yellow);
   background:rgba(245,230,66,.08);border:1px solid rgba(245,230,66,.25);
-  padding:3px 10px;border-radius:50px;display:inline-block;}
+  padding:3px 10px;border-radius:50px;display:inline-block;text-transform: uppercase;}
 
 .saldo-card{
   background:var(--card);border:1px solid var(--yellow);border-radius:20px;padding:20px;
@@ -62,13 +63,14 @@ body{
 .stat-val{font-size:13px;font-weight:700;margin-top:5px;}
 
 .btn-action{width:100%;padding:14px;border-radius:50px;border:none;cursor:pointer;
-  font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;text-transform:uppercase;margin-top:5px;}
+  font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;text-transform:uppercase;margin-top:5px; transition: 0.3s;}
 .btn-logout{background:linear-gradient(90deg, #ff0077, #aa0044); color:white; box-shadow:var(--gp);}
 
-/* MODAL */
-#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:999;}
-.neon-modal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-  background:#07091d;border:1px solid var(--pink);padding:25px;border-radius:20px;z-index:1000;text-align:center;width:80%;}
+/* Nav Bar Bottom */
+.nav-bar { position: fixed; bottom: 0; left: 0; width: 100%; height: 70px; background: rgba(5, 6, 20, 0.95); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(10px); z-index: 1000; }
+.nav-item { color: #555; text-decoration: none; text-align: center; font-size: 0.7rem; flex: 1; }
+.nav-item.active { color: var(--blue); }
+.nav-item i { font-size: 1.2rem; display: block; margin-bottom: 4px; }
 </style>
 </head>
 <body>
@@ -84,13 +86,13 @@ body{
     <div class="avatar-ring"><i class="fa-solid fa-circle-user"></i></div>
     <div>
       <div class="profile-name" id="profile-username">MEMUAT...</div>
-      <div class="profile-tier" id="profile-tier">---</div>
+      <div class="profile-tier" id="profile-tier">MEMUAT...</div>
     </div>
   </div>
 
   <div class="saldo-card">
     <div style="font-size:9px; opacity:0.5; letter-spacing:2px;">TOTAL SALDO</div>
-    <div class="saldo-val" id="display-saldo">IDR 0</div>
+    <div class="saldo-val" id="display-saldo">Rp 0</div>
   </div>
 
   <div style="font-size:10px; color:var(--blue); font-weight:700; margin-top:10px;">DATA REKENING</div>
@@ -101,68 +103,91 @@ body{
     <div class="info-row"><span class="info-key">Nomor Rekening</span><span class="info-val" id="profile-rek">-</span></div>
   </div>
 
-  <div style="font-size:10px; color:var(--yellow); font-weight:700; margin-top:10px;">STATISTIK TRANSAKSI</div>
+  <div style="font-size:10px; color:var(--yellow); font-weight:700; margin-top:10px;">RINGKASAN AKTIVITAS</div>
   <div class="stats-row">
     <div class="stat-box">
-      <div style="font-size:8px; opacity:0.5;">TOTAL DEPOSIT</div>
-      <div class="stat-val" id="total-depo" style="color:var(--blue);">IDR 0</div>
+      <div style="font-size:8px; opacity:0.5;">DEPOSIT BERHASIL</div>
+      <div class="stat-val" id="total-depo" style="color:var(--blue);">Rp 0</div>
     </div>
     <div class="stat-box">
-      <div style="font-size:8px; opacity:0.5;">TOTAL WITHDRAW</div>
-      <div class="stat-val" id="total-wd" style="color:var(--pink);">IDR 0</div>
+      <div style="font-size:8px; opacity:0.5;">WITHDRAW BERHASIL</div>
+      <div class="stat-val" id="total-wd" style="color:var(--pink);">Rp 0</div>
     </div>
   </div>
 
-  <div class="info-row" style="border:1px solid var(--yellow); margin-top:10px;">
-    <div>
-      <div style="font-size:8px; opacity:0.5;">KODE REFERRAL</div>
-      <div id="profile-refcode" style="font-weight:800; color:var(--yellow); letter-spacing:2px;">-</div>
-    </div>
-    <button onclick="copyRef()" style="background:var(--yellow); border:none; padding:5px 15px; border-radius:20px; font-size:10px; font-weight:700;">SALIN</button>
-  </div>
+  <button class="btn-action btn-logout" onclick="handleLogout()"><i class="fa-solid fa-power-off"></i> KELUAR SESI VIP</button>
+</div>
 
-  <button class="btn-action btn-logout" onclick="handleLogout()"><i class="fa-solid fa-power-off"></i> LOGOUT SESI VIP</button>
+<div class="nav-bar">
+    <a href="game.html" class="nav-item"><i class="fas fa-gamepad"></i>PLAY</a>
+    <a href="deposit.html" class="nav-item"><i class="fas fa-wallet"></i>DEPO</a>
+    <a href="reward.html" class="nav-item"><i class="fas fa-gift"></i>REWARD</a>
+    <a href="profil.html" class="nav-item active"><i class="fas fa-user"></i>PROFIL</a>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 
 <script>
+const user = localStorage.getItem('user_neon');
+
 async function loadProfile() {
-    // Ambil data dari Supabase (Fungsi getPlayerData ada di config.js)
-    const user = await getPlayerData();
-    
     if (!user) {
         window.location.href = 'index.html';
         return;
     }
 
-    // Update UI dengan data dari database (Kolom A - R)
-    document.getElementById('profile-username').innerText = user.username.toUpperCase();
-    document.getElementById('profile-tier').innerText = user.tier;
-    document.getElementById('display-saldo').innerText = "IDR " + user.saldo.toLocaleString('id-ID');
-    document.getElementById('profile-fullname').innerText = user.fullname;
-    document.getElementById('profile-phone').innerText = user.phone;
-    document.getElementById('profile-bank').innerText = user.bank_name;
-    document.getElementById('profile-rek').innerText = user.rekening_number;
-    document.getElementById('total-depo').innerText = "IDR " + user.total_depo.toLocaleString('id-ID');
-    document.getElementById('total-wd').innerText = "IDR " + user.total_wd.toLocaleString('id-ID');
-    document.getElementById('profile-refcode').innerText = user.referral_code || 'TIDAK ADA';
+    // 1. Ambil data profil dari Supabase
+    const { data: profile, error } = await _supabase
+        .from('profiles')
+        .select('*')
+        .eq('username', user)
+        .single();
+
+    if (profile) {
+        document.getElementById('profile-username').innerText = profile.username.toUpperCase();
+        document.getElementById('profile-tier').innerText = profile.role || 'MEMBER';
+        document.getElementById('display-saldo').innerText = "Rp " + profile.saldo.toLocaleString('id-ID');
+        document.getElementById('profile-fullname').innerText = profile.nama_lengkap || '-';
+        document.getElementById('profile-phone').innerText = profile.nomor_hp || '-';
+        document.getElementById('profile-bank').innerText = profile.bank_name || '-';
+        document.getElementById('profile-rek').innerText = profile.rekening || '-';
+        
+        // Load statistik transaksi
+        loadStats();
+    }
 }
 
-function copyRef() {
-    const code = document.getElementById('profile-refcode').innerText;
-    navigator.clipboard.writeText(code);
-    alert("Kode Referral berhasil disalin!");
+async function loadStats() {
+    // Hitung total deposit berhasil
+    const { data: depoData } = await _supabase
+        .from('deposits')
+        .select('nominal')
+        .eq('username', user)
+        .eq('status', 'BERHASIL');
+    
+    let totalDepo = 0;
+    if (depoData) depoData.forEach(d => totalDepo += d.nominal);
+    document.getElementById('total-depo').innerText = "Rp " + totalDepo.toLocaleString('id-ID');
+
+    // Hitung total withdraw berhasil (asumsi ada tabel withdraws)
+    const { data: wdData } = await _supabase
+        .from('withdraws')
+        .select('nominal')
+        .eq('username', user)
+        .eq('status', 'BERHASIL');
+
+    let totalWd = 0;
+    if (wdData) wdData.forEach(w => totalWd += w.nominal);
+    document.getElementById('total-wd').innerText = "Rp " + totalWd.toLocaleString('id-ID');
 }
 
 async function handleLogout() {
-    if (confirm("Apakah Anda yakin ingin keluar?")) {
-        const user = localStorage.getItem('user_session');
-        // Set Status ke OFFLINE di Database sebelum keluar
+    if (confirm("Apakah Anda yakin ingin keluar dari sesi VIP?")) {
+        // Update status di Supabase jika perlu (opsional)
         await _supabase.from('profiles').update({ status: 'OFFLINE' }).eq('username', user);
         
-        localStorage.clear();
+        localStorage.removeItem('user_neon');
         window.location.href = 'index.html';
     }
 }
