@@ -9,40 +9,25 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { 
-            --pink-neon: #ff0077; 
-            --blue-neon: #00d4ff; 
-            --deepblue-neon: #0044ff;
-            --yellow-neon: #f5e642; 
-            --bg: #030510; 
-            --red-alert: #ff3131; 
+            --pink-neon: #ff0077; --blue-neon: #00d4ff; --deepblue-neon: #0044ff;
+            --yellow-neon: #f5e642; --bg: #030510; --red-alert: #ff3131; 
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; min-height: 100vh; overflow-x: hidden; }
-
         #gate-keeper { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
-        .gate-card { width: 90%; max-width: 380px; padding: 40px 30px; border-radius: 30px; background: rgba(255,255,255,0.02); border: 2px solid var(--blue-neon); box-shadow: 0 0 40px rgba(0,212,255,0.2); text-align: center; }
-
+        .gate-card { width: 90%; max-width: 380px; padding: 40px 30px; border-radius: 30px; background: rgba(255,255,255,0.02); border: 2px solid var(--blue-neon); text-align: center; }
         #main-app { display: none; }
         .nav-top { background: rgba(5,6,20,0.95); padding: 15px 20px; border-bottom: 1px solid rgba(0,212,255,0.2); position: sticky; top: 0; z-index: 100; display: flex; flex-direction: column; gap: 8px; }
         .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 70px; background: #050614; border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-around; align-items: center; padding-bottom: env(safe-area-inset-bottom); }
-        
         .nav-btn { color: rgba(255,255,255,0.3); font-size: 20px; cursor: pointer; text-align: center; flex: 1; }
         .nav-btn span { display: block; font-size: 8px; margin-top: 4px; font-weight: 800; text-transform: uppercase; }
         .nav-btn.active { color: var(--blue-neon); text-shadow: 0 0 10px var(--blue-neon); }
-
         .content { padding: 20px; padding-bottom: 100px; }
-        .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 20px; padding: 20px; margin-bottom: 15px; position: relative; }
-        
+        .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 20px; padding: 20px; margin-bottom: 15px; }
         .profit { color: var(--pink-neon); text-shadow: 0 0 8px var(--pink-neon); }
         .loss { color: var(--deepblue-neon); text-shadow: 0 0 8px var(--deepblue-neon); }
-        .neutral { color: var(--yellow-neon); }
-
         .panic-btn { background: var(--red-alert); color: #fff; font-weight: 900; padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-size: 11px; }
-        .panic-active { background: #550000; border: 1px solid var(--red-alert); animation: pulse-red 1s infinite; }
-        @keyframes pulse-red { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-        
         .input-mini { background: #000; border: 1px solid #333; color: var(--yellow-neon); padding: 5px; border-radius: 5px; width: 65px; text-align: center; }
-        .search-box { width: 100%; padding: 14px; border-radius: 12px; background: #000; border: 1px solid var(--blue-neon); color: #fff; margin-bottom: 15px; }
         .save-btn { background: var(--blue-neon); color: #000; padding: 10px 15px; border-radius: 8px; font-size: 11px; font-weight: 900; border: none; width: 100%; cursor: pointer; }
     </style>
 </head>
@@ -61,32 +46,27 @@
         <div class="nav-top">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <div style="font-family:'Cinzel Decorative'; font-weight:900; color:var(--pink-neon);">NEON MASTER</div>
-                <button id="panic-btn-global" class="panic-btn" onclick="togglePanicMode()">
-                    <i class="fa-solid fa-skull"></i> PANIC MODE
-                </button>
+                <button id="panic-btn-global" class="panic-btn" onclick="togglePanicMode()">PANIC MODE</button>
             </div>
-            <div id="panic-timer" style="display:none; text-align:center; color:var(--red-alert); font-weight:900; font-size:10px;">MODE KURAS AKTIF: <span id="timer-val">05:00</span></div>
+            <div id="panic-timer" style="display:none; text-align:center; color:var(--red-alert); font-weight:900; font-size:10px;">MODE KURAS: <span id="timer-val">05:00</span></div>
             <div id="online-stats" style="font-size:10px; font-weight:800; color:var(--yellow-neon);">SYNCING...</div>
         </div>
 
         <div class="content">
             <div id="tab-finance" class="page">
-                <h2 style="font-size:14px; margin-bottom:15px; color:var(--blue-neon);">PENDING TRANSAKSI</h2>
+                <h2 style="font-size:14px; margin-bottom:15px; color:var(--blue-neon);">PENDING TX</h2>
                 <div id="finance-list">Memuat...</div>
             </div>
-
             <div id="tab-users" class="page" style="display:none">
-                <input type="text" id="user-search" class="search-box" placeholder="Cari User..." onkeyup="filterUsers()">
-                <div id="user-list">Memuat Pemain...</div>
+                <input type="text" id="user-search" style="width:100%; padding:15px; border-radius:12px; background:#000; border:1px solid var(--blue-neon); color:#fff; margin-bottom:15px;" placeholder="Cari User..." onkeyup="filterUsers()">
+                <div id="user-list"></div>
             </div>
-
             <div id="tab-reward" class="page" style="display:none">
                 <h2 style="font-size:14px; margin-bottom:15px; color:var(--blue-neon);">GIFT SYSTEM</h2>
                 <div class="card">
-                    <input type="text" id="gift-target" class="search-box" placeholder="Target Username">
-                    <input type="number" id="gift-amt" class="search-box" placeholder="Nominal IDR">
-                    <textarea id="gift-msg" class="search-box" style="height:80px;">Bonus Jackpot Master!</textarea>
-                    <button class="save-btn" onclick="sendGift()">KIRIM KE INBOX</button>
+                    <input type="text" id="gift-target" style="width:100%; padding:12px; background:#000; border:1px solid #333; color:#fff; margin-bottom:10px;" placeholder="Target Username">
+                    <input type="number" id="gift-amt" style="width:100%; padding:12px; background:#000; border:1px solid #333; color:#fff; margin-bottom:10px;" placeholder="Nominal">
+                    <button class="save-btn" onclick="sendGift()">KIRIM HADIAH</button>
                 </div>
             </div>
         </div>
@@ -95,7 +75,7 @@
             <div class="nav-btn active" onclick="switchNav('finance', this)"><i class="fa-solid fa-cash-register"></i><span>Kasir</span></div>
             <div class="nav-btn" onclick="switchNav('users', this)"><i class="fa-solid fa-users-gear"></i><span>Pemain</span></div>
             <div class="nav-btn" onclick="switchNav('reward', this)"><i class="fa-solid fa-gift"></i><span>Hadiah</span></div>
-            <div class="nav-btn" onclick="logout()"><i class="fa-solid fa-power-off"></i><span>Keluar</span></div>
+            <div class="nav-btn" onclick="logout()"><i class="fa-solid fa-power-off"></i><span>Exit</span></div>
         </nav>
     </div>
 
@@ -106,7 +86,6 @@
 
     const MASTER_KEY = { u: "admin_neon", p: "master777" };
     let usersData = [];
-    let panicInterval;
 
     function checkAccess() {
         if(document.getElementById('master-user').value === MASTER_KEY.u && document.getElementById('master-pass').value === MASTER_KEY.p) {
@@ -114,7 +93,7 @@
             document.getElementById('gate-keeper').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
             initDashboard();
-        } else { alert("ACCESS DENIED"); }
+        } else { alert("DENIED"); }
     }
 
     async function initDashboard() {
@@ -128,108 +107,45 @@
         let html = '';
         if(depo) depo.forEach(d => {
             html += `<div class="card"><b>${d.username}</b> <span class="profit">+${d.net_receive}</span><br>
-            <button class="save-btn" style="margin-top:10px" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive})">APPROVE DEPO</button></div>`;
+            <button class="save-btn" style="margin-top:10px" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive})">APPROVE</button></div>`;
         });
-        if(wd) wd.forEach(w => {
-            html += `<div class="card"><b>${w.username}</b> <span class="loss">-${w.amount}</span><br>
-            <button class="save-btn" style="background:var(--pink-neon); margin-top:10px" onclick="approveWd('${w.id}')">APPROVE WD</button></div>`;
-        });
-        document.getElementById('finance-list').innerHTML = html || '<p style="text-align:center; opacity:0.5;">Antrean Bersih</p>';
+        document.getElementById('finance-list').innerHTML = html || 'Bersih';
     }
 
     async function approveDepo(id, user, amt) {
-        const { data: p } = await _supabase.from('profiles').select('saldo').eq('username', user).single();
-        await _supabase.from('profiles').update({ saldo: (p.saldo + amt) }).eq('username', user);
+        const { data: profile } = await _supabase.from('profiles').select('saldo').eq('username', user).single();
+        const saldoBaru = (profile.saldo || 0) + amt;
+        await _supabase.from('profiles').update({ saldo: saldoBaru }).eq('username', user);
         await _supabase.from('deposits').update({ status: 'SUKSES' }).eq('id', id);
-        alert("DEPO BERHASIL!"); loadFinance();
-    }
-
-    async function approveWd(id) {
-        await _supabase.from('withdrawals').update({ status: 'SUKSES' }).eq('id', id);
-        alert("WD BERHASIL!"); loadFinance();
+        alert("BERHASIL!"); loadFinance();
     }
 
     async function loadUsers() {
         const { data } = await _supabase.from('profiles').select('*');
-        if(data) {
-            usersData = data;
-            renderUsers(data);
-            document.getElementById('online-stats').innerText = data.length + " PEMAIN TERDATA";
-        }
+        if(data) { usersData = data; renderUsers(data); }
     }
 
     function renderUsers(list) {
         document.getElementById('user-list').innerHTML = list.map(u => {
             const saldo = u.saldo || 0;
             const modal = u.modal_awal || 0;
-            let saldoClass = 'neutral';
-            if (saldo > modal) saldoClass = 'profit';
-            else if (saldo < modal) saldoClass = 'loss';
-
-            return `
-            <div class="card">
-                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                    <b>${u.username}</b>
-                    <span class="${saldoClass}" style="font-weight:900; font-size:16px;">Rp ${saldo.toLocaleString()}</span>
+            const sClass = saldo > modal ? 'profit' : (saldo < modal ? 'loss' : '');
+            return `<div class="card">
+                <div style="display:flex; justify-content:space-between;"><b>${u.username}</b><span class="${sClass}">Rp ${saldo.toLocaleString()}</span></div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
+                    <div>WR: <input type="number" class="input-mini" id="wr-${u.id}" value="${u.winrate || 0}">%</div>
+                    <div>MAX: <input type="number" class="input-mini" style="width:75px" id="mx-${u.id}" value="${u.max_win_limit || 0}"></div>
                 </div>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:11px;">
-                    <div>WR: <input type="number" class="input-mini" id="wr-${u.id}" value="${u.winrate || 0}"> %</div>
-                    <div>MAX: <input type="number" class="input-mini" style="width:80px" id="mx-${u.id}" value="${u.max_win_limit || 0}"></div>
-                </div>
-                <button class="save-btn" style="margin-top:10px; background:transparent; border:1px solid var(--blue-neon); color:var(--blue-neon);" onclick="updateSetting('${u.id}')">SIMPAN SETTING</button>
-            </div>
-        `}).join('');
+                <button class="save-btn" style="margin-top:10px; background:transparent; border:1px solid var(--blue-neon); color:var(--blue-neon);" onclick="updateSetting('${u.id}')">SIMPAN</button>
+            </div>`;
+        }).join('');
     }
 
     async function updateSetting(id) {
         const wr = document.getElementById(`wr-${id}`).value;
         const mx = document.getElementById(`mx-${id}`).value;
         await _supabase.from('profiles').update({ winrate: parseInt(wr), max_win_limit: parseInt(mx) }).eq('id', id);
-        alert("SETTING DISIMPAN!");
-    }
-
-    async function togglePanicMode() {
-        const confirmMode = confirm("AKTIFKAN MODE KURAS GLOBAL (10%)?");
-        if(!confirmMode) return;
-
-        document.getElementById('panic-btn-global').classList.add('panic-active');
-        document.getElementById('panic-timer').style.display = 'block';
-
-        // Set semua winrate jadi 10% kecuali admin
-        await _supabase.from('profiles').update({ winrate: 10 }).neq('username', 'admin_neon');
-        
-        let sec = 300;
-        panicInterval = setInterval(() => {
-            sec--;
-            let min = Math.floor(sec / 60);
-            let s = sec % 60;
-            document.getElementById('timer-val').innerText = `${min}:${s < 10 ? '0' : ''}${s}`;
-            if(sec <= 0) {
-                clearInterval(panicInterval);
-                stopPanic();
-            }
-        }, 1000);
-    }
-
-    async function stopPanic() {
-        await _supabase.from('profiles').update({ winrate: 60 }).neq('username', 'admin_neon');
-        document.getElementById('panic-btn-global').classList.remove('panic-active');
-        document.getElementById('panic-timer').style.display = 'none';
-        alert("MODE KURAS SELESAI. Winrate kembali normal.");
-    }
-
-    async function sendGift() {
-        const user = document.getElementById('gift-target').value;
-        const amt = document.getElementById('gift-amt').value;
-        const msg = document.getElementById('gift-msg').value;
-        if(!user || !amt) return alert("LENGKAPI DATA!");
-        
-        const { error } = await _supabase.from('inbox').insert([{ 
-            username: user, title: "REWARD MASTER", message: msg, reward_amount: parseInt(amt), status: 'UNREAD' 
-        }]);
-        
-        if(!error) { alert("REWARD TERKIRIM!"); document.getElementById('gift-amt').value = ""; }
-        else { console.error(error); alert("GAGAL!"); }
+        alert("UPDATED!");
     }
 
     function switchNav(tab, el) {
@@ -239,20 +155,9 @@
         el.classList.add('active');
     }
 
-    function filterUsers() {
-        const q = document.getElementById('user-search').value.toLowerCase();
-        renderUsers(usersData.filter(u => u.username.toLowerCase().includes(q)));
-    }
-
     function logout() { sessionStorage.clear(); window.location.reload(); }
-
-    window.onload = () => {
-        if(sessionStorage.getItem('master_auth') === 'true') {
-            document.getElementById('gate-keeper').style.display = 'none';
-            document.getElementById('main-app').style.display = 'block';
-            initDashboard();
-        }
-    };
+    
+    window.onload = () => { if(sessionStorage.getItem('master_auth') === 'true') { document.getElementById('gate-keeper').style.display = 'none'; document.getElementById('main-app').style.display = 'block'; initDashboard(); } };
 </script>
 </body>
 </html>
