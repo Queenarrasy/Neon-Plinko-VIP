@@ -2,225 +2,221 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MASTER PANEL - NEON ADMIN</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+    <title>NEON MASTER PANEL — ELITE CONTROL</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="global.js"></script>
+    <script src="config.js"></script>
     <style>
         :root {
-            --pink: #ff0077; --blue: #0055ff; --cyan: #00f2ff; --bg: #05060f;
-            --gp: 0 0 15px rgba(255, 0, 119, 0.4);
-            --gb: 0 0 15px rgba(0, 85, 255, 0.4);
+            --pink: #ff0077; --blue: #00d4ff; --purple: #bc13fe; --bg: #030510;
+            --gp: 0 0 20px rgba(255, 0, 119, 0.4);
+            --gb: 0 0 20px rgba(0, 212, 255, 0.4);
         }
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            background-color: var(--bg); color: #fff; font-family: 'Outfit', sans-serif;
-            background-image: radial-gradient(circle at 50% -20%, #1a1b3a 0%, transparent 70%);
-            min-height: 100vh; padding: 20px;
+            background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(0, 212, 255, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(255, 0, 119, 0.05) 0%, transparent 40%);
+            min-height: 100vh; padding: 15px;
         }
-        .header { text-align: center; margin-bottom: 30px; }
-        .header h1 { font-family: 'Cinzel Decorative', serif; color: var(--pink); text-shadow: var(--gp); font-size: 24px; }
-        
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
-        .stat-card { background: rgba(255,255,255,0.03); border: 1px solid var(--blue); padding: 20px; border-radius: 15px; text-align: center; }
-        .stat-card h3 { font-size: 12px; opacity: 0.6; text-transform: uppercase; margin-bottom: 10px; }
-        .stat-card p { font-size: 22px; font-weight: 800; color: var(--cyan); }
 
-        .section { background: rgba(255,255,255,0.02); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); padding: 20px; margin-bottom: 30px; overflow: hidden; }
-        .section-title { font-family: 'Cinzel Decorative', serif; color: var(--blue); font-size: 14px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
-        
-        .table-container { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 600px; }
-        th { text-align: left; padding: 12px; border-bottom: 2px solid var(--blue); font-size: 12px; opacity: 0.7; }
-        td { padding: 15px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
+        /* Nav Header */
+        .admin-header {
+            text-align: center; margin-bottom: 25px; padding: 20px;
+            background: rgba(255, 255, 255, 0.02); border-radius: 25px;
+            border: 1px solid rgba(0, 212, 255, 0.2); backdrop-filter: blur(10px);
+        }
+        .admin-header h1 { font-family: 'Cinzel Decorative'; font-size: 1.2rem; color: var(--blue); text-shadow: var(--gb); letter-spacing: 2px; }
+        .admin-header p { font-size: 10px; opacity: 0.5; margin-top: 5px; font-weight: 800; }
 
-        .badge { padding: 4px 10px; border-radius: 6px; font-size: 10px; font-weight: 700; }
-        .bg-proses { background: rgba(245, 230, 66, 0.2); color: #f5e642; border: 1px solid #f5e642; }
-        
-        .btn-action { padding: 6px 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: 700; font-size: 11px; transition: 0.2s; }
-        .btn-approve { background: var(--pink); color: white; margin-right: 5px; box-shadow: var(--gp); }
-        .btn-reject { background: transparent; border: 1px solid #ff4444; color: #ff4444; }
-        .btn-action:hover { transform: scale(1.05); }
+        /* Stats Grid */
+        .stats-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 25px; }
+        .stat-box {
+            background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05);
+            padding: 15px 5px; border-radius: 18px; text-align: center; position: relative; overflow: hidden;
+        }
+        .stat-box::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: var(--blue); }
+        .stat-box.pink::after { background: var(--pink); }
+        .stat-box h3 { font-size: 9px; opacity: 0.6; text-transform: uppercase; margin-bottom: 5px; }
+        .stat-box p { font-size: 18px; font-weight: 800; color: #fff; }
 
-        /* Modal Notif */
-        #notif { position: fixed; top: 20px; right: 20px; padding: 15px 25px; border-radius: 10px; display: none; z-index: 1000; animation: slideIn 0.3s ease; }
-        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        /* Tabs System */
+        .admin-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .a-tab {
+            flex: 1; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.02); color: rgba(255,255,255,0.4);
+            font-size: 11px; font-weight: 800; cursor: pointer; text-align: center; transition: 0.3s;
+        }
+        .a-tab.active { background: var(--blue); color: #000; box-shadow: var(--gb); border-color: transparent; }
+
+        /* Action Cards (Ganti Tabel Kaku) */
+        .data-list { display: none; flex-direction: column; gap: 15px; animation: fadeIn 0.4s ease; }
+        .data-list.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .card-item {
+            background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+            border-radius: 20px; padding: 18px; border: 1px solid rgba(255,255,255,0.08);
+            position: relative;
+        }
+        .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .card-user { font-weight: 800; font-size: 16px; color: var(--blue); text-shadow: 0 0 10px rgba(0, 212, 255, 0.3); }
+        .card-date { font-size: 10px; opacity: 0.4; }
+        
+        .card-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .card-amount { font-size: 1.1rem; font-weight: 900; color: var(--pink); }
+        .card-method { font-size: 10px; padding: 3px 8px; border-radius: 5px; border: 1px solid rgba(255,255,255,0.2); opacity: 0.7; }
+
+        .card-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn-adm {
+            padding: 12px; border-radius: 12px; border: none; font-weight: 800; font-size: 11px;
+            cursor: pointer; text-transform: uppercase; transition: 0.2s;
+        }
+        .btn-confirm { background: var(--blue); color: #000; box-shadow: var(--gb); }
+        .btn-reject { background: rgba(255, 255, 255, 0.05); color: #ff4444; border: 1px solid rgba(255, 68, 68, 0.2); }
+        .btn-adm:active { transform: scale(0.95); }
+
+        /* Notification */
+        #toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: var(--pink); color: #fff; padding: 12px 25px; border-radius: 50px;
+            font-size: 12px; font-weight: 800; display: none; z-index: 1000; box-shadow: var(--gp);
+        }
     </style>
 </head>
 <body>
 
-<div id="notif"></div>
+<div id="toast">ACTION SUCCESSFUL</div>
 
-<div class="header">
-    <h1><i class="fa-solid fa-user-shield"></i> MASTER CONTROL PANEL</h1>
-    <p style="font-size: 10px; opacity: 0.5; margin-top: 5px;">ADMINISTRATION SYSTEM V.3.0</p>
+<div class="admin-header">
+    <h1><i class="fa-solid fa-terminal"></i> NEON COMMAND</h1>
+    <p>SYSTEM ACCESS: MASTER PRIVILEGE</p>
 </div>
 
-<div class="stats-grid">
-    <div class="stat-card"><h3>Total User</h3><p id="stat-users">0</p></div>
-    <div class="stat-card"><h3>Antrean Depo</h3><p id="stat-depo">0</p></div>
-    <div class="stat-card"><h3>Antrean WD</h3><p id="stat-wd">0</p></div>
+<div class="stats-container">
+    <div class="stat-box"><h3>Users</h3><p id="s-users">0</p></div>
+    <div class="stat-box pink"><h3>Depo</h3><p id="s-depo">0</p></div>
+    <div class="stat-box"><h3>WD</h3><p id="s-wd">0</p></div>
 </div>
 
-<div class="section">
-    <div class="section-title"><i class="fa-solid fa-money-bill-trend-up"></i> ANTREAN DEPOSIT</div>
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>TANGGAL</th>
-                    <th>USERNAME</th>
-                    <th>METODE</th>
-                    <th>NOMINAL</th>
-                    <th>NET TERIMA</th>
-                    <th>AKSI</th>
-                </tr>
-            </thead>
-            <tbody id="table-depo">
-                <tr><td colspan="6" style="text-align:center; opacity:0.3;">Memuat data...</td></tr>
-            </tbody>
-        </table>
-    </div>
+<div class="admin-tabs">
+    <div class="a-tab active" id="tab-depo" onclick="switchMenu('depo')">DEPOSIT</div>
+    <div class="a-tab" id="tab-wd" onclick="switchMenu('wd')">WITHDRAW</div>
 </div>
 
-<div class="section">
-    <div class="section-title"><i class="fa-solid fa-hand-holding-dollar"></i> ANTREAN WITHDRAW</div>
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>TANGGAL</th>
-                    <th>USERNAME</th>
-                    <th>JUMLAH WD</th>
-                    <th>STATUS</th>
-                    <th>AKSI</th>
-                </tr>
-            </thead>
-            <tbody id="table-wd">
-                <tr><td colspan="5" style="text-align:center; opacity:0.3;">Memuat data...</td></tr>
-            </tbody>
-        </table>
-    </div>
+<div id="list-depo" class="data-list active">
+    <div style="text-align:center; opacity:0.3; padding:50px;">Scanning incoming signals...</div>
+</div>
+
+<div id="list-wd" class="data-list">
+    <div style="text-align:center; opacity:0.3; padding:50px;">Scanning outgoing signals...</div>
 </div>
 
 <script>
-    // FUNGSI LOAD DATA UTAMA
-    async function refreshData() {
+    async function loadAdminData() {
         try {
-            // 1. Fetch Deposit PROSES
-            const { data: depo, error: e1 } = await _supabase.from('deposits').select('*').eq('status', 'PROSES').order('created_at', {ascending: false});
-            // 2. Fetch Withdraw PROSES
-            const { data: wd, error: e2 } = await _supabase.from('withdrawals').select('*').eq('status', 'PROSES').order('created_at', {ascending: false});
-            // 3. Fetch Total Users
-            const { count: userCount } = await _supabase.from('profiles').select('*', { count: 'exact', head: true });
+            const { data: depo } = await _supabase.from('deposits').select('*').eq('status', 'PROSES').order('created_at', {ascending: false});
+            const { data: wd } = await _supabase.from('withdrawals').select('*').eq('status', 'PROSES').order('created_at', {ascending: false});
+            const { count: uCount } = await _supabase.from('profiles').select('*', { count: 'exact', head: true });
 
-            renderDepo(depo);
-            renderWd(wd);
-            
-            document.getElementById('stat-users').innerText = userCount || 0;
-            document.getElementById('stat-depo').innerText = depo?.length || 0;
-            document.getElementById('stat-wd').innerText = wd?.length || 0;
-        } catch (err) {
-            console.error("Fetch Error:", err);
-        }
+            document.getElementById('s-users').innerText = uCount || 0;
+            document.getElementById('s-depo').innerText = depo?.length || 0;
+            document.getElementById('s-wd').innerText = wd?.length || 0;
+
+            renderDepoCards(depo);
+            renderWdCards(wd);
+        } catch (e) { console.error(e); }
     }
 
-    function renderDepo(list) {
-        const tbody = document.getElementById('table-depo');
-        if(!list || list.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; opacity:0.3; padding:20px;">Tidak ada antrean deposit</td></tr>';
+    function renderDepoCards(data) {
+        const container = document.getElementById('list-depo');
+        if(!data || data.length === 0) {
+            container.innerHTML = '<div style="text-align:center; opacity:0.2; padding:50px; font-size:12px;">NO PENDING DEPOSITS</div>';
             return;
         }
-        tbody.innerHTML = list.map(i => `
-            <tr>
-                <td>${new Date(i.created_at).toLocaleString('id-ID')}</td>
-                <td style="font-weight:700; color:var(--cyan)">${i.username}</td>
-                <td><span class="badge" style="border:1px solid #fff;">${i.method}</span></td>
-                <td>IDR ${parseFloat(i.amount).toLocaleString()}</td>
-                <td style="color:var(--yellow); font-weight:700;">IDR ${parseFloat(i.net_receive).toLocaleString()}</td>
-                <td>
-                    <button class="btn-action btn-approve" onclick="approveDepo('${i.id}', '${i.username}', ${i.net_receive})">APPROVE</button>
-                    <button class="btn-action btn-reject" onclick="rejectAction('deposits', '${i.id}')">REJECT</button>
-                </td>
-            </tr>
+        container.innerHTML = data.map(i => `
+            <div class="card-item">
+                <div class="card-top">
+                    <div>
+                        <div class="card-user">${i.username.toUpperCase()}</div>
+                        <div class="card-date">${new Date(i.created_at).toLocaleString()}</div>
+                    </div>
+                    <div class="card-method">${i.method}</div>
+                </div>
+                <div class="card-info">
+                    <div style="font-size:10px; opacity:0.5;">NOMINAL NET:</div>
+                    <div class="card-amount">Rp ${parseFloat(i.net_receive).toLocaleString()}</div>
+                </div>
+                <div class="card-btns">
+                    <button class="btn-adm btn-confirm" onclick="approveDepo('${i.id}', '${i.username}', ${i.net_receive})">APPROVE</button>
+                    <button class="btn-adm btn-reject" onclick="processAction('deposits', '${i.id}', 'REJECT')">REJECT</button>
+                </div>
+            </div>
         `).join('');
     }
 
-    function renderWd(list) {
-        const tbody = document.getElementById('table-wd');
-        if(!list || list.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; opacity:0.3; padding:20px;">Tidak ada antrean withdraw</td></tr>';
+    function renderWdCards(data) {
+        const container = document.getElementById('list-wd');
+        if(!data || data.length === 0) {
+            container.innerHTML = '<div style="text-align:center; opacity:0.2; padding:50px; font-size:12px;">NO PENDING WITHDRAWALS</div>';
             return;
         }
-        tbody.innerHTML = list.map(i => `
-            <tr>
-                <td>${new Date(i.created_at).toLocaleString('id-ID')}</td>
-                <td style="font-weight:700; color:var(--cyan)">${i.username}</td>
-                <td style="color:var(--pink); font-weight:700;">IDR ${parseFloat(i.amount).toLocaleString()}</td>
-                <td><span class="badge bg-proses">PROSES</span></td>
-                <td>
-                    <button class="btn-action btn-approve" style="background:var(--blue); box-shadow:var(--gb);" onclick="approveWd('${i.id}')">SUKSES</button>
-                    <button class="btn-action btn-reject" onclick="rejectAction('withdrawals', '${i.id}')">REJECT</button>
-                </td>
-            </tr>
+        container.innerHTML = data.map(i => `
+            <div class="card-item">
+                <div class="card-top">
+                    <div>
+                        <div class="card-user">${i.username.toUpperCase()}</div>
+                        <div class="card-date">${new Date(i.created_at).toLocaleString()}</div>
+                    </div>
+                    <div class="card-method">WITHDRAW</div>
+                </div>
+                <div class="card-info">
+                    <div style="font-size:10px; opacity:0.5;">POTONG SALDO:</div>
+                    <div class="card-amount" style="color:var(--blue)">Rp ${parseFloat(i.amount).toLocaleString()}</div>
+                </div>
+                <div class="card-btns">
+                    <button class="btn-adm btn-confirm" style="background:var(--pink); color:#fff; box-shadow:var(--gp);" onclick="processAction('withdrawals', '${i.id}', 'SUKSES')">PROSES WD</button>
+                    <button class="btn-adm btn-reject" onclick="processAction('withdrawals', '${i.id}', 'REJECT')">REJECT</button>
+                </div>
+            </div>
         `).join('');
     }
 
-    // LOGIKA APPROVE DEPO + AUTO SALDO
-    async function approveDepo(id, username, netAmount) {
-        if(!confirm(`Approve deposit ${username} sebesar IDR ${netAmount.toLocaleString()}?`)) return;
-
-        try {
-            // 1. Ambil saldo lama
-            const { data: profile } = await _supabase.from('profiles').select('saldo').eq('username', username).single();
-            const newSaldo = (profile?.saldo || 0) + netAmount;
-
-            // 2. Update Status Depo & Update Saldo User (Parallel)
-            const p1 = _supabase.from('deposits').update({ status: 'SUKSES' }).eq('id', id);
-            const p2 = _supabase.from('profiles').update({ saldo: newSaldo }).eq('username', username);
-
-            const [res1, res2] = await Promise.all([p1, p2]);
-
-            if(res1.error || res2.error) throw new Error("Gagal update data");
-
-            showNotif("DEPOSIT BERHASIL DI-APPROVE & SALDO BERTAMBAH", "var(--pink)");
-            refreshData();
-        } catch (err) {
-            alert(err.message);
-        }
+    async function approveDepo(id, username, amount) {
+        const { data: p } = await _supabase.from('profiles').select('saldo').eq('username', username).single();
+        const newSaldo = (p?.saldo || 0) + amount;
+        
+        await _supabase.from('deposits').update({ status: 'SUKSES' }).eq('id', id);
+        await _supabase.from('profiles').update({ saldo: newSaldo }).eq('username', username);
+        
+        showToast("DEPOSIT APPROVED");
+        loadAdminData();
     }
 
-    async function approveWd(id) {
-        const { error } = await _supabase.from('withdrawals').update({ status: 'SUKSES' }).eq('id', id);
-        if(!error) {
-            showNotif("WITHDRAW BERHASIL DI-PROSES", var(--blue));
-            refreshData();
-        }
+    async function processAction(table, id, status) {
+        await _supabase.from(table).update({ status: status }).eq('id', id);
+        showToast("TRANSACTION " + status);
+        loadAdminData();
     }
 
-    async function rejectAction(table, id) {
-        if(!confirm("Yakin ingin menolak transaksi ini?")) return;
-        const { error } = await _supabase.from(table).update({ status: 'REJECT' }).eq('id', id);
-        if(!error) {
-            showNotif("TRANSAKSI DITOLAK", "#ff4444");
-            refreshData();
-        }
+    function switchMenu(m) {
+        document.getElementById('tab-depo').classList.toggle('active', m === 'depo');
+        document.getElementById('tab-wd').classList.toggle('active', m === 'wd');
+        document.getElementById('list-depo').classList.toggle('active', m === 'depo');
+        document.getElementById('list-wd').classList.toggle('active', m === 'wd');
     }
 
-    function showNotif(msg, color) {
-        const n = document.getElementById('notif');
-        n.innerText = msg;
-        n.style.background = color;
-        n.style.display = 'block';
-        setTimeout(() => { n.style.display = 'none'; }, 3000);
+    function showToast(m) {
+        const t = document.getElementById('toast');
+        t.innerText = m; t.style.display = 'block';
+        setTimeout(() => t.style.display = 'none', 2500);
     }
 
-    // Auto Refresh setiap 30 detik
-    setInterval(refreshData, 30000);
-    window.onload = refreshData;
+    window.onload = loadAdminData;
 </script>
-
 </body>
 </html>
