@@ -50,7 +50,6 @@
             display: none; align-items: center; justify-content: center; gap: 8px;
             text-decoration: none; transition: 0.3s;
         }
-        .btn-wallet:active { background: var(--yellow); color: #000; }
 
         .btn-main{width:100%;padding:15px;border-radius:50px;cursor:pointer;font-weight:700;text-transform:uppercase;border:none; background:linear-gradient(90deg,var(--pink),#b400dc); color:#fff; box-shadow:var(--gp);}
         .btn-main:disabled{opacity:0.5; cursor:not-allowed;}
@@ -58,9 +57,9 @@
         #depo-history { display:flex; flex-direction:column; gap:10px; }
         .history-item { background:rgba(255,255,255,0.02); padding:12px; border-radius:12px; border-left:4px solid var(--yellow); }
         
-        /* Modal */
+        /* Modal Senada dengan Withdraw */
         #modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:1000;}
-        #neon-modal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%); background:#0a0b1e; border:2px solid var(--pink); border-radius:20px; padding:25px; text-align:center; z-index:1001; width:85%;}
+        #neon-modal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%); background:#0a0b1e; border:2px solid var(--pink); border-radius:20px; padding:25px; text-align:center; z-index:1001; width:85%; box-shadow: var(--gp);}
     </style>
 </head>
 <body>
@@ -139,10 +138,7 @@
         document.getElementById('form-title').innerText = `DEPOSIT VIA ${m}`;
         document.getElementById('qris-area').style.display = (m === 'QRIS') ? 'block' : 'none';
         document.getElementById('grid-idr').style.display = (m === 'QRIS') ? 'grid' : 'none';
-        
-        // Tampilkan tombol WA hanya jika USDT
         document.getElementById('btn-wallet-wa').style.display = (m === 'USDT') ? 'flex' : 'none';
-
         document.getElementById('input-amount').placeholder = (m === 'QRIS') ? "Masukkan Rupiah..." : "Masukkan Jumlah USDT...";
         document.getElementById('input-amount').value = "";
         calculateNet();
@@ -169,7 +165,6 @@
             rate = KURS_USDT;
             fee = FEE_USDT * KURS_USDT;
             net = (val > FEE_USDT) ? (val - FEE_USDT) * KURS_USDT : 0;
-            
             document.getElementById('info-rate').innerText = "Rp " + KURS_USDT.toLocaleString();
             document.getElementById('info-fee').innerText = "Rp " + fee.toLocaleString();
         }
@@ -180,7 +175,7 @@
 
     async function prosesDeposit() {
         const val = parseFloat(document.getElementById('input-amount').value);
-        const user = localStorage.getItem('user_neon');
+        const user = localStorage.getItem('user_neon') || localStorage.getItem('username');
         const btn = document.getElementById('btn-submit');
         const netAmount = calculateNet();
 
@@ -197,6 +192,7 @@
         btn.innerText = "MENGIRIM...";
 
         try {
+            // KIRIM DATA KE SUPABASE (Agar Antrean Muncul di Master Panel)
             const { error } = await _supabase
                 .from('deposits')
                 .insert([{ 
@@ -209,12 +205,12 @@
 
             if (error) throw error;
 
-            showModal("Berhasil", "Permintaan deposit terkirim! Silahkan transfer dan tunggu konfirmasi admin.");
+            showModal("Berhasil", "Konfirmasi terkirim! Admin akan memproses saldo Anda segera.");
             document.getElementById('input-amount').value = "";
             calculateNet();
             loadHistory();
         } catch (err) {
-            showModal("Gagal", err.message);
+            showModal("Gagal", "Error: " + err.message);
         } finally {
             btn.disabled = false;
             btn.innerText = "KONFIRMASI DEPOSIT";
@@ -222,7 +218,9 @@
     }
 
     async function loadHistory() {
-        const user = localStorage.getItem('user_neon');
+        const user = localStorage.getItem('user_neon') || localStorage.getItem('username');
+        if(!user) return;
+
         const { data } = await _supabase
             .from('deposits')
             .select('*')
