@@ -2,240 +2,133 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>NEON PLINKO VIP — Identity Sync</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+    <title>NEON VIP — AUTH</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@300;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
     <style>
-        :root {
-            --pink: #ff0077; --blue: #0044ff; --cyan: #00f2ff; --yellow: #f5e642;
-            --bg: #02030d; --dark: #050614;
-            --gp: 0 0 15px rgba(255,0,119,0.7);
-            --gb: 0 0 20px rgba(0,68,255,0.8);
-            --gy: 0 0 15px rgba(245,230,66,0.7);
+        :root { --pink: #ff0077; --blue: #00d4ff; --yellow: #fbff00; --bg: #02030d; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif;
+            height: 100vh; display: flex; align-items: center; justify-content: center;
+            background: radial-gradient(circle at top right, #0a0b2e, #02030d);
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        body {
-            min-height: 100vh; background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif;
-            display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;
-            background-image: radial-gradient(circle at 50% 20%, rgba(0,68,255,0.12) 0%, transparent 60%);
+        .auth-card {
+            width: 90%; max-width: 400px; background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(0, 212, 255, 0.2); border-radius: 30px;
+            padding: 30px; backdrop-filter: blur(20px); box-shadow: 0 20px 50px rgba(0,0,0,0.5);
         }
-
-        /* Neon Pop-up */
-        #neon-alert {
-            display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            z-index: 10000; width: 90%; max-width: 350px; padding: 15px; border-radius: 12px;
-            background: rgba(5, 6, 20, 0.95); border: 1px solid var(--blue);
-            box-shadow: var(--gb); text-align: center; backdrop-filter: blur(10px);
-            animation: slideDown 0.4s ease-out;
-        }
-        @keyframes slideDown { from { top: -100px; opacity: 0; } to { top: 20px; opacity: 1; } }
-
-        #loading { display: none; position: fixed; inset: 0; background: rgba(2,3,13,0.95); z-index: 9999; align-items: center; justify-content: center; flex-direction: column; gap: 14px; backdrop-filter: blur(5px); }
-        .spin { width: 48px; height: 48px; border: 4px solid rgba(0,68,255,0.2); border-top-color: var(--cyan); border-radius: 50%; animation: spin 0.8s linear infinite; }
-
-        .logo { font-family: 'Cinzel Decorative', serif; font-size: 32px; font-weight: 900; background: linear-gradient(90deg, var(--cyan), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 10px rgba(0,242,255,0.5)); }
-        .logo-sub { font-size: 10px; color: var(--yellow); letter-spacing: 4px; margin-bottom: 30px; text-shadow: var(--gy); font-weight: 700; text-transform: uppercase; }
-
-        .card { width: 100%; max-width: 420px; background: rgba(5,6,20,0.95); border: 1px solid rgba(0, 242, 255, 0.2); border-radius: 24px; padding: 30px 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
-        .tabs { display: flex; margin-bottom: 24px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(0, 242, 255, 0.3); background: rgba(255,255,255,0.02); }
-        .tab-btn { flex: 1; padding: 14px; background: transparent; border: none; color: rgba(255,255,255,0.4); font-weight: 700; cursor: pointer; transition: 0.3s; font-size: 13px; }
-        .tab-btn.active { background: linear-gradient(90deg, var(--blue), var(--cyan)); color: #fff; box-shadow: var(--gb); }
-
-        .form-group { margin-bottom: 16px; }
-        .form-label { font-size: 10px; color: var(--cyan); letter-spacing: 1px; margin-bottom: 6px; display: block; font-weight: 700; text-transform: uppercase; }
-        .form-input, .form-select { width: 100%; padding: 12px 16px; background: rgba(0,242,255,0.05); border: 1px solid rgba(0,242,255,0.2); border-radius: 10px; color: #fff; outline: none; transition: 0.3s; font-size: 14px; }
-        .form-select option { background: #050614; }
+        .tabs { display: flex; background: rgba(0,0,0,0.4); border-radius: 15px; margin-bottom: 25px; padding: 5px; }
+        .tab { flex: 1; padding: 12px; text-align: center; cursor: pointer; border-radius: 12px; font-weight: 800; transition: 0.3s; color: rgba(255,255,255,0.4); }
+        .tab.active { background: linear-gradient(90deg, var(--blue), var(--pink)); color: #fff; box-shadow: 0 0 15px rgba(255,0,119,0.3); }
         
-        .input-icon { position: relative; }
-        .toggle-pass { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.3); cursor: pointer; z-index: 10; padding: 5px; }
-
-        .btn-submit { width: 100%; padding: 16px; background: linear-gradient(90deg, var(--blue), var(--pink)); border: none; border-radius: 12px; font-family: 'Cinzel Decorative'; font-weight: 900; color: #fff; cursor: pointer; box-shadow: var(--gb); margin-top: 10px; font-size: 15px; letter-spacing: 2px; transition: 0.3s; }
-        .btn-submit:active { transform: scale(0.96); filter: brightness(1.2); }
-
-        .forgot-pass { display: block; text-align: center; margin-top: 15px; color: var(--cyan); font-size: 12px; text-decoration: none; opacity: 0.7; transition: 0.3s; }
-        .forgot-pass:hover { opacity: 1; text-shadow: 0 0 5px var(--cyan); }
+        .input-group { margin-bottom: 15px; position: relative; }
+        .input-group i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--blue); }
+        input { 
+            width: 100%; padding: 15px 15px 15px 45px; background: rgba(0,0,0,0.5); 
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; color: #fff;
+            outline: none; transition: 0.3s; font-family: 'Outfit';
+        }
+        input:focus { border-color: var(--blue); box-shadow: 0 0 10px rgba(0, 212, 255, 0.2); }
+        
+        .btn-auth {
+            width: 100%; padding: 18px; border-radius: 50px; border: none;
+            background: linear-gradient(90deg, var(--blue), var(--pink));
+            color: #fff; font-family: 'Cinzel Decorative'; font-weight: 900;
+            font-size: 16px; cursor: pointer; margin-top: 10px;
+            box-shadow: 0 10px 20px rgba(255,0,119,0.3);
+        }
+        .logo-text { font-family: 'Cinzel Decorative'; text-align: center; font-size: 24px; margin-bottom: 20px; color: var(--pink); text-shadow: 0 0 10px var(--pink); }
     </style>
 </head>
 <body>
 
-    <div id="neon-alert">
-        <i id="alert-icon" class="fa-solid fa-circle-info" style="font-size: 24px; margin-bottom: 10px;"></i>
-        <p id="alert-msg" style="font-weight: 600; font-size: 14px;"></p>
+<div class="auth-card">
+    <div class="logo-text">NEON PLINKO</div>
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('login')">LOGIN</div>
+        <div class="tab" onclick="switchTab('daftar')">DAFTAR</div>
     </div>
 
-    <div id="loading"><div class="spin"></div><p style="margin-top:10px; font-weight:700; color:var(--cyan);">SYNCING...</p></div>
-
-    <div class="logo">NEON PLINKO</div>
-    <div class="logo-sub">V I P &nbsp; S Y S T E M</div>
-
-    <div class="card">
-        <div class="tabs">
-            <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">LOGIN</button>
-            <button class="tab-btn" id="tab-register" onclick="switchTab('register')">DAFTAR</button>
+    <div id="auth-form">
+        <div class="input-group">
+            <i class="fa-solid fa-user"></i>
+            <input type="text" id="user" placeholder="Username">
+        </div>
+        <div class="input-group">
+            <i class="fa-solid fa-lock"></i>
+            <input type="password" id="pass" placeholder="Password">
+        </div>
+        
+        <div id="extra-fields" style="display:none">
+            <div class="input-group">
+                <i class="fa-solid fa-id-card"></i>
+                <input type="text" id="full_name" placeholder="Nama Lengkap Sesuai Rekening">
+            </div>
+            <div class="input-group">
+                <i class="fa-solid fa-bank"></i>
+                <input type="text" id="bank" placeholder="Bank / E-Wallet (Contoh: DANA)">
+            </div>
+            <div class="input-group">
+                <i class="fa-solid fa-hashtag"></i>
+                <input type="number" id="acc_no" placeholder="Nomor Rekening / HP">
+            </div>
+            <div class="input-group">
+                <i class="fa-solid fa-gift"></i>
+                <input type="text" id="ref" placeholder="Kode Referral (Opsional)">
+            </div>
         </div>
 
-        <div id="panel-login">
-            <div class="form-group">
-                <label class="form-label">Username</label>
-                <input type="text" id="l-username" class="form-input" placeholder="Username">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Password</label>
-                <div class="input-icon">
-                    <input type="password" id="l-password" class="form-input" placeholder="Password">
-                    <i class="fa-solid fa-eye toggle-pass" onclick="togglePass('l-password', this)"></i>
-                </div>
-            </div>
-            <button class="btn-submit" onclick="handleLogin()">ENTER THE GRID</button>
-            <a href="https://wa.me/6289510249551" target="_blank" class="forgot-pass">Lupa Password? Hubungi Admin</a>
-        </div>
-
-        <div id="panel-register" style="display:none">
-            <div class="form-group">
-                <label class="form-label">Username</label>
-                <input type="text" id="r-username" class="form-input" placeholder="Min. 4 Karakter">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Password (Min. 6 Karakter)</label>
-                <div class="input-icon">
-                    <input type="password" id="r-password" class="form-input" placeholder="Min. 6 Karakter">
-                    <i class="fa-solid fa-eye toggle-pass" onclick="togglePass('r-password', this)"></i>
-                </div>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Nomor WhatsApp</label>
-                <input type="number" id="r-phone" class="form-input" placeholder="08xxxxxxxxxx">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Nama Lengkap</label>
-                <input type="text" id="r-fullname" class="form-input" placeholder="Sesuai Rekening">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Metode Pembayaran</label>
-                <select id="r-bank" class="form-select">
-                    <option value="" disabled selected>Pilih Bank/E-Wallet</option>
-                    <option value="DANA">DANA</option>
-                    <option value="GOPAY">GOPAY</option>
-                    <option value="BCA">BCA</option>
-                    <option value="BRI">BRI</option>
-                    <option value="MANDIRI">MANDIRI</option>
-                    <option value="BANK NEO ECCOMERCE">BANK NEO ECCOMERCE</option>
-                    <option value="ALLOBANK">ALLOBANK</option>
-                    <option value="SEABANK">SEABANK</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Nomor Rekening</label>
-                <input type="text" id="r-rek" class="form-input" placeholder="Nomor Rekening">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Kode Referral (Opsional)</label>
-                <input type="text" id="r-ref" class="form-input" placeholder="Kode Reff">
-            </div>
-            <button class="btn-submit" onclick="handleRegister()">CREATE IDENTITY</button>
-        </div>
+        <button class="btn-auth" id="main-btn" onclick="processAuth()">LOGIN IDENTITY</button>
     </div>
+</div>
 
-    <audio id="snd-click" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3"></audio>
-    <audio id="snd-success" src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3"></audio>
-    <audio id="snd-error" src="https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3"></audio>
+<script>
+    let mode = 'login';
+    function switchTab(t) {
+        mode = t;
+        document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+        event.target.classList.add('active');
+        document.getElementById('extra-fields').style.display = (t === 'daftar') ? 'block' : 'none';
+        document.getElementById('main-btn').innerText = (t === 'daftar') ? 'CREATE IDENTITY' : 'LOGIN IDENTITY';
+    }
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js"></script>
+    async function processAuth() {
+        const username = document.getElementById('user').value.toLowerCase();
+        const password = document.getElementById('pass').value;
 
-    <script>
-        function playSnd(id) {
-            const s = document.getElementById(id);
-            s.currentTime = 0; s.play().catch(()=>{});
-        }
+        if(mode === 'login') {
+            const { data, error } = await _supabase.from('profiles').select('*').eq('username', username).eq('password', password).single();
+            if(data) {
+                localStorage.setItem('user_neon', username);
+                window.location.href = 'game.html';
+            } else {
+                alert("Username/Password Salah!");
+            }
+        } else {
+            // Proses Daftar
+            const { error } = await _supabase.from('profiles').insert([{
+                username: username,
+                password: password,
+                nama_rekening: document.getElementById('full_name').value,
+                bank_name: document.getElementById('bank').value,
+                nomor_rekening: document.getElementById('acc_no').value,
+                referral_kode: document.getElementById('ref').value,
+                saldo: 0,
+                winrate: 50
+            }]);
 
-        function customAlert(msg, type='info') {
-            const box = document.getElementById('neon-alert');
-            const icon = document.getElementById('alert-icon');
-            const text = document.getElementById('alert-msg');
-            box.style.borderColor = type === 'error' ? 'var(--pink)' : 'var(--cyan)';
-            box.style.boxShadow = type === 'error' ? 'var(--gp)' : 'var(--gb)';
-            icon.className = type === 'error' ? 'fa-solid fa-triangle-exclamation' : 'fa-solid fa-circle-check';
-            icon.style.color = type === 'error' ? 'var(--pink)' : 'var(--cyan)';
-            text.innerText = msg;
-            box.style.display = 'block';
-            if(type === 'error') playSnd('snd-error'); else playSnd('snd-success');
-            setTimeout(() => { box.style.display = 'none'; }, 3000);
-        }
-
-        function togglePass(id, el) {
-            const input = document.getElementById(id);
-            input.type = input.type === 'password' ? 'text' : 'password';
-            el.className = input.type === 'password' ? 'fa-solid fa-eye toggle-pass' : 'fa-solid fa-eye-slash toggle-pass';
-            playSnd('snd-click');
-        }
-
-        function switchTab(tab) {
-            playSnd('snd-click');
-            document.getElementById('panel-login').style.display = tab === 'login' ? 'block' : 'none';
-            document.getElementById('panel-register').style.display = tab === 'register' ? 'block' : 'none';
-            document.getElementById('tab-login').classList.toggle('active', tab === 'login');
-            document.getElementById('tab-register').classList.toggle('active', tab === 'register');
-        }
-
-        async function handleLogin() {
-            const u = document.getElementById('l-username').value.trim().toLowerCase();
-            const p = document.getElementById('l-password').value;
-            const loader = document.getElementById('loading');
-            if(!u || !p) return customAlert("Isi Username & Password!", "error");
-            loader.style.display = 'flex';
-            try {
-                const { data, error } = await _supabase.from('profiles').select('*').eq('username', u).single();
-                if (error || !data || data.password !== p) throw new Error("Akses ditolak: Data salah!");
-                localStorage.setItem('user_neon', u);
-                customAlert("Neural Link Established!", "success");
-                setTimeout(() => { window.location.href = (data.role === 'ADMIN') ? 'master_panel.html' : 'game.html'; }, 1500);
-            } catch (err) { customAlert(err.message, "error"); } finally { loader.style.display = 'none'; }
-        }
-
-        async function handleRegister() {
-            const u = document.getElementById('r-username').value.trim().toLowerCase();
-            const p = document.getElementById('r-password').value;
-            const ph = document.getElementById('r-phone').value.trim();
-            const fn = document.getElementById('r-fullname').value.trim();
-            const bk = document.getElementById('r-bank').value;
-            const rk = document.getElementById('r-rek').value.trim();
-            const ref = document.getElementById('r-ref').value.trim();
-
-            if(!u || !p || !ph || !fn || !bk || !rk) return customAlert("Data tidak lengkap!", "error");
-            if(p.length < 6) return customAlert("Password minimal 6 karakter!", "error");
-
-            const loader = document.getElementById('loading');
-            loader.style.display = 'flex';
-            
-            try {
-                // 1. CEK USERNAME GANDA
-                const { data: userExist } = await _supabase.from('profiles').select('username').eq('username', u).single();
-                if(userExist) throw new Error("Username sudah terpakai!");
-
-                // 2. CEK NOMOR REKENING GANDA (Anti Multi-Akun)
-                const { data: rekExist } = await _supabase.from('profiles').select('rekening').eq('rekening', rk).single();
-                if(rekExist) throw new Error("Nomor Rekening/E-Wallet sudah terdaftar!");
-
-                // 3. JIKA LOLOS, LANJUT DAFTAR
-                const { error } = await _supabase.from('profiles').insert([{
-                    username: u, password: p, nomor_telp: ph, nama_lengkap: fn,
-                    bank_name: bk, rekening: rk, referral_kode: ref,
-                    saldo: 0, winrate: 50, role: 'MEMBER'
-                }]);
-                
-                if(error) throw error;
-
-                customAlert("Identity Created! Password tersimpan.", "success");
-                setTimeout(() => { switchTab('login'); }, 2000);
-
-            } catch (err) { 
-                customAlert(err.message, "error"); 
-            } finally { 
-                loader.style.display = 'none'; 
+            if(error) {
+                alert("Gagal Daftar: " + error.message);
+            } else {
+                alert("Berhasil! Silahkan Login.");
+                location.reload();
             }
         }
-    </script>
+    }
+</script>
 </body>
 </html>
