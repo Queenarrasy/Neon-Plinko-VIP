@@ -2,248 +2,90 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>NEON PLINKO VIP - SUPABASE SYNC</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEON PLINKO VIP</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
-        :root { --pink: #ff0077; --blue: #00d4ff; --yellow: #fbff00; --bg: #02030d; }
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        body { width: 100vw; height: 100vh; overflow: hidden; background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; display: flex; flex-direction: column; }
+        :root { --pink: #ff0077; --blue: #00d4ff; --bg: #02030d; }
+        body { background: var(--bg); color: white; font-family: 'Outfit', sans-serif; margin: 0; overflow-x: hidden; }
         
-        /* Header */
-        .header { height: 65px; background: rgba(2, 3, 13, 0.95); border-bottom: 2px solid var(--blue); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; z-index: 10; }
-        .saldo-box { background: rgba(0, 212, 255, 0.1); padding: 8px 15px; border-radius: 20px; border: 1px solid var(--blue); box-shadow: 0 0 10px rgba(0, 212, 255, 0.2); }
-        #display-saldo { color: var(--yellow); font-weight: 700; font-size: 1.1em; }
+        /* TOP BAR */
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: rgba(0,0,0,0.8); border-bottom: 1px solid var(--blue); position: sticky; top:0; z-index: 100; }
+        .saldo-box { background: rgba(0, 212, 255, 0.1); padding: 8px 15px; border-radius: 50px; border: 1px solid var(--blue); color: var(--blue); font-weight: bold; }
         
-        /* Game Area */
-        #game-container { flex: 1; position: relative; width: 100%; max-width: 500px; margin: auto; overflow: hidden; }
-        #canvas-holder { width: 100%; height: 100%; }
+        /* DEPOSIT MODAL */
+        .btn-depo { background: var(--pink); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px var(--pink); }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-content { background: #050614; padding: 30px; border-radius: 20px; border: 1px solid var(--pink); width: 90%; max-width: 400px; text-align: center; }
+        input { width: 100%; padding: 15px; margin: 15px 0; background: #111; border: 1px solid #333; color: white; border-radius: 10px; }
 
-        /* Controls */
-        .controls { height: 160px; background: #050614; border-top: 1px solid rgba(255,255,255,0.1); padding: 15px; display: flex; flex-direction: column; gap: 15px; padding-bottom: 85px; }
-        .bet-row { display: flex; justify-content: space-between; align-items: center; }
-        .bet-btn { background: rgba(0, 212, 255, 0.2); border: 1px solid var(--blue); color: #fff; width: 40px; height: 40px; border-radius: 50%; font-weight: 700; cursor: pointer; transition: 0.3s; }
-        .bet-btn:active { transform: scale(0.9); background: var(--blue); }
-        .play-btn { background: var(--pink); border: none; color: #fff; padding: 15px; border-radius: 12px; font-weight: 900; font-size: 1.2em; cursor: pointer; box-shadow: 0 0 15px rgba(255, 0, 119, 0.4); transition: 0.3s; }
-        .play-btn:disabled { background: #333; box-shadow: none; opacity: 0.5; }
-
-        /* Bottom Nav */
-        .nav-bar { position: fixed; bottom: 0; left: 0; width: 100%; height: 70px; background: rgba(5, 6, 20, 0.95); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(10px); z-index: 1000; }
-        .nav-item { color: #555; text-decoration: none; text-align: center; font-size: 0.7rem; flex: 1; }
-        .nav-item.active { color: var(--blue); }
-        .nav-item i { font-size: 1.2rem; display: block; margin-bottom: 4px; }
-        
-        /* Modal */
-        #modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:1100; backdrop-filter: blur(5px); }
-        .neon-modal { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:80%; max-width: 320px; background:#0a0b1e; border:2px solid var(--blue); padding:30px; text-align:center; border-radius:15px; box-shadow: 0 0 20px rgba(0, 212, 255, 0.3); }
+        /* GAME AREA */
+        .game-container { height: 70vh; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, #0a0c20 0%, #02030d 100%); position: relative; }
+        .placeholder-text { color: rgba(255,255,255,0.1); font-size: 40px; font-weight: 900; text-transform: uppercase; letter-spacing: 10px; }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <div class="logo" style="font-family:'Cinzel Decorative'; font-weight:900; color:var(--pink); letter-spacing: 2px;">NEON PLINKO</div>
-    <div class="saldo-box">
-        <span id="display-saldo">Rp 0</span>
+<div class="top-bar">
+    <div style="font-weight: 900; color: var(--pink);">NEON VIP</div>
+    <div class="saldo-box">IDR <span id="display-saldo">0</span></div>
+    <button class="btn-depo" onclick="openDepo()">DEPOSIT</button>
+</div>
+
+<div class="game-container">
+    <div class="placeholder-text">PLINKO ENGINE</div>
+    </div>
+
+<div id="modal-depo" class="modal">
+    <div class="modal-content">
+        <h2 style="color:var(--pink)">ISI SALDO</h2>
+        <p style="font-size: 12px; color: #888;">Masukkan nominal deposit (Min. 10.000)</p>
+        <input type="number" id="depo-amount" placeholder="Contoh: 50000">
+        <select id="depo-method" style="width:100%; padding:10px; background:#111; color:white; border-radius:10px; border:1px solid #333;">
+            <option value="DANA">DANA</option>
+            <option value="OVO">OVO</option>
+            <option value="BCA">BCA</option>
+        </select>
+        <button class="btn-depo" style="width:100%; margin-top:20px;" onclick="submitDepo()">KIRIM PERMINTAAN</button>
+        <button onclick="closeDepo()" style="background:none; border:none; color:#555; margin-top:15px; cursor:pointer;">Batal</button>
     </div>
 </div>
-
-<div id="game-container">
-    <div id="canvas-holder"></div>
-</div>
-
-<div class="controls">
-    <div class="bet-row">
-        <div style="font-size: 0.8em; opacity: 0.6; font-weight: 600;">TARUHAN (BET)</div>
-        <div style="display: flex; align-items: center; gap: 15px;">
-            <button class="bet-btn" onclick="changeBet(-1)"><i class="fa-solid fa-minus"></i></button>
-            <span id="current-bet" style="font-weight: 700; color: var(--yellow); min-width: 60px; text-align: center;">5.000</span>
-            <button class="bet-btn" onclick="changeBet(1)"><i class="fa-solid fa-plus"></i></button>
-        </div>
-    </div>
-    <button class="play-btn" id="btn-spawn" onclick="handlePlay()">MULAI BERMAIN</button>
-</div>
-
-<div class="nav-bar">
-    <a href="game.html" class="nav-item active"><i class="fas fa-gamepad"></i>PLAY</a>
-    <a href="deposit.html" class="nav-item"><i class="fas fa-wallet"></i>DEPO</a>
-    <a href="reward.html" class="nav-item"><i class="fas fa-gift"></i>REWARD</a>
-    <a href="profil.html" class="nav-item"><i class="fas fa-user"></i>PROFIL</a>
-</div>
-
-<div id="modal-overlay">
-    <div class="neon-modal">
-        <h3 id="modal-title" style="color:var(--pink); margin-bottom:15px;">INFO</h3>
-        <p id="modal-msg"></p>
-        <button onclick="document.getElementById('modal-overlay').style.display='none'" style="margin-top:20px; padding:12px 25px; background:var(--blue); border:none; color:#fff; border-radius:8px; font-weight:700;">OKE</button>
-    </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js"></script>
 
 <script>
-const BETS = [5000, 10000, 25000, 50000, 100000, 250000];
-let betIdx = 0;
-let isProcessing = false;
-let userSaldo = 0;
-const user = localStorage.getItem('user_neon');
-
-// Matter.js Global
-const { Engine, Render, Runner, Bodies, Composite, Events } = Matter;
-const engine = Engine.create();
-const holder = document.getElementById('canvas-holder');
-
-// --- 1. LOAD DATA AWAL ---
-async function initGame() {
-    if (!user) { window.location.href = 'index.html'; return; }
-
-    const { data, error } = await _supabase
-        .from('profiles')
-        .select('saldo, winrate, max_win_limit')
-        .eq('username', user)
-        .single();
-
-    if (data) {
-        userSaldo = data.saldo;
-        updateUI();
-    }
-    setupMatter();
-}
-
-// --- 2. LOGIKA TRANSAKSI & GAME ---
-async function handlePlay() {
-    if (isProcessing) return;
-    const currentBet = BETS[betIdx];
-
-    if (userSaldo < currentBet) {
-        return showModal("SALDO KURANG", "Saldo Anda tidak mencukupi. Silakan lakukan deposit.");
+    async function initGame() {
+        const user = getUsername();
+        if(!user) window.location.href = 'index.html';
+        updateUISaldo();
+        // Cek Winrate secara diam-diam (untuk engine game)
+        const { data } = await _supabase.from('profiles').select('winrate').eq('username', user).single();
+        console.log("Current Winrate:", data.winrate + "%");
     }
 
-    isProcessing = true;
-    document.getElementById('btn-spawn').disabled = true;
+    function openDepo() { document.getElementById('modal-depo').style.display = 'flex'; }
+    function closeDepo() { document.getElementById('modal-depo').style.display = 'none'; }
 
-    // 1. Potong Saldo di Database (Real-time)
-    const { error: errDepo } = await _supabase.rpc('admin_add_saldo', { 
-        target_user: user, 
-        amount_to_add: -currentBet 
-    });
+    async function submitDepo() {
+        const amt = document.getElementById('depo-amount').value;
+        const method = document.getElementById('depo-method').value;
+        const user = getUsername();
 
-    if (errDepo) {
-        isProcessing = false;
-        document.getElementById('btn-spawn').disabled = false;
-        return alert("Gagal memproses taruhan.");
-    }
+        if(amt < 10000) return alert("Minimal deposit IDR 10.000");
 
-    // Update Saldo Lokal
-    userSaldo -= currentBet;
-    updateUI();
+        const { error } = await _supabase.from('deposits').insert([
+            { username: user, nominal: amt, metode: method, status: 'PROSES' }
+        ]);
 
-    // 2. Kalkulasi Hasil (Server-side Logic di Browser)
-    const { data: prof } = await _supabase.from('profiles').select('winrate, max_win_limit').eq('username', user).single();
-    let wr = prof.winrate || 50;
-    
-    // Kuras Otomatis jika menang lebih dari limit
-    if (userSaldo >= (prof.max_win_limit || 5000000)) wr = 5;
-
-    const multipliers = [10, 5, 2, 1.1, 0.5, 0.2, 0.5, 1.1, 2, 5, 10];
-    const isWin = (Math.random() * 100) < wr;
-    
-    let targetIdx;
-    if (isWin) {
-        const winOpts = [0, 1, 2, 3, 7, 8, 9, 10];
-        targetIdx = winOpts[Math.floor(Math.random() * winOpts.length)];
-    } else {
-        targetIdx = Math.random() > 0.5 ? 5 : (Math.random() > 0.5 ? 4 : 6);
-    }
-
-    const mValue = multipliers[targetIdx];
-    const winAmount = Math.floor(currentBet * mValue);
-
-    // 3. Jalankan Bola
-    spawnBall(targetIdx, async () => {
-        // 4. Tambah Saldo Hasil Menang ke Database
-        if (winAmount > 0) {
-            await _supabase.rpc('admin_add_saldo', { 
-                target_user: user, 
-                amount_to_add: winAmount 
-            });
-            userSaldo += winAmount;
-            updateUI();
-        }
-        
-        isProcessing = false;
-        document.getElementById('btn-spawn').disabled = false;
-    });
-}
-
-// --- 3. MATTER JS (VISUAL BOLA) ---
-function setupMatter() {
-    const w = holder.clientWidth;
-    const h = holder.clientHeight;
-    
-    const render = Render.create({
-        element: holder,
-        engine: engine,
-        options: { width: w, height: h, wireframes: false, background: 'transparent' }
-    });
-
-    // Buat Pasak (Pins)
-    for (let r = 0; r < 8; r++) {
-        for (let c = 0; c <= r; c++) {
-            const px = w/2 + (c - r/2) * 35;
-            const py = 100 + r * 35;
-            Composite.add(engine.world, Bodies.circle(px, py, 4, { isStatic: true, render: { fillStyle: '#333' } }));
+        if(!error) {
+            alert("Permintaan Deposit Terkirim! Silakan tunggu konfirmasi Admin.");
+            closeDepo();
+        } else {
+            alert("Gagal mengirim deposit.");
         }
     }
 
-    Render.run(render);
-    Runner.run(Runner.create(), engine);
-}
-
-function spawnBall(targetIdx, onFinish) {
-    const w = holder.clientWidth;
-    const ball = Bodies.circle(w/2 + (Math.random()*6-3), 30, 8, {
-        restitution: 0.6,
-        friction: 0.05,
-        render: { fillStyle: 'var(--pink)', sprite: { xOffset: 0, yOffset: 0 } }
-    });
-
-    // Manipulasi gaya agar jatuh ke target (Simulasi visual)
-    const forceX = (targetIdx - 5) * 0.0018;
-    Matter.Body.applyForce(ball, ball.position, { x: forceX, y: 0 });
-
-    Composite.add(engine.world, ball);
-
-    const check = setInterval(() => {
-        if (ball.position.y > holder.clientHeight - 80) {
-            clearInterval(check);
-            Composite.remove(engine.world, ball);
-            onFinish();
-        }
-    }, 100);
-}
-
-// --- 4. UI HELPERS ---
-function updateUI() {
-    document.getElementById('display-saldo').innerText = "Rp " + userSaldo.toLocaleString('id-ID');
-    document.getElementById('current-bet').innerText = BETS[betIdx].toLocaleString('id-ID');
-}
-
-function changeBet(dir) {
-    if (isProcessing) return;
-    betIdx = Math.max(0, Math.min(BETS.length - 1, betIdx + dir));
-    updateUI();
-}
-
-function showModal(title, msg) {
-    document.getElementById('modal-title').innerText = title;
-    document.getElementById('modal-msg').innerText = msg;
-    document.getElementById('modal-overlay').style.display = 'block';
-}
-
-window.onload = initGame;
+    window.onload = initGame;
 </script>
 </body>
 </html>
