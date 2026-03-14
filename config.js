@@ -1,78 +1,98 @@
-// --- CONFIGURATION SUPABASE ---
+/**
+ * ============================================================
+ * NEON PLINKO VIP — Pusat Konfigurasi & Sinkronisasi
+ * ============================================================
+ */
+
+// 1. KREDENSIAL SUPABASE
 const SUPABASE_URL = "https://bgffnmwrviyqpeevzjsn.supabase.co";
 const SUPABASE_KEY = "sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani"; 
 
-// Inisialisasi Client Supabase
+// Inisialisasi Client
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// --- GLOBAL UTILITIES ---
-
-// Ambil Username yang sedang login (Mendukung dua kunci cadangan)
+// 2. FUNGSI AMBIL USERNAME (Multi-Session Support)
 function getUsername() {
-    return localStorage.getItem('user_neon') || localStorage.getItem('username');
+    // Mengecek semua kemungkinan key yang mungkin tersimpan
+    return localStorage.getItem('user_neon') || 
+           localStorage.getItem('username') || 
+           localStorage.getItem('plinko_session');
 }
 
-// 1. Cek apakah user sudah login
-async function checkSession() {
-    const user = getUsername();
-    if (!user && !window.location.href.includes('index.html')) {
-        window.location.href = 'index.html';
-        return null;
-    }
-    return user;
-}
-
-// 2. Format Mata Uang IDR (Menghasilkan format: IDR 10.000)
+// 3. FORMAT MATA UANG
 function formatIDR(amount) {
-    return "IDR " + (amount || 0).toLocaleString('id-ID');
+    if (amount === undefined || amount === null) return "IDR 0";
+    return "IDR " + Math.floor(amount).toLocaleString('id-ID');
 }
 
-// 3. Update Saldo secara Visual (Sinkron dengan banyak ID)
+// 4. ENGINE SINKRONISASI SALDO (Hati & Jantung Sistem)
 async function updateUISaldo() {
     const user = getUsername();
     if (!user) return;
 
     try {
+        // Ambil data terbaru dari tabel profiles
         const { data, error } = await _supabase
             .from('profiles')
-            .select('saldo')
+            .select('saldo, winrate, nama_lengkap')
             .eq('username', user)
             .single();
             
+        if (error) throw error;
+
         if (data) {
-            const formatted = formatIDR(data.saldo);
+            const formattedBalance = formatIDR(data.saldo);
             
-            // Update semua kemungkinan ID elemen saldo yang Master pakai
-            const saldoElements = ['display-saldo', 'saldo-text', 'profile-saldo', 'wd-saldo'];
-            
-            saldoElements.forEach(id => {
+            // DAFTAR ID ELEMEN YANG AKAN DIISI OTOMATIS
+            const uiMap = {
+                'saldo-text': formattedBalance,      // Dipakai di game.html
+                'display-saldo': formattedBalance,   // Dipakai di navbar/header
+                'profile-saldo': formattedBalance,   // Dipakai di profil
+                'wd-saldo': formattedBalance,        // Dipakai di withdraw.html
+                'header-username': user,             // Nama user di header
+                'display-username': user             // Nama user di profil
+            };
+
+            // Proses Pengisian ke HTML
+            for (const [id, value] of Object.entries(uiMap)) {
                 const el = document.getElementById(id);
                 if (el) {
-                    if (el.tagName === 'INPUT') el.value = formatted;
-                    else el.textContent = formatted;
+                    if (el.tagName === 'INPUT') {
+                        el.value = value;
+                    } else {
+                        el.textContent = value;
+                    }
                 }
-            });
+            }
 
-            // Simpan ke cache lokal
+            // Simpan ke cache untuk keperluan game engine
             localStorage.setItem('cached_saldo', data.saldo);
         }
     } catch (err) {
-        console.error("Error updating saldo:", err);
+        console.error("Sinkronisasi Gagal:", err.message);
     }
 }
 
-// 4. Logout Global
+// 5. AUTO-START & REAL-TIME UPDATE
+document.addEventListener('DOMContentLoaded', () => {
+    // Jalankan sekali saat start
+    updateUISaldo();
+    
+    // CEK SESI: Jika di halaman game tapi tidak ada user, tendang ke login
+    const user = getUsername();
+    const isLoginPage = window.location.href.includes('index.html');
+    if (!user && !isLoginPage) {
+        window.location.href = 'index.html';
+    }
+
+    // UPDATE OTOMATIS TIAP 3 DETIK
+    // Agar saat Admin klik "Approve" di Master Panel, 
+    // saldo di layar pemain langsung berubah tanpa refresh.
+    setInterval(updateUISaldo, 3000);
+});
+
+// 6. LOGOUT GLOBAL
 function logout() {
     localStorage.clear();
     window.location.href = 'index.html';
 }
-
-// --- AUTO RUN ---
-// Menjalankan update saldo otomatis saat halaman dimuat
-document.addEventListener('DOMContentLoaded', () => {
-    updateUISaldo();
-    
-    // Interval update otomatis setiap 5 detik agar jika admin Approve, 
-    // saldo langsung berubah tanpa refresh.
-    setInterval(updateUISaldo, 5000);
-});
