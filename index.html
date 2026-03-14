@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>NEON PLINKO VIP — Login</title>
+    <title>NEON PLINKO VIP — Identity Sync</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -23,7 +23,6 @@
             background-image: radial-gradient(circle at 50% 20%, rgba(0,68,255,0.12) 0%, transparent 60%);
         }
 
-        /* Neon Alert System */
         #neon-alert {
             display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
             z-index: 10000; width: 90%; max-width: 350px; padding: 15px; border-radius: 12px;
@@ -40,19 +39,18 @@
         .logo { font-family: 'Cinzel Decorative', serif; font-size: 28px; font-weight: 900; background: linear-gradient(90deg, var(--cyan), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 10px rgba(0,242,255,0.5)); }
         .logo-sub { font-size: 10px; color: var(--yellow); letter-spacing: 4px; margin-bottom: 30px; text-shadow: var(--gy); font-weight: 700; text-transform: uppercase; }
 
-        .card { width: 100%; max-width: 400px; background: rgba(5,6,20,0.95); border: 1px solid rgba(0, 242, 255, 0.2); border-radius: 20px; padding: 30px 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+        .card { width: 100%; max-width: 420px; background: rgba(5,6,20,0.95); border: 1px solid rgba(0, 242, 255, 0.2); border-radius: 20px; padding: 30px 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
         .tabs { display: flex; margin-bottom: 24px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(0, 242, 255, 0.3); background: rgba(255,255,255,0.02); }
         .tab-btn { flex: 1; padding: 12px; background: transparent; border: none; color: rgba(255,255,255,0.4); font-weight: 700; cursor: pointer; transition: 0.3s; font-size: 13px; }
         .tab-btn.active { background: linear-gradient(90deg, var(--blue), var(--cyan)); color: #fff; box-shadow: var(--gb); }
 
-        .form-group { margin-bottom: 18px; }
-        .form-label { font-size: 10px; color: var(--cyan); letter-spacing: 1px; margin-bottom: 8px; display: block; font-weight: 700; text-transform: uppercase; }
+        .form-group { margin-bottom: 16px; }
+        .form-label { font-size: 10px; color: var(--cyan); letter-spacing: 1px; margin-bottom: 6px; display: block; font-weight: 700; text-transform: uppercase; }
         .input-icon { position: relative; }
-        .form-input { width: 100%; padding: 14px 16px; background: rgba(0,242,255,0.05); border: 1px solid rgba(0,242,255,0.2); border-radius: 10px; color: #fff; outline: none; transition: 0.3s; font-family: 'Outfit'; font-size: 14px; }
-        .form-input:focus { border-color: var(--cyan); box-shadow: 0 0 10px rgba(0,242,255,0.2); }
+        .form-input, .form-select { width: 100%; padding: 12px 16px; background: rgba(0,242,255,0.05); border: 1px solid rgba(0,242,255,0.2); border-radius: 10px; color: #fff; outline: none; transition: 0.3s; font-family: 'Outfit'; font-size: 14px; }
+        .form-select option { background: #050614; color: #fff; }
+        .form-input:focus, .form-select:focus { border-color: var(--cyan); box-shadow: 0 0 10px rgba(0,242,255,0.2); }
         
-        .input-icon i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--cyan); font-size: 16px; }
-        .input-icon .form-input { padding-left: 45px; }
         .toggle-pass { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.3); cursor: pointer; z-index: 10; padding: 5px; }
 
         .btn-submit { width: 100%; padding: 16px; background: linear-gradient(90deg, var(--blue), var(--pink)); border: none; border-radius: 12px; font-family: 'Cinzel Decorative'; font-weight: 900; color: #fff; cursor: pointer; box-shadow: var(--gb); margin-top: 10px; font-size: 15px; letter-spacing: 1px; transition: 0.3s; }
@@ -80,15 +78,11 @@
     <div id="panel-login">
         <div class="form-group">
             <label class="form-label">Username</label>
-            <div class="input-icon">
-                <i class="fa-solid fa-user"></i>
-                <input type="text" id="l-username" class="form-input" placeholder="Username Anda">
-            </div>
+            <input type="text" id="l-username" class="form-input" placeholder="Username">
         </div>
         <div class="form-group">
             <label class="form-label">Password</label>
             <div class="input-icon">
-                <i class="fa-solid fa-lock"></i>
                 <input type="password" id="l-password" class="form-input" placeholder="Password">
                 <i class="fa-solid fa-eye toggle-pass" onclick="togglePass('l-password', this)"></i>
             </div>
@@ -99,33 +93,44 @@
     <div id="panel-register" style="display:none">
         <div class="form-group">
             <label class="form-label">Username</label>
-            <input type="text" id="r-username" class="form-input" placeholder="Min. 4 karakter">
+            <input type="text" id="r-username" class="form-input" placeholder="Min. 4 Karakter">
         </div>
         <div class="form-group">
             <label class="form-label">Password</label>
             <div class="input-icon">
-                <input type="password" id="r-password" class="form-input" placeholder="Min. 6 karakter">
-                <i class="fa-solid fa-eye toggle-pass" style="left:auto; right:15px;" onclick="togglePass('r-password', this)"></i>
+                <input type="password" id="r-password" class="form-input" placeholder="Min. 6 Karakter">
+                <i class="fa-solid fa-eye toggle-pass" onclick="togglePass('r-password', this)"></i>
             </div>
         </div>
         <div class="form-group">
-            <label class="form-label">Kode Referral (Opsional)</label>
-            <div class="input-icon">
-                <i class="fa-solid fa-code-branch"></i>
-                <input type="text" id="r-ref" class="form-input" placeholder="Masukkan kode reff">
-            </div>
+            <label class="form-label">Nomor Telepon / WA</label>
+            <input type="number" id="r-phone" class="form-input" placeholder="08xxxxxxxxxx">
         </div>
         <div class="form-group">
             <label class="form-label">Nama Lengkap (Sesuai Rekening)</label>
-            <input type="text" id="r-fullname" class="form-input" placeholder="Nama Anda">
+            <input type="text" id="r-fullname" class="form-input" placeholder="Nama Lengkap">
         </div>
         <div class="form-group">
-            <label class="form-label">Bank / E-Wallet</label>
-            <input type="text" id="r-bank" class="form-input" placeholder="BCA / DANA / OVO">
+            <label class="form-label">Metode Pembayaran</label>
+            <select id="r-bank" class="form-select">
+                <option value="" disabled selected>Pilih Bank / E-Wallet</option>
+                <option value="DANA">DANA</option>
+                <option value="GOPAY">GOPAY</option>
+                <option value="BCA">BCA</option>
+                <option value="BRI">BRI</option>
+                <option value="MANDIRI">MANDIRI</option>
+                <option value="BANK NEO ECCOMERCE">BANK NEO ECCOMERCE</option>
+                <option value="ALLOBANK">ALLOBANK</option>
+                <option value="SEABANK">SEABANK</option>
+            </select>
         </div>
         <div class="form-group">
             <label class="form-label">Nomor Rekening</label>
-            <input type="text" id="r-rek" class="form-input" placeholder="Nomor rekening">
+            <input type="text" id="r-rek" class="form-input" placeholder="Nomor Rekening">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Kode Referral (Opsional)</label>
+            <input type="text" id="r-ref" class="form-input" placeholder="Masukkan Kode Reff">
         </div>
         <button class="btn-submit" onclick="handleRegister()">CREATE IDENTITY</button>
     </div>
@@ -149,17 +154,14 @@
         const box = document.getElementById('neon-alert');
         const icon = document.getElementById('alert-icon');
         const text = document.getElementById('alert-msg');
-        
         box.style.borderColor = type === 'error' ? 'var(--pink)' : 'var(--cyan)';
         box.style.boxShadow = type === 'error' ? 'var(--gp)' : 'var(--gb)';
         icon.className = type === 'error' ? 'fa-solid fa-triangle-exclamation' : 'fa-solid fa-circle-check';
         icon.style.color = type === 'error' ? 'var(--pink)' : 'var(--cyan)';
-        
         text.innerText = msg;
         box.style.display = 'block';
         if(type === 'error') playSnd('snd-error');
         else playSnd('snd-success');
-
         setTimeout(() => { box.style.display = 'none'; }, 3000);
     }
 
@@ -187,24 +189,16 @@
         const u = document.getElementById('l-username').value.trim().toLowerCase();
         const p = document.getElementById('l-password').value;
         const loader = document.getElementById('loading');
-
-        if(!u || !p) return customAlert("Harap isi username dan password!", "error");
-        
+        if(!u || !p) return customAlert("Isi username & password!", "error");
         loader.style.display = 'flex';
-        
         try {
             const { data, error } = await _supabase.from('profiles').select('*').eq('username', u).single();
-
-            if (error || !data || data.password !== p) throw new Error("Akses ditolak: Data tidak cocok!");
-
+            if (error || !data || data.password !== p) throw new Error("Akses ditolak: Data salah!");
             localStorage.setItem('user_neon', u);
-            customAlert("Neural Link Established! Dialing...", "success");
-
+            customAlert("Link Established! Dialing...", "success");
             setTimeout(() => {
-                if(data.role === 'ADMIN') window.location.href = 'master_panel.html';
-                else window.location.href = 'game.html';
+                window.location.href = (data.role === 'ADMIN') ? 'master_panel.html' : 'game.html';
             }, 1500);
-
         } catch (err) {
             customAlert(err.message, "error");
         } finally {
@@ -215,32 +209,31 @@
     async function handleRegister() {
         const u = document.getElementById('r-username').value.trim().toLowerCase();
         const p = document.getElementById('r-password').value;
-        const ref = document.getElementById('r-ref').value.trim();
+        const ph = document.getElementById('r-phone').value.trim();
         const fn = document.getElementById('r-fullname').value.trim();
-        const bk = document.getElementById('r-bank').value.trim();
+        const bk = document.getElementById('r-bank').value;
         const rk = document.getElementById('r-rek').value.trim();
+        const ref = document.getElementById('r-ref').value.trim();
 
-        if(!u || !p || !fn || !bk || !rk) return customAlert("Data pendaftaran tidak lengkap!", "error");
-        if(u.length < 4) return customAlert("Username terlalu pendek!", "error");
+        if(!u || !p || !ph || !fn || !bk || !rk) return customAlert("Lengkapi semua data!", "error");
+        if(u.length < 4) return customAlert("Username min. 4 karakter!", "error");
 
         const loader = document.getElementById('loading');
         loader.style.display = 'flex';
 
         try {
             const { data: exist } = await _supabase.from('profiles').select('username').eq('username', u).single();
-            if(exist) throw new Error("Username sudah terdaftar di sistem!");
+            if(exist) throw new Error("Username sudah digunakan!");
 
             const { error } = await _supabase.from('profiles').insert([{
-                username: u, password: p, nama_lengkap: fn,
+                username: u, password: p, nomor_telp: ph, nama_lengkap: fn,
                 bank_name: bk, rekening: rk, referral_kode: ref,
                 saldo: 0, winrate: 50, role: 'MEMBER'
             }]);
 
             if(error) throw error;
-
-            customAlert("Identitas Dibuat! Silakan Login.", "success");
+            customAlert("Identity Created! Please Login.", "success");
             setTimeout(() => { switchTab('login'); }, 2000);
-
         } catch (err) {
             customAlert(err.message, "error");
         } finally {
