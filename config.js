@@ -1,97 +1,115 @@
 /**
  * ============================================================
- * NEON PLINKO VIP — Pusat Konfigurasi & Sinkronisasi
+ * NEON PLINKO VIP — ALL-IN-ONE CENTRAL ENGINE
+ * Gabungan Global.js & Config.js
  * ============================================================
  */
 
 // 1. KREDENSIAL SUPABASE
 const SUPABASE_URL = "https://bgffnmwrviyqpeevzjsn.supabase.co";
 const SUPABASE_KEY = "sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani"; 
-
-// Inisialisasi Client
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// 2. FUNGSI AMBIL USERNAME (Multi-Session Support)
+// 2. CONFIG SETTINGS
+const NEON_CONFIG = {
+    KURS_USDT: 16800,
+    MIN_DEPO: 20000,
+    MIN_WD: 50000
+};
+
+// 3. SESSION MANAGEMENT
 function getUsername() {
-    // Mengecek semua kemungkinan key yang mungkin tersimpan
-    return localStorage.getItem('user_neon') || 
-           localStorage.getItem('username') || 
-           localStorage.getItem('plinko_session');
+    return localStorage.getItem('user_neon') || localStorage.getItem('username');
 }
 
-// 3. FORMAT MATA UANG
+// 4. FORMATTER
 function formatIDR(amount) {
-    if (amount === undefined || amount === null) return "IDR 0";
-    return "IDR " + Math.floor(amount).toLocaleString('id-ID');
+    return "IDR " + Math.floor(amount || 0).toLocaleString('id-ID');
 }
 
-// 4. ENGINE SINKRONISASI SALDO (Hati & Jantung Sistem)
-async function updateUISaldo() {
+// 5. CORE SYNC ENGINE (Mengisi Saldo & Data User Otomatis)
+async function syncNeonData() {
     const user = getUsername();
     if (!user) return;
 
     try {
-        // Ambil data terbaru dari tabel profiles
         const { data, error } = await _supabase
             .from('profiles')
-            .select('saldo, winrate, nama_lengkap')
+            .select('*')
             .eq('username', user)
             .single();
             
-        if (error) throw error;
+        if (data && !error) {
+            // Simpan saldo angka murni untuk kebutuhan Game (tanpa teks IDR)
+            localStorage.setItem('cached_saldo', data.saldo);
+            localStorage.setItem('cached_winrate', data.winrate || 50);
 
-        if (data) {
-            const formattedBalance = formatIDR(data.saldo);
-            
-            // DAFTAR ID ELEMEN YANG AKAN DIISI OTOMATIS
-            const uiMap = {
-                'saldo-text': formattedBalance,      // Dipakai di game.html
-                'display-saldo': formattedBalance,   // Dipakai di navbar/header
-                'profile-saldo': formattedBalance,   // Dipakai di profil
-                'wd-saldo': formattedBalance,        // Dipakai di withdraw.html
-                'header-username': user,             // Nama user di header
-                'display-username': user             // Nama user di profil
+            // Daftar ID elemen HTML yang akan diisi otomatis jika ditemukan di halaman
+            const uiElements = {
+                'saldo-text': formatIDR(data.saldo),      // Untuk di Game
+                'display-saldo': formatIDR(data.saldo),   // Untuk di Navbar
+                'profile-saldo': formatIDR(data.saldo),   // Untuk di Profil
+                'wd-saldo': formatIDR(data.saldo),        // Untuk di Withdraw
+                'display-username': data.username,        // Nama user
+                'header-username': data.username,         // Nama user di header
+                'user-winrate': (data.winrate || 50) + "%" // Winrate di profil
             };
 
-            // Proses Pengisian ke HTML
-            for (const [id, value] of Object.entries(uiMap)) {
+            for (const [id, value] of Object.entries(uiElements)) {
                 const el = document.getElementById(id);
                 if (el) {
-                    if (el.tagName === 'INPUT') {
-                        el.value = value;
-                    } else {
-                        el.textContent = value;
-                    }
+                    if (el.tagName === 'INPUT') el.value = value;
+                    else el.textContent = value;
                 }
             }
-
-            // Simpan ke cache untuk keperluan game engine
-            localStorage.setItem('cached_saldo', data.saldo);
         }
     } catch (err) {
-        console.error("Sinkronisasi Gagal:", err.message);
+        console.error("Sync Error:", err.message);
     }
 }
 
-// 5. AUTO-START & REAL-TIME UPDATE
+// 6. TRANSACTION FUNCTIONS (Untuk Deposit & Withdraw)
+const NeonTransaksi = {
+    async kirimDeposit(amount, method, netReceive) {
+        const user = getUsername();
+        return await _supabase.from('deposits').insert([{
+            username: user,
+            amount: parseFloat(amount),
+            method: method,
+            net_receive: Math.floor(netReceive),
+            status: 'PROSES'
+        }]);
+    },
+
+    async kirimWithdraw(amount) {
+        const user = getUsername();
+        return await _supabase.from('withdrawals').insert([{
+            username: user,
+            amount: parseFloat(amount),
+            status: 'PROSES'
+        }]);
+    }
+};
+
+// 7. AUTO INITIALIZATION (Berjalan otomatis di setiap halaman)
 document.addEventListener('DOMContentLoaded', () => {
-    // Jalankan sekali saat start
-    updateUISaldo();
-    
-    // CEK SESI: Jika di halaman game tapi tidak ada user, tendang ke login
     const user = getUsername();
-    const isLoginPage = window.location.href.includes('index.html');
-    if (!user && !isLoginPage) {
+    const isIndex = window.location.href.includes('index.html');
+
+    // Proteksi: Jika bukan halaman login dan tidak ada user, balikkan ke login
+    if (!user && !isIndex) {
         window.location.href = 'index.html';
+        return;
     }
 
-    // UPDATE OTOMATIS TIAP 3 DETIK
-    // Agar saat Admin klik "Approve" di Master Panel, 
-    // saldo di layar pemain langsung berubah tanpa refresh.
-    setInterval(updateUISaldo, 3000);
+    // Jalankan Sinkronisasi Pertama
+    syncNeonData();
+
+    // Jalankan Sinkronisasi Otomatis setiap 3 detik (Real-time)
+    setInterval(syncNeonData, 3000);
 });
 
-// 6. LOGOUT GLOBAL
+// 8. LOGOUT
 function logout() {
     localStorage.clear();
     window.location.href = 'index.html';
