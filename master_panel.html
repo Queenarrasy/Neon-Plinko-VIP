@@ -12,9 +12,11 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; min-height: 100vh; overflow-x: hidden; }
 
+        /* Login Security */
         #gate-keeper { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
         .gate-card { width: 90%; max-width: 380px; padding: 40px 30px; border-radius: 30px; background: rgba(255,255,255,0.02); border: 2px solid var(--blue); box-shadow: 0 0 40px rgba(0,212,255,0.2); text-align: center; }
 
+        /* App Layout */
         #main-app { display: none; }
         .nav-top { background: rgba(5,6,20,0.95); padding: 15px 20px; border-bottom: 1px solid rgba(0,212,255,0.2); position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; }
         .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 70px; background: #050614; border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-around; align-items: center; padding-bottom: env(safe-area-inset-bottom); }
@@ -22,17 +24,15 @@
         .nav-btn span { display: block; font-size: 9px; margin-top: 4px; font-weight: 800; text-transform: uppercase; }
         .nav-btn.active { color: var(--blue); text-shadow: 0 0 10px var(--blue); }
 
+        /* Content */
         .content { padding: 20px; padding-bottom: 100px; }
-        .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 20px; padding: 20px; margin-bottom: 15px; position: relative; }
+        .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 20px; padding: 20px; margin-bottom: 15px; position: relative; overflow: hidden; }
         .search-box { width: 100%; padding: 14px; border-radius: 12px; background: #000; border: 1px solid var(--blue); color: #fff; margin-bottom: 20px; }
-        .badge { padding: 3px 10px; border-radius: 6px; font-size: 10px; font-weight: 900; margin-left: 5px; }
-        .b-blue { background: var(--blue); color: #000; }
+        
         .status-online { color: #00ff88; font-size: 10px; font-weight: 800; }
         .btn-act { padding: 12px; border-radius: 10px; border: none; font-weight: 900; font-size: 11px; cursor: pointer; transition: 0.2s; }
         .confirm { background: var(--blue); color: #000; }
         .reject { background: #ff4444; color: #fff; }
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 5000; display: none; align-items: center; justify-content: center; padding: 20px; }
-        .modal-body { width: 100%; max-width: 450px; }
     </style>
 </head>
 <body>
@@ -50,25 +50,27 @@
     <div id="main-app">
         <div class="nav-top">
             <div style="font-family:'Cinzel Decorative'; font-weight:900; color:var(--pink);">NEON MASTER</div>
-            <div id="online-stats" style="font-size:10px; font-weight:800; color:var(--gold);">CONNECTING...</div>
+            <div id="online-stats" style="font-size:10px; font-weight:800; color:var(--gold);">SINKRONISASI...</div>
         </div>
 
         <div class="content">
             <div id="tab-finance" class="page">
                 <h2 style="font-size:14px; margin-bottom:15px; color:var(--blue);"><i class="fa-solid fa-money-bill-transfer"></i> ANTREAN TRANSAKSI</h2>
-                <div id="finance-list">Memuat Transaksi...</div>
+                <div id="finance-list">Menunggu data...</div>
             </div>
+
             <div id="tab-users" class="page" style="display:none">
-                <input type="text" id="user-search" class="search-box" placeholder="Cari User..." onkeyup="filterUsers()">
-                <div id="user-list">Memuat Data Pemain...</div>
+                <input type="text" id="user-search" class="search-box" placeholder="Cari Username Pemain..." onkeyup="filterUsers()">
+                <div id="user-list">Memuat daftar pemain...</div>
             </div>
+
             <div id="tab-reward" class="page" style="display:none">
-                <h2 style="font-size:14px; margin-bottom:15px; color:var(--blue);"><i class="fa-solid fa-gift"></i> HADIAH SISTEM</h2>
+                <h2 style="font-size:14px; margin-bottom:15px; color:var(--blue);"><i class="fa-solid fa-gift"></i> KIRIM HADIAH</h2>
                 <div class="card">
                     <input type="text" id="gift-target" class="search-box" placeholder="Username Penerima">
-                    <input type="number" id="gift-amt" class="search-box" placeholder="Nominal Hadiah">
-                    <textarea id="gift-msg" class="search-box" style="height:80px;">Bonus Jackpot Master!</textarea>
-                    <button class="btn-act confirm" style="width:100%" onclick="sendGift()">KIRIM KE INBOX</button>
+                    <input type="number" id="gift-amt" class="search-box" placeholder="Nominal IDR">
+                    <textarea id="gift-msg" class="search-box" style="height:80px;">Bonus Loyalty Master!</textarea>
+                    <button class="btn-act confirm" style="width:100%" onclick="sendGift()">KIRIM SEKARANG</button>
                 </div>
             </div>
         </div>
@@ -82,7 +84,7 @@
     </div>
 
 <script>
-    // 1. INTEGRASI TOTAL (TANPA CONFIG.JS)
+    // CONFIG SUPABASE MASTER
     const sb_url = "https://bgffnmwrviyqpeevzjsn.supabase.co"; 
     const sb_key = "sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani";
     const _supabase = supabase.createClient(sb_url, sb_key);
@@ -90,7 +92,6 @@
     const MASTER_KEY = { u: "admin_neon", p: "master777" };
     let usersData = [];
 
-    // 2. KEAMANAN AKSES
     function checkAccess() {
         const u = document.getElementById('master-user').value;
         const p = document.getElementById('master-pass').value;
@@ -103,27 +104,35 @@
     }
 
     async function initDashboard() {
-        console.log("Memulai Sinkronisasi...");
+        console.log("Koneksi dimulai...");
         await loadFinance();
         await loadUsers();
+        // Auto refresh
         setInterval(loadFinance, 10000); 
         setInterval(loadUsers, 30000); 
     }
 
-    // 3. LOGIKA KEUANGAN
+    // LOGIKA TRANSAKSI
     async function loadFinance() {
         try {
             const { data: depo, error: errD } = await _supabase.from('deposits').select('*').eq('status', 'PROSES');
             const { data: wd, error: errW } = await _supabase.from('withdrawals').select('*').eq('status', 'PROSES');
             
+            if (errD || errW) throw (errD || errW);
+
             const container = document.getElementById('finance-list');
             let html = '';
 
-            if(depo && depo.length > 0) {
+            if (depo && depo.length > 0) {
                 depo.forEach(d => {
-                    html += `<div class="card" style="border-left: 4px solid var(--blue)">
-                        <b>${d.username}</b> <span style="float:right; color:var(--blue)">+IDR ${parseFloat(d.net_receive || 0).toLocaleString()}</span>
-                        <div style="margin-top:10px; display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    html += `
+                    <div class="card" style="border-left: 4px solid var(--blue)">
+                        <div style="font-size:10px; opacity:0.5; margin-bottom:5px;">DEPOSIT REQUEST</div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <b>${d.username}</b>
+                            <b style="color:var(--blue)">Rp ${parseFloat(d.net_receive || 0).toLocaleString()}</b>
+                        </div>
+                        <div style="margin-top:15px; display:grid; grid-template-columns:1fr 1fr; gap:10px;">
                             <button class="btn-act confirm" onclick="approveDepo('${d.id}', '${d.username}', ${d.net_receive})">APPROVE</button>
                             <button class="btn-act reject" onclick="rejectTx('deposits', '${d.id}')">REJECT</button>
                         </div>
@@ -131,50 +140,77 @@
                 });
             }
 
-            if(wd && wd.length > 0) {
+            if (wd && wd.length > 0) {
                 wd.forEach(w => {
-                    html += `<div class="card" style="border-left: 4px solid var(--pink)">
-                        <b>${w.username}</b> <span style="float:right; color:var(--pink)">-IDR ${parseFloat(w.amount || 0).toLocaleString()}</span>
-                        <div style="margin-top:10px; display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    html += `
+                    <div class="card" style="border-left: 4px solid var(--pink)">
+                        <div style="font-size:10px; opacity:0.5; margin-bottom:5px;">WITHDRAW REQUEST</div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <b>${w.username}</b>
+                            <b style="color:var(--pink)">Rp ${parseFloat(w.amount || 0).toLocaleString()}</b>
+                        </div>
+                        <div style="margin-top:15px; display:grid; grid-template-columns:1fr 1fr; gap:10px;">
                             <button class="btn-act confirm" style="background:var(--pink); color:#fff;" onclick="approveWd('${w.id}')">SUCCESS</button>
                             <button class="btn-act reject" onclick="rejectTx('withdrawals', '${w.id}')">REJECT</button>
                         </div>
                     </div>`;
                 });
             }
-            container.innerHTML = html || '<p style="text-align:center; opacity:0.3; padding:40px;">Antrean Bersih</p>';
-        } catch (e) { console.error(e); }
+
+            container.innerHTML = html || '<p style="text-align:center; opacity:0.3; padding:40px;">Antrean Kosong</p>';
+        } catch (e) {
+            console.error("Finance Error:", e);
+            document.getElementById('finance-list').innerHTML = "Gagal memuat transaksi.";
+        }
     }
 
-    // 4. LOGIKA PEMAIN
+    // LOGIKA DAFTAR PEMAIN
     async function loadUsers() {
         try {
-            const { data, error } = await _supabase.from('profiles').select('*').order('created_at', {ascending: false});
+            // VERSI AMAN: Tidak menggunakan sortir 'created_at' untuk menghindari crash
+            const { data, error } = await _supabase.from('profiles').select('*');
+            
             if(error) throw error;
+
             usersData = data || [];
             renderUsers(usersData);
             
-            const onlineCount = usersData.filter(u => u.last_active && (new Date() - new Date(u.last_active)) < 300000).length;
+            // Hitung Online (aktif 5 menit terakhir)
+            const onlineCount = usersData.filter(u => {
+                if(!u.last_active) return false;
+                return (new Date() - new Date(u.last_active)) < 300000;
+            }).length;
+            
             document.getElementById('online-stats').innerText = onlineCount + " ONLINE";
-        } catch (e) { document.getElementById('online-stats').innerText = "ERROR KONEKSI"; }
+        } catch (e) { 
+            console.error("User Error:", e);
+            document.getElementById('online-stats').innerText = "OFFLINE";
+        }
     }
 
     function renderUsers(list) {
         const container = document.getElementById('user-list');
-        if(list.length === 0) { container.innerHTML = "Belum ada pemain."; return; }
+        if(list.length === 0) {
+            container.innerHTML = '<p style="text-align:center; opacity:0.3; padding:40px;">Belum ada pemain terdaftar.</p>';
+            return;
+        }
         container.innerHTML = list.map(u => `
             <div class="card">
-                <div style="display:flex; justify-content:space-between;">
-                    <b>${u.username}</b>
-                    <span style="color:var(--gold)">Rp ${(u.saldo || 0).toLocaleString()}</span>
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <div style="font-weight:900; font-size:15px;">${u.username}</div>
+                        <div style="font-size:10px; opacity:0.5;">No: ${u.phone || '-'} | RTP: ${u.winrate || 0}%</div>
+                    </div>
+                    <div style="text-align:right">
+                        <div style="color:var(--gold); font-weight:800;">Rp ${(u.saldo || 0).toLocaleString()}</div>
+                        <button style="background:none; border:none; color:var(--blue); font-size:10px; font-weight:900; margin-top:5px;" onclick="alert('Password: ${u.password}')">INTIP PASSWORD</button>
+                    </div>
                 </div>
-                <div style="font-size:10px; opacity:0.5; margin:5px 0;">${u.phone || 'No Phone'} | Winrate: ${u.winrate || 0}%</div>
-                <button class="btn-act confirm" style="width:100%; margin-top:10px; font-size:9px;" onclick="alert('Password: ${u.password}')">LIHAT PASSWORD</button>
             </div>
         `).join('');
     }
 
-    // 5. HELPER
+    // FUNGSI NAVIGASI & AKSES
     function switchNav(tab, el) {
         document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
         document.getElementById('tab-' + tab).style.display = 'block';
@@ -182,22 +218,52 @@
         el.classList.add('active');
     }
 
+    function filterUsers() {
+        const q = document.getElementById('user-search').value.toLowerCase();
+        const filtered = usersData.filter(u => u.username.toLowerCase().includes(q));
+        renderUsers(filtered);
+    }
+
     async function approveDepo(id, user, amt) {
         const { data: p } = await _supabase.from('profiles').select('saldo').eq('username', user).single();
         await _supabase.from('profiles').update({ saldo: (p.saldo + amt) }).eq('username', user);
         await _supabase.from('deposits').update({ status: 'SUKSES' }).eq('id', id);
-        alert("Deposit Disetujui!"); loadFinance(); loadUsers();
+        alert("Deposit Disetujui!"); 
+        loadFinance(); loadUsers();
     }
 
     async function approveWd(id) {
         await _supabase.from('withdrawals').update({ status: 'SUKSES' }).eq('id', id);
-        alert("WD Berhasil!"); loadFinance();
+        alert("WD Berhasil Diproses!");
+        loadFinance();
     }
 
     async function rejectTx(table, id) {
-        if(confirm("Tolak transaksi?")) {
+        if(confirm("Tolak transaksi ini?")) {
             await _supabase.from(table).update({ status: 'REJECT' }).eq('id', id);
             loadFinance();
+        }
+    }
+
+    async function sendGift() {
+        const user = document.getElementById('gift-target').value;
+        const amt = document.getElementById('gift-amt').value;
+        const msg = document.getElementById('gift-msg').value;
+        if(!user || !amt) return alert("Isi data dengan lengkap!");
+
+        const { error } = await _supabase.from('inbox').insert([{ 
+            username: user, 
+            title: "BONUS MASTER", 
+            message: msg, 
+            reward_amount: amt, 
+            status: 'UNREAD' 
+        }]);
+        
+        if(!error) {
+            alert("Hadiah terkirim ke inbox user!");
+            document.getElementById('gift-amt').value = "";
+        } else {
+            alert("Error: " + error.message);
         }
     }
 
