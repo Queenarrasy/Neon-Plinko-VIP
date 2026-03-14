@@ -12,44 +12,66 @@
     <style>
         :root { --pink: #ff0077; --blue: #00d4ff; --yellow: #fbff00; --bg: #02030d; }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; background: radial-gradient(circle at center, #0a0c1f 0%, #02030d 100%); }
+        
+        body { 
+            background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; 
+            height: 100vh; height: 100dvh; /* Mengikuti tinggi layar HP terbaru */
+            overflow: hidden; display: flex; flex-direction: column; 
+            background: radial-gradient(circle at center, #0a0c1f 0%, #02030d 100%); 
+        }
 
-        /* Header */
-        .header { padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.8); border-bottom: 2px solid var(--blue); z-index: 100; }
-        .logo { font-family: 'Cinzel Decorative'; color: var(--pink); font-size: 18px; text-shadow: 0 0 10px var(--pink); }
-        .balance-box { background: rgba(0,212,255,0.1); border: 1px solid var(--blue); padding: 5px 15px; border-radius: 50px; display: flex; align-items: center; gap: 8px; box-shadow: 0 0 15px rgba(0, 212, 255, 0.2); }
+        /* Header - Tinggi Tetap */
+        .header { 
+            height: 60px; padding: 0 20px; display: flex; justify-content: space-between; 
+            align-items: center; background: rgba(0,0,0,0.8); border-bottom: 2px solid var(--blue); 
+            flex-shrink: 0; z-index: 100;
+        }
+        .logo { font-family: 'Cinzel Decorative'; color: var(--pink); font-size: 16px; text-shadow: 0 0 10px var(--pink); }
+        .balance-box { background: rgba(0,212,255,0.1); border: 1px solid var(--blue); padding: 5px 12px; border-radius: 50px; display: flex; align-items: center; gap: 8px; }
 
-        /* Game Board Area */
-        #game-area { flex: 1; position: relative; display: flex; justify-content: center; align-items: center; padding-top: 20px; }
-        #board-wrapper { position: relative; width: 100%; max-width: 450px; height: 500px; }
-        canvas { width: 100%; height: 100%; }
+        /* Game Board Area - Dinamis mengikuti sisa layar */
+        #game-area { 
+            flex: 1; position: relative; display: flex; justify-content: center; 
+            align-items: center; overflow: hidden; min-height: 0; 
+        }
+        #board-wrapper { position: relative; width: 100%; max-width: 400px; height: 100%; max-height: 480px; }
+        canvas { width: 100%; height: 100%; object-fit: contain; }
 
-        /* Multiplier Slots */
-        .m-bar { position: absolute; bottom: -5px; width: 100%; display: flex; justify-content: center; gap: 4px; padding: 0 10px; }
-        .m-slot { flex: 1; height: 35px; border-radius: 6px; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; color: #000; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 0 rgba(0,0,0,0.5); text-shadow: 0 1px 0 rgba(255,255,255,0.3); }
+        .m-bar { position: absolute; bottom: 5px; width: 100%; display: flex; justify-content: center; gap: 3px; padding: 0 10px; }
+        .m-slot { flex: 1; height: 30px; border-radius: 4px; font-size: 9px; font-weight: 800; display: flex; align-items: center; justify-content: center; color: #000; border: 1px solid rgba(255,255,255,0.1); }
+
+        /* Kontrol Game - Compact */
+        .controls { 
+            background: rgba(5,6,20,0.95); padding: 15px 20px 10px 20px; 
+            border-top: 1px solid rgba(0,212,255,0.3); flex-shrink: 0;
+        }
+        .bet-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; background: rgba(255,255,255,0.05); padding: 8px 15px; border-radius: 15px; }
+        .mode-row { display: flex; gap: 8px; margin-bottom: 12px; }
+        .mode-btn { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.5); color: #fff; font-size: 11px; font-weight: 800; cursor: pointer; }
+        .mode-btn.active { background: var(--blue); color: #000; box-shadow: 0 0 10px var(--blue); }
+        .mode-btn.auto-active { background: var(--yellow); color: #000; border-color: var(--yellow); }
+
+        .btn-main { width: 100%; padding: 15px; border-radius: 50px; border: none; background: linear-gradient(180deg, var(--pink) 0%, #b30054 100%); color: #fff; font-family: 'Cinzel Decorative'; font-weight: 900; font-size: 18px; box-shadow: 0 4px 0 #7a003a; cursor: pointer; }
+        .btn-main:active { transform: translateY(2px); box-shadow: 0 2px 0 #7a003a; }
+        .btn-stop { background: linear-gradient(180deg, #555 0%, #222 100%); box-shadow: 0 4px 0 #000; }
+
+        /* Navigation Bar - Tetap di Bawah */
+        .nav-bar {
+            height: 70px; background: #000; border-top: 1px solid rgba(255,255,255,0.1);
+            display: grid; grid-template-columns: repeat(5, 1fr); align-items: center;
+            padding-bottom: env(safe-area-inset-bottom); flex-shrink: 0;
+        }
+        .nav-item { text-align: center; color: rgba(255,255,255,0.4); text-decoration: none; font-size: 10px; font-weight: 600; }
+        .nav-item i { display: block; font-size: 18px; margin-bottom: 4px; }
+        .nav-item.active { color: var(--blue); text-shadow: 0 0 10px var(--blue); }
 
         /* Floating Score */
-        .f-score { position: absolute; font-weight: 900; font-size: 20px; pointer-events: none; z-index: 1000; animation: floatUp 1s ease-out forwards; text-shadow: 0 0 10px rgba(0,0,0,0.8); }
-        @keyframes floatUp { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-80px); opacity: 0; } }
+        .f-score { position: absolute; font-weight: 900; font-size: 18px; pointer-events: none; z-index: 1000; animation: floatUp 0.8s ease-out forwards; }
+        @keyframes floatUp { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-60px); opacity: 0; } }
 
-        /* Controls */
-        .controls { background: rgba(5,6,20,0.9); padding: 20px; border-radius: 30px 30px 0 0; border-top: 1px solid var(--blue); }
-        .bet-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: rgba(255,255,255,0.05); padding: 10px 20px; border-radius: 50px; }
-        .bet-nav { color: var(--blue); font-size: 24px; cursor: pointer; }
-        .mode-row { display: flex; gap: 10px; margin-bottom: 15px; }
-        .mode-btn { flex: 1; padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.5); color: #fff; font-weight: 600; font-size: 12px; cursor: pointer; transition: 0.3s; }
-        .mode-btn.active { background: var(--blue); color: #000; box-shadow: 0 0 15px var(--blue); }
-        .mode-btn.auto-active { background: var(--yellow); color: #000; box-shadow: 0 0 15px var(--yellow); border-color: var(--yellow); }
-
-        .btn-main { width: 100%; padding: 18px; border-radius: 50px; border: none; background: linear-gradient(180deg, var(--pink) 0%, #b30054 100%); color: #fff; font-family: 'Cinzel Decorative'; font-weight: 900; font-size: 20px; box-shadow: 0 6px 0 #7a003a; cursor: pointer; transition: 0.1s; }
-        .btn-main:active { transform: translateY(3px); box-shadow: 0 3px 0 #7a003a; }
-        .btn-stop { background: linear-gradient(180deg, #555 0%, #222 100%); box-shadow: 0 6px 0 #000; }
-
-        /* Modal Custom */
-        #modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
-        .modal-box { background: #050614; border: 2px solid var(--pink); border-radius: 30px; padding: 30px; width: 85%; max-width: 320px; text-align: center; box-shadow: 0 0 30px var(--pink); }
-        .modal-box h2 { color: var(--yellow); font-family: 'Cinzel Decorative'; margin-bottom: 10px; }
-        .modal-btn { background: var(--pink); border: none; color: #fff; padding: 12px 30px; border-radius: 50px; font-weight: 800; margin-top: 20px; cursor: pointer; }
+        /* Modal Overlay */
+        #modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; align-items: center; justify-content: center; }
+        .modal-box { background: #050614; border: 2px solid var(--pink); border-radius: 25px; padding: 25px; width: 80%; max-width: 300px; text-align: center; }
     </style>
 </head>
 <body>
@@ -58,7 +80,7 @@
         <div class="logo">NEON PLINKO VIP</div>
         <div class="balance-box">
             <i class="fa-solid fa-wallet" style="color:var(--blue)"></i>
-            <span id="saldo-text">IDR 0</span>
+            <span id="saldo-text" style="font-weight:800; font-size:14px;">IDR 0</span>
         </div>
     </div>
 
@@ -71,28 +93,35 @@
 
     <div class="controls">
         <div class="bet-row">
-            <i class="fa-solid fa-square-minus bet-nav" onclick="changeBet(-1)"></i>
+            <i class="fa-solid fa-minus-square" style="color:var(--blue); font-size:24px" onclick="changeBet(-1)"></i>
             <div style="text-align:center">
-                <div style="font-size:10px; opacity:0.6; letter-spacing:1px">BET AMOUNT</div>
-                <div style="font-size:20px; font-weight:800; color:var(--yellow)" id="bet-display">400</div>
+                <div style="font-size:16px; font-weight:800; color:var(--yellow)" id="bet-display">400</div>
             </div>
-            <i class="fa-solid fa-square-plus bet-nav" onclick="changeBet(1)"></i>
+            <i class="fa-solid fa-plus-square" style="color:var(--blue); font-size:24px" onclick="changeBet(1)"></i>
         </div>
 
         <div class="mode-row">
             <button class="mode-btn active" id="btn-normal" onclick="setMode('normal')">NORMAL</button>
             <button class="mode-btn" id="btn-turbo" onclick="setMode('turbo')">TURBO</button>
-            <button class="mode-btn" id="btn-auto" onclick="toggleAuto()">AUTO: OFF</button>
+            <button class="mode-btn" id="btn-auto" onclick="toggleAuto()">AUTO</button>
         </div>
 
         <button class="btn-main" id="btn-action" onclick="handleAction()">DROP BALL</button>
     </div>
 
+    <nav class="nav-bar">
+        <a href="deposit.html" class="nav-item"><i class="fa-solid fa-wallet"></i>Deposit</a>
+        <a href="withdraw.html" class="nav-item"><i class="fa-solid fa-money-bill-transfer"></i>WD</a>
+        <a href="game.html" class="nav-item active"><i class="fa-solid fa-gamepad"></i>Play</a>
+        <a href="reward.html" class="nav-item"><i class="fa-solid fa-gift"></i>Reward</a>
+        <a href="profil.html" class="nav-item"><i class="fa-solid fa-user-gear"></i>Profil</a>
+    </nav>
+
     <div id="modal-overlay">
         <div class="modal-box">
-            <h2 id="m-title">ALERT</h2>
-            <p id="m-msg" style="font-size:14px; color:#ccc"></p>
-            <button class="modal-btn" onclick="closeModal()">UNDERSTOOD</button>
+            <h2 id="m-title" style="color:var(--yellow); font-family:'Cinzel Decorative'; font-size:18px">INFO</h2>
+            <p id="m-msg" style="margin:15px 0; font-size:13px; color:#ccc"></p>
+            <button onclick="closeModal()" style="background:var(--pink); border:none; color:white; padding:10px 25px; border-radius:50px; font-weight:800;">OK</button>
         </div>
     </div>
 
@@ -102,7 +131,7 @@
 
 <script>
     const { Engine, Render, Runner, Bodies, Composite, Events } = Matter;
-    const engine = Engine.create({ gravity: { y: 1.5 } }); // Gravitas lebih berat agar bola mantap
+    const engine = Engine.create({ gravity: { y: 1.8 } });
     const world = engine.world;
     
     const BETS = [400, 800, 1000, 1200, 1400, 1600, 1800, 2000, 4000, 6000, 8000, 10000, 12000, 16000, 18000, 20000];
@@ -112,17 +141,15 @@
     let autoTimer = null;
     let currentSaldo = 0;
     let adminWinrate = 50;
-    let adminMaxWin = 1000000;
     const multiValues = [15, 8, 3, 0.5, 0.2, 0.5, 3, 8, 15];
     const multiColors = ['#ff0077', '#ff4d94', '#00d4ff', '#1a1b2e', '#1a1b2e', '#1a1b2e', '#00d4ff', '#ff4d94', '#ff0077'];
 
     async function init() {
         const user = localStorage.getItem('user_neon');
         if(!user) window.location.href = 'index.html';
-
-        setupBoard();
+        setupPhysics();
         fetchData();
-        setInterval(fetchData, 5000); // Sync saldo berkala
+        setInterval(fetchData, 5000);
     }
 
     async function fetchData() {
@@ -131,29 +158,26 @@
         if(data) {
             currentSaldo = data.saldo;
             adminWinrate = data.winrate || 50;
-            adminMaxWin = data.max_win_limit || 1000000;
             document.getElementById('saldo-text').innerText = "IDR " + currentSaldo.toLocaleString('id-ID');
         }
     }
 
-    function setupBoard() {
+    function setupPhysics() {
         const canvas = document.getElementById('canvas');
         const render = Render.create({
             canvas: canvas, engine: engine,
-            options: { width: 450, height: 500, wireframes: false, background: 'transparent' }
+            options: { width: 400, height: 480, wireframes: false, background: 'transparent' }
         });
 
-        // Pins (Grid Plinko)
         for (let r = 0; r < 9; r++) {
             let pins = r + 3;
             for (let c = 0; c < pins; c++) {
-                let x = 225 + (c - pins / 2 + 0.5) * 45;
-                let y = 60 + r * 45;
-                Composite.add(world, Bodies.circle(x, y, 4, { isStatic: true, render: { fillStyle: '#fff' } }));
+                let x = 200 + (c - pins / 2 + 0.5) * 40;
+                let y = 50 + r * 40;
+                Composite.add(world, Bodies.circle(x, y, 3.5, { isStatic: true, render: { fillStyle: '#fff' } }));
             }
         }
 
-        // Multiplayer Visual
         const mBar = document.getElementById('m-bar');
         multiValues.forEach((v, i) => {
             const div = document.createElement('div');
@@ -163,12 +187,8 @@
             div.innerText = 'x'+v;
             mBar.appendChild(div);
 
-            // Sensor area
-            let x = 45 + i * 45;
-            let sensor = Bodies.rectangle(x, 485, 38, 20, { 
-                isStatic: true, isSensor: true, label: 'm_'+v, render: { visible: false } 
-            });
-            Composite.add(world, sensor);
+            let x = 40 + i * 40;
+            Composite.add(world, Bodies.rectangle(x, 470, 35, 20, { isStatic: true, isSensor: true, label: 'm_'+v, render: { visible: false } }));
         });
 
         Render.run(render);
@@ -176,119 +196,75 @@
     }
 
     function spawnBall() {
-        if(currentSaldo < BETS[betIdx]) {
-            stopAuto();
-            return showModal("ALERT", "Insufficient balance for this bet.");
-        }
-
+        if(currentSaldo < BETS[betIdx]) { stopAuto(); return showModal("SALDO KURANG", "Silahkan deposit terlebih dahulu."); }
+        
         playS('s-click');
         const user = localStorage.getItem('user_neon');
         currentSaldo -= BETS[betIdx];
         document.getElementById('saldo-text').innerText = "IDR " + currentSaldo.toLocaleString('id-ID');
 
-        // Admin Winrate Logic
-        let startX = 225 + (Math.random() * 20 - 10);
-        const winChance = Math.random() * 100;
-        if(winChance > adminWinrate) {
-            // Paksa ke tengah (x0.2 / x0.5)
-            startX = 225 + (Math.random() * 40 - 20);
-        } else {
-            // Beri kesempatan ke pinggir
-            startX = (Math.random() > 0.5) ? 140 : 310;
-        }
+        let startX = 200 + (Math.random() * 10 - 5);
+        if(Math.random()*100 > adminWinrate) startX = 200 + (Math.random() * 30 - 15);
+        else startX = (Math.random() > 0.5) ? 120 : 280;
 
-        const ball = Bodies.circle(startX, 10, 10, {
-            restitution: 0.5, friction: 0.005, density: 0.01,
-            render: { fillStyle: '#fbff00', strokeStyle: '#fff', lineWidth: 2 }
+        const ball = Bodies.circle(startX, 10, 8.5, {
+            restitution: 0.5, friction: 0.005, render: { fillStyle: '#fbff00' }
         });
         Composite.add(world, ball);
 
-        // Sound on hit
         Events.on(engine, 'collisionStart', (e) => {
-            e.pairs.forEach(p => {
-                if(p.bodyA === ball || p.bodyB === ball) playS('s-hit');
-            });
+            e.pairs.forEach(p => { if(p.bodyA === ball || p.bodyB === ball) playS('s-hit'); });
         });
 
-        // Tracker ball
         const check = setInterval(async () => {
-            if(ball.position.y > 475) {
+            if(ball.position.y > 460) {
                 clearInterval(check);
-                const bodies = Composite.allBodies(world);
-                const sensors = bodies.filter(b => b.label?.startsWith('m_'));
-                let nearest = sensors[0];
-                let minD = 1000;
-                sensors.forEach(s => {
-                    let d = Math.abs(s.position.x - ball.position.x);
-                    if(d < minD) { minD = d; nearest = s; }
-                });
+                const sensors = Composite.allBodies(world).filter(b => b.label?.startsWith('m_'));
+                let nearest = sensors[0]; let minD = 1000;
+                sensors.forEach(s => { let d = Math.abs(s.position.x - ball.position.x); if(d < minD) { minD = d; nearest = s; } });
 
                 const mult = parseFloat(nearest.label.split('_')[1]);
-                let winAmt = Math.floor(BETS[betIdx] * mult);
+                const winAmt = Math.floor(BETS[betIdx] * mult);
                 
-                // Max Win Limit Check
-                if(winAmt > adminMaxWin) winAmt = adminMaxWin;
-
                 Composite.remove(world, ball);
-                showFloatingScore(ball.position.x, winAmt, mult);
+                showScore(ball.position.x, winAmt, mult);
                 
-                // Sync Database
-                const { data } = await _supabase.rpc('handle_plinko_win', {
-                    u_name: user,
-                    bet: BETS[betIdx],
-                    win: winAmt
-                });
-                
+                await _supabase.rpc('handle_plinko_win', { u_name: user, bet: BETS[betIdx], win: winAmt });
                 if(mult >= 2) playS('s-win');
                 fetchData();
             }
         }, 50);
     }
 
-    function showFloatingScore(x, amt, mult) {
+    function showScore(x, amt, mult) {
         const el = document.createElement('div');
         el.className = 'f-score';
-        el.style.left = (x - 20) + 'px';
+        el.style.left = (x - 10) + 'px';
         el.style.bottom = '80px';
         el.style.color = mult < 1 ? '#ff4d4d' : 'var(--yellow)';
         el.innerText = (mult < 1 ? "" : "+") + amt.toLocaleString('id-ID');
         document.getElementById('board-wrapper').appendChild(el);
-        setTimeout(() => el.remove(), 1000);
+        setTimeout(() => el.remove(), 800);
     }
 
-    function handleAction() {
-        if(isAuto) {
-            stopAuto();
-        } else {
-            spawnBall();
-        }
-    }
+    function handleAction() { if(isAuto) stopAuto(); else spawnBall(); }
 
     function toggleAuto() {
         isAuto = !isAuto;
         const btn = document.getElementById('btn-auto');
         const actionBtn = document.getElementById('btn-action');
-        
         if(isAuto) {
             btn.classList.add('auto-active');
-            btn.innerText = "AUTO: ON";
             actionBtn.innerText = "STOP AUTO";
             actionBtn.classList.add('btn-stop');
-            
-            const speed = isTurbo ? 400 : 1000;
-            autoTimer = setInterval(spawnBall, speed);
-        } else {
-            stopAuto();
-        }
+            autoTimer = setInterval(spawnBall, isTurbo ? 400 : 1000);
+        } else stopAuto();
     }
 
     function stopAuto() {
-        isAuto = false;
-        clearInterval(autoTimer);
-        const btn = document.getElementById('btn-auto');
+        isAuto = false; clearInterval(autoTimer);
+        document.getElementById('btn-auto').classList.remove('auto-active');
         const actionBtn = document.getElementById('btn-action');
-        btn.classList.remove('auto-active');
-        btn.innerText = "AUTO: OFF";
         actionBtn.innerText = "DROP BALL";
         actionBtn.classList.remove('btn-stop');
     }
@@ -296,9 +272,9 @@
     function setMode(m) {
         playS('s-click');
         isTurbo = (m === 'turbo');
-        document.getElementById('btn-normal').classList.toggle('active', m === 'normal');
-        document.getElementById('btn-turbo').classList.toggle('active', m === 'turbo');
-        if(isAuto) { stopAuto(); toggleAuto(); } // Restart auto with new speed
+        document.getElementById('btn-normal').classList.toggle('active', !isTurbo);
+        document.getElementById('btn-turbo').classList.toggle('active', isTurbo);
+        if(isAuto) { stopAuto(); toggleAuto(); }
     }
 
     function changeBet(dir) {
@@ -307,21 +283,9 @@
         document.getElementById('bet-display').innerText = BETS[betIdx].toLocaleString('id-ID');
     }
 
-    function playS(id) {
-        const s = document.getElementById(id);
-        s.currentTime = 0;
-        s.play().catch(()=>{});
-    }
-
-    function showModal(title, msg) {
-        document.getElementById('m-title').innerText = title;
-        document.getElementById('m-msg').innerText = msg;
-        document.getElementById('modal-overlay').style.display = 'flex';
-    }
-
-    function closeModal() {
-        document.getElementById('modal-overlay').style.display = 'none';
-    }
+    function playS(id) { const s = document.getElementById(id); s.currentTime = 0; s.play().catch(()=>{}); }
+    function showModal(t, m) { document.getElementById('m-title').innerText = t; document.getElementById('m-msg').innerText = m; document.getElementById('modal-overlay').style.display = 'flex'; }
+    function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
 
     init();
 </script>
