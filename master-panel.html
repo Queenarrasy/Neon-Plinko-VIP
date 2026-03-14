@@ -2,8 +2,8 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEON MASTER - SUPABASE ADMIN</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NEON MASTER - CONTROL PANEL</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
         :root { 
@@ -11,17 +11,17 @@
             --bg: #05060f; --green: #00ff88; --orange: #ff8800; --red: #ff0000;
             --neon-pink: 0 0 15px var(--pink);
             --neon-blue: 0 0 15px var(--blue);
-            --neon-yellow: 0 0 15px var(--yellow);
         }
 
         body { 
             background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; 
-            padding: 20px; margin: 0; overflow-x: hidden;
+            padding: 15px; margin: 0; padding-bottom: 50px;
         }
 
-        .header { 
-            text-align: center; padding: 15px; border: 2px solid var(--blue); 
-            box-shadow: var(--neon-blue); border-radius: 15px; margin-bottom: 20px; 
+        .header-master { 
+            text-align: center; padding: 15px; border: 1px solid var(--blue); 
+            box-shadow: var(--neon-blue); border-radius: 12px; margin-bottom: 20px;
+            background: rgba(0, 212, 255, 0.05);
         }
 
         /* PANIC AREA */
@@ -31,14 +31,14 @@
         }
         .btn-panic {
             background: #000; color: white; border: 2px solid var(--pink);
-            padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; margin: 5px;
+            padding: 10px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; margin: 5px;
+            font-size: 11px; text-transform: uppercase;
         }
-        .btn-panic:hover { background: var(--pink); box-shadow: var(--neon-pink); }
 
         /* DEPOSIT PANEL */
         .depo-panel {
             border: 1px solid var(--green); background: rgba(0, 255, 136, 0.03);
-            border-radius: 12px; padding: 10px; margin-bottom: 20px;
+            border-radius: 12px; padding: 12px; margin-bottom: 20px;
         }
         .depo-table { width: 100%; border-collapse: collapse; font-size: 11px; }
         .depo-table th { color: var(--green); text-align: left; padding: 8px; border-bottom: 1px solid #333; }
@@ -46,56 +46,70 @@
 
         /* USER MONITOR */
         .user-box { 
-            background: rgba(255,255,255,0.02); border: 1px solid var(--blue); 
-            padding: 12px; margin-top: 10px; border-radius: 12px;
+            background: rgba(255,255,255,0.02); border: 1px solid rgba(0, 212, 255, 0.3); 
+            padding: 15px; margin-top: 12px; border-radius: 12px;
         }
-        .username { color: var(--blue); font-size: 14px; font-weight: bold; text-shadow: var(--neon-blue); }
+        .username { color: var(--blue); font-size: 15px; font-weight: bold; text-shadow: var(--neon-blue); }
         .balance-val { font-weight: bold; font-size: 16px; color: var(--green); }
         
-        .status-online { color: var(--green); font-size: 9px; border: 1px solid var(--green); padding: 1px 4px; border-radius: 3px; }
-        .status-offline { color: #555; font-size: 9px; border: 1px solid #333; padding: 1px 4px; border-radius: 3px; }
+        .status-online { color: var(--green); font-size: 9px; border: 1px solid var(--green); padding: 1px 5px; border-radius: 3px; font-weight: bold; }
+        .status-offline { color: #555; font-size: 9px; border: 1px solid #333; padding: 1px 5px; border-radius: 3px; }
 
-        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-        .select-wr { background: #000; color: var(--yellow); border: 1px solid var(--yellow); padding: 5px; border-radius: 5px; grid-column: span 2; }
-        .btn-action { background: #111; color: #fff; border: 1px solid #444; padding: 8px; border-radius: 5px; cursor: pointer; font-size: 10px; }
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 15px; }
+        .select-wr { 
+            background: #000; color: var(--yellow); border: 1px solid var(--yellow); 
+            padding: 8px; border-radius: 5px; grid-column: span 2; font-weight: bold;
+        }
+        .btn-action { 
+            background: #111; color: #fff; border: 1px solid #444; 
+            padding: 10px; border-radius: 5px; cursor: pointer; font-size: 10px; font-weight: bold;
+        }
 
+        /* TOAST */
         #toast { 
             visibility: hidden; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); 
-            background: var(--blue); color: #000; padding: 10px 20px; border-radius: 8px; font-weight: bold; z-index: 2000;
+            background: var(--blue); color: #000; padding: 12px 25px; border-radius: 50px; font-weight: bold; z-index: 2000;
         }
-        #toast.show { visibility: visible; }
+        #toast.show { visibility: visible; animation: fadeInUp 0.3s; }
+
+        @keyframes fadeInUp { from { bottom: 0; opacity: 0; } to { bottom: 20px; opacity: 1; } }
         
-        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 999; }
-        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #0a0b1a; border: 2px solid var(--blue); padding: 20px; z-index: 1000; border-radius: 10px; text-align: center; width: 280px;}
+        /* MODAL */
+        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 999; backdrop-filter: blur(5px); }
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #0a0b1a; border: 2px solid var(--blue); padding: 25px; z-index: 1000; border-radius: 15px; text-align: center; width: 80%; max-width: 300px; }
+        .modal input { width: 100%; padding: 12px; margin: 15px 0; background: #000; border: 1px solid var(--blue); color: #fff; border-radius: 8px; box-sizing: border-box; text-align: center; font-size: 1.2rem; }
     </style>
 </head>
 <body>
 
+    <div class="header-master">
+        <h2 style="margin:0; font-size:16px; color:var(--blue); letter-spacing: 2px;">NEON CONTROL CENTER</h2>
+        <div id="clock" style="font-size:10px; color:var(--yellow); margin-top: 5px;"></div>
+    </div>
+
     <div class="panic-container">
-        <h3 style="color:var(--pink); font-size:12px; margin-bottom:10px;">GLOBAL SYSTEM CONTROL</h3>
-        <button class="btn-panic" onclick="globalPanic(10)">ACTIVATE PANIC (WR 10%)</button>
-        <button class="btn-panic" style="border-color:var(--blue)" onclick="globalPanic(50)">RESTORE NORMAL (WR 50%)</button>
-        <div id="panic-status" style="font-size:10px; color:var(--yellow); margin-top:10px;">SYSTEM STATUS: STABLE</div>
+        <h3 style="color:var(--pink); font-size:11px; margin-bottom:10px; letter-spacing: 1px;">GLOBAL WINRATE CONTROL</h3>
+        <button class="btn-panic" onclick="globalPanic(5)">FORCE DRAIN (5%)</button>
+        <button class="btn-panic" style="border-color:var(--blue)" onclick="globalPanic(50)">NORMAL (50%)</button>
+        <div id="panic-status" style="font-size:10px; color:var(--yellow); margin-top:10px;">STATUS: STABLE</div>
     </div>
 
     <div class="depo-panel">
-        <h3 style="color:var(--green); font-size:12px; margin:0 0 10px 0;">PENDING DEPOSITS</h3>
-        <div id="depo-list">Memuat antrean deposit...</div>
+        <h3 style="color:var(--green); font-size:12px; margin:0 0 10px 0;"><i class="fas fa-spinner fa-spin"></i> PENDING DEPOSITS</h3>
+        <div id="depo-list">Memuat data...</div>
     </div>
 
-    <div class="header">
-        <h2 style="margin:0; font-size:16px; color:var(--pink);">LIVE MONITOR</h2>
-        <div id="clock" style="font-size:10px; color:var(--yellow);"></div>
+    <div style="font-size: 12px; color: var(--blue); font-weight: bold; margin-bottom: 10px; border-left: 3px solid var(--blue); padding-left: 10px;">
+        LIVE USER MONITORING
     </div>
-
     <div id="user-display"></div>
 
     <div class="overlay" id="overlay"></div>
     <div class="modal" id="modal">
-        <h4 id="modal-title" style="color:var(--blue)">ADJUST</h4>
-        <input type="number" id="modal-input" style="width:100%; padding:10px; margin:10px 0; background:#000; border:1px solid var(--blue); color:#fff;">
-        <button id="modal-confirm" style="background:var(--blue); padding:10px; border:none; width:100%; font-weight:bold;">CONFIRM</button>
-        <button onclick="closeModal()" style="background:none; color:#555; border:none; margin-top:10px;">Cancel</button>
+        <h4 id="modal-title" style="color:var(--blue); margin:0;">ADJUST DATA</h4>
+        <input type="number" id="modal-input" placeholder="Masukkan nilai...">
+        <button id="modal-confirm" style="background:var(--blue); padding:12px; border:none; width:100%; font-weight:bold; border-radius: 8px; cursor:pointer;">UPDATE SEKARANG</button>
+        <button onclick="closeModal()" style="background:none; color:#555; border:none; margin-top:15px; cursor:pointer;">Batal</button>
     </div>
 
     <div id="toast">ACTION SUCCESS</div>
@@ -104,10 +118,8 @@
     <script src="config.js"></script>
 
     <script>
-        // Memastikan hanya admin yang bisa akses (Opsional: Tambahkan login admin)
-        
         async function fetchAllData() {
-            // 1. Fetch Users
+            // 1. Fetch Profiles
             const { data: users, error: errU } = await _supabase
                 .from('profiles')
                 .select('*')
@@ -116,7 +128,6 @@
             if(users) renderUsers(users);
 
             // 2. Fetch Pending Deposits
-            // Kita asumsikan ada tabel 'deposits' dengan kolom 'status'
             const { data: depos, error: errD } = await _supabase
                 .from('deposits')
                 .select('*')
@@ -127,8 +138,8 @@
 
         function renderDeposits(depos) {
             const container = document.getElementById('depo-list');
-            if(depos.length === 0) {
-                container.innerHTML = '<p style="font-size:10px; color:#444; text-align:center;">Tidak ada deposit pending.</p>';
+            if(!depos || depos.length === 0) {
+                container.innerHTML = '<p style="font-size:10px; color:#444; text-align:center;">Tidak ada antrean deposit.</p>';
                 return;
             }
 
@@ -136,9 +147,9 @@
             depos.forEach(d => {
                 html += `
                     <tr>
-                        <td>${d.username}</td>
-                        <td style="color:var(--green)">IDR ${d.nominal.toLocaleString()}</td>
-                        <td><button onclick="approveDepo('${d.id}', '${d.username}', ${d.nominal})" style="background:var(--green); border:none; font-size:9px; padding:3px 7px; border-radius:3px; font-weight:bold;">APPROVE</button></td>
+                        <td style="font-weight:bold;">${d.username}</td>
+                        <td style="color:var(--green)">Rp ${d.nominal.toLocaleString()}</td>
+                        <td><button onclick="approveDepo('${d.id}', '${d.username}', ${d.nominal})" style="background:var(--green); border:none; font-size:9px; padding:5px 8px; border-radius:4px; font-weight:bold; color:#000; cursor:pointer;">APPROVE</button></td>
                     </tr>
                 `;
             });
@@ -150,99 +161,111 @@
             container.innerHTML = '';
 
             users.forEach(u => {
-                const isOnline = (new Date() - new Date(u.last_active)) < 60000; // Aktif dalam 1 menit terakhir
+                // Anggap online jika aktif dalam 2 menit terakhir
+                const lastActive = new Date(u.last_active);
+                const isOnline = (new Date() - lastActive) < 120000; 
+
                 const div = document.createElement('div');
                 div.className = 'user-box';
                 div.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                         <div>
                             <span class="username">${u.username.toUpperCase()}</span>
                             <span class="${isOnline ? 'status-online' : 'status-offline'}">${isOnline ? 'ONLINE' : 'OFFLINE'}</span>
-                            <div style="font-size:9px; color:#666;">Tier: ${u.tier || 'MEMBER'}</div>
+                            <div style="font-size:10px; color:#777; margin-top:4px;">
+                                <i class="fas fa-university"></i> ${u.bank_name || '-'} | ${u.rekening || '-'}
+                            </div>
                         </div>
                         <div style="text-align:right">
-                            <div class="balance-val">IDR ${u.saldo.toLocaleString()}</div>
-                            <div style="font-size:10px; color:var(--yellow)">WR: ${u.winrate}% | Limit: ${u.max_win_limit || 0}</div>
+                            <div class="balance-val">Rp ${u.saldo.toLocaleString('id-ID')}</div>
+                            <div style="font-size:10px; color:var(--yellow); font-weight:bold; margin-top:4px;">
+                                WR: ${u.winrate}% | Limit: ${u.max_win_limit.toLocaleString()}
+                            </div>
                         </div>
                     </div>
                     <div class="controls">
                         <select class="select-wr" onchange="updateWinrate('${u.username}', this.value)">
-                            <option value="">-- GANTI WINRATE --</option>
-                            <option value="5">5% (KURAS TOTAL)</option>
-                            <option value="25">25% (KETAT)</option>
-                            <option value="50">50% (NORMAL)</option>
-                            <option value="80">80% (GACOR)</option>
-                            <option value="100">100% (JP PASTI)</option>
+                            <option value="">-- SETEL WINRATE INDIVIDU --</option>
+                            <option value="1" ${u.winrate == 1 ? 'selected' : ''}>1% (ZONK TOTAL)</option>
+                            <option value="20" ${u.winrate == 20 ? 'selected' : ''}>20% (SULIT)</option>
+                            <option value="50" ${u.winrate == 50 ? 'selected' : ''}>50% (NORMAL)</option>
+                            <option value="80" ${u.winrate == 80 ? 'selected' : ''}>80% (GACOR)</option>
+                            <option value="100" ${u.winrate == 100 ? 'selected' : ''}>100% (JP PASTI)</option>
                         </select>
-                        <button class="btn-action" onclick="openAdjust('${u.username}', 'saldo')"><i class="fas fa-coins"></i> INJECT SALDO</button>
-                        <button class="btn-action" onclick="openAdjust('${u.username}', 'limit')"><i class="fas fa-shield"></i> SET MAXWIN</button>
+                        <button class="btn-action" onclick="openAdjust('${u.username}', 'saldo')"><i class="fas fa-coins"></i> EDIT SALDO</button>
+                        <button class="btn-action" onclick="openAdjust('${u.username}', 'limit')"><i class="fas fa-shield-alt"></i> SET LIMIT</button>
                     </div>
                 `;
                 container.appendChild(div);
             });
         }
 
-        // --- ACTIONS ---
+        // --- CORE ACTIONS ---
 
         async function approveDepo(depoId, username, amount) {
-            if(!confirm(`Approve IDR ${amount.toLocaleString()} untuk ${username}?`)) return;
+            if(!confirm(`Konfirmasi penambahan saldo Rp ${amount.toLocaleString()} untuk ${username}?`)) return;
 
-            // 1. Update status deposit
+            // 1. Update status deposit jadi BERHASIL
             await _supabase.from('deposits').update({ status: 'BERHASIL' }).eq('id', depoId);
             
-            // 2. Tambah saldo user (Menggunakan RPC agar aman)
+            // 2. Gunakan RPC admin_add_saldo yang sudah kita buat di Database
             const { error } = await _supabase.rpc('admin_add_saldo', { 
                 target_user: username, 
                 amount_to_add: amount 
             });
 
             if(!error) {
-                showToast("DEPOSIT APPROVED ✅");
+                showToast("DEPOSIT BERHASIL DI-APPROVE ✅");
                 fetchAllData();
+            } else {
+                alert("Gagal update saldo: " + error.message);
             }
         }
 
         async function updateWinrate(username, newRate) {
+            if(!newRate) return;
             const { error } = await _supabase
                 .from('profiles')
                 .update({ winrate: parseInt(newRate) })
                 .eq('username', username);
             
-            if(!error) showToast(`WR ${username} -> ${newRate}%`);
+            if(!error) showToast(`${username} Winrate -> ${newRate}%`);
         }
 
         async function globalPanic(rate) {
-            const label = rate < 20 ? "AKTIF" : "NORMAL";
-            if(!confirm(`Set SEMUA User ke WR ${rate}%?`)) return;
+            if(!confirm(`PERINGATAN: Ubah Winrate SEMUA pemain ke ${rate}%?`)) return;
 
             const { error } = await _supabase
                 .from('profiles')
-                .update({ winrate: rate })
-                .not('username', 'eq', 'admin'); // Jangan ubah admin
+                .update({ winrate: rate });
 
             if(!error) {
-                document.getElementById('panic-status').innerText = `SYSTEM STATUS: ${label} (${rate}%)`;
-                showToast("GLOBAL WR UPDATED");
+                document.getElementById('panic-status').innerText = `SYSTEM STATUS: ${rate < 20 ? 'DRAIN MODE' : 'NORMAL'} (${rate}%)`;
+                showToast("GLOBAL WINRATE UPDATED ⚡");
                 fetchAllData();
             }
         }
 
-        // --- UI & MODALS ---
-
         function openAdjust(username, type) {
-            document.getElementById('modal-title').innerText = `ADJUST ${type.toUpperCase()}: ${username}`;
+            document.getElementById('modal-title').innerText = `SET ${type.toUpperCase()}: ${username}`;
             document.getElementById('overlay').style.display = 'block';
             document.getElementById('modal').style.display = 'block';
+            document.getElementById('modal-input').value = "";
             
             document.getElementById('modal-confirm').onclick = async () => {
                 const val = parseInt(document.getElementById('modal-input').value);
+                if(isNaN(val)) return alert("Masukkan angka yang valid!");
+
                 if(type === 'saldo') {
-                    await _supabase.rpc('admin_set_saldo', { target_user: username, new_amount: val });
+                    // Update saldo langsung
+                    await _supabase.from('profiles').update({ saldo: val }).eq('username', username);
                 } else {
+                    // Update max win limit
                     await _supabase.from('profiles').update({ max_win_limit: val }).eq('username', username);
                 }
+                
                 closeModal();
-                showToast("UPDATE SUCCESS");
+                showToast("DATA BERHASIL DIPERBARUI");
                 fetchAllData();
             };
         }
@@ -260,12 +283,12 @@
         }
 
         setInterval(() => { 
-            document.getElementById('clock').innerText = new Date().toLocaleString(); 
+            document.getElementById('clock').innerText = new Date().toLocaleString('id-ID'); 
         }, 1000);
 
         window.onload = () => {
             fetchAllData();
-            setInterval(fetchAllData, 5000); // Auto sync per 5 detik
+            setInterval(fetchAllData, 7000); // Sinkronisasi otomatis setiap 7 detik
         };
     </script>
 </body>
