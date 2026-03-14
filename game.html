@@ -29,15 +29,16 @@ body{
 
 .header{padding:12px 15px;display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.4);border-bottom:1px solid rgba(0,85,255,0.2);}
 .balance-box{flex:1;margin:0 15px;background:rgba(0,0,0,0.5);border:1px solid var(--bp);border-radius:30px;padding:5px 15px;text-align:center;box-shadow:var(--gp);}
-#display-saldo{font-family:'Cinzel Decorative',serif;font-size:16px;font-weight:900;color:#fff;text-shadow:var(--gp);}
+/* ID diganti menjadi game-display-saldo agar tidak konflik dengan global.js saat bola belum mendarat */
+#game-display-saldo{font-family:'Cinzel Decorative',serif;font-size:16px;font-weight:900;color:#fff;text-shadow:var(--gp);}
 
 #board-wrapper{flex:1;position:relative;width:100%;max-height:50vh;overflow:hidden;margin-top:10px;}
 #plinko-canvas{display:block;width:100%;height:100%;}
 
-.multiplier-container{padding:0 10px;margin-bottom:10px;}
-.multiplier-row{display:flex;justify-content:center;position:relative;}
-.slot{height:32px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;border-radius:6px;margin:0 1px;transition:0.3s;}
-.slot.active{transform:translateY(-5px);filter:brightness(1.5);box-shadow:0 0 20px #fff;}
+.multiplier-container{position:relative;height:32px;margin-bottom:10px;width:100%;}
+.multiplier-row{display:flex;position:absolute;height:100%;}
+.slot{height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;border-radius:6px;margin:0 1px;transition:0.1s ease-out;} /* Waktu transisi dipercepat */
+.slot.active{transform:translateY(-3px);filter:brightness(1.8);box-shadow:0 0 15px #fff;}
 .s-high{background:linear-gradient(to bottom, var(--pink), #80003c);color:#fff;}
 .s-mid{background:linear-gradient(to bottom, var(--yellow), #807700);color:#000;}
 .s-low{background:linear-gradient(to bottom, var(--blue), #002266);color:#fff;}
@@ -78,7 +79,7 @@ body{
     </div>
     <div class="balance-box">
         <div style="font-size:8px;color:#aaa">SALDO UTAMA</div>
-        <div id="display-saldo">IDR 0</div>
+        <div id="game-display-saldo">IDR 0</div>
     </div>
     <div style="width:40px"></div>
 </div>
@@ -113,8 +114,8 @@ body{
 <script src="global.js"></script>
 <script>
 /**
- * NEON PLINKO VIP - PHYSICS REFINED v7.0
- * Fokus pada alignment bola, pasak, dan slot multiplier.
+ * NEON PLINKO VIP - PHYSICS REFINED v8.0
+ * Fokus pada alignment presisi mutlak dan pencegahan saldo glitch.
  */
 
 const ROWS = 9;
@@ -164,7 +165,7 @@ function setupCanvas() {
         }
     }
 
-    // Penyesuaian Slot agar presisi di bawah celah pasak
+    // Penyesuaian Slot agar presisi 100% di bawah celah pasak
     const slotRow = document.getElementById('slot-row');
     slotRow.innerHTML = '';
     const firstPegX = lastRowPegs[0];
@@ -172,16 +173,19 @@ function setupCanvas() {
     const totalSlotWidth = lastPegX - firstPegX;
     const individualSlotWidth = totalSlotWidth / MULTS.length;
 
+    // Posisi absolut sejajar sempurna dengan pasak kanvas
+    slotRow.style.left = firstPegX + 'px';
+    slotRow.style.width = totalSlotWidth + 'px';
+
     MULTS.forEach((m, i) => {
         const s = document.createElement('div');
         s.id = `slot-${i}`;
         s.className = `slot ${m >= 3 ? 's-high' : m >= 1 ? 's-mid' : 's-low'}`;
-        s.style.width = `${individualSlotWidth}px`;
+        s.style.width = `${100 / MULTS.length}%`; // Gunakan persentase agar rapi
         s.textContent = `${m}x`;
         slotRow.appendChild(s);
     });
 
-    // Simpan data lebar slot untuk physics
     window.slotData = {
         startX: firstPegX,
         width: individualSlotWidth
@@ -194,6 +198,8 @@ function spawnBall() {
         showModal("Saldo tidak cukup!", "WARNING");
         stopAuto(); return;
     }
+    
+    // Potong saldo langsung di visual saat bola diluncurkan
     _displaySaldo -= bet;
     updateSaldoDisplay();
 
@@ -204,7 +210,7 @@ function spawnBall() {
     };
     balls.push(ball);
 
-    // Call server
+    // Panggil server
     GameEngine.processPlay(bet).then(res => {
         if (!res || res.result !== 'SUCCESS') {
             ball.isDone = true; _displaySaldo += bet; updateSaldoDisplay(); return;
@@ -212,11 +218,11 @@ function spawnBall() {
         let slots = [];
         MULTS.forEach((m, i) => { if(m === res.multiplier) slots.push(i); });
         ball.targetSlotIdx = slots[Math.floor(Math.random() * slots.length)];
-        ball.winAmount = res.winAmount;
+        ball.winAmount = res.winAmount || 0;
         ball.targetMult = res.multiplier;
         ball.status = 'ready';
         
-        // Cek jika bola sudah "kebelet" land tapi server baru balas
+        // Cek jika bola terlanjur mendarat sebelum server membalas
         let pIdx = _pendingLand.indexOf(ball);
         if(pIdx >= 0) { _pendingLand.splice(pIdx, 1); onBallLand(ball); }
     }).catch(() => { ball.isDone = true; _displaySaldo += bet; updateSaldoDisplay(); });
@@ -232,7 +238,7 @@ function updatePhysics() {
         b.x += b.vx;
         b.y += b.vy;
 
-        // Collision with Pegs
+        // Tumbukan dengan Pasak
         pegs.forEach(p => {
             let dx = b.x - p.x, dy = b.y - p.y;
             let dist = Math.sqrt(dx*dx + dy*dy);
@@ -246,21 +252,25 @@ function updatePhysics() {
             }
         });
 
-        // Smart Steering to Target Slot
+        // Smart Steering (Tarikan Target)
         if (b.status === 'ready' && b.targetSlotIdx !== null) {
             let targetX = window.slotData.startX + (b.targetSlotIdx + 0.5) * window.slotData.width;
             let progY = b.y / BH;
+            
+            // Tarikan mulai bekerja saat bola di bawah setengah kanvas
             if (progY > 0.45) {
                 let diff = targetX - b.x;
-                let pull = progY > ph.lockY ? 0.4 : ph.steer;
+                // Tarikan sangat kuat saat mau masuk lubang agar presisi absolut
+                let pull = progY > 0.85 ? 0.8 : ph.steer;
                 b.vx += diff * pull * 0.15;
             }
         }
 
-        // Bound
+        // Pantulan Dinding
         if (b.x < BALL_R) { b.x = BALL_R; b.vx *= -0.5; }
         if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx *= -0.5; }
 
+        // Mendarat di Kotak
         if (b.y > BH + BALL_R) {
             b.isDone = true;
             if (b.status === 'ready') onBallLand(b);
@@ -271,12 +281,16 @@ function updatePhysics() {
 }
 
 function onBallLand(b) {
+    // Tambah saldo tepat saat mendarat
     _displaySaldo += b.winAmount;
     updateSaldoDisplay();
+    
+    // Kedipan Kotak
     const slotEl = document.getElementById(`slot-${b.targetSlotIdx}`);
     if (slotEl) {
         slotEl.classList.add('active');
-        setTimeout(() => slotEl.classList.remove('active'), 400);
+        // Durasi berkedip dikurangi menjadi 150ms agar lebih cepat/pas
+        setTimeout(() => slotEl.classList.remove('active'), 150);
     }
     if (b.targetMult >= 1) playSound('snd-win', 0.4);
 }
@@ -284,7 +298,7 @@ function onBallLand(b) {
 function draw() {
     ctx.clearRect(0, 0, BW, BH);
 
-    // Draw Pegs
+    // Gambar Pasak
     pegs.forEach(p => {
         ctx.beginPath();
         ctx.arc(p.x, p.y, PEG_R, 0, Math.PI*2);
@@ -297,7 +311,7 @@ function draw() {
         ctx.fill();
     });
 
-    // Draw Balls
+    // Gambar Bola
     balls.forEach(b => {
         ctx.save();
         ctx.shadowBlur = 15;
@@ -363,7 +377,9 @@ function changeBet(d) {
 }
 
 function updateSaldoDisplay() {
-    document.getElementById('display-saldo').textContent = 'IDR ' + Math.floor(_displaySaldo).toLocaleString('id-ID');
+    // Menargetkan ID visual-saldo baru
+    let el = document.getElementById('game-display-saldo');
+    if(el) el.textContent = 'IDR ' + Math.floor(Math.max(0, _displaySaldo)).toLocaleString('id-ID');
 }
 
 function showModal(msg, title) {
@@ -379,8 +395,13 @@ function closeModal() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+    // Sinkronisasi awal dengan session jika ada
+    if(typeof getSaldo === 'function') {
+        _displaySaldo = getSaldo();
+    } else if(typeof _session !== 'undefined' && _session) {
+        _displaySaldo = _session.saldo || 0;
+    }
     setupCanvas();
-    if(typeof _session !== 'undefined') _displaySaldo = _session.saldo;
     updateSaldoDisplay();
     draw();
 });
