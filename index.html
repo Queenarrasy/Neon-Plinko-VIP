@@ -204,24 +204,37 @@
             const ref = document.getElementById('r-ref').value.trim();
 
             if(!u || !p || !ph || !fn || !bk || !rk) return customAlert("Data tidak lengkap!", "error");
-            
-            // VALIDASI PANJANG PASSWORD SESUAI INSTRUKSI MASTER
             if(p.length < 6) return customAlert("Password minimal 6 karakter!", "error");
 
             const loader = document.getElementById('loading');
             loader.style.display = 'flex';
+            
             try {
-                const { data: exist } = await _supabase.from('profiles').select('username').eq('username', u).single();
-                if(exist) throw new Error("Username sudah terpakai!");
+                // 1. CEK USERNAME GANDA
+                const { data: userExist } = await _supabase.from('profiles').select('username').eq('username', u).single();
+                if(userExist) throw new Error("Username sudah terpakai!");
+
+                // 2. CEK NOMOR REKENING GANDA (Anti Multi-Akun)
+                const { data: rekExist } = await _supabase.from('profiles').select('rekening').eq('rekening', rk).single();
+                if(rekExist) throw new Error("Nomor Rekening/E-Wallet sudah terdaftar!");
+
+                // 3. JIKA LOLOS, LANJUT DAFTAR
                 const { error } = await _supabase.from('profiles').insert([{
                     username: u, password: p, nomor_telp: ph, nama_lengkap: fn,
                     bank_name: bk, rekening: rk, referral_kode: ref,
                     saldo: 0, winrate: 50, role: 'MEMBER'
                 }]);
+                
                 if(error) throw error;
+
                 customAlert("Identity Created! Password tersimpan.", "success");
                 setTimeout(() => { switchTab('login'); }, 2000);
-            } catch (err) { customAlert(err.message, "error"); } finally { loader.style.display = 'none'; }
+
+            } catch (err) { 
+                customAlert(err.message, "error"); 
+            } finally { 
+                loader.style.display = 'none'; 
+            }
         }
     </script>
 </body>
