@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>NEON PLINKO VIP - v7.0</title>
+<title>NEON PLINKO VIP - v8.0</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -29,943 +29,409 @@ body{
   padding:25px;text-align:center;width:85%;max-width:320px;
   border:1px solid var(--pink);box-shadow:var(--gp);
 }
-#modal-title{color:var(--pink);font-size:14px;font-weight:bold;margin-bottom:12px;}
-#modal-msg{margin:0 0 15px;font-size:13px;line-height:1.5;white-space:pre-line;}
-.modal-btn{
-  padding:8px 25px;border-radius:20px;border:1px solid var(--pink);
-  color:var(--pink);background:none;font-weight:bold;cursor:pointer;
-  transition:all .2s;
-}
-.modal-btn:hover{background:rgba(255,0,119,.15);}
 
 /* ── HEADER ── */
 .header{
   padding:10px 15px;display:flex;align-items:center;justify-content:space-between;
   background:rgba(0,0,0,0.5);border-bottom:1px solid rgba(0,85,255,0.25);
-  flex-shrink:0;
 }
 .balance-box{
   flex:1;margin:0 12px;background:rgba(0,0,0,0.6);
   border:1px solid var(--pink);border-radius:30px;
-  padding:4px 14px;text-align:center;position:relative;overflow:hidden;
+  padding:4px 14px;text-align:center;box-shadow:var(--gp);
 }
-.balance-box::before{
-  content:'';position:absolute;inset:0;
-  background:linear-gradient(90deg,transparent,rgba(255,0,119,.06),transparent);
-  animation:shimmer 3s infinite;
-}
-@keyframes shimmer{0%{transform:translateX(-100%);}100%{transform:translateX(100%);}}
 #game-display-saldo{
-  font-family:'Cinzel Decorative',serif;font-size:15px;font-weight:900;
-  color:#fff;transition:color .3s;
+  font-family:'Cinzel Decorative',serif;font-size:15px;font-weight:900;color:#fff;
 }
-#game-display-saldo.flash-win{color:var(--green);text-shadow:var(--gg);}
-#game-display-saldo.flash-lose{color:#ff4444;}
 
-/* ── CANVAS BOARD ── */
-#board-wrapper{
-  flex:1;position:relative;width:100%;
-  min-height:0;overflow:hidden;margin-top:8px;
-}
+/* ── CANVAS ── */
+#board-wrapper{flex:1;position:relative;width:100%;overflow:hidden;margin-top:8px;}
 #plinko-canvas{display:block;width:100%;height:100%;}
 
-/* ── MULTIPLIER SLOTS ── */
-.multiplier-container{
-  position:relative;height:32px;margin:0 0 8px;width:100%;flex-shrink:0;
-}
-.multiplier-row{display:flex;position:absolute;height:100%;top:0;}
+/* ── SLOTS ── */
+.multiplier-container{position:relative;height:32px;margin:0 0 8px;width:100%;}
+.multiplier-row{display:flex;position:absolute;height:100%;top:0;justify-content:center;}
 .slot{
   height:100%;display:flex;align-items:center;justify-content:center;
   font-size:9px;font-weight:900;border-radius:5px;margin:0 1px;
-  transition:transform .1s;cursor:default;user-select:none;
+  transition:all 0.1s ease;
 }
 .slot.active{
-  transform:scale(1.2) !important;
-  filter:brightness(3);
-  z-index:10;
-  animation:slotPulse .5s ease-out;
+  transform:scale(1.2) translateY(-3px);
+  filter:brightness(2.5);box-shadow:0 0 15px #fff;z-index:10;
 }
-@keyframes slotPulse{
-  0%{transform:scale(1.3);filter:brightness(4);}
-  50%{transform:scale(1.15);filter:brightness(3);}
-  100%{transform:scale(1.2);filter:brightness(3);}
-}
-.s-high{background:linear-gradient(135deg,var(--pink),#80003c);box-shadow:var(--gp);}
-.s-mid{background:linear-gradient(135deg,var(--yellow),#807700);box-shadow:var(--gy);}
-.s-low{background:linear-gradient(135deg,#334,#223);}
+.s-high{background:linear-gradient(var(--pink),#80003c);color:#fff;}
+.s-mid{background:linear-gradient(var(--yellow),#807700);color:#000;}
+.s-low{background:linear-gradient(#334,#223);color:#fff;}
 
 /* ── CONTROLS ── */
 .controls{
   padding:12px 15px;background:rgba(5,7,25,0.95);
-  border-top:1px solid rgba(0,85,255,0.2);
-  display:flex;flex-direction:column;gap:10px;flex-shrink:0;
+  border-top:1px solid rgba(0,85,255,0.2);display:flex;flex-direction:column;gap:10px;
 }
-.mode-row{display:flex;gap:8px;}
+.mode-row{display:flex;gap:5px;}
 .btn-mode{
   flex:1;padding:9px;border-radius:12px;font-size:10px;font-weight:700;
-  border:1px solid #333;background:rgba(255,255,255,0.04);
-  color:#666;cursor:pointer;transition:all .2s;
+  border:1px solid #333;background:rgba(255,255,255,0.04);color:#666;cursor:pointer;
 }
-.btn-mode.active{
-  border-color:var(--blue);color:#fff;
-  box-shadow:var(--gb);background:rgba(0,85,255,0.12);
-}
-.btn-mode:not(.active):active{transform:scale(.97);}
+.btn-mode.active{border-color:var(--blue);color:#fff;box-shadow:var(--gb);background:rgba(0,85,255,0.15);}
+#m-auto.active{border-color:var(--green);color:var(--green);box-shadow:var(--gg);}
 
 .bet-row{
   display:flex;align-items:center;justify-content:space-between;
   background:rgba(0,0,0,0.5);border:1px solid rgba(0,85,255,0.25);
   border-radius:50px;padding:4px 14px;
 }
-.bet-btn{
-  font-size:22px;color:var(--pink);background:none;border:none;
-  cursor:pointer;padding:5px 8px;transition:transform .1s,opacity .2s;
-}
-.bet-btn:active{transform:scale(.85);}
-.bet-btn:disabled{opacity:.25;cursor:not-allowed;}
-#current-bet{
-  font-family:'Cinzel Decorative',serif;font-size:17px;
-  font-weight:900;color:var(--yellow);
-}
+.bet-btn{font-size:22px;color:var(--pink);background:none;border:none;cursor:pointer;}
+#current-bet{font-family:'Cinzel Decorative',serif;font-size:17px;font-weight:900;color:var(--yellow);}
 
 .btn-play{
   width:100%;padding:15px;border-radius:50px;
   font-family:'Cinzel Decorative',serif;font-size:14px;font-weight:900;
   background:linear-gradient(90deg,var(--pink),var(--blue));
-  color:#fff;border:none;cursor:pointer;
-  transition:opacity .2s,transform .1s,box-shadow .2s;
-  box-shadow:0 4px 20px rgba(255,0,119,.35);
-  position:relative;overflow:hidden;
+  color:#fff;border:none;cursor:pointer;box-shadow:var(--gp);
 }
-.btn-play::after{
-  content:'';position:absolute;inset:0;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);
-  transform:translateX(-100%);transition:transform .4s;
-}
-.btn-play:not(:disabled):hover::after{transform:translateX(100%);}
-.btn-play:not(:disabled):active{transform:scale(.98);}
-.btn-play:disabled{opacity:.45;cursor:not-allowed;box-shadow:none;}
+.btn-play.stop-mode{background:var(--yellow);color:#000;box-shadow:var(--gy);}
 
 .nav-bottom{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
 .nav-btn{
-  display:flex;flex-direction:column;align-items:center;gap:3px;
-  padding:9px;border-radius:14px;font-size:9px;font-weight:600;
-  border:1px solid #1a1f35;color:#fff;cursor:pointer;background:rgba(255,255,255,.03);
-  transition:all .2s;
+  display:flex;flex-direction:column;align-items:center;padding:9px;
+  border-radius:14px;font-size:9px;font-weight:600;
+  border:1px solid #1a1f35;color:#fff;background:rgba(255,255,255,.03);
 }
-.nav-btn:active{transform:scale(.95);}
-.nav-btn i{font-size:16px;}
 
-/* ── INFO / TOAST ── */
 #info-box{
-  position:fixed;bottom:110px;left:50%;transform:translateX(-50%);
-  background:rgba(0,0,0,.95);color:#0f0;padding:9px 15px;border-radius:6px;
-  font-size:11px;max-width:90%;text-align:center;z-index:200;
-  display:none;border:1px solid rgba(15,255,0,.4);pointer-events:none;
-}
-
-/* ── WIN BURST ── */
-.win-burst{
-  position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;
-  z-index:500;display:none;
-}
-.confetti-piece{
-  position:absolute;width:8px;height:8px;border-radius:2px;
-  animation:confettiFall 1.2s ease-out forwards;
-}
-@keyframes confettiFall{
-  0%{transform:translateY(-20px) rotate(0deg);opacity:1;}
-  100%{transform:translateY(100vh) rotate(720deg);opacity:0;}
+  position:fixed;bottom:120px;left:50%;transform:translateX(-50%);
+  background:rgba(0,0,0,.9);color:#0f0;padding:6px 12px;border-radius:4px;
+  font-size:10px;z-index:200;display:none;border:1px solid #0f0;
 }
 </style>
 </head>
 <body>
 
-<!-- MODAL -->
 <div id="modal-overlay" onclick="closeModal()"></div>
 <div id="neon-modal">
   <div id="modal-title">INFO</div>
   <div id="modal-msg"></div>
-  <button class="modal-btn" onclick="closeModal()">OK</button>
+  <button style="padding:8px 20px; border-radius:20px; border:1px solid var(--pink); color:var(--pink); background:none;" onclick="closeModal()">OK</button>
 </div>
 
-<!-- WIN BURST OVERLAY -->
-<div class="win-burst" id="win-burst"></div>
-
-<!-- HEADER -->
 <div class="header">
   <div style="text-align:center;min-width:40px;">
-    <i class="fa-solid fa-circle-user" style="color:var(--yellow);font-size:22px;"></i>
-    <span id="display-username" style="color:var(--yellow);font-size:8px;display:block;letter-spacing:.5px;">GUEST</span>
+    <i class="fa-solid fa-circle-user" style="color:var(--yellow);font-size:20px;"></i>
+    <span id="display-username" style="color:var(--yellow);font-size:8px;display:block;">GUEST</span>
   </div>
   <div class="balance-box">
-    <div style="font-size:7px;color:#888;letter-spacing:1px;text-transform:uppercase;">Saldo Utama</div>
     <div id="game-display-saldo">IDR 0</div>
   </div>
-  <div onclick="doLogout()" style="width:40px;text-align:center;cursor:pointer;font-size:18px;color:var(--pink);">
-    <i class="fa-solid fa-sign-out-alt"></i>
-  </div>
+  <div onclick="location.reload()" style="width:40px;text-align:center;color:var(--pink);"><i class="fa-solid fa-rotate"></i></div>
 </div>
 
-<!-- CANVAS -->
 <div id="board-wrapper">
   <canvas id="plinko-canvas"></canvas>
 </div>
 
-<!-- SLOT ROW -->
 <div class="multiplier-container">
   <div class="multiplier-row" id="slot-row"></div>
 </div>
 
-<!-- CONTROLS -->
 <div class="controls">
   <div class="mode-row">
-    <button class="btn-mode active" id="m-normal" onclick="setSpeed('normal')">
-      <i class="fa-solid fa-gauge"></i> NORMAL
-    </button>
-    <button class="btn-mode" id="m-turbo" onclick="setSpeed('turbo')">
-      <i class="fa-solid fa-bolt"></i> TURBO
-    </button>
+    <button class="btn-mode active" id="m-normal" onclick="setSpeed('normal')">NORMAL</button>
+    <button class="btn-mode" id="m-turbo" onclick="setSpeed('turbo')">TURBO</button>
+    <button class="btn-mode" id="m-auto" onclick="toggleAuto()">AUTO: OFF</button>
   </div>
   <div class="bet-row">
-    <button class="bet-btn" onclick="changeBet(-1)" id="bet-minus">
-      <i class="fa-solid fa-circle-minus"></i>
-    </button>
-    <div id="current-bet">IDR 400</div>
-    <button class="bet-btn" onclick="changeBet(1)" id="bet-plus">
-      <i class="fa-solid fa-circle-plus"></i>
-    </button>
+    <button class="bet-btn" onclick="changeBet(-1)"><i class="fa-solid fa-circle-minus"></i></button>
+    <div id="current-bet">400</div>
+    <button class="bet-btn" onclick="changeBet(1)" style="color:var(--blue)"><i class="fa-solid fa-circle-plus"></i></button>
   </div>
-  <button class="btn-play" id="main-btn" onclick="handlePlay()">
-    <i class="fa-solid fa-circle-play"></i> PLAY BALL
-  </button>
+  <button class="btn-play" id="main-btn" onclick="handlePlay()">PLAY BALL</button>
   <div class="nav-bottom">
-    <button class="nav-btn" style="color:var(--yellow);" onclick="navTo('withdraw.html')">
-      <i class="fa-solid fa-money-bill-transfer"></i><span>WITHDRAW</span>
-    </button>
-    <button class="nav-btn" style="color:var(--pink);" onclick="navTo('deposit.html')">
-      <i class="fa-solid fa-wallet"></i><span>DEPOSIT</span>
-    </button>
-    <button class="nav-btn" style="color:var(--blue);" onclick="navTo('reward.html')">
-      <i class="fa-solid fa-gift"></i><span>REWARD</span>
-    </button>
+    <div class="nav-btn" style="color:var(--yellow);" onclick="location.href='withdraw.html'"><i class="fa-solid fa-money-bill-transfer"></i><span>WD</span></div>
+    <div class="nav-btn" style="color:var(--pink);" onclick="location.href='deposit.html'"><i class="fa-solid fa-wallet"></i><span>DEP</span></div>
+    <div class="nav-btn" style="color:var(--blue);" onclick="location.href='reward.html'"><i class="fa-solid fa-gift"></i><span>GIFT</span></div>
   </div>
 </div>
 
 <div id="info-box"></div>
 
-<!-- global.js HARUS di-load duluan -->
 <script src="global.js"></script>
 <script>
 /**
- * ════════════════════════════════════════════════════════════════
- * NEON PLINKO VIP — v7.0 COMPLETE FIX
- *
- * PERBAIKAN v7.0:
- * [1] syncSaldoUI di-override → game-display-saldo selalu update
- * [2] Saldo flash animasi saat win/lose
- * [3] Ball snapping tepat ke slot saat landing
- * [4] findExactSlot: symmetric slot dipilih random (lebih natural)
- * [5] Web Audio API: suara untuk SEMUA aksi (no external files)
- * [6] Slot flash lebih terang + border glow
- * [7] Auto-sync saldo dari server setiap 8 detik
- * [8] ProfileAPI.sync() saat init → dapat winrate & maxwin terbaru
- * [9] Confetti burst untuk big win (3x / 10x)
- * [10] Semua API terhubung penuh dengan global.js & Code.gs
- * ════════════════════════════════════════════════════════════════
+ * NEON PLINKO VIP v8.0 - FINAL STABLE
  */
 
-// ════════════════════════════════════════════════════════════════
-// [1] OVERRIDE syncSaldoUI — tambah game-display-saldo
-// ════════════════════════════════════════════════════════════════
-(function() {
-    var _orig = (typeof syncSaldoUI === 'function') ? syncSaldoUI : function(){};
-    window.syncSaldoUI = function(nominal) {
-        _orig(nominal);
-        var val = Math.max(0, parseFloat(nominal) || 0);
-        var el = document.getElementById('game-display-saldo');
-        if (!el) return;
-        el.textContent = new Intl.NumberFormat('id-ID', {
-            style: 'currency', currency: 'IDR', maximumFractionDigits: 0
-        }).format(val);
-    };
-})();
-
-// ════════════════════════════════════════════════════════════════
-// WEB AUDIO ENGINE — tidak butuh file audio eksternal
-// ════════════════════════════════════════════════════════════════
-var _audioCtx = null;
-
-function _getACtx() {
-    if (!_audioCtx) {
-        try {
-            _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        } catch(e) { return null; }
-    }
-    if (_audioCtx.state === 'suspended') _audioCtx.resume();
-    return _audioCtx;
-}
-
-/**
- * _tone(freq, dur, vol, type, freqEnd, delay)
- * Nada sederhana menggunakan OscillatorNode
- */
-function _tone(freq, dur, vol, type, freqEnd, delay) {
-    try {
-        var ctx = _getACtx(); if (!ctx) return;
-        delay = delay || 0;
-        var osc  = ctx.createOscillator();
-        var gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.type = type || 'sine';
-        osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
-        if (freqEnd) {
-            osc.frequency.exponentialRampToValueAtTime(
-                Math.max(10, freqEnd),
-                ctx.currentTime + delay + dur
-            );
-        }
-        gain.gain.setValueAtTime(0, ctx.currentTime + delay);
-        gain.gain.linearRampToValueAtTime(vol || 0.12, ctx.currentTime + delay + 0.01);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + dur);
-        osc.start(ctx.currentTime + delay);
-        osc.stop(ctx.currentTime + delay + dur + 0.02);
-    } catch(e) {}
-}
-
-// Kumpulan suara spesifik
-var SFX = {
-    btnClick:   function() { _tone(700, 0.06, 0.15, 'square'); },
-    betChange:  function() { _tone(500, 0.07, 0.1, 'sine'); },
-    launch:     function() {
-        _tone(300, 0.08, 0.12, 'sawtooth', 600);
-        _tone(900, 0.05, 0.06, 'sine', 400, 0.05);
-    },
-    pegHit:     function() { _tone(1400, 0.03, 0.05, 'square', 700); },
-    winSmall:   function() {  // 1.5x
-        _tone(660, 0.12, 0.15, 'sine', 880);
-    },
-    winMid:     function() {  // 3x
-        _tone(440, 0.1, 0.18, 'sine');
-        _tone(550, 0.1, 0.18, 'sine', null, 0.1);
-        _tone(660, 0.15, 0.2, 'sine', null, 0.2);
-    },
-    winBig:     function() {  // 10x
-        [261,329,392,523,659,784].forEach(function(f, i) {
-            _tone(f, 0.22, 0.22, 'sine', f * 1.05, i * 0.07);
-        });
-    },
-    lose:       function() {
-        _tone(400, 0.07, 0.1, 'sawtooth', 250);
-        _tone(250, 0.12, 0.08, 'sawtooth', 150, 0.07);
-    },
-    modeSwitch: function() {
-        _tone(400, 0.06, 0.1, 'square');
-        _tone(600, 0.06, 0.1, 'square', null, 0.08);
-    },
-    navClick:   function() { _tone(350, 0.07, 0.1, 'sine', 250); },
-    error:      function() {
-        _tone(300, 0.1, 0.15, 'sawtooth', 200);
-        _tone(200, 0.1, 0.12, 'sawtooth', 150, 0.12);
-    }
-};
-
-// ════════════════════════════════════════════════════════════════
-// GAME CONFIG
-// ════════════════════════════════════════════════════════════════
-var CONFIG = {
+const CONFIG = {
     ROWS: 9,
-    BALL_R: 6,
-    PEG_R: 3.5,
-    LAND_Y_RATIO: 0.91,
-
-    BETS: [400,600,800,1000,1200,1400,1600,1800,2000,4000,6000,8000,10000],
-    DEFAULT_BET_IDX: 0,
-
-    // Simetris — pasangan: 0↔9=10x, 1↔8=3x, 2↔7=1.5x, 3↔6=0.5x, 4↔5=0.2x
+    BETS: [400, 800, 1000, 2000, 5000, 10000, 20000],
     MULTS: [10, 3, 1.5, 0.5, 0.2, 0.2, 0.5, 1.5, 3, 10],
-
     PHYSICS: {
-        normal: { grav: 0.24, bounce: 0.44, friction: 0.992 },
-        turbo:  { grav: 0.50, bounce: 0.42, friction: 0.985 }
-    },
-
-    SYNC_INTERVAL: 8000   // auto-sync saldo tiap 8 detik
+        normal: { grav: 0.28, bounce: 0.45, friction: 0.99, steer: 0.15 },
+        turbo:  { grav: 0.55, bounce: 0.42, friction: 0.98, steer: 0.25 }
+    }
 };
 
-// ════════════════════════════════════════════════════════════════
-// STATE
-// ════════════════════════════════════════════════════════════════
-var G = {
-    canvas: null, ctx: null,
-    BW: 0, BH: 0,
+let G = {
+    canvas: null, ctx: null, BW: 0, BH: 0,
     pegs: [], balls: [], floaters: [],
-    speed: 'normal',
-    betIdx: CONFIG.DEFAULT_BET_IDX,
-    busy: false,           // true saat 1 bola sedang jalan
-    slotStartX: 0,
-    slotItemW: 0,
-    raf: null
+    speed: 'normal', isAuto: false, autoTimer: null,
+    betIdx: 0, busy: false,
+    slotX: 0, slotW: 0
 };
 
-// ════════════════════════════════════════════════════════════════
-// CANVAS SETUP
-// ════════════════════════════════════════════════════════════════
 function setupCanvas() {
     G.canvas = document.getElementById('plinko-canvas');
-    G.ctx    = G.canvas.getContext('2d');
-    var wrap = document.getElementById('board-wrapper');
+    G.ctx = G.canvas.getContext('2d');
+    const wrap = document.getElementById('board-wrapper');
     G.BW = wrap.offsetWidth;
     G.BH = wrap.offsetHeight;
 
-    var dpr = window.devicePixelRatio || 1;
-    G.canvas.width  = G.BW * dpr;
-    G.canvas.height = G.BH * dpr;
-    G.canvas.style.width  = G.BW + 'px';
-    G.canvas.style.height = G.BH + 'px';
+    const dpr = window.devicePixelRatio || 1;
+    G.canvas.width = G.BW * dpr; G.canvas.height = G.BH * dpr;
     G.ctx.scale(dpr, dpr);
 
-    // Build pegs
+    // Build Pegs
     G.pegs = [];
-    var spY = (G.BH - 50) / CONFIG.ROWS;
-    var spX = G.BW / (CONFIG.ROWS + 2.5);
-    var lastRow = [];
+    const spY = (G.BH - 40) / CONFIG.ROWS;
+    const spX = G.BW / (CONFIG.ROWS + 2.5);
+    let lastRowX = [];
 
-    for (var r = 0; r < CONFIG.ROWS; r++) {
-        var cnt    = r + 3;
-        var startX = (G.BW - (cnt - 1) * spX) / 2;
-        for (var c = 0; c < cnt; c++) {
-            var px = startX + c * spX;
-            var py = 32 + r * spY;
+    for (let r = 0; r < CONFIG.ROWS; r++) {
+        let cnt = r + 3;
+        let startX = (G.BW - (cnt - 1) * spX) / 2;
+        for (let c = 0; c < cnt; c++) {
+            let px = startX + c * spX;
+            let py = 35 + r * spY;
             G.pegs.push({ x: px, y: py, glow: 0 });
-            if (r === CONFIG.ROWS - 1) lastRow.push(px);
+            if (r === CONFIG.ROWS - 1) lastRowX.push(px);
         }
     }
 
-    // Slot geometry
-    G.slotStartX = lastRow[0];
-    var slotEndX = lastRow[lastRow.length - 1];
-    var totalW   = slotEndX - G.slotStartX;
-    G.slotItemW  = totalW / CONFIG.MULTS.length;
-
-    // Build slot DOM
-    var slotRow = document.getElementById('slot-row');
-    slotRow.innerHTML = '';
-    slotRow.style.left  = G.slotStartX + 'px';
-    slotRow.style.width = totalW + 'px';
-
-    CONFIG.MULTS.forEach(function(m, i) {
-        var s = document.createElement('div');
-        s.id = 'slot-' + i;
-        s.className = 'slot ' + (m >= 3 ? 's-high' : m >= 1 ? 's-mid' : 's-low');
-        s.style.width = (100 / CONFIG.MULTS.length) + '%';
-        s.textContent = m + 'x';
-        slotRow.appendChild(s);
+    // Align Slot DOM dengan Pegs Akhir
+    G.slotX = lastRowX[0];
+    G.slotW = (lastRowX[lastRowX.length - 1] - G.slotX) / CONFIG.MULTS.length;
+    
+    const sRow = document.getElementById('slot-row');
+    sRow.style.left = G.slotX + "px";
+    sRow.style.width = (lastRowX[lastRowX.length - 1] - G.slotX) + "px";
+    sRow.innerHTML = '';
+    CONFIG.MULTS.forEach((m, i) => {
+        const s = document.createElement('div');
+        s.id = `slot-${i}`;
+        s.className = `slot ${m >= 3 ? 's-high' : m >= 1 ? 's-mid' : 's-low'}`;
+        s.style.width = `${100 / CONFIG.MULTS.length}%`;
+        s.innerHTML = `<span>${m}x</span>`;
+        sRow.appendChild(s);
     });
 }
 
-// Pusat slot ke-i di koordinat canvas
-function slotCenterX(i) {
-    return G.slotStartX + (i + 0.5) * G.slotItemW;
+// Menemukan slot yang tepat berdasarkan multiplier server
+function findSlotIdx(mult) {
+    let targets = [];
+    CONFIG.MULTS.forEach((m, i) => { if(Math.abs(m - mult) < 0.1) targets.push(i); });
+    return targets.length > 0 ? targets[Math.floor(Math.random() * targets.length)] : 4;
 }
 
-// ════════════════════════════════════════════════════════════════
-// [4] FIND EXACT SLOT — random untuk slot simetris
-// ════════════════════════════════════════════════════════════════
-function findExactSlot(mult) {
-    mult = parseFloat(mult) || 0.2;
-
-    // Kumpulkan semua slot yang cocok
-    var matches = [];
-    CONFIG.MULTS.forEach(function(m, i) {
-        if (Math.abs(m - mult) < 0.05) matches.push(i);
-    });
-
-    if (matches.length > 0) {
-        // Pilih random di antara yang cocok → natural look
-        return matches[Math.floor(Math.random() * matches.length)];
-    }
-
-    // Fallback: slot terdekat
-    var best = { idx: 0, diff: 9999 };
-    CONFIG.MULTS.forEach(function(m, i) {
-        var d = Math.abs(m - mult);
-        if (d < best.diff) { best.idx = i; best.diff = d; }
-    });
-    return best.idx;
-}
-
-// ════════════════════════════════════════════════════════════════
-// GAME PLAY
-// ════════════════════════════════════════════════════════════════
 async function handlePlay() {
-    // Aktifkan AudioContext di gesture user
-    _getACtx();
+    if (G.busy && !G.isAuto) return;
+    
+    const bet = CONFIG.BETS[G.betIdx];
+    const saldo = typeof getSaldo === 'function' ? getSaldo() : 0;
 
-    if (G.busy) {
-        showInfo('⏳ Tunggu bola selesai...');
-        return;
+    if (saldo < bet) {
+        showModal("Saldo tidak cukup!", "WARNING");
+        stopAuto(); return;
     }
 
-    var bet  = CONFIG.BETS[G.betIdx];
-    var sald = (typeof getSaldo === 'function') ? getSaldo() : 0;
-
-    if (sald < bet) {
-        SFX.error();
-        showModal('Saldo Anda: ' + _fmt(sald) + '\nDibutuhkan: ' + _fmt(bet), 'SALDO KURANG');
-        return;
-    }
-
-    // Mulai
+    // Visual start
     G.busy = true;
-    _setBtnState(false);
-    SFX.launch();
-    showInfo('⏳ Memproses...');
+    updateSaldoUI(saldo - bet);
 
-    // Buat bola (status 'falling' = biru, nanti → 'ready' = merah setelah dapat slot)
-    var ball = {
-        x: G.BW / 2 + (Math.random() - 0.5) * 18,
-        y: -14,
-        vx: (Math.random() - 0.5) * 1.8,
-        vy: 2.2,
-        bet: bet,
-        status: 'falling',
-        targetSlotIdx: null,
-        targetMult: null,
-        winAmount: 0,
-        landed: false,
-        isDone: false,
-        ts: Date.now()
+    const ball = {
+        x: G.BW / 2 + (Math.random() - 0.5) * 10,
+        y: -10, vx: 0, vy: 2,
+        status: 'wait', targetIdx: null, isDone: false, bet: bet
     };
     G.balls.push(ball);
 
-    // Panggil server
     try {
-        var res = await _playWithRetry(bet);
-
-        if (!res || res.result !== 'SUCCESS') {
-            SFX.error();
-            var msg = (res && res.message) ? res.message : 'Transaksi gagal. Coba lagi.';
-            showModal(msg, 'ERROR');
-            _killBall(ball);
-            return;
+        const res = await GameEngine.processPlay(bet);
+        if (res && res.result === 'SUCCESS') {
+            ball.targetIdx = findSlotIdx(res.multiplier);
+            ball.winAmount = res.winAmount;
+            ball.mult = res.multiplier;
+            ball.status = 'ready';
+        } else {
+            ball.isDone = true;
+            updateSaldoUI(getSaldo());
         }
-
-        // Multiplier dari server (winrate & maxwin dikontrol Code.gs)
-        var mult    = parseFloat(res.multiplier) || 0.2;
-        var slotIdx = findExactSlot(mult);
-
-        ball.targetSlotIdx = slotIdx;
-        ball.targetMult    = mult;
-        ball.winAmount     = res.winAmount || 0;
-        ball.status        = 'ready';  // warna → merah, mulai steer
-
-        // Update saldo di UI segera
-        if (res.newSaldo !== undefined) {
-            syncSaldoUI(res.newSaldo);
-            _flashSaldo(mult >= 1);
-        }
-
-        hideInfo();
-
-    } catch(err) {
-        SFX.error();
-        showModal('Error: ' + (err.message || err), 'ERROR');
-        _killBall(ball);
-    }
+    } catch(e) { ball.isDone = true; }
 }
 
-// Retry wrapper (3 kali, timeout 10s)
-async function _playWithRetry(bet) {
-    for (var i = 0; i < 3; i++) {
-        try {
-            var raceResult = await Promise.race([
-                GameEngine.processPlay(bet),
-                new Promise(function(_, rej) {
-                    setTimeout(function() { rej(new Error('Timeout')); }, 10000);
-                })
-            ]);
-            if (raceResult && raceResult.result === 'SUCCESS') return raceResult;
-        } catch(err) {
-            if (i === 2) throw err;
-            await _sleep(600);
-        }
-    }
-    return null;
-}
-
-function _killBall(ball) {
-    ball.isDone = true;
-    G.busy = false;
-    _setBtnState(true);
-    hideInfo();
-}
-
-// ════════════════════════════════════════════════════════════════
-// PHYSICS UPDATE
-// ════════════════════════════════════════════════════════════════
 function updatePhysics() {
-    var ph    = CONFIG.PHYSICS[G.speed];
-    var LANDY = G.BH * CONFIG.LAND_Y_RATIO;
-
-    for (var bi = G.balls.length - 1; bi >= 0; bi--) {
-        var b = G.balls[bi];
-
-        if (b.isDone) { G.balls.splice(bi, 1); continue; }
-
-        var progY = b.y / G.BH;
-
-        // ── Steering ke target slot ──
-        if (b.status === 'ready') {
-            var tx   = slotCenterX(b.targetSlotIdx);
-            var diff = tx - b.x;
-
-            if (progY > 0.86) {
-                // Hard lock zone — snap kuat
-                var lockF = progY > 0.94 ? 0.80 : progY > 0.90 ? 0.65 : 0.50;
-                b.x  += diff * lockF;
-                b.vx  = diff * (lockF * 0.4);
-            } else if (progY > 0.45) {
-                // Steering zone — dorong pelan-pelan
-                var prog = (progY - 0.45) / (0.86 - 0.45);
-                b.vx += diff * 0.12 * prog;
-                var maxV = Math.abs(diff) * 0.35 + 1.5;
-                b.vx = Math.max(-maxV, Math.min(maxV, b.vx));
-            }
-        }
-
-        // [3] Snap tepat ke slot center saat landing
-        if (!b.landed && b.y >= LANDY && b.status === 'ready') {
-            b.x      = slotCenterX(b.targetSlotIdx); // posisi tepat!
-            b.landed = true;
-            onBallLand(b);
-            b.isDone = true;
-            continue;
-        }
-
-        // Timeout fallback
-        if (Date.now() - b.ts > 22000) {
-            b.x      = b.targetSlotIdx !== null ? slotCenterX(b.targetSlotIdx) : b.x;
-            b.landed = true;
-            if (b.status === 'ready') onBallLand(b);
-            else _killBall(b);
-            b.isDone = true;
-            continue;
-        }
-
-        // Gravitasi & gesekan
+    const ph = CONFIG.PHYSICS[G.speed];
+    G.balls.forEach(b => {
+        if (b.isDone) return;
         b.vy += ph.grav;
-        b.vx *= ph.friction;
-        b.x  += b.vx;
-        b.y  += b.vy;
+        b.x += b.vx; b.y += b.vy;
 
-        // Pantulan peg
-        for (var pi = 0; pi < G.pegs.length; pi++) {
-            var p  = G.pegs[pi];
-            var dx = b.x - p.x;
-            var dy = b.y - p.y;
-            var d2 = dx * dx + dy * dy;
-            var minD = CONFIG.BALL_R + CONFIG.PEG_R;
-            if (d2 < minD * minD) {
-                var ang  = Math.atan2(dy, dx);
-                var spd  = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
-                b.vx = Math.cos(ang) * spd * ph.bounce + (Math.random() - 0.5) * 0.25;
-                b.vy = Math.abs(Math.sin(ang) * spd * ph.bounce) + 0.4;
-                b.x  = p.x + Math.cos(ang) * (minD + 1);
-                b.y  = p.y + Math.sin(ang) * (minD + 1);
+        // Collision Pegs
+        G.pegs.forEach(p => {
+            let dx = b.x - p.x, dy = b.y - p.y;
+            let dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < 10) {
+                let ang = Math.atan2(dy, dx);
+                let s = Math.sqrt(b.vx*b.vx + b.vy*b.vy);
+                b.vx = Math.cos(ang) * s * ph.bounce + (Math.random()-0.5)*0.5;
+                b.vy = Math.abs(Math.sin(ang) * s * ph.bounce) + 0.5;
                 p.glow = 1.0;
-                SFX.pegHit();
-                break;
             }
+        });
+
+        // Snapping Logic (Kunci Masuk Kotak)
+        if (b.status === 'ready' && b.y > G.BH * 0.5) {
+            let tx = G.slotX + (b.targetIdx + 0.5) * G.slotW;
+            let diff = tx - b.x;
+            b.vx += diff * ph.steer * (b.y / G.BH);
         }
 
-        // Batas kiri/kanan
-        if (b.x < CONFIG.BALL_R)      { b.x = CONFIG.BALL_R;           b.vx =  Math.abs(b.vx) * 0.5; }
-        if (b.x > G.BW - CONFIG.BALL_R) { b.x = G.BW - CONFIG.BALL_R; b.vx = -Math.abs(b.vx) * 0.5; }
-    }
+        // Landing
+        if (b.y > G.BH - 5) {
+            b.isDone = true;
+            if (b.status === 'ready') onBallLand(b);
+        }
+    });
+    G.balls = G.balls.filter(b => !b.isDone);
 }
 
-// ════════════════════════════════════════════════════════════════
-// ON BALL LAND
-// ════════════════════════════════════════════════════════════════
 function onBallLand(b) {
-    var mult = b.targetMult || 0.2;
-    var idx  = b.targetSlotIdx;
+    // Sync Saldo ke Server & UI
+    if(typeof syncSaldoUI === 'function') syncSaldoUI(getSaldo());
 
-    // [6] Flash slot — tepat, terang
-    var slotEl = document.getElementById('slot-' + idx);
-    if (slotEl) {
-        slotEl.classList.add('active');
-        setTimeout(function() { slotEl.classList.remove('active'); }, 600);
+    // Animasi Slot
+    const el = document.getElementById(`slot-${b.targetIdx}`);
+    if (el) {
+        el.classList.add('active');
+        setTimeout(() => el.classList.remove('active'), 300);
     }
 
-    // Suara sesuai multiplier
-    if      (mult >= 10) SFX.winBig();
-    else if (mult >= 3)  SFX.winMid();
-    else if (mult >= 1)  SFX.winSmall();
-    else                 SFX.lose();
-
-    // [9] Confetti untuk big win
-    if (mult >= 3) _confettiBurst(idx);
-
-    // Floating teks
-    var netWin = (b.winAmount || 0) - (b.bet || 0);
-    var sign   = netWin >= 0 ? '+' : '';
-    var fc     = mult >= 3 ? '#ff0077' : mult >= 1 ? '#f5e642' : '#4466cc';
+    // Floating Score (Tidak Ganggu Layar)
+    let color = b.mult >= 3 ? '#ff0077' : (b.mult >= 1 ? '#f5e642' : '#0055ff');
     G.floaters.push({
-        x: slotCenterX(idx) + (Math.random() - 0.5) * 12,
-        y: G.BH * CONFIG.LAND_Y_RATIO - 8,
-        text: sign + _fmt(netWin),
-        color: fc,
-        opacity: 1,
-        velY: 1.1 + Math.random() * 0.5,
-        size: mult >= 3 ? 18 : 13
+        x: G.slotX + (b.targetIdx + 0.5) * G.slotW,
+        y: G.BH - 20,
+        txt: b.mult + "x",
+        color: color,
+        op: 1.0
     });
 
-    // Re-enable tombol
-    setTimeout(function() {
-        G.busy = false;
-        _setBtnState(true);
-        hideInfo();
-    }, 120);
+    G.busy = false;
 }
 
-// ════════════════════════════════════════════════════════════════
-// RENDER LOOP
-// ════════════════════════════════════════════════════════════════
 function draw() {
     G.ctx.clearRect(0, 0, G.BW, G.BH);
 
-    // Pegs
-    G.pegs.forEach(function(p) {
+    // Draw Pegs
+    G.pegs.forEach(p => {
         G.ctx.beginPath();
-        G.ctx.arc(p.x, p.y, CONFIG.PEG_R, 0, Math.PI * 2);
-        if (p.glow > 0) {
-            G.ctx.shadowBlur  = 10 * p.glow;
-            G.ctx.shadowColor = '#fff';
-            G.ctx.fillStyle   = 'rgba(255,255,255,' + (0.3 + p.glow * 0.7) + ')';
-            p.glow -= 0.09;
-            if (p.glow < 0) p.glow = 0;
-        } else {
-            G.ctx.shadowBlur = 0;
-            G.ctx.fillStyle  = '#1a2042';
-        }
+        G.ctx.arc(p.x, p.y, 3, 0, Math.PI*2);
+        G.ctx.fillStyle = p.glow > 0 ? `rgba(255,255,255,${p.glow})` : '#333b5a';
+        if(p.glow > 0) { G.ctx.shadowBlur = 10; G.ctx.shadowColor = "#fff"; p.glow -= 0.05; }
+        else G.ctx.shadowBlur = 0;
         G.ctx.fill();
     });
 
-    // Balls
-    G.balls.forEach(function(b) {
-        G.ctx.save();
-        G.ctx.shadowBlur  = 16;
-        G.ctx.shadowColor = b.status === 'ready' ? '#ff0077' : '#0055ff';
-        var grad = G.ctx.createRadialGradient(b.x - 2, b.y - 2, 1, b.x, b.y, CONFIG.BALL_R);
-        if (b.status === 'ready') {
-            grad.addColorStop(0, '#ffccee');
-            grad.addColorStop(0.5, '#ff0077');
-            grad.addColorStop(1, '#44001c');
-        } else {
-            grad.addColorStop(0, '#ccddff');
-            grad.addColorStop(0.5, '#0055ff');
-            grad.addColorStop(1, '#00003a');
-        }
+    // Draw Balls
+    G.balls.forEach(b => {
         G.ctx.beginPath();
-        G.ctx.arc(b.x, b.y, CONFIG.BALL_R, 0, Math.PI * 2);
-        G.ctx.fillStyle = grad;
+        G.ctx.arc(b.x, b.y, 6, 0, Math.PI*2);
+        G.ctx.fillStyle = b.status === 'ready' ? '#ff0077' : '#0055ff';
+        G.ctx.shadowBlur = 15; G.ctx.shadowColor = G.ctx.fillStyle;
         G.ctx.fill();
-        G.ctx.restore();
     });
 
-    // Floating scores
-    for (var fi = G.floaters.length - 1; fi >= 0; fi--) {
-        var f = G.floaters[fi];
-        f.y       -= f.velY;
-        f.opacity -= 0.016;
-        if (f.opacity <= 0) { G.floaters.splice(fi, 1); continue; }
-        G.ctx.save();
-        G.ctx.globalAlpha = f.opacity;
-        G.ctx.font        = '900 ' + f.size + "px 'Outfit',sans-serif";
-        G.ctx.fillStyle   = f.color;
-        G.ctx.textAlign   = 'center';
-        G.ctx.shadowBlur  = 6;
-        G.ctx.shadowColor = 'rgba(0,0,0,0.9)';
-        G.ctx.fillText(f.text, f.x, f.y);
-        G.ctx.restore();
-    }
+    // Draw Floaters
+    G.floaters.forEach((f, i) => {
+        f.y -= 1; f.op -= 0.02;
+        G.ctx.globalAlpha = f.op;
+        G.ctx.font = "bold 12px Outfit";
+        G.ctx.fillStyle = f.color;
+        G.ctx.textAlign = "center";
+        G.ctx.fillText(f.txt, f.x, f.y);
+        if(f.op <= 0) G.floaters.splice(i, 1);
+    });
+    G.ctx.globalAlpha = 1.0;
 
     updatePhysics();
-    G.raf = requestAnimationFrame(draw);
+    requestAnimationFrame(draw);
 }
 
-// ════════════════════════════════════════════════════════════════
-// CONTROLS
-// ════════════════════════════════════════════════════════════════
-function setSpeed(m) {
-    if (G.busy) return;
-    G.speed = m;
-    document.getElementById('m-normal').classList.toggle('active', m === 'normal');
-    document.getElementById('m-turbo').classList.toggle('active', m === 'turbo');
-    SFX.modeSwitch();
+// --- Mode & Auto Functions ---
+function setSpeed(s) {
+    G.speed = s;
+    document.getElementById('m-normal').classList.toggle('active', s === 'normal');
+    document.getElementById('m-turbo').classList.toggle('active', s === 'turbo');
+}
+
+function toggleAuto() {
+    G.isAuto = !G.isAuto;
+    const btn = document.getElementById('m-auto');
+    const mainBtn = document.getElementById('main-btn');
+    if (G.isAuto) {
+        btn.classList.add('active'); btn.textContent = "AUTO: ON";
+        mainBtn.textContent = "STOP AUTO"; mainBtn.classList.add('stop-mode');
+        autoCycle();
+    } else {
+        stopAuto();
+    }
+}
+
+function autoCycle() {
+    if (!G.isAuto) return;
+    handlePlay();
+    let delay = G.speed === 'turbo' ? 600 : 1200;
+    G.autoTimer = setTimeout(autoCycle, delay);
+}
+
+function stopAuto() {
+    G.isAuto = false; clearTimeout(G.autoTimer);
+    document.getElementById('m-auto').classList.remove('active');
+    document.getElementById('m-auto').textContent = "AUTO: OFF";
+    document.getElementById('main-btn').textContent = "PLAY BALL";
+    document.getElementById('main-btn').classList.remove('stop-mode');
 }
 
 function changeBet(d) {
-    if (G.busy) return;
-    SFX.betChange();
+    if(G.isAuto) return;
     G.betIdx = Math.max(0, Math.min(CONFIG.BETS.length - 1, G.betIdx + d));
-    document.getElementById('current-bet').textContent = _fmt(CONFIG.BETS[G.betIdx]);
-    document.getElementById('bet-minus').disabled = (G.betIdx === 0);
-    document.getElementById('bet-plus').disabled  = (G.betIdx === CONFIG.BETS.length - 1);
+    document.getElementById('current-bet').textContent = CONFIG.BETS[G.betIdx].toLocaleString();
 }
 
-function _setBtnState(enabled) {
-    var btn = document.getElementById('main-btn');
-    btn.disabled = !enabled;
+function updateSaldoUI(val) {
+    const el = document.getElementById('game-display-saldo');
+    if(el) el.textContent = "IDR " + Math.floor(val).toLocaleString('id-ID');
 }
 
-// ════════════════════════════════════════════════════════════════
-// UI HELPERS
-// ════════════════════════════════════════════════════════════════
-function showModal(msg, title) {
-    document.getElementById('modal-title').textContent = title || 'INFO';
-    document.getElementById('modal-msg').textContent   = msg;
+function showModal(m, t) {
+    document.getElementById('modal-title').textContent = t;
+    document.getElementById('modal-msg').textContent = m;
     document.getElementById('modal-overlay').style.display = 'block';
-    document.getElementById('neon-modal').style.display    = 'block';
+    document.getElementById('neon-modal').style.display = 'block';
 }
+
 function closeModal() {
     document.getElementById('modal-overlay').style.display = 'none';
-    document.getElementById('neon-modal').style.display    = 'none';
+    document.getElementById('neon-modal').style.display = 'none';
 }
 
-function showInfo(msg) {
-    var el = document.getElementById('info-box');
-    el.textContent = msg;
-    el.style.display = 'block';
-}
-function hideInfo() {
-    document.getElementById('info-box').style.display = 'none';
-}
-
-function _flashSaldo(isWin) {
-    var el = document.getElementById('game-display-saldo');
-    if (!el) return;
-    var cls = isWin ? 'flash-win' : 'flash-lose';
-    el.classList.add(cls);
-    setTimeout(function() { el.classList.remove(cls); }, 800);
-}
-
-function _confettiBurst(slotIdx) {
-    var burst   = document.getElementById('win-burst');
-    burst.innerHTML = '';
-    burst.style.display = 'block';
-    var cx = slotCenterX(slotIdx);
-    var cy = G.BH * CONFIG.LAND_Y_RATIO;
-    var colors = ['#ff0077','#f5e642','#0055ff','#00ff88','#ff8800','#cc00ff'];
-    for (var i = 0; i < 28; i++) {
-        var piece = document.createElement('div');
-        piece.className = 'confetti-piece';
-        piece.style.left    = cx + (Math.random() - 0.5) * 120 + 'px';
-        piece.style.top     = cy + 'px';
-        piece.style.background = colors[i % colors.length];
-        piece.style.animationDelay    = (Math.random() * 0.3) + 's';
-        piece.style.animationDuration = (0.8 + Math.random() * 0.6) + 's';
-        burst.appendChild(piece);
-    }
-    setTimeout(function() {
-        burst.style.display = 'none';
-        burst.innerHTML = '';
-    }, 1800);
-}
-
-function doLogout() {
-    SFX.btnClick();
-    if (confirm('Keluar dari game?')) {
-        if (typeof AuthAPI !== 'undefined' && AuthAPI.logout) {
-            AuthAPI.logout();
-        } else {
-            window.location.replace('login.html');
-        }
-    }
-}
-
-function navTo(url) {
-    SFX.navClick();
-    setTimeout(function() { window.location.href = url; }, 120);
-}
-
-function _fmt(num) {
-    return new Intl.NumberFormat('id-ID', {
-        style: 'currency', currency: 'IDR', maximumFractionDigits: 0
-    }).format(num || 0);
-}
-
-function _sleep(ms) {
-    return new Promise(function(res) { setTimeout(res, ms); });
-}
-
-// ════════════════════════════════════════════════════════════════
-// AUTO-SYNC SALDO DARI SERVER
-// ════════════════════════════════════════════════════════════════
-async function _autoSyncSaldo() {
-    try {
-        var u = (typeof getUsername === 'function') ? getUsername() : null;
-        if (!u) return;
-        if (typeof callApiSilent !== 'function') return;
-        var data = await callApiSilent('get_saldo', { username: u });
-        if (data && data.result === 'SUCCESS' && data.saldo !== undefined) {
-            syncSaldoUI(data.saldo);
-        }
-    } catch(e) {}
-}
-
-// ════════════════════════════════════════════════════════════════
-// INIT
-// ════════════════════════════════════════════════════════════════
-window.addEventListener('DOMContentLoaded', async function() {
-    // Cek login
-    if (typeof requireLogin === 'function') {
-        if (!requireLogin('login.html')) return;
-    }
-
+window.onload = () => {
     setupCanvas();
-
-    // Tampilkan username
-    if (typeof getUsername === 'function') {
-        var u = getUsername();
-        if (u) {
-            document.getElementById('display-username').textContent =
-                u.substring(0, 12).toUpperCase();
-        }
-    }
-
-    // Saldo dari cache session
-    if (typeof getSaldo === 'function') {
-        syncSaldoUI(getSaldo());
-    }
-
-    // Sync profil terbaru dari server
-    // → winrate & maxWinLimit dikontrol admin di Code.gs, tidak perlu disimpan di frontend
-    if (typeof ProfileAPI !== 'undefined') {
-        ProfileAPI.sync().catch(function(){});
-    }
-
-    // Bet awal
-    document.getElementById('current-bet').textContent = _fmt(CONFIG.BETS[G.betIdx]);
-    document.getElementById('bet-minus').disabled = true;
-
-    // Auto-sync saldo periodik
-    setInterval(_autoSyncSaldo, CONFIG.SYNC_INTERVAL);
-
-    // Mulai render loop
+    if(typeof getSaldo === 'function') updateSaldoUI(getSaldo());
+    if(typeof getUsername === 'function') document.getElementById('display-username').textContent = getUsername().toUpperCase();
     draw();
-});
-
-window.addEventListener('resize', function() {
-    setupCanvas();
-});
-
-// Unlock AudioContext di gesture pertama
-document.addEventListener('touchstart', function() { _getACtx(); }, { once: true });
-document.addEventListener('click',      function() { _getACtx(); }, { once: true });
+};
+window.onresize = setupCanvas;
 </script>
 </body>
 </html>
