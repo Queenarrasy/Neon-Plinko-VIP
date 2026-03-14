@@ -30,26 +30,24 @@
         .saldo-card{background:var(--card); border:1px solid var(--pink); border-radius:20px; padding:20px; text-align:center; box-shadow:var(--gp);}
         .saldo-val{font-family:'Cinzel Decorative',serif; font-size:24px; font-weight:900; color:var(--yellow); text-shadow: 0 0 10px rgba(245,230,66,0.5);}
 
-        /* Form Styling */
+        /* Form */
         .form-section{background:var(--card); border-radius:20px; padding:18px; border:1px solid var(--blue); box-shadow:var(--gb);}
         .sec-title{font-family:'Cinzel Decorative',serif; font-size:10px; font-weight:700; letter-spacing:1px; margin-bottom:14px; color:var(--blue);}
         .flbl{font-size:9px; font-weight:600; text-transform:uppercase; color:rgba(255,255,255,0.4); margin-bottom:6px; display:block;}
         input{width:100%; padding:13px 15px; background:rgba(0,0,0,.4); border:1px solid rgba(0,85,255,.22); border-radius:12px; color:#fff; outline:none; font-size:14px; margin-bottom:12px;}
-        input[readonly]{opacity:0.5; cursor:not-allowed;}
+        input[readonly]{opacity:0.6; cursor:not-allowed; border-color: rgba(255,255,255,0.1);}
 
-        /* Quick Amount Grid */
         .amt-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:14px;}
         .amt-item{padding:10px; border:1px solid var(--blue); border-radius:10px; text-align:center; font-size:11px; font-weight:700; color:var(--blue); cursor:pointer;}
-        .amt-item:active{background:rgba(0,85,255,0.15);}
 
         .btn-main{width:100%; padding:15px; border-radius:50px; cursor:pointer; font-weight:700; text-transform:uppercase; border:none; background:linear-gradient(90deg,var(--pink),#b400dc); color:#fff; box-shadow:var(--gp);}
         .btn-main:disabled{opacity:0.5; cursor:not-allowed;}
 
         /* History */
         #wd-history{display:flex; flex-direction:column; gap:10px;}
-        .history-item{background:rgba(255,255,255,0.02); padding:12px; border-radius:12px; border-left:4px solid var(--pink); border-right:1px solid rgba(255,0,119,0.1);}
+        .history-item{background:rgba(255,255,255,0.02); padding:12px; border-radius:12px; border-left:4px solid var(--pink);}
         
-        /* Modal */
+        /* Modal - Senada dengan Deposit */
         #modal-overlay{display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:1000;}
         #neon-modal{display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#0a0b1e; border:2px solid var(--pink); border-radius:20px; padding:25px; text-align:center; z-index:1001; width:85%;}
     </style>
@@ -76,16 +74,16 @@
     </div>
 
     <div class="form-section">
-        <div class="sec-title">FORMULIR WITHDRAW</div>
+        <div class="sec-title">TUJUAN PENARIKAN</div>
         
-        <label class="flbl">Nama Rekening</label>
-        <input type="text" id="wd-name" readonly>
+        <label class="flbl">Nama di Rekening</label>
+        <input type="text" id="wd-name" readonly placeholder="Memuat...">
 
         <label class="flbl">Nomor Rekening / E-Wallet</label>
-        <input type="text" id="wd-rek" readonly>
+        <input type="text" id="wd-rek" readonly placeholder="Memuat...">
 
-        <label class="flbl">Metode</label>
-        <input type="text" id="wd-method" readonly>
+        <label class="flbl">Bank / E-Wallet</label>
+        <input type="text" id="wd-method" readonly placeholder="Memuat...">
 
         <label class="flbl">Nominal Penarikan (IDR)</label>
         <input type="number" id="input-amount-wd" placeholder="Min. 50.000">
@@ -99,30 +97,40 @@
         <button class="btn-main" id="btn-wd" onclick="prosesWithdraw()">AJUKAN PENARIKAN</button>
     </div>
 
-    <div style="font-family:'Cinzel Decorative'; font-size:10px; color:var(--pink); margin-top:10px;">RIWAYAT TERAKHIR</div>
+    <div class="sec-title" style="margin-top:10px; color:var(--pink)">RIWAYAT WITHDRAW</div>
     <div id="wd-history"></div>
 </div>
 
 <script>
     let _saldoUser = 0;
 
+    // FUNGSI UTAMA: Ambil data dari tabel PROFILES
     async function initPage() {
         const user = localStorage.getItem('user_neon');
         if(!user) { location.href='index.html'; return; }
 
-        // Ambil Data Profil & Saldo dari Supabase
-        const { data, error } = await _supabase
-            .from('users')
-            .select('*')
-            .eq('username', user)
-            .single();
+        try {
+            // Master pastikan nama tabelnya 'profiles'
+            const { data, error } = await _supabase
+                .from('profiles') 
+                .select('*')
+                .eq('username', user)
+                .single();
 
-        if (data) {
-            _saldoUser = data.saldo;
-            document.getElementById('display-saldo-wd').innerText = "IDR " + _saldoUser.toLocaleString('id-ID');
-            document.getElementById('wd-name').value = data.nama_lengkap || '-';
-            document.getElementById('wd-rek').value = data.nomor_rekening || '-';
-            document.getElementById('wd-method').value = data.bank || '-';
+            if (error) throw error;
+
+            if (data) {
+                _saldoUser = data.saldo || 0;
+                document.getElementById('display-saldo-wd').innerText = "IDR " + _saldoUser.toLocaleString('id-ID');
+                
+                // Isi data otomatis
+                document.getElementById('wd-name').value = data.nama_lengkap || 'Belum diatur';
+                document.getElementById('wd-rek').value = data.nomor_rekening || 'Belum diatur';
+                document.getElementById('wd-method').value = data.bank || 'Belum diatur';
+            }
+        } catch (err) {
+            console.error("Gagal load profil:", err.message);
+            showModal("Error", "Gagal memuat profil. Pastikan data di Setting sudah diisi.");
         }
         loadWdHistory();
     }
@@ -135,13 +143,13 @@
         const btn = document.getElementById('btn-wd');
 
         if (!amt || amt < 50000) return showModal("Ditolak", "Minimal penarikan adalah Rp 50.000");
-        if (amt > _saldoUser) return showModal("Saldo Kurang", "Saldo Anda tidak mencukupi.");
+        if (amt > _saldoUser) return showModal("Saldo Kurang", "Saldo Anda tidak mencukupi untuk penarikan ini.");
 
         btn.disabled = true;
-        btn.innerText = "MEMPROSES...";
+        btn.innerText = "MENGIRIM...";
 
         try {
-            // 1. Catat Transaksi Withdraw
+            // 1. Masukkan ke tabel withdrawals
             const { error: errWd } = await _supabase
                 .from('withdrawals')
                 .insert([{
@@ -152,16 +160,17 @@
 
             if (errWd) throw errWd;
 
-            // 2. Potong Saldo User
+            // 2. Potong saldo di tabel profiles
             const { error: errUpdate } = await _supabase
-                .from('users')
+                .from('profiles')
                 .update({ saldo: _saldoUser - amt })
                 .eq('username', user);
 
             if (errUpdate) throw errUpdate;
 
-            showModal("Berhasil", "Permintaan penarikan dikirim. Saldo telah dipotong otomatis.");
-            initPage(); // Refresh data
+            showModal("Sukses", "Permintaan withdraw berhasil diajukan dan saldo telah dipotong.");
+            document.getElementById('input-amount-wd').value = "";
+            initPage(); // Refresh tampilan saldo
         } catch (err) {
             showModal("Gagal", err.message);
         } finally {
@@ -190,7 +199,7 @@
                     <div style="font-size:9px; opacity:0.4;">${new Date(i.created_at).toLocaleString('id-ID')}</div>
                 </div>
             `).join('');
-            document.getElementById('wd-history').innerHTML = html || '<div style="text-align:center; opacity:0.3;">Belum ada riwayat</div>';
+            document.getElementById('wd-history').innerHTML = html || '<div style="text-align:center; opacity:0.3; padding:20px;">Belum ada riwayat</div>';
         }
     }
 
