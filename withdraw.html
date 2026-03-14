@@ -1,379 +1,174 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>WITHDRAW - NEON PLINKO VIP</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<style>
-:root{
-  --pink:#ff0077;--blue:#0055ff;--yellow:#f5e642;--green:#26a17b;--bg:#02030d;
-  --card:rgba(255,255,255,.025);
-  --gp:0 0 8px rgba(255,0,119,.5),0 0 22px rgba(255,0,119,.15);
-  --gb:0 0 8px rgba(0,85,255,.5),0 0 22px rgba(0,85,255,.15);
-  --gy:0 0 8px rgba(245,230,66,.5),0 0 22px rgba(245,230,66,.13);
-  --bp:rgba(255,0,119,.32);--bb:rgba(0,85,255,.32);--by:rgba(245,230,66,.32);
-}
-*{box-sizing:border-box;margin:0;padding:0;}
-body{
-  background:var(--bg);
-  background-image:radial-gradient(ellipse 70% 50% at 10% 5%,rgba(0,55,255,.06) 0%,transparent 70%),
-    radial-gradient(ellipse 50% 40% at 90% 95%,rgba(255,0,119,.05) 0%,transparent 70%);
-  color:#dde0f0;font-family:'Outfit',sans-serif;min-height:100vh;overflow-x:hidden;
-}
-body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
-  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.018) 3px,rgba(0,0,0,.018) 4px);}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+    <title>WITHDRAW - NEON PLINKO VIP</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --pink: #ff0077; --blue: #0055ff; --yellow: #f5e642; --bg: #02030d;
+            --card: rgba(255, 255, 255, .025);
+            --gp: 0 0 8px rgba(255, 0, 119, .5), 0 0 22px rgba(255, 0, 119, .15);
+            --gb: 0 0 8px rgba(0, 85, 255, .5), 0 0 22px rgba(0, 85, 255, .15);
+        }
+        body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; margin: 0; padding: 20px; }
+        .container { max-width: 500px; margin: auto; }
+        h2 { font-family: 'Cinzel Decorative'; text-align: center; color: var(--pink); text-shadow: var(--gp); }
+        
+        .profile-info { background: var(--card); border: 1px solid rgba(0, 212, 255, 0.2); padding: 15px; border-radius: 12px; margin-bottom: 20px; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9em; }
+        .label { opacity: 0.6; }
+        .value { color: var(--blue); font-weight: 600; }
 
-.header{position:sticky;top:0;z-index:200;padding:13px 18px;background:rgba(2,3,13,.93);
-  border-bottom:1px solid var(--bb);backdrop-filter:blur(18px);
-  display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 20px rgba(0,85,255,.1);}
-.btn-back{color:rgba(255,255,255,.6);font-size:15px;text-decoration:none;
-  width:32px;height:32px;border:1px solid var(--bb);border-radius:50%;
-  display:flex;align-items:center;justify-content:center;transition:.3s;}
-.btn-back:hover{color:#fff;border-color:var(--blue);box-shadow:var(--gb);}
-.header-title{font-family:'Cinzel Decorative',serif;font-size:11px;font-weight:700;letter-spacing:2px;
-  background:linear-gradient(90deg,var(--pink),#dd66ff 40%,var(--yellow));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+        .form-group { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
+        label { display: block; margin-bottom: 10px; font-weight: 600; color: var(--yellow); }
+        input { width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--blue); color: #fff; border-radius: 6px; box-sizing: border-box; font-size: 1.1em; }
+        
+        .btn-withdraw { width: 100%; padding: 15px; background: var(--blue); border: none; color: #fff; font-weight: 700; border-radius: 8px; cursor: pointer; box-shadow: var(--gb); transition: 0.3s; }
+        .btn-withdraw:disabled { background: #333; box-shadow: none; cursor: not-allowed; }
 
-#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(5px);z-index:9998;}
-#neon-modal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-  background:linear-gradient(160deg,#07091d,#0b0d24);border-radius:22px;z-index:9999;
-  padding:28px 24px;text-align:center;min-width:280px;max-width:320px;width:88%;
-  border:1px solid var(--bp);box-shadow:var(--gp);animation:mpop .3s cubic-bezier(.34,1.56,.64,1) both;}
-@keyframes mpop{from{opacity:0;transform:translate(-50%,-50%) scale(.7)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
-#modal-title{font-family:'Cinzel Decorative',serif;font-size:11px;font-weight:700;color:var(--yellow);margin-bottom:8px;}
-#modal-msg{font-size:12px;color:rgba(220,220,240,.65);line-height:1.7;white-space:pre-line;}
-.modal-btn{margin-top:16px;padding:9px 26px;border-radius:50px;cursor:pointer;
-  font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;
-  background:transparent;border:1px solid var(--by);color:var(--yellow);transition:.25s;}
-.modal-btn:hover{background:rgba(245,230,66,.1);}
-
-.container{padding:16px;max-width:520px;margin:auto;position:relative;z-index:1;display:flex;flex-direction:column;gap:14px;}
-
-.sec-lbl{display:flex;align-items:center;gap:8px;font-size:9px;font-weight:600;letter-spacing:2px;
-  text-transform:uppercase;opacity:.45;}
-.sec-lbl::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,currentColor,transparent);opacity:.4;}
-
-/* SALDO */
-.saldo-card{
-  background:linear-gradient(135deg,#08021e 0%,#110636 55%,#09021c 100%);
-  border:1px solid var(--bp);border-radius:20px;padding:20px;text-align:center;
-  box-shadow:var(--gp);animation:fadeUp .35s ease both;
-}
-.saldo-lbl{font-size:9px;font-weight:600;letter-spacing:2px;color:rgba(255,255,255,.4);margin-bottom:8px;}
-.saldo-val{font-family:'Cinzel Decorative',serif;font-size:24px;font-weight:900;
-  color:var(--yellow);text-shadow:var(--gy);}
-
-/* FORM CARD */
-.form-card{background:var(--card);border:1px solid var(--bb);border-radius:20px;
-  padding:18px;box-shadow:var(--gb);animation:fadeUp .4s ease both .05s;}
-.flbl{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;
-  color:rgba(255,255,255,.4);display:block;margin-bottom:6px;margin-top:14px;}
-.flbl:first-child{margin-top:0;}
-input[type=text],input[type=number]{
-  width:100%;padding:13px 15px;background:rgba(0,0,0,.4);
-  border:1px solid rgba(0,85,255,.22);border-radius:12px;color:#fff;
-  font-family:'Outfit',sans-serif;font-size:13px;outline:none;transition:.3s;
-}
-input[readonly]{opacity:.55;border-color:rgba(255,255,255,.08)!important;}
-input:focus:not([readonly]){border-color:var(--bp);box-shadow:var(--gp);}
-input::placeholder{color:rgba(255,255,255,.2);font-weight:300;}
-
-/* QUICK AMOUNTS */
-.amt-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px;margin-bottom:14px;}
-.amt-chip{padding:10px 4px;border-radius:10px;text-align:center;
-  font-size:11px;font-weight:600;cursor:pointer;transition:.2s;
-  border:1px solid var(--bb);color:#7799ff;background:rgba(0,85,255,.04);}
-.amt-chip:hover{background:rgba(0,85,255,.16);box-shadow:var(--gb);transform:scale(1.05);}
-
-.btn-submit{width:100%;padding:15px;margin-top:16px;border-radius:50px;cursor:pointer;
-  background:linear-gradient(90deg,rgba(255,0,119,.7),rgba(0,85,255,.6));
-  border:1px solid var(--by);color:#fff;font-family:'Outfit',sans-serif;
-  font-size:13px;font-weight:700;letter-spacing:1px;transition:.3s;
-  box-shadow:var(--gp);text-transform:uppercase;}
-.btn-submit:hover{transform:translateY(-2px);box-shadow:0 0 28px rgba(255,0,119,.45);}
-
-/* HISTORY */
-.history-card{background:var(--card);border:1px solid var(--by);border-radius:20px;
-  padding:18px;box-shadow:var(--gy);animation:fadeUp .45s ease both .1s;}
-.history-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
-.history-head-title{font-family:'Cinzel Decorative',serif;font-size:10px;font-weight:700;
-  letter-spacing:1px;color:rgba(255,255,255,.8);}
-#wd-history{display:flex;flex-direction:column;gap:10px;max-height:380px;overflow-y:auto;padding-right:2px;}
-#wd-history::-webkit-scrollbar{width:3px;}
-#wd-history::-webkit-scrollbar-thumb{background:rgba(245,230,66,.3);border-radius:10px;}
-
-.history-item{border-radius:14px;padding:14px;position:relative;
-  background:linear-gradient(135deg,#0d0025 0%,#160030 55%,#0a001c 100%);
-  border:2px solid var(--pink);
-  box-shadow:0 0 14px rgba(255,0,119,.4),inset 0 0 20px rgba(255,0,119,.05);
-  transition:transform .2s;}
-.history-item:hover{transform:translateY(-2px);}
-.history-item.latest{animation:blinkPink 1.3s ease-in-out infinite;}
-@keyframes blinkPink{
-  0%,100%{border-color:var(--pink);box-shadow:0 0 14px rgba(255,0,119,.4),inset 0 0 20px rgba(255,0,119,.05);}
-  50%{border-color:#ff88cc;box-shadow:0 0 30px rgba(255,0,119,.9),0 0 55px rgba(255,0,119,.3),inset 0 0 35px rgba(255,0,119,.12);}
-}
-.badge-new{position:absolute;top:0;right:10px;font-size:7.5px;font-weight:800;letter-spacing:1.5px;
-  background:linear-gradient(90deg,var(--pink),#ff44aa);color:#fff;
-  padding:3px 10px;border-radius:0 0 8px 8px;box-shadow:0 0 10px rgba(255,0,119,.7);}
-.hist-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
-.hist-label{font-family:'Cinzel Decorative',serif;font-size:9px;font-weight:700;
-  letter-spacing:1px;color:rgba(255,130,170,.85);}
-.hist-amount{font-size:20px;font-weight:800;color:var(--yellow);
-  text-shadow:0 0 10px rgba(245,230,66,.5);margin-bottom:7px;}
-.hist-time{font-size:9.5px;font-weight:300;color:rgba(255,255,255,.3);display:flex;align-items:center;gap:5px;}
-.status-badge{font-size:8.5px;font-weight:800;padding:4px 10px;border-radius:50px;letter-spacing:.8px;flex-shrink:0;}
-.status-proses{background:rgba(245,230,66,.15);color:var(--yellow);border:1px solid var(--by);
-  box-shadow:0 0 8px rgba(245,230,66,.3);animation:blinkSt 1.4s ease infinite;}
-.status-sukses{background:rgba(0,220,100,.15);color:#00ff77;border:1px solid rgba(0,220,100,.4);box-shadow:0 0 8px rgba(0,220,100,.35);}
-.status-gagal{background:rgba(255,60,60,.15);color:#ff6666;border:1px solid rgba(255,60,60,.4);}
-@keyframes blinkSt{0%,100%{opacity:1;}50%{opacity:.3;}}
-.hist-loading,.hist-empty{text-align:center;padding:24px;font-size:11px;color:rgba(255,255,255,.3);}
-.btn-retry{margin-top:8px;padding:7px 18px;border-radius:20px;border:1px solid var(--by);
-  background:transparent;color:var(--yellow);cursor:pointer;font-size:10px;font-family:'Outfit',sans-serif;}
-
-.footer-note{font-size:9.5px;color:rgba(255,255,255,.18);text-align:center;line-height:1.9;padding-bottom:20px;}
-@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-</style>
+        .history-section { margin-top: 30px; }
+        .history-item { background: var(--card); padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 3px solid var(--pink); }
+        .status-proses { color: var(--yellow); font-weight: bold; }
+        .status-berhasil { color: #00ff88; font-weight: bold; }
+        .status-gagal { color: #ff4444; font-weight: bold; }
+    </style>
 </head>
 <body>
 
-<div id="modal-overlay" onclick="closeModal()"></div>
-<div id="neon-modal">
-  <div id="modal-title">INFO</div>
-  <div id="modal-msg"></div>
-  <button class="modal-btn" onclick="closeModal()">Oke, Mengerti</button>
-</div>
-
-<div class="header">
-  <a href="game.html" class="btn-back"><i class="fa-solid fa-chevron-left"></i></a>
-  <div class="header-title">Penarikan Dana</div>
-  <div style="width:32px;"></div>
-</div>
-
 <div class="container">
+    <h2>WITHDRAW</h2>
 
-  <div class="saldo-card">
-    <div class="saldo-lbl">Saldo Dapat Ditarik</div>
-    <div class="saldo-val" id="wd-balance">IDR 0</div>
-  </div>
-
-  <div class="sec-lbl" style="color:var(--blue)"><i class="fa-solid fa-building-columns"></i> Data Rekening</div>
-
-  <div class="form-card">
-    <label class="flbl">Nama Lengkap</label>
-    <input type="text" id="wd-account-name" readonly placeholder="Memuat...">
-
-    <label class="flbl">Nomor Rekening</label>
-    <input type="text" id="wd-account-num" readonly placeholder="Memuat...">
-
-    <label class="flbl">Bank / E-Wallet</label>
-    <input type="text" id="wd-method" readonly placeholder="Memuat...">
-
-    <label class="flbl">Nominal Penarikan (IDR)</label>
-    <input type="number" id="wd-amount" placeholder="Min. Rp 50.000">
-
-    <div class="amt-grid">
-      <div class="amt-chip" onclick="setWdAmt(50000)">50 RB</div>
-      <div class="amt-chip" onclick="setWdAmt(100000)">100 RB</div>
-      <div class="amt-chip" onclick="setWdAmt(250000)">250 RB</div>
-      <div class="amt-chip" onclick="setWdAmt(500000)">500 RB</div>
-      <div class="amt-chip" onclick="setWdAmt(1000000)">1 JT</div>
-      <div class="amt-chip" onclick="setWdAmt(2000000)">2 JT</div>
+    <div class="profile-info">
+        <div class="info-row">
+            <span class="label">Nama Lengkap:</span>
+            <span class="value" id="wd-fullname">...</span>
+        </div>
+        <div class="info-row">
+            <span class="label">Bank/E-Wallet:</span>
+            <span class="value" id="wd-bank">...</span>
+        </div>
+        <div class="info-row">
+            <span class="label">Nomor Rekening:</span>
+            <span class="value" id="wd-rekening">...</span>
+        </div>
+        <div class="info-row" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; margin-top: 8px;">
+            <span class="label">Saldo Utama:</span>
+            <span class="value" id="wd-saldo" style="color: var(--yellow);">IDR 0</span>
+        </div>
     </div>
 
-    <button class="btn-submit" onclick="processWithdraw()">
-      <i class="fa-solid fa-paper-plane"></i>&nbsp; Ajukan Penarikan
-    </button>
-  </div>
-
-  <div class="sec-lbl" style="color:var(--yellow)"><i class="fa-solid fa-clock-rotate-left"></i> Riwayat Penarikan</div>
-
-  <div class="history-card">
-    <div class="history-head">
-      <div class="history-head-title">Transaksi Terakhir</div>
-      <span style="font-size:9px;color:rgba(255,255,255,.22)"><i class="fa-solid fa-rotate"></i> update per transaksi</span>
+    <div class="form-group">
+        <label>Nominal Penarikan (Min. 50,000)</label>
+        <input type="number" id="amount-wd" placeholder="Masukkan jumlah...">
+        <p style="font-size: 11px; margin-top: 10px; opacity: 0.6;">*Pastikan saldo Anda mencukupi untuk melakukan penarikan.</p>
     </div>
-    <div id="wd-history">
-      <div class="hist-empty">Belum ada riwayat penarikan.</div>
+
+    <button class="btn-withdraw" id="btn-submit-wd" onclick="handleWithdraw()">AJUKAN PENARIKAN</button>
+
+    <div class="history-section">
+        <h4 style="color: var(--pink); border-bottom: 1px solid var(--pink); padding-bottom: 5px;">RIWAYAT PENARIKAN</h4>
+        <div id="wd-history">
+            </div>
     </div>
-  </div>
-
-  <div class="footer-note">
-    * Minimal penarikan IDR 50.000<br>
-    * Penarikan diproses setelah admin approve<br>
-    * Saldo terpotong otomatis saat pengajuan
-  </div>
-
 </div>
 
-<script src="global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+
 <script>
-const SCRIPT_URL_WD = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
+let userCache = null;
 
-function closeModal(){
-  document.getElementById('neon-modal').style.display='none';
-  document.getElementById('modal-overlay').style.display='none';
-}
-function showWdModal(title, msg, type){
-  const m = document.getElementById('neon-modal');
-  const colorMap = { success:'var(--yellow)', error:'var(--pink)', info:'#7799ff' };
-  const borderMap = { success:'var(--by)', error:'var(--bp)', info:'var(--bb)' };
-  m.style.borderColor = borderMap[type]||borderMap.info;
-  m.style.boxShadow = `0 0 18px ${borderMap[type]||borderMap.info}`;
-  document.getElementById('modal-title').style.color = colorMap[type]||colorMap.info;
-  document.getElementById('modal-title').textContent = title;
-  document.getElementById('modal-msg').textContent = msg;
-  document.getElementById('modal-overlay').style.display='block';
-  m.style.display='block';
-}
-function setWdAmt(v){
-  document.getElementById('wd-amount').value=v;
+async function loadWithdrawPage() {
+    const user = await getPlayerData(); // Fungsi dari config.js
+    if (!user) return;
+    
+    userCache = user;
+    document.getElementById('wd-fullname').innerText = user.fullname;
+    document.getElementById('wd-bank').innerText = user.bank_name;
+    document.getElementById('wd-rekening').innerText = user.rekening_number;
+    document.getElementById('wd-saldo').innerText = "IDR " + user.saldo.toLocaleString('id-ID');
+    
+    loadHistoryWD(user.username);
 }
 
-// ── API ────────────────────────────────────────────────────
-async function apiWd(payload) {
-  // Pakai apiCall dari global.js jika tersedia
-  if(typeof apiCall === 'function') return apiCall(payload);
-  try {
-    const url = SCRIPT_URL_WD + '?data=' + encodeURIComponent(JSON.stringify(payload));
-    const r = await fetch(url, { redirect: 'follow' });
-    const j = JSON.parse(await r.text());
-    if (j && j.result !== undefined) return j;
-  } catch(e) {}
-  try {
-    const r2 = await fetch(SCRIPT_URL_WD, { method: 'POST', body: JSON.stringify(payload) });
-    return JSON.parse(await r2.text());
-  } catch(e) { return { result: 'ERROR', message: 'Koneksi gagal.' }; }
-}
-function getUser(){ return (typeof getUsername==='function') ? getUsername() : localStorage.getItem('username'); }
-function fmtIDRwd(v){ return 'IDR ' + Math.floor(v).toLocaleString('id-ID'); }
-function fmtDatewd(){
-  return new Date().toLocaleString('id-ID',{
-    day:'2-digit',month:'2-digit',year:'numeric',
-    hour:'2-digit',minute:'2-digit',second:'2-digit'
-  });
-}
+async function handleWithdraw() {
+    const amount = parseInt(document.getElementById('amount-wd').value);
+    const btn = document.getElementById('btn-submit-wd');
 
-// ── INIT ────────────────────────────────────────────────────
-async function initWithdrawPage(){
-  const u = getUser();
-  if(!u){ location.href='index.html'; return; }
+    // 1. Validasi Minimal & Saldo
+    if (isNaN(amount) || amount < 50000) return alert("Minimal penarikan adalah Rp 50.000");
+    if (amount > userCache.saldo) return alert("Saldo Anda tidak mencukupi!");
 
-  // Tampilkan saldo dari localStorage dulu (cepat)
-  const storedSaldo = parseFloat(localStorage.getItem('user_saldo')||0);
-  document.getElementById('wd-balance').textContent = fmtIDRwd(storedSaldo);
+    btn.disabled = true;
+    btn.innerText = "MEMPROSES...";
 
-  // Isi data rekening dari cache
-  document.getElementById('wd-account-name').value = localStorage.getItem('user_fullname')||'';
-  document.getElementById('wd-account-num').value  = localStorage.getItem('_cache_rekening')||'';
-  document.getElementById('wd-method').value       = localStorage.getItem('_cache_bank')||'';
+    try {
+        // 2. Potong Saldo Langsung di Tabel Profiles (Sinkron Server)
+        const newSaldo = userCache.saldo - amount;
+        const { error: errorUpdate } = await _supabase
+            .from('profiles')
+            .update({ saldo: newSaldo })
+            .eq('username', userCache.username);
 
-  // Ambil data terbaru dari server (saldo + profil)
-  try{
-    const r = await apiWd({ action:'get_profile', username:u });
-    if(r.result==='SUCCESS' && r.data){
-      const d = r.data;
-      document.getElementById('wd-balance').textContent       = fmtIDRwd(d.saldo||0);
-      document.getElementById('wd-account-name').value = d.namaLengkap   ||'';
-      document.getElementById('wd-account-num').value  = d.nomorRekening ||'';
-      document.getElementById('wd-method').value       = d.bank          ||'';
-      // Update localStorage agar game.html juga tahu saldo terkini
-      localStorage.setItem('user_saldo', Math.floor(d.saldo||0));
-      localStorage.setItem('user_fullname',   d.namaLengkap   ||'');
-      localStorage.setItem('_cache_rekening', d.nomorRekening ||'');
-      localStorage.setItem('_cache_bank',     d.bank          ||'');
+        if (errorUpdate) throw errorUpdate;
+
+        // 3. Masukkan ke Tabel Transactions (Riwayat WD)
+        const { error: errorTrans } = await _supabase
+            .from('transactions')
+            .insert([{
+                username: userCache.username,
+                fullname: userCache.fullname,
+                bank: userCache.bank_name,       // Menyesuaikan kolom di SQL
+                rekening: userCache.rekening_number,
+                amount: amount,
+                type: 'WITHDRAW',
+                status: 'PROSES'
+            }]);
+
+        if (errorTrans) throw errorTrans;
+
+        alert("Withdraw Berhasil Diajukan! Saldo Anda telah terpotong.");
+        location.reload();
+
+    } catch (err) {
+        alert("Gagal memproses WD: " + err.message);
+        btn.disabled = false;
+        btn.innerText = "AJUKAN PENARIKAN";
     }
-  }catch(e){}
-
-  loadWdHistory();
 }
 
-// ── PROSES WITHDRAW ─────────────────────────────────────────
-async function processWithdraw(){
-  const u      = getUser();
-  const amount = parseInt(document.getElementById('wd-amount').value);
-  const name   = document.getElementById('wd-account-name').value;
-  const rekNo  = document.getElementById('wd-account-num').value;
-  const bank   = document.getElementById('wd-method').value;
+async function loadHistoryWD(username) {
+    const { data, error } = await _supabase
+        .from('transactions')
+        .select('*')
+        .eq('username', username)
+        .eq('type', 'WITHDRAW')
+        .order('tanggal', { ascending: false });
 
-  if(!amount || isNaN(amount))
-    return showWdModal('⚠️ PERHATIAN','Masukkan nominal penarikan terlebih dahulu!','error');
-  if(amount < 50000)
-    return showWdModal('🚫 DITOLAK','Minimal penarikan adalah IDR 50.000','error');
-
-  const currentSaldo = parseFloat(localStorage.getItem('user_saldo')||0);
-  if(currentSaldo < amount)
-    return showWdModal('❌ SALDO KURANG','Saldo tidak mencukupi untuk penarikan ini.','error');
-
-  const btn = document.querySelector('.btn-submit');
-  if(btn){ btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Memproses...'; }
-
-  const res = await apiWd({
-    action:'withdraw', username:u,
-    namaLengkap:name, bank:bank, rekening:rekNo,
-    jumlah:amount, tanggal:fmtDatewd()
-  });
-
-  if(btn){ btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-paper-plane"></i>&nbsp; Ajukan Penarikan'; }
-
-  if(res.result==='SUCCESS'){
-    // Update saldo lokal langsung setelah withdraw berhasil
-    const newSaldo = res.newSaldo !== undefined ? res.newSaldo : Math.max(0, currentSaldo - amount);
-    localStorage.setItem('user_saldo', Math.floor(newSaldo));
-    document.getElementById('wd-balance').textContent = fmtIDRwd(newSaldo);
-
-    document.getElementById('wd-amount').value = '';
-    showWdModal('✅ BERHASIL','Pengajuan penarikan berhasil!\nSaldo dikurangi otomatis.\nProses 1×24 jam.','success');
-
-    // Refresh history setelah transaksi berhasil
-    loadWdHistory();
-  } else {
-    showWdModal('❌ GAGAL', res.message||'Gagal mengajukan penarikan. Coba lagi.','error');
-  }
+    const container = document.getElementById('wd-history');
+    if (data && data.length > 0) {
+        container.innerHTML = data.map(item => `
+            <div class="history-item">
+                <div style="display:flex; justify-content:space-between; font-size:12px;">
+                    <span>${new Date(item.tanggal).toLocaleString('id-ID')}</span>
+                    <span class="status-${item.status.toLowerCase()}">${item.status}</span>
+                </div>
+                <div style="margin-top:5px; font-weight:bold; color:var(--yellow);">
+                    Rp ${item.amount.toLocaleString('id-ID')}
+                </div>
+                <div style="font-size:10px; opacity:0.6;">Tujuan: ${item.bank} (${item.rekening})</div>
+            </div>
+        `).join('');
+    } else {
+        container.innerHTML = '<div style="text-align:center; opacity:0.3; padding:20px;">Belum ada riwayat withdraw.</div>';
+    }
 }
 
-// ── HISTORY ─────────────────────────────────────────────────
-async function loadWdHistory(){
-  const u         = getUser();
-  const container = document.getElementById('wd-history');
-  if(!u||!container) return;
-
-  container.innerHTML = '<div class="hist-loading"><i class="fa-solid fa-spinner fa-spin"></i> Memuat...</div>';
-
-  const res = await apiWd({ action:'get_withdraw_history', username:u });
-
-  if(res.result!=='SUCCESS' || !res.data || res.data.length===0){
-    container.innerHTML = '<div class="hist-empty">Belum ada riwayat penarikan.</div>';
-    return;
-  }
-
-  container.innerHTML = '';
-  res.data.forEach((item, i)=>{
-    const isLatest   = (i===0 && item.status==='PROSES');
-    const statusClass = item.status==='BERHASIL' ? 'status-sukses'
-                      : item.status==='GAGAL'    ? 'status-gagal' : 'status-proses';
-    const div = document.createElement('div');
-    div.className = 'history-item' + (isLatest?' latest':'');
-    div.innerHTML = `
-      ${isLatest ? '<div class="badge-new">TERBARU</div>' : ''}
-      <div class="hist-top">
-        <span class="hist-label"><i class="fa-solid fa-money-bill-transfer"></i> WITHDRAW</span>
-        <span class="status-badge ${statusClass}">${item.status}</span>
-      </div>
-      <div class="hist-amount">${fmtIDRwd(item.jumlah)}</div>
-      <div class="hist-time">
-        <i class="fa-regular fa-clock"></i> ${item.tanggal||'—'}
-        &nbsp;·&nbsp; ${item.bank||''}
-      </div>`;
-    container.appendChild(div);
-  });
-}
-
-// ── START ────────────────────────────────────────────────────
-window.addEventListener('load', initWithdrawPage);
+window.onload = loadWithdrawPage;
 </script>
+
 </body>
 </html>
