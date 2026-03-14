@@ -1,13 +1,13 @@
 /**
  * ============================================================
  * NEON PLINKO VIP — Global JS v6.0
- * Unified Supabase & Session Management
+ * KREDENSIAL: SUPABASE CLOUD
  * ============================================================
  */
 
-// 1. KONEKSI SUPABASE
-const SB_URL = "URL_SUPABASE_ANDA"; // Ganti dengan URL Supabase Anda
-const SB_KEY = "KEY_SUPABASE_ANDA"; // Ganti dengan Anon Key Supabase Anda
+// 1. INISIALISASI KONEKSI SUPABASE
+const SB_URL = "https://bgffnmwrviyqpeevzjsn.supabase.co";
+const SB_KEY = "sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani";
 const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
 const API_CONFIG = {
@@ -17,91 +17,128 @@ const API_CONFIG = {
     MIN_DEPO: 10000
 };
 
-// 2. SESSION MANAGEMENT
-const SESSION_KEY = 'user_neon'; // Konsisten dengan localStorage.getItem('user_neon')
+// 2. SESSION MANAGEMENT (UNIFIED)
+const SESSION_KEY = 'user_neon';
 
-// Fungsi mendapatkan username yang sedang login
+/** Mengambil username dari session aktif */
 function getUsername() {
     return localStorage.getItem(SESSION_KEY);
 }
 
-// Fungsi proteksi halaman (Redirect jika belum login)
+/** Proteksi Halaman: Redirect jika belum login */
 async function requireLogin() {
     const user = getUsername();
     if (!user) {
-        window.location.href = 'index.html';
+        window.location.replace('index.html');
         return null;
     }
     return user;
 }
 
-// 3. CORE PROFILE API (SINKRONISASI DATA)
+/** Membersihkan session saat logout */
+function clearSession() {
+    localStorage.removeItem(SESSION_KEY);
+    // Hapus sisa-sisa key lama jika ada
+    localStorage.removeItem('plinko_session');
+    localStorage.removeItem('username');
+}
+
+// 3. PROFILE & BALANCE API
 const ProfileAPI = {
-    // Mengambil data terbaru dari Database Supabase
+    /** Sinkronisasi data dari Supabase ke UI secara Real-time */
     async sync() {
         const username = getUsername();
         if (!username) return null;
 
-        const { data, error } = await _supabase
-            .from('profiles')
-            .select('*')
-            .eq('username', username)
-            .single();
+        try {
+            const { data, error } = await _supabase
+                .from('profiles')
+                .select('*')
+                .eq('username', username)
+                .single();
 
-        if (error) {
-            console.error("Sync Error:", error);
+            if (error) throw error;
+
+            if (data) {
+                this.updateUI(data);
+                return data;
+            }
+        } catch (err) {
+            console.error("Gagal sinkronisasi profil:", err.message);
             return null;
         }
-
-        // Update UI secara otomatis jika elemen tersedia
-        this.updateUI(data);
-        return data;
     },
 
+    /** Mengupdate elemen teks di HTML secara otomatis berdasarkan ID */
     updateUI(data) {
         if (!data) return;
-        const elements = {
+        
+        const uiMap = {
             'display-username': data.username,
-            'display-saldo': "Rp " + data.saldo.toLocaleString('id-ID'),
-            'profile-saldo': "Rp " + data.saldo.toLocaleString('id-ID'),
-            'wd-saldo': "Rp " + data.saldo.toLocaleString('id-ID'),
+            'header-username': data.username,
+            'display-saldo': formatIDR(data.saldo),
+            'profile-saldo': formatIDR(data.saldo),
+            'wd-saldo': formatIDR(data.saldo),
             'user-winrate': data.winrate + "%",
-            'profile-rekening': data.rekening,
-            'profile-bank': data.bank_name
+            'wd-fullname': data.nama_lengkap,
+            'wd-bank': data.bank_name,
+            'wd-rekening': data.rekening
         };
 
-        for (const [id, val] of Object.entries(elements)) {
+        for (const [id, value] of Object.entries(uiMap)) {
             const el = document.getElementById(id);
-            if (el) el.innerText = val;
+            if (el) {
+                // Jika elemen berupa input, isi value-nya. Jika teks, isi textContent.
+                if (el.tagName === 'INPUT') el.value = value;
+                else el.textContent = value;
+            }
         }
     }
 };
 
-// 4. TRANSACTION API
+// 4. TRANSACTION ENGINE
 const TransaksiAPI = {
-    // Kirim permintaan Deposit
-    async deposit(username, nominal, metode) {
+    /** Mengirim data permintaan Deposit */
+    async submitDeposit(nominal, metode) {
+        const user = getUsername();
         const { error } = await _supabase.from('deposits').insert([{
-            username: username,
-            nominal: nominal,
+            username: user,
+            nominal: parseInt(nominal),
             metode: metode,
             status: 'PROSES'
         }]);
-        return { success: !error, error };
+        return { success: !error, message: error ? error.message : "Berhasil" };
     },
 
-    // Kirim permintaan Withdraw
-    async withdraw(username, nominal) {
+    /** Mengirim data permintaan Withdraw */
+    async submitWithdraw(nominal) {
+        const user = getUsername();
         const { error } = await _supabase.from('withdraws').insert([{
-            username: username,
-            nominal: nominal,
+            username: user,
+            nominal: parseInt(nominal),
             status: 'PROSES'
         }]);
-        return { success: !error, error };
+        return { success: !error, message: error ? error.message : "Berhasil" };
     }
 };
 
-// 5. UTILS & FORMATTING
+// 5. GAME ENGINE BRIDGE
+const GameEngine = {
+    /** Mencatat hasil permainan ke database */
+    async recordPlay(bet, winAmount, newSaldo) {
+        const user = getUsername();
+        if (!user) return;
+
+        const { error } = await _supabase
+            .from('profiles')
+            .update({ saldo: newSaldo })
+            .eq('username', user);
+            
+        if (error) console.error("Gagal update saldo game:", error);
+    }
+};
+
+// 6. UTILS
 function formatIDR(num) {
     return new Intl.NumberFormat("id-ID", {
         style: "currency",
@@ -110,28 +147,41 @@ function formatIDR(num) {
     }).format(num || 0);
 }
 
-// Alias untuk kemudahan pemanggilan
 function showToast(msg, type = "info") {
-    // Jika Anda punya fungsi toast di UI, panggil di sini
-    alert(msg); // Default sementara
+    // Implementasi sederhana menggunakan alert jika elemen toast tidak ada
+    const toastEl = document.getElementById("toast");
+    if (toastEl) {
+        toastEl.innerText = msg;
+        toastEl.className = "show";
+        setTimeout(() => { toastEl.className = ""; }, 3000);
+    } else {
+        alert(msg);
+    }
 }
 
-// 6. AUTO INIT SAAT HALAMAN DIMUAT
+// 7. AUTO-INITIALIZATION
 document.addEventListener('DOMContentLoaded', async () => {
     const user = getUsername();
     if (user) {
-        // Update status Online di database
+        // Update status online
         await _supabase.from('profiles')
             .update({ last_active: new Date().toISOString() })
             .eq('username', user);
             
-        // Jalankan sinkronisasi data profil
+        // Jalankan sinkronisasi data awal
         ProfileAPI.sync();
     }
 });
 
-// 7. LOGOUT
+/** Fungsi Logout Global */
 function apiLogout() {
-    localStorage.removeItem(SESSION_KEY);
-    window.location.href = 'index.html';
+    clearSession();
+    window.location.replace('index.html');
 }
+
+// Alias untuk kompatibilitas file lama
+const AuthAPI = { logout: apiLogout };
+const UserSession = { 
+    get username() { return getUsername(); },
+    get saldo() { return 0; } // Saldo akan diupdate via ProfileAPI.sync()
+};
