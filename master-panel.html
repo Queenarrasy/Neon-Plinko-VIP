@@ -3,197 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEON MASTER PANEL v2.0</title>
+    <title>MASTER PANEL - NEON PLINKO</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="config.js"></script>
     <style>
-        :root { 
-            --pink: #ff0077; --blue: #00d4ff; --bg: #05060f; 
-            --green: #00ff88; --yellow: #fbff00;
-        }
-
-        body { 
-            background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; 
-            margin: 0; padding: 20px;
-        }
-
-        .container { max-width: 900px; margin: auto; }
-
-        /* HEADER */
-        .header {
-            text-align: center; padding: 20px; border: 1px solid var(--blue);
-            box-shadow: 0 0 15px var(--blue); border-radius: 15px; margin-bottom: 30px;
-            background: rgba(0, 212, 255, 0.05);
-        }
-
-        /* PANIC SECTION */
-        .panic-box {
-            border: 2px dashed var(--pink); padding: 15px; border-radius: 12px;
-            text-align: center; margin-bottom: 25px; background: rgba(255, 0, 119, 0.05);
-        }
-
-        .btn-panic {
-            background: #000; color: white; border: 2px solid var(--pink);
-            padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer;
-            text-transform: uppercase; transition: 0.3s;
-        }
-        .btn-panic:hover { background: var(--pink); box-shadow: 0 0 15px var(--pink); }
-
-        /* TABLE SECTION */
-        .section-title { color: var(--blue); border-left: 4px solid var(--blue); padding-left: 10px; margin: 20px 0; }
-        
-        .card { background: rgba(255,255,255,0.02); border: 1px solid #333; border-radius: 12px; overflow: hidden; }
-        
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th { background: rgba(0, 212, 255, 0.1); color: var(--blue); padding: 12px; text-align: left; }
-        td { padding: 12px; border-bottom: 1px solid #222; }
-
-        .badge { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; }
-        .bg-green { background: var(--green); color: #000; }
-        .bg-pink { background: var(--pink); color: #fff; }
-
-        /* INPUTS */
-        .wr-select { background: #000; color: var(--yellow); border: 1px solid var(--yellow); padding: 5px; border-radius: 4px; }
-        
-        #toast { 
-            visibility: hidden; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            background: var(--blue); color: #000; padding: 12px 30px; border-radius: 50px; font-weight: bold;
-        }
-        #toast.show { visibility: visible; animation: fadeInUp 0.5s; }
-
-        @keyframes fadeInUp { from { opacity: 0; bottom: 0; } to { opacity: 1; bottom: 30px; } }
+        body { background: #05060f; color: white; font-family: sans-serif; padding: 20px; }
+        .card { background: #101223; border: 1px solid #00d4ff; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #333; padding: 10px; text-align: left; }
+        th { background: #00d4ff; color: black; }
+        .btn { padding: 5px 10px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; }
+        .btn-approve { background: #00ff88; color: black; }
     </style>
 </head>
 <body>
-
-<div class="container">
-    <div class="header">
-        <h1 style="margin:0; font-size: 24px;">NEON <span style="color:var(--pink)">MASTER</span> PANEL</h1>
-        <p style="color:var(--yellow); font-size: 12px;">SYSTEM STATUS: ONLINE & ENCRYPTED</p>
-    </div>
-
-    <div class="panic-box">
-        <h3 style="margin-top:0; color:var(--pink)">GLOBAL WINRATE OVERRIDE</h3>
-        <button class="btn-panic" onclick="globalWinrate(5)">FORCE DRAIN (5%)</button>
-        <button class="btn-panic" style="border-color:var(--blue)" onclick="globalWinrate(50)">NORMAL (50%)</button>
-        <button class="btn-panic" style="border-color:var(--green)" onclick="globalWinrate(90)">JACKPOT MODE (90%)</button>
-    </div>
-
-    <h3 class="section-title">ANTREAN DEPOSIT</h3>
+    <h1>NEON MASTER PANEL</h1>
+    
     <div class="card">
-        <table id="table-depo">
-            <thead>
-                <tr>
-                    <th>USER</th>
-                    <th>NOMINAL</th>
-                    <th>METODE</th>
-                    <th>AKSI</th>
-                </tr>
-            </thead>
-            <tbody id="depo-list">
-                </tbody>
-        </table>
-    </div>
-
-    <h3 class="section-title">MONITORING PEMAIN</h3>
-    <div class="card">
+        <h3>ANTREAN DEPOSIT</h3>
         <table>
             <thead>
                 <tr>
-                    <th>USERNAME</th>
-                    <th>SALDO</th>
-                    <th>WINRATE</th>
-                    <th>STATUS</th>
-                    <th>AKSI</th>
+                    <th>Username</th>
+                    <th>Nominal</th>
+                    <th>Aksi</th>
                 </tr>
             </thead>
-            <tbody id="user-list">
-                </tbody>
+            <tbody id="depo-list"></tbody>
         </table>
     </div>
-</div>
 
-<div id="toast">BERHASIL!</div>
+    <script>
+        async function loadDashboard() {
+            // Cek apakah benar Admin
+            const user = getUsername();
+            const { data: profile } = await _supabase.from('profiles').select('role').eq('username', user).single();
+            
+            if (!profile || profile.role !== 'ADMIN') {
+                alert("Bukan Admin!"); window.location.href = "game.html";
+                return;
+            }
 
-<script src="config.js"></script>
-<script>
-    // Proteksi: Hanya Admin yang boleh akses
-    async function checkAuth() {
-        const { data: { user } } = await _supabase.auth.getUser();
-        // Cek role di profiles
-        const { data: profile } = await _supabase.from('profiles').select('role').eq('username', localStorage.getItem('user_neon')).single();
-        
-        if (!profile || profile.role !== 'ADMIN') {
-            alert("AKSES DITOLAK!");
-            window.location.href = "index.html";
+            // Ambil data deposit PROSES
+            const { data: depos } = await _supabase.from('deposits').select('*').eq('status', 'PROSES');
+            const list = document.getElementById('depo-list');
+            list.innerHTML = "";
+            depos.forEach(d => {
+                list.innerHTML += `<tr>
+                    <td>${d.username}</td>
+                    <td>Rp ${d.nominal.toLocaleString()}</td>
+                    <td><button class="btn btn-approve" onclick="approve('${d.id}', '${d.username}', ${d.nominal})">APPROVE</button></td>
+                </tr>`;
+            });
         }
-    }
 
-    async function loadData() {
-        // 1. Ambil Deposit Pending
-        const { data: depos } = await _supabase.from('deposits').select('*').eq('status', 'PROSES');
-        const depoContainer = document.getElementById('depo-list');
-        depoContainer.innerHTML = depos?.length ? '' : '<tr><td colspan="4" style="text-align:center">Tidak ada antrean</td></tr>';
-        depos?.forEach(d => {
-            depoContainer.innerHTML += `
-                <tr>
-                    <td><b>${d.username}</b></td>
-                    <td style="color:var(--green)">IDR ${d.nominal.toLocaleString()}</td>
-                    <td>${d.metode}</td>
-                    <td><button class="badge bg-green" onclick="approveDepo('${d.id}', '${d.username}', ${d.nominal})">APPROVE</button></td>
-                </tr>`;
-        });
+        async function approve(id, user, amt) {
+            const { error } = await _supabase.rpc('approve_deposit_logic', { row_id: id, target_user: user, amount: amt });
+            if (!error) { alert("Berhasil!"); loadDashboard(); }
+        }
 
-        // 2. Ambil List User
-        const { data: users } = await _supabase.from('profiles').select('*').order('last_active', { ascending: false });
-        const userContainer = document.getElementById('user-list');
-        userContainer.innerHTML = '';
-        users?.forEach(u => {
-            const isOnline = (new Date() - new Date(u.last_active)) < 120000;
-            userContainer.innerHTML += `
-                <tr>
-                    <td>${u.username}</td>
-                    <td style="color:var(--blue)">IDR ${u.saldo.toLocaleString()}</td>
-                    <td>
-                        <select class="wr-select" onchange="updateUserWR('${u.username}', this.value)">
-                            <option value="1" ${u.winrate == 1 ? 'selected' : ''}>1%</option>
-                            <option value="25" ${u.winrate == 25 ? 'selected' : ''}>25%</option>
-                            <option value="50" ${u.winrate == 50 ? 'selected' : ''}>50%</option>
-                            <option value="80" ${u.winrate == 80 ? 'selected' : ''}>80%</option>
-                        </select>
-                    </td>
-                    <td><span class="badge ${isOnline ? 'bg-green' : ''}">${isOnline ? 'ONLINE' : 'OFFLINE'}</span></td>
-                    <td><button onclick="setSaldoPrompt('${u.username}')" style="font-size:10px">EDIT</button></td>
-                </tr>`;
-        });
-    }
-
-    async function approveDepo(id, user, amount) {
-        if(!confirm(`Approve IDR ${amount} untuk ${user}?`)) return;
-        await _supabase.rpc('approve_deposit_logic', { row_id: id, target_user: user, amount: amount });
-        showToast("DEPOSIT DISETUJUI");
-        loadData();
-    }
-
-    async function globalWinrate(val) {
-        if(!confirm(`Set SEMUA user ke WR ${val}%?`)) return;
-        await _supabase.from('profiles').update({ winrate: val }).not('role', 'eq', 'ADMIN');
-        showToast("GLOBAL WINRATE UPDATED");
-        loadData();
-    }
-
-    async function updateUserWR(user, val) {
-        await _supabase.from('profiles').update({ winrate: val }).eq('username', user);
-        showToast(`WR ${user} UPDATED`);
-    }
-
-    function showToast(msg) {
-        const t = document.getElementById('toast');
-        t.innerText = msg; t.className = "show";
-        setTimeout(() => t.className = "", 3000);
-    }
-
-    window.onload = () => { loadData(); setInterval(loadData, 10000); };
-</script>
+        window.onload = loadDashboard;
+    </script>
 </body>
 </html>
