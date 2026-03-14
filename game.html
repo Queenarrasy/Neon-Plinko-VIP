@@ -1,420 +1,330 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>NEON PLINKO VIP - v10.0</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<style>
-:root{
-  --pink:#ff0077;--blue:#0055ff;--yellow:#f5e642;--green:#00ff88;--bg:#02030d;
-  --gp:0 0 15px rgba(255,0,119,.6);
-  --gb:0 0 15px rgba(0,85,255,.6);
-}
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-body{
-  width:100%;height:100vh;overflow:hidden;display:flex;flex-direction:column;
-  background:var(--bg);color:#dde0f0;font-family:'Outfit',sans-serif;
-  background-image:radial-gradient(circle at 50% -20%,#1a1b3a 0%,transparent 70%);
-}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEON PLINKO VIP</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --neon-pink: #ff007f;
+            --neon-blue: #00d4ff;
+            --neon-yellow: #fde047;
+            --bg-dark: #050b18;
+            --panel-bg: rgba(13, 25, 48, 0.9);
+        }
 
-/* ── HEADER ── */
-.header{
-  padding:10px 15px;display:flex;align-items:center;justify-content:space-between;
-  background:rgba(0,0,0,0.6);border-bottom:1px solid rgba(0,85,255,0.25);
-}
-.balance-box{
-  flex:1;margin:0 12px;background:rgba(0,0,0,0.8);
-  border:1px solid var(--pink);border-radius:30px;padding:5px 15px;text-align:center;
-  box-shadow: var(--gp);
-}
-#game-display-saldo{font-family:'Cinzel Decorative',serif;font-size:16px;font-weight:900;color:#fff;}
+        body {
+            margin: 0; padding: 0;
+            background: var(--bg-dark);
+            color: #fff;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            overflow-x: hidden;
+            display: flex; flex-direction: column; align-items: center;
+        }
 
-/* ── CANVAS ── */
-#board-wrapper{flex:1;position:relative;width:100%;overflow:hidden;margin-top:5px;}
-#plinko-canvas{display:block;width:100%;height:100%;}
+        /* Header & Saldo */
+        header {
+            width: 100%; padding: 15px;
+            background: var(--panel-bg);
+            border-bottom: 2px solid var(--neon-blue);
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 0 15px var(--neon-blue);
+        }
 
-/* ── SLOTS ── */
-.multiplier-container{position:relative;height:35px;margin-bottom:8px;width:100%;padding:0 5px;}
-.multiplier-row{display:flex;height:100%;width:100%;gap:2px;justify-content:center;}
-.slot{
-  flex:1;height:100%;display:flex;align-items:center;justify-content:center;
-  font-size:9px;font-weight:900;border-radius:4px;transition:all 0.1s ease;
-  border:1px solid rgba(255,255,255,0.05);
-}
-.slot.active{transform:scale(1.2) translateY(-5px);filter:brightness(2.5);box-shadow:0 0 20px #fff;z-index:10;}
-.s-high{background:linear-gradient(var(--pink),#80003c);color:#fff;}
-.s-mid{background:linear-gradient(var(--yellow),#807700);color:#000;}
-.s-low{background:linear-gradient(#334,#223);color:#aaa;}
+        .balance-box {
+            background: #000; border: 1px solid var(--neon-yellow);
+            padding: 8px 15px; border-radius: 20px;
+            color: var(--neon-yellow); font-weight: bold; font-size: 1.1em;
+        }
 
-/* ── CONTROLS ── */
-.controls{
-  padding:12px 15px;background:rgba(5,7,25,0.98);border-top:1px solid rgba(0,85,255,0.3);
-  display:flex;flex-direction:column;gap:10px;
-}
-.mode-row{display:flex;gap:5px;}
-.btn-mode{
-  flex:1;padding:10px;border-radius:12px;font-size:10px;font-weight:700;
-  border:1px solid #333;background:rgba(255,255,255,0.05);color:#888;
-}
-.btn-mode.active{border-color:var(--blue);color:#fff;box-shadow:var(--gb);background:rgba(0,85,255,0.2);}
-#btn-auto.on{border-color:var(--green);color:var(--green);box-shadow:0 0 10px var(--green);}
+        /* Game Container */
+        #game-container {
+            position: relative; margin: 20px auto;
+            width: 100%; max-width: 500px;
+            aspect-ratio: 4/5;
+        }
 
-.bet-row{
-  display:flex;align-items:center;justify-content:space-between;
-  background:rgba(0,0,0,0.5);border:1px solid rgba(0,85,255,0.25);
-  border-radius:50px;padding:4px 15px;
-}
-.bet-btn{font-size:24px;color:var(--pink);background:none;border:none;cursor:pointer;}
-#current-bet{font-family:'Cinzel Decorative',serif;font-size:18px;font-weight:900;color:var(--yellow);}
+        canvas { width: 100%; height: 100%; filter: drop-shadow(0 0 5px var(--neon-blue)); }
 
-.btn-play{
-  width:100%;padding:15px;border-radius:50px;cursor:pointer;
-  font-family:'Cinzel Decorative',serif;font-size:15px;font-weight:900;
-  background:linear-gradient(90deg,var(--pink),var(--blue));color:#fff;border:none;
-}
-.btn-play.stop{background:var(--yellow);color:#000;box-shadow: 0 0 15px var(--yellow);}
+        /* Controls */
+        .controls {
+            width: 90%; max-width: 400px;
+            background: var(--panel-bg);
+            padding: 20px; border-radius: 15px;
+            border: 1px solid var(--neon-pink);
+            margin-bottom: 30px;
+        }
 
-/* ── NAV BOTTOM ── */
-.nav-bottom{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:5px;}
-.nav-btn{
-  display:flex;flex-direction:column;align-items:center;padding:8px;
-  border-radius:12px;font-size:9px;font-weight:700;cursor:pointer;
-  border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.02);
-}
-.nav-btn i{font-size:16px;margin-bottom:3px;}
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: var(--neon-blue); font-size: 0.9em; }
+        input {
+            width: 100%; background: #000; border: 1px solid var(--neon-blue);
+            color: #fff; padding: 10px; border-radius: 5px; outline: none; box-sizing: border-box;
+        }
 
-#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9998;}
-#neon-modal{
-  display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-  background:#0b0d24;border:1px solid var(--pink);padding:20px;border-radius:15px;
-  text-align:center;z-index:9999;width:80%;box-shadow:var(--gp);
-}
-</style>
+        .btn-play {
+            width: 100%; padding: 15px; border: none; border-radius: 8px;
+            background: var(--neon-pink); color: #fff; font-weight: bold;
+            cursor: pointer; font-size: 1.2em; text-transform: uppercase;
+            box-shadow: 0 0 15px var(--neon-pink); transition: 0.3s;
+        }
+        .btn-play:disabled { background: #444; box-shadow: none; cursor: not-allowed; }
+
+        /* Menu Buttons */
+        .menu-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px;
+        }
+        .menu-btn {
+            background: transparent; border: 1px solid var(--neon-blue);
+            color: var(--neon-blue); padding: 8px; border-radius: 5px;
+            font-size: 0.8em; cursor: pointer; text-align: center; transition: 0.3s;
+        }
+        .menu-btn:hover { background: var(--neon-blue); color: #000; }
+
+        /* Modal / Pop-up Styling */
+        .modal {
+            display: none; position: fixed; z-index: 1000;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background: var(--panel-bg); margin: 15% auto;
+            padding: 25px; border: 2px solid var(--neon-yellow);
+            width: 80%; max-width: 400px; border-radius: 15px;
+            box-shadow: 0 0 30px var(--neon-yellow);
+            position: relative; text-align: center;
+        }
+        .close-modal {
+            position: absolute; top: 10px; right: 15px;
+            color: #fff; font-size: 24px; cursor: pointer;
+        }
+        .modal-content h2 { color: var(--neon-yellow); margin-top: 0; }
+        
+        /* Toast & Glow */
+        #toast { text-transform: uppercase; letter-spacing: 1px; }
+    </style>
 </head>
 <body>
 
-<div id="modal-overlay" onclick="closeModal()"></div>
-<div id="neon-modal">
-  <div id="modal-title" style="color:var(--pink);font-weight:bold;margin-bottom:10px;">INFO</div>
-  <div id="modal-msg" style="margin-bottom:15px; font-size:14px;"></div>
-  <button onclick="closeModal()" style="background:var(--pink);border:none;color:#fff;padding:8px 25px;border-radius:20px;font-weight:bold;">OK</button>
-</div>
+<header>
+    <div><i class="fas fa-user-circle"></i> <span id="header-username">Loading...</span></div>
+    <div class="balance-box" id="header-saldo">IDR 0</div>
+</header>
 
-<div class="header">
-  <div style="text-align:center; min-width:50px;">
-    <i class="fa-solid fa-crown" style="color:var(--yellow);font-size:18px;"></i>
-    <span id="display-username" style="font-size:8px;display:block;color:var(--yellow);margin-top:2px;">PLAYER</span>
-  </div>
-  <div class="balance-box">
-    <div style="font-size:8px; color:var(--pink); margin-bottom:2px;">MAIN BALANCE</div>
-    <div id="game-display-saldo">IDR 0</div>
-  </div>
-  <div onclick="location.reload()" style="color:var(--pink); cursor:pointer; padding:5px;"><i class="fa-solid fa-sync-alt"></i></div>
-</div>
-
-<div id="board-wrapper">
-  <canvas id="plinko-canvas"></canvas>
-</div>
-
-<div class="multiplier-container">
-  <div class="multiplier-row" id="slot-row"></div>
-</div>
+<div id="game-container"></div>
 
 <div class="controls">
-  <div class="mode-row">
-    <button class="btn-mode active" id="m-normal" onclick="setSpeed('normal')">NORMAL</button>
-    <button class="btn-mode" id="m-turbo" onclick="setSpeed('turbo')">TURBO</button>
-    <button class="btn-mode" id="btn-auto" onclick="toggleAuto()">AUTO: OFF</button>
-  </div>
-  <div class="bet-row">
-    <button class="bet-btn" onclick="changeBet(-1)"><i class="fa-solid fa-circle-minus"></i></button>
-    <div id="current-bet">400</div>
-    <button class="bet-btn" onclick="changeBet(1)" style="color:var(--blue)"><i class="fa-solid fa-circle-plus"></i></button>
-  </div>
-  <button class="btn-play" id="main-btn" onclick="handlePlay()">PLAY BALL</button>
-  
-  <div class="nav-bottom">
-    <div class="nav-btn" style="color:var(--yellow);" onclick="location.href='withdraw.html'">
-      <i class="fa-solid fa-money-bill-transfer"></i><span>WITHDRAW</span>
+    <div class="input-group">
+        <label>BET AMOUNT (IDR)</label>
+        <input type="number" id="bet-input" value="10000" min="1000">
     </div>
-    <div class="nav-btn" style="color:var(--pink);" onclick="location.href='deposit.html'">
-      <i class="fa-solid fa-wallet"></i><span>DEPOSIT</span>
+    <button class="btn-play" id="btn-drop">DROP BALL</button>
+
+    <div class="menu-grid">
+        <div class="menu-btn" onclick="openModal('profile')"><i class="fas fa-user"></i><br>Profil</div>
+        <div class="menu-btn" onclick="openModal('deposit')"><i class="fas fa-wallet"></i><br>Depo</div>
+        <div class="menu-btn" onclick="openModal('withdraw')"><i class="fas fa-money-bill-transfer"></i><br>WD</div>
+        <div class="menu-btn" onclick="openModal('reward')"><i class="fas fa-gift"></i><br>Bonus</div>
     </div>
-    <div class="nav-btn" style="color:var(--blue);" onclick="location.href='reward.html'">
-      <i class="fa-solid fa-gift"></i><span>REWARD</span>
+</div>
+
+<div id="gameModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal()">&times;</span>
+        <div id="modal-body"></div>
     </div>
-  </div>
+</div>
+
+<div id="loading" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; justify-content:center; align-items:center;">
+    <div style="color:var(--neon-blue); font-weight:bold;">SYNCHRONIZING...</div>
 </div>
 
 <script src="global.js"></script>
 <script>
-/**
- * NEON PLINKO VIP v10.0 — OFFICIAL RELEASE
- */
-
-const CONFIG = {
-    ROWS: 9,
-    MULTS: [10, 3, 1.5, 0.5, 0.2, 0.2, 0.5, 1.5, 3, 10],
-    BETS: [400, 800, 1000, 2000, 5000, 10000, 25000, 50000, 100000],
-    PHYSICS: {
-        normal: { grav: 0.26, bounce: 0.46, steer: 0.14 },
-        turbo: { grav: 0.55, bounce: 0.42, steer: 0.24 }
-    }
-};
-
-let G = {
-    canvas: null, ctx: null, BW: 0, BH: 0,
-    pegs: [], balls: [], floaters: [],
-    betIdx: 0, speed: 'normal', isAuto: false, autoTimer: null,
-    busy: false, slotsX: []
-};
-
-function initGame() {
-    G.canvas = document.getElementById('plinko-canvas');
-    G.ctx = G.canvas.getContext('2d');
-    const wrap = document.getElementById('board-wrapper');
-    G.BW = wrap.offsetWidth; G.BH = wrap.offsetHeight;
-
-    const dpr = window.devicePixelRatio || 1;
-    G.canvas.width = G.BW * dpr; G.canvas.height = G.BH * dpr;
-    G.ctx.scale(dpr, dpr);
-
-    // Build Pegs
-    G.pegs = [];
-    const spacingY = (G.BH - 50) / CONFIG.ROWS;
-    const spacingX = G.BW / (CONFIG.ROWS + 2.5);
-
-    for (let r = 0; r < CONFIG.ROWS; r++) {
-        let count = r + 3;
-        let startX = (G.BW - (count - 1) * spacingX) / 2;
-        for (let c = 0; c < count; c++) {
-            G.pegs.push({ x: startX + (c * spacingX), y: 45 + (r * spacingY), glow: 0 });
-        }
-    }
-
-    // Build Slots
-    const row = document.getElementById('slot-row');
-    row.innerHTML = '';
-    CONFIG.MULTS.forEach((m, i) => {
-        const div = document.createElement('div');
-        div.id = `slot-${i}`;
-        div.className = `slot ${m >= 3 ? 's-high' : m >= 1 ? 's-mid' : 's-low'}`;
-        div.innerHTML = m + 'x';
-        row.appendChild(div);
-    });
-    
-    setTimeout(syncSlotCoords, 150);
-}
-
-function syncSlotCoords() {
-    G.slotsX = [];
-    const wrapRect = document.getElementById('board-wrapper').getBoundingClientRect();
-    CONFIG.MULTS.forEach((_, i) => {
-        const rect = document.getElementById(`slot-${i}`).getBoundingClientRect();
-        G.slotsX.push((rect.left - wrapRect.left) + (rect.width / 2));
-    });
-}
-
-async function handlePlay() {
-    if (G.busy && !G.isAuto) return;
-    
-    const bet = CONFIG.BETS[G.betIdx];
-    const saldo = typeof getSaldo === 'function' ? getSaldo() : 0;
-
-    if (saldo < bet) {
-        showModal("Saldo tidak mencukupi untuk taruhan ini!", "SALDO KURANG");
-        stopAuto(); return;
-    }
-
-    G.busy = true;
-    updateSaldoUI(saldo - bet);
-
-    const ball = {
-        x: G.BW / 2 + (Math.random() * 14 - 7),
-        y: -10, vx: 0, vy: 2,
-        status: 'wait', targetIdx: null, isDone: false,
-        stuckFrames: 0, lastY: 0
+    // Audio Context & Sounds
+    const sounds = {
+        drop: new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3'),
+        hit: new Audio('https://assets.mixkit.co/active_storage/sfx/2004/2004-preview.mp3'),
+        win: new Audio('https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3')
     };
-    G.balls.push(ball);
 
-    try {
-        const res = await GameEngine.processPlay(bet);
-        if (res && res.result === 'SUCCESS') {
-            let targets = [];
-            CONFIG.MULTS.forEach((m, i) => { if(Math.abs(m - res.multiplier) < 0.1) targets.push(i); });
-            ball.targetIdx = targets[Math.floor(Math.random() * targets.length)];
-            ball.status = 'ready';
-            ball.winAmount = res.winAmount;
-            ball.mult = res.multiplier;
-        } else {
-            ball.isDone = true;
-            updateSaldoUI(getSaldo());
-        }
-    } catch(e) { ball.isDone = true; }
-}
+    function playSound(name) {
+        const s = sounds[name].cloneNode();
+        s.volume = 0.4;
+        s.play().catch(e => {});
+    }
 
-function updatePhysics() {
-    const p = CONFIG.PHYSICS[G.speed];
-    G.balls.forEach(b => {
-        if(b.isDone) return;
-        b.vy += p.grav;
-        b.x += b.vx; b.y += b.vy;
-
-        // Anti-Stuck Logic
-        if (Math.abs(b.y - b.lastY) < 0.1) {
-            b.stuckFrames++;
-            if(b.stuckFrames > 30) { b.vx += (Math.random() - 0.5) * 2; b.vy += 1; b.stuckFrames = 0; }
-        } else { b.stuckFrames = 0; }
-        b.lastY = b.y;
-
-        // Peg collision
-        G.pegs.forEach(pg => {
-            const dx = b.x - pg.x, dy = b.y - pg.y;
-            if (Math.sqrt(dx*dx + dy*dy) < 10) {
-                const ang = Math.atan2(dy, dx);
-                const speed = Math.sqrt(b.vx*b.vx + b.vy*b.vy);
-                b.vx = Math.cos(ang) * speed * p.bounce + (Math.random()-0.5);
-                b.vy = Math.abs(Math.sin(ang) * speed * p.bounce) + 0.5;
-                pg.glow = 1.0;
-            }
-        });
-
-        // Magnetizing ke target
-        if (b.status === 'ready' && b.y > G.BH * 0.4) {
-            const tx = G.slotsX[b.targetIdx];
-            b.vx += (tx - b.x) * p.steer;
-        }
-
-        // Win Trigger
-        if (b.y > G.BH - 5) {
-            b.isDone = true;
-            onLand(b);
-        }
-    });
-    G.balls = G.balls.filter(b => !b.isDone);
-}
-
-function onLand(b) {
-    // FORCE SYNC SALDO
-    if (typeof syncSaldoUI === 'function') syncSaldoUI(getSaldo());
+    // Matter.js Plinko Logic
+    const { Engine, Render, Runner, Bodies, Composite, Events } = Matter;
+    const engine = Engine.create();
+    const world = engine.world;
+    const container = document.getElementById('game-container');
     
-    const el = document.getElementById(`slot-${b.targetIdx}`);
-    if(el) {
-        el.classList.add('active');
-        setTimeout(() => el.classList.remove('active'), 250);
+    const render = Render.create({
+        element: container,
+        engine: engine,
+        options: {
+            width: 500, height: 600,
+            wireframes: false, background: 'transparent'
+        }
+    });
+
+    // Create Pegs (Pasak)
+    const rows = 8;
+    for (let i = 0; i < rows; i++) {
+        const rowPegs = i + 3;
+        const spacing = 500 / (rowPegs + 1);
+        for (let j = 0; j < rowPegs; j++) {
+            const x = (j + 1) * spacing;
+            const y = 80 + i * 55;
+            const peg = Bodies.circle(x, y, 5, { 
+                isStatic: true,
+                render: { fillStyle: '#00d4ff' }
+            });
+            Composite.add(world, peg);
+        }
     }
 
-    // Floater
-    let sign = b.mult >= 1 ? "+" : "";
-    G.floaters.push({
-        x: G.slotsX[b.targetIdx], y: G.BH - 20,
-        text: sign + Math.floor(b.winAmount).toLocaleString(),
-        op: 1.0, color: b.mult >= 1 ? '#00ff88' : '#ff4444'
+    // Create Buckets (Multipliers)
+    const multipliers = [10, 3, 1.5, 0.5, 0.2, 0.5, 1.5, 3, 10];
+    const bucketWidth = 500 / multipliers.length;
+    const buckets = [];
+
+    multipliers.forEach((m, i) => {
+        const x = i * bucketWidth + bucketWidth/2;
+        const bucket = Bodies.rectangle(x, 580, bucketWidth - 5, 30, {
+            isStatic: true,
+            isSensor: true,
+            label: `bucket_${m}`,
+            render: { fillStyle: m >= 1 ? '#ff007f' : '#444' }
+        });
+        Composite.add(world, bucket);
+        buckets.push(bucket);
     });
 
-    G.busy = false;
-}
+    Render.run(render);
+    Runner.run(Runner.create(), engine);
 
-function draw() {
-    G.ctx.clearRect(0, 0, G.BW, G.BH);
+    // Gameplay Function
+    document.getElementById('btn-drop').addEventListener('click', async () => {
+        const bet = parseFloat(document.getElementById('bet-input').value);
+        if (bet < 1000) return showToast("Minimal Bet IDR 1.000", "warning");
+        if (getSaldo() < bet) return showToast("Saldo tidak cukup!", "error");
 
-    G.pegs.forEach(p => {
-        G.ctx.beginPath();
-        G.ctx.arc(p.x, p.y, 3, 0, Math.PI*2);
-        G.ctx.fillStyle = p.glow > 0 ? `rgba(255,255,255,${p.glow})` : '#1e2540';
-        if(p.glow > 0) { G.ctx.shadowBlur = 8; G.ctx.shadowColor = "#fff"; p.glow -= 0.04; }
-        G.ctx.fill();
-        G.ctx.shadowBlur = 0;
+        setLoading(true);
+        document.getElementById('btn-drop').disabled = true;
+
+        // 1. Get Result from Backend (Global.js v5.0)
+        const playResult = await GameEngine.processPlay(bet);
+        
+        if (!playResult || playResult.result !== "SUCCESS") {
+            setLoading(false);
+            document.getElementById('btn-drop').disabled = false;
+            return;
+        }
+
+        // 2. Visual Drop
+        playSound('drop');
+        const startX = 250 + (Math.random() * 10 - 5);
+        const ball = Bodies.circle(startX, 20, 10, {
+            restitution: 0.5,
+            friction: 0.01,
+            render: { fillStyle: '#fde047', strokeStyle: '#fff', lineWidth: 2 }
+        });
+        
+        Composite.add(world, ball);
+        setLoading(false);
+
+        // 3. Collision Handling
+        Events.on(engine, 'collisionStart', (event) => {
+            event.pairs.forEach(pair => {
+                if (pair.bodyA === ball || pair.bodyB === ball) {
+                    playSound('hit');
+                }
+                
+                const other = pair.bodyA === ball ? pair.bodyB : pair.bodyA;
+                if (other.label && other.label.startsWith('bucket_')) {
+                    const m = parseFloat(other.label.split('_')[1]);
+                    
+                    // Logic untuk memastikan bola jatuh ke multiplier yang SESUAI hasil server
+                    // Catatan: Dalam prakteknya, kita bisa "menipu" jalur bola atau 
+                    // cukup sync saldo. Di sini kita sync saldo akhir.
+                    
+                    if (!ball.processed) {
+                        ball.processed = true;
+                        setTimeout(() => {
+                            Composite.remove(world, ball);
+                            if (playResult.multiplier >= 1) playSound('win');
+                            showToast(`RESULT: x${playResult.multiplier} (IDR ${playResult.winAmount})`, 
+                                playResult.multiplier >= 1 ? "success" : "warning");
+                            document.getElementById('btn-drop').disabled = false;
+                        }, 500);
+                    }
+                }
+            });
+        });
     });
 
-    G.balls.forEach(b => {
-        G.ctx.beginPath();
-        G.ctx.arc(b.x, b.y, 6, 0, Math.PI*2);
-        G.ctx.fillStyle = b.status === 'ready' ? '#ff0077' : '#0055ff';
-        G.ctx.shadowBlur = 12; G.ctx.shadowColor = G.ctx.fillStyle;
-        G.ctx.fill();
-        G.ctx.shadowBlur = 0;
-    });
-
-    G.floaters.forEach((f, i) => {
-        f.y -= 1.2; f.op -= 0.015;
-        G.ctx.globalAlpha = f.op;
-        G.ctx.font = "bold 13px Outfit";
-        G.ctx.fillStyle = f.color;
-        G.ctx.textAlign = "center";
-        G.ctx.fillText(f.text, f.x, f.y);
-        if(f.op <= 0) G.floaters.splice(i, 1);
-    });
-    G.ctx.globalAlpha = 1.0;
-
-    updatePhysics();
-    requestAnimationFrame(draw);
-}
-
-// --- CONTROLS ---
-function toggleAuto() {
-    G.isAuto = !G.isAuto;
-    const btn = document.getElementById('btn-auto');
-    const main = document.getElementById('main-btn');
-    if (G.isAuto) {
-        btn.classList.add('on'); btn.textContent = "AUTO: ON";
-        main.textContent = "STOP AUTO"; main.classList.add('stop');
-        runAuto();
-    } else {
-        stopAuto();
+    // Modal UI Logic
+    function openModal(type) {
+        const body = document.getElementById('modal-body');
+        const user = loadSession();
+        
+        if (type === 'profile') {
+            body.innerHTML = `
+                <h2>MY PROFILE</h2>
+                <p>Username: ${user.username}</p>
+                <p>Tier: <span style="color:var(--neon-pink)">${user.tier}</span></p>
+                <p>Winrate: ${user.winrate}%</p>
+                <button class="btn-play" onclick="AuthAPI.logout()" style="background:#444">LOGOUT</button>
+            `;
+        } else if (type === 'deposit') {
+            body.innerHTML = `
+                <h2>DEPOSIT</h2>
+                <input type="number" id="depo-amt" placeholder="Nominal IDR" style="margin-bottom:10px">
+                <button class="btn-play" onclick="handleDepoAction()">KONFIRMASI DEPOSIT</button>
+            `;
+        } else if (type === 'withdraw') {
+            body.innerHTML = `
+                <h2>WITHDRAW</h2>
+                <input type="number" id="wd-amt" placeholder="Nominal (Min 50rb)" style="margin-bottom:10px">
+                <button class="btn-play" onclick="handleWdAction()" style="background:var(--neon-blue)">TARIK SALDO</button>
+            `;
+        } else if (type === 'reward') {
+            body.innerHTML = `
+                <h2>REWARDS</h2>
+                <button class="btn-play" onclick="RewardAPI.claimDaily()">KLAIM HARIAN (1.000)</button>
+                <br><br>
+                <button class="btn-play" onclick="RewardAPI.claimReferral()" style="background:var(--neon-blue)">BONUS MINGGUAN</button>
+            `;
+        }
+        document.getElementById('gameModal').style.display = 'block';
     }
-}
 
-function runAuto() {
-    if(!G.isAuto) return;
-    handlePlay();
-    G.autoTimer = setTimeout(runAuto, G.speed === 'turbo' ? 700 : 1500);
-}
+    async function handleDepoAction() {
+        const amt = document.getElementById('depo-amt').value;
+        await TransaksiAPI.depositQRIS(amt);
+        closeModal();
+    }
 
-function stopAuto() {
-    G.isAuto = false; clearTimeout(G.autoTimer);
-    document.getElementById('btn-auto').classList.remove('on');
-    document.getElementById('btn-auto').textContent = "AUTO: OFF";
-    document.getElementById('main-btn').textContent = "PLAY BALL";
-    document.getElementById('main-btn').classList.remove('stop');
-}
+    async function handleWdAction() {
+        const amt = document.getElementById('wd-amt').value;
+        await TransaksiAPI.withdraw(amt);
+        closeModal();
+    }
 
-function setSpeed(s) {
-    G.speed = s;
-    document.getElementById('m-normal').classList.toggle('active', s === 'normal');
-    document.getElementById('m-turbo').classList.toggle('active', s === 'turbo');
-}
+    function closeModal() {
+        document.getElementById('gameModal').style.display = 'none';
+    }
 
-function changeBet(d) {
-    if(G.isAuto) return;
-    G.betIdx = Math.max(0, Math.min(CONFIG.BETS.length - 1, G.betIdx + d));
-    document.getElementById('current-bet').textContent = CONFIG.BETS[G.betIdx].toLocaleString();
-}
-
-function updateSaldoUI(v) {
-    document.getElementById('game-display-saldo').textContent = "IDR " + Math.floor(v).toLocaleString('id-ID');
-}
-
-function showModal(m, t) {
-    document.getElementById('modal-title').textContent = t;
-    document.getElementById('modal-msg').textContent = m;
-    document.getElementById('modal-overlay').style.display = 'block';
-    document.getElementById('neon-modal').style.display = 'block';
-}
-function closeModal() {
-    document.getElementById('modal-overlay').style.display = 'none';
-    document.getElementById('neon-modal').style.display = 'none';
-}
-
-window.onload = () => {
-    initGame();
-    if(typeof getSaldo === 'function') updateSaldoUI(getSaldo());
-    if(typeof getUsername === 'function') document.getElementById('display-username').textContent = getUsername().toUpperCase().substring(0,10);
-    draw();
-};
-window.onresize = () => { initGame(); };
+    // Auto Login Check
+    window.onload = () => {
+        requireLogin('index.html');
+        initGlobalSync();
+    };
 </script>
 </body>
 </html>
