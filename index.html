@@ -64,42 +64,56 @@
         }
         .btn-auth:active { transform: translateY(4px); box-shadow: 0 4px 0 #005f78, 0 8px 15px rgba(0, 212, 255, 0.3); }
 
+        /* Custom Alert Modal */
+        #custom-alert {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+            z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(10px);
+        }
+        .alert-box {
+            width: 85%; max-width: 320px; background: #050614; border: 2px solid var(--pink);
+            border-radius: 25px; padding: 30px; text-align: center;
+            box-shadow: 0 0 30px rgba(255, 0, 119, 0.3); transform: scale(0.9); transition: 0.3s;
+        }
+        .alert-box.active { transform: scale(1); }
+        .alert-icon { font-size: 50px; margin-bottom: 15px; }
+        .alert-msg { font-size: 14px; font-weight: 500; margin-bottom: 20px; line-height: 1.5; color: #eee; }
+        .alert-btn { background: var(--pink); border: none; color: white; padding: 10px 30px; border-radius: 50px; font-weight: 800; cursor: pointer; }
+
         .wa-link {
             display: block; text-align: center; margin-top: 25px; color: #25D366; 
             text-decoration: none; font-size: 13px; font-weight: 600; transition: 0.3s;
         }
-        .wa-link:hover { text-shadow: 0 0 10px rgba(37, 211, 102, 0.5); }
-        .wa-link i { margin-right: 5px; font-size: 16px; }
-
-        ::placeholder { color: rgba(255,255,255,0.2); }
+        
+        .shake { animation: shake 0.4s; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
     </style>
 </head>
 <body>
 
-<div class="auth-card">
+<div class="auth-card" id="card-body">
     <div class="logo-text">NEON PLINKO</div>
     
     <div class="tabs">
-        <div class="tab active" id="tab-login" onclick="switchTab('login')">IDENTITY LOGIN</div>
-        <div class="tab" id="tab-daftar" onclick="switchTab('daftar')">REGISTRATION</div>
+        <div class="tab active" id="tab-login" onclick="switchTab('login')">LOGIN</div>
+        <div class="tab" id="tab-daftar" onclick="switchTab('daftar')">REGISTER</div>
     </div>
 
     <div id="auth-form">
         <div class="input-group">
             <i class="fa-solid fa-user-shield main-icon"></i>
-            <input type="text" id="user" placeholder="Enter Username">
+            <input type="text" id="user" placeholder="Username">
         </div>
 
         <div class="input-group">
             <i class="fa-solid fa-key main-icon"></i>
-            <input type="password" id="pass" placeholder="Enter Password">
+            <input type="password" id="pass" placeholder="Password (Min 6 Char)">
             <i class="fa-solid fa-eye-slash toggle-pass" onclick="togglePass()"></i>
         </div>
         
         <div id="extra-fields" style="display:none">
             <div class="input-group">
                 <i class="fa-solid fa-address-card main-icon"></i>
-                <input type="text" id="full_name" placeholder="Full Name (Match Bank Account)">
+                <input type="text" id="full_name" placeholder="Full Name (Match Bank)">
             </div>
             <div class="input-group">
                 <i class="fa-solid fa-building-columns main-icon"></i>
@@ -116,7 +130,7 @@
             </div>
             <div class="input-group">
                 <i class="fa-solid fa-hashtag main-icon"></i>
-                <input type="number" id="acc_no" placeholder="Bank Account Number">
+                <input type="number" id="acc_no" placeholder="Account Number">
             </div>
             <div class="input-group">
                 <i class="fa-solid fa-user-plus main-icon"></i>
@@ -127,33 +141,78 @@
         <button class="btn-auth" id="main-btn" onclick="processAuth()">ACCESS SYSTEM</button>
         
         <a href="https://wa.me/6289510249551?text=Halo%20Admin,%20saya%20lupa%20password%20akun%20Neon%20Plinko%20saya." target="_blank" class="wa-link">
-            <i class="fa-brands fa-whatsapp"></i> Forgot Password? Contact Admin
+            <i class="fa-brands fa-whatsapp"></i> Forgot Password?
         </a>
     </div>
 </div>
 
+<div id="custom-alert">
+    <div class="alert-box">
+        <div class="alert-icon" id="a-icon"></div>
+        <div class="alert-msg" id="a-msg"></div>
+        <button class="alert-btn" onclick="closeAlert()">UNDERSTOOD</button>
+    </div>
+</div>
+
+<audio id="s-click" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
+<audio id="s-error" src="https://assets.mixkit.co/active_storage/sfx/2573/2573-preview.mp3"></audio>
+<audio id="s-success" src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3"></audio>
+
 <script>
     let mode = 'login';
+    const sClick = document.getElementById('s-click');
+    const sError = document.getElementById('s-error');
+    const sSuccess = document.getElementById('s-success');
+
+    function playS(audio) { audio.currentTime = 0; audio.play().catch(()=>{}); }
+
+    function showPop(msg, type='error') {
+        const modal = document.getElementById('custom-alert');
+        const box = document.querySelector('.alert-box');
+        const icon = document.getElementById('a-icon');
+        const msgEl = document.getElementById('a-msg');
+        
+        msgEl.innerText = msg;
+        if(type === 'error') {
+            icon.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:var(--pink)"></i>';
+            box.style.borderColor = 'var(--pink)';
+            playS(sError);
+        } else {
+            icon.innerHTML = '<i class="fa-solid fa-circle-check" style="color:var(--blue)"></i>';
+            box.style.borderColor = 'var(--blue)';
+            playS(sSuccess);
+        }
+        
+        modal.style.display = 'flex';
+        setTimeout(() => box.classList.add('active'), 10);
+    }
+
+    function closeAlert() {
+        document.querySelector('.alert-box').classList.remove('active');
+        setTimeout(() => document.getElementById('custom-alert').style.display = 'none', 300);
+    }
 
     function switchTab(t) {
+        playS(sClick);
         mode = t;
         document.getElementById('tab-login').classList.toggle('active', t === 'login');
         document.getElementById('tab-daftar').classList.toggle('active', t === 'daftar');
         document.getElementById('extra-fields').style.display = (t === 'daftar') ? 'block' : 'none';
-        document.getElementById('main-btn').innerText = (t === 'daftar') ? 'CREATE ACCOUNT' : 'ACCESS SYSTEM';
         
-        // Ganti warna tombol saat daftar
         const btn = document.getElementById('main-btn');
         if(t === 'daftar') {
+            btn.innerText = 'CREATE ACCOUNT';
             btn.style.background = "linear-gradient(180deg, var(--pink) 0%, #b30054 100%)";
             btn.style.boxShadow = "0 8px 0 #7a003a, 0 15px 25px rgba(255, 0, 119, 0.3)";
         } else {
+            btn.innerText = 'ACCESS SYSTEM';
             btn.style.background = "";
             btn.style.boxShadow = "";
         }
     }
 
     function togglePass() {
+        playS(sClick);
         const passInput = document.getElementById('pass');
         const eyeIcon = document.querySelector('.toggle-pass');
         if (passInput.type === 'password') {
@@ -168,33 +227,42 @@
     }
 
     async function processAuth() {
+        playS(sClick);
         const username = document.getElementById('user').value.toLowerCase().trim();
         const password = document.getElementById('pass').value.trim();
 
-        if(!username || !password) return alert("Please fill all fields!");
+        if(!username || !password) {
+            document.getElementById('card-body').classList.add('shake');
+            setTimeout(() => document.getElementById('card-body').classList.remove('shake'), 400);
+            return showPop("Username and Password are required!");
+        }
 
         if(mode === 'login') {
-            const { data, error } = await _supabase
-                .from('profiles')
-                .select('*')
-                .eq('username', username)
-                .eq('password', password)
-                .single();
-
+            const { data, error } = await _supabase.from('profiles').select('*').eq('username', username).eq('password', password).single();
             if(data) {
                 localStorage.setItem('user_neon', username);
-                window.location.href = 'game.html';
+                showPop("Access Granted! Welcome back.", 'success');
+                setTimeout(() => window.location.href = 'game.html', 1500);
             } else {
-                alert("Invalid Credentials! Please check again.");
+                showPop("Invalid Credentials! System rejected access.");
             }
         } else {
-            // Validasi Tambahan Daftar
             const bank = document.getElementById('bank').value;
-            const acc = document.getElementById('acc_no').value;
-            const name = document.getElementById('full_name').value;
+            const acc = document.getElementById('acc_no').value.trim();
+            const name = document.getElementById('full_name').value.trim();
 
-            if(!bank || !acc || !name) return alert("Please complete your Bank information!");
+            // VALIDASI REGISTER
+            if(password.length < 6) return showPop("Password must be at least 6 characters!");
+            if(!bank || !acc || !name) return showPop("Please complete your Bank profile!");
 
+            // CEK USERNAME & REKENING EXIST
+            const { data: existUser } = await _supabase.from('profiles').select('username').eq('username', username).single();
+            if(existUser) return showPop("Username already registered!");
+
+            const { data: existAcc } = await _supabase.from('profiles').select('nomor_rekening').eq('nomor_rekening', acc).single();
+            if(existAcc) return showPop("Account number already used!");
+
+            // PROSES INSERT
             const { error } = await _supabase.from('profiles').insert([{
                 username: username,
                 password: password,
@@ -207,10 +275,10 @@
             }]);
 
             if(error) {
-                alert("Error: " + error.message);
+                showPop("System Error: " + error.message);
             } else {
-                alert("Account Created Successfully! Please Login.");
-                location.reload();
+                showPop("Registration Success! Identity secured.", 'success');
+                setTimeout(() => location.reload(), 2000);
             }
         }
     }
