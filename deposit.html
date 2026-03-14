@@ -36,6 +36,9 @@
         .amount-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0;}
         .amount-item{padding:10px; border:1px solid var(--pink); border-radius:10px; text-align:center; font-size:11px; font-weight:700; color:var(--pink); cursor:pointer;}
         
+        .calc-info { background: rgba(0,212,255,0.1); padding: 12px; border-radius: 12px; margin: 15px 0; font-size: 12px; border: 1px dashed var(--blue); }
+        .calc-info div { display: flex; justify-content: space-between; margin-bottom: 5px; }
+
         .qris-display{text-align:center;margin:15px 0;}
         .qris-display img{width:180px; height:180px; border-radius:15px; border:2px solid #fff;}
 
@@ -79,12 +82,22 @@
 
     <div class="form-section">
         <div class="sec-title" id="form-title">DEPOSIT VIA QRIS</div>
-        <input type="number" id="input-amount" placeholder="Masukkan Nominal...">
+        <input type="number" id="input-amount" placeholder="Masukkan Nominal..." oninput="calculateNet()">
         
         <div class="amount-grid" id="grid-idr">
             <div class="amount-item" onclick="setAmt(20000)">20K</div>
             <div class="amount-item" onclick="setAmt(50000)">50K</div>
             <div class="amount-item" onclick="setAmt(100000)">100K</div>
+        </div>
+
+        <div class="calc-info" id="calc-info">
+            <div><span>Rate Kurs:</span> <span id="info-rate">Rp 1</span></div>
+            <div><span>Biaya (Fee):</span> <span id="info-fee">Rp 0</span></div>
+            <hr style="margin:8px 0; border:0; border-top:1px solid rgba(255,255,255,0.1)">
+            <div style="font-weight:800; color:var(--yellow)">
+                <span>Terima di Saldo:</span>
+                <span id="info-net">IDR 0</span>
+            </div>
         </div>
 
         <div class="qris-display" id="qris-area">
@@ -101,6 +114,8 @@
 
 <script>
     let currentMethod = 'QRIS';
+    const KURS_USDT = 16800;
+    const FEE_USDT = 2; // dalam Dollar
 
     function selectMethod(m) {
         currentMethod = m;
@@ -109,36 +124,78 @@
         document.getElementById('form-title').innerText = `DEPOSIT VIA ${m}`;
         document.getElementById('qris-area').style.display = (m === 'QRIS') ? 'block' : 'none';
         document.getElementById('grid-idr').style.display = (m === 'QRIS') ? 'grid' : 'none';
+        document.getElementById('input-amount').placeholder = (m === 'QRIS') ? "Masukkan Rupiah..." : "Masukkan Jumlah USDT...";
+        document.getElementById('input-amount').value = "";
+        calculateNet();
     }
 
-    function setAmt(v) { document.getElementById('input-amount').value = v; }
+    function setAmt(v) { 
+        document.getElementById('input-amount').value = v; 
+        calculateNet();
+    }
+
+    function calculateNet() {
+        const val = parseFloat(document.getElementById('input-amount').value) || 0;
+        let rate = 1;
+        let fee = 0;
+        let net = 0;
+
+        if (currentMethod === 'QRIS') {
+            rate = 1;
+            fee = 0;
+            net = val;
+            document.getElementById('info-rate').innerText = "Normal";
+            document.getElementById('info-fee').innerText = "Rp 0";
+        } else {
+            rate = KURS_USDT;
+            fee = FEE_USDT * KURS_USDT;
+            // Saldo diterima = (Jumlah USDT - Fee $2) * Kurs
+            net = (val > FEE_USDT) ? (val - FEE_USDT) * KURS_USDT : 0;
+            
+            document.getElementById('info-rate').innerText = "Rp " + KURS_USDT.toLocaleString();
+            document.getElementById('info-fee').innerText = "Rp " + fee.toLocaleString();
+        }
+
+        document.getElementById('info-net').innerText = "IDR " + Math.floor(net).toLocaleString('id-ID');
+        return net;
+    }
 
     async function prosesDeposit() {
-        const amt = document.getElementById('input-amount').value;
+        const val = parseFloat(document.getElementById('input-amount').value);
         const user = localStorage.getItem('user_neon');
         const btn = document.getElementById('btn-submit');
+        const netAmount = calculateNet();
 
-        if(!user) return showModal("Sesi Berakhir", "Silahkan login kembali.");
-        if(!amt || amt <= 0) return showModal("Gagal", "Masukkan nominal yang benar.");
+        // Validasi Minimum
+        if (currentMethod === 'QRIS' && val < 20000) {
+            return showModal("Minimal Kurang", "Deposit QRIS minimal Rp 20.000");
+        }
+        if (currentMethod === 'USDT' && val < 10) {
+            return showModal("Minimal Kurang", "Deposit USDT minimal $10");
+        }
+        if (!user) return showModal("Sesi Berakhir", "Silahkan login kembali.");
+        if (!val || val <= 0) return showModal("Gagal", "Masukkan nominal yang benar.");
 
         btn.disabled = true;
         btn.innerText = "MENGIRIM...";
 
         try {
-            // Gunakan _supabase sesuai global.js Master
+            // Kita simpan netAmount (hasil konversi) agar Admin tahu berapa saldo yang harus ditambah
             const { error } = await _supabase
                 .from('deposits')
                 .insert([{ 
                     username: user, 
                     method: currentMethod, 
-                    amount: parseFloat(amt), 
+                    amount: val, // Nominal asli (Rp atau $)
+                    net_receive: Math.floor(netAmount), // Nominal yang akan diterima di saldo (Rp)
                     status: 'PROSES' 
                 }]);
 
             if (error) throw error;
 
-            showModal("Berhasil", "Permintaan deposit terkirim! Silahkan tunggu konfirmasi admin.");
+            showModal("Berhasil", "Permintaan deposit terkirim! Saldo akan masuk otomatis setelah Admin melakukan konfirmasi.");
             document.getElementById('input-amount').value = "";
+            calculateNet();
             loadHistory();
         } catch (err) {
             showModal("Gagal", err.message);
@@ -162,10 +219,12 @@
                 <div class="history-item">
                     <div style="display:flex; justify-content:space-between; font-size:12px;">
                         <span style="font-weight:800">${i.method}</span>
-                        <span style="color:var(--yellow)">${i.status}</span>
+                        <span style="color:${i.status === 'SUKSES' ? '#00ff00' : 'var(--yellow)'}">${i.status}</span>
                     </div>
-                    <div style="font-size:18px; font-weight:900; margin:5px 0;">${i.method === 'QRIS' ? 'Rp' : '$'} ${parseFloat(i.amount).toLocaleString()}</div>
-                    <div style="font-size:10px; opacity:0.4;">${new Date(i.created_at).toLocaleString()}</div>
+                    <div style="font-size:18px; font-weight:900; margin:5px 0;">
+                        ${i.method === 'QRIS' ? 'Rp' : '$'} ${parseFloat(i.amount).toLocaleString()}
+                    </div>
+                    <div style="font-size:10px; opacity:0.4;">Est. Terima: IDR ${parseFloat(i.net_receive || 0).toLocaleString()}</div>
                 </div>
             `).join('');
             document.getElementById('depo-history').innerHTML = html || '<div style="text-align:center; opacity:0.3;">Belum ada riwayat</div>';
@@ -184,7 +243,10 @@
         document.getElementById('neon-modal').style.display = 'none';
     }
 
-    window.onload = loadHistory;
+    window.onload = () => {
+        loadHistory();
+        calculateNet();
+    };
 </script>
 </body>
 </html>
