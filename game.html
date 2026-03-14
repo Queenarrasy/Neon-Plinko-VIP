@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>NEON PLINKO VIP - Integrated v6.0</title>
+<title>NEON PLINKO VIP - v6.1 Production</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -21,7 +21,6 @@ body{
   background-image: radial-gradient(circle at 50% -20%, #1a1b3a 0%, transparent 70%);
 }
 
-/* ─── MODAL ─── */
 #modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(5px);z-index:9998;}
 #neon-modal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
   background:linear-gradient(160deg,#07091d,#0b0d24);border-radius:20px;z-index:9999;
@@ -29,45 +28,47 @@ body{
   animation:mpop .3s cubic-bezier(.34,1.56,.64,1);}
 @keyframes mpop{from{opacity:0;transform:translate(-50%,-50%) scale(.8)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
 
-/* ─── HEADER ─── */
 .header{padding:12px 15px;display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.4);border-bottom:1px solid rgba(0,85,255,0.2);}
 .balance-box{flex:1;margin:0 15px;background:rgba(0,0,0,0.5);border:1px solid var(--bp);border-radius:30px;padding:5px 15px;text-align:center;box-shadow:var(--gp);}
 #game-display-saldo{font-family:'Cinzel Decorative',serif;font-size:16px;font-weight:900;color:#fff;text-shadow:var(--gp);}
 .header-user{text-align:center;cursor:pointer;transition:0.2s;}
 .header-user:hover{opacity:0.8;}
-.header-user i{font-size:22px;}
-.header-user span{font-size:8px;display:block;}
 
-/* ─── GAME BOARD ─── */
 #board-wrapper{flex:1;position:relative;width:100%;max-height:50vh;overflow:hidden;margin-top:10px;}
 #plinko-canvas{display:block;width:100%;height:100%;}
 
-/* ─── SLOTS ─── */
 .multiplier-container{position:relative;height:34px;margin-bottom:10px;width:100%;padding:0;}
 .multiplier-row{display:flex;position:absolute;height:100%;top:0;}
 .slot{height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;border-radius:4px;margin:0 1px;transition:0.1s ease-out;}
-.slot.active{transform:translateY(-5px);filter:brightness(2.5);box-shadow:0 0 20px #fff;z-index:10;}
+.slot.active{transform:scale(1.15);filter:brightness(2.5);box-shadow:0 0 25px #fff, inset 0 0 10px #fff;z-index:10;animation:slotFlash 0.4s;}
+@keyframes slotFlash{0%{transform:scale(1.2);}50%{transform:scale(1.1);}100%{transform:scale(1.15);}}
 .s-high{background:linear-gradient(to bottom, var(--pink), #80003c);color:#fff;}
 .s-mid{background:linear-gradient(to bottom, var(--yellow), #807700);color:#000;}
 .s-low{background:linear-gradient(to bottom, var(--blue), #002266);color:#fff;}
 
-/* ─── CONTROLS ─── */
-.controls{padding:15px;background:rgba(5,7,25,0.9);border-top:1px solid rgba(0,85,255,0.2);display:flex;flex-direction:column;gap:12px;}
+.controls{padding:15px;background:rgba(5,7,25,0.9);border-top:1px solid rgba(0,85,255,0.2);display:flex;flex-direction:column;gap:12px;max-height:250px;overflow-y:auto;}
 .mode-row{display:flex;gap:8px;}
 .btn-mode{flex:1;padding:10px;border-radius:12px;font-size:10px;font-weight:700;border:1px solid #333;background:rgba(255,255,255,0.05);color:#888;cursor:pointer;}
 .btn-mode.active{border-color:var(--blue);color:#fff;box-shadow:var(--gb);background:rgba(0,85,255,0.1);}
+
 .bet-row{display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.4);border:1px solid rgba(0,85,255,0.2);border-radius:50px;padding:5px 15px;}
-.bet-btn{font-size:24px;color:var(--pink);background:none;border:none;cursor:pointer;}
+.bet-btn{font-size:24px;color:var(--pink);background:none;border:none;cursor:pointer;padding:5px;}
+.bet-btn:disabled{opacity:0.3;}
 #current-bet{font-family:'Cinzel Decorative',serif;font-size:18px;font-weight:900;color:var(--yellow);}
+
 .btn-play{width:100%;padding:16px;border-radius:50px;font-family:'Cinzel Decorative',serif;font-size:14px;font-weight:900;background:linear-gradient(90deg,var(--pink),var(--blue));color:#fff;border:none;box-shadow:var(--gp);cursor:pointer;transition:all 0.3s;}
 .btn-play:disabled{opacity:0.5;cursor:not-allowed;}
 .btn-play.stop-mode{background:var(--yellow);color:#000;box-shadow:var(--gy);}
+
 .nav-bottom{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
 .nav-btn{display:flex;flex-direction:column;align-items:center;padding:10px;border-radius:15px;text-decoration:none;font-size:10px;border:1px solid #222;color:#fff;cursor:pointer;background:none;}
 .nav-btn i{font-size:18px;margin-bottom:4px;}
 
-/* ─── INFO BOX ─── */
-#info-box{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);color:#0f0;padding:8px 16px;border-radius:5px;font-size:12px;max-width:90%;text-align:center;z-index:100;display:none;border:1px solid rgba(15,255,0,0.5);}
+#info-box{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.95);color:#0f0;padding:10px 16px;border-radius:5px;font-size:12px;max-width:90%;text-align:center;z-index:100;display:none;border:1px solid rgba(15,255,0,0.5);font-weight:bold;}
+
+/* Status indicator */
+.status-indicator{position:fixed;top:10px;right:10px;font-size:12px;padding:5px 12px;border-radius:20px;background:rgba(0,0,0,0.7);border:1px solid #0f0;color:#0f0;z-index:50;}
+.status-indicator.error{background:rgba(200,0,0,0.3);border-color:#f00;color:#f00;}
 </style>
 </head>
 <body>
@@ -75,7 +76,6 @@ body{
 <audio id="snd-hit" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3" preload="auto"></audio>
 <audio id="snd-win" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3" preload="auto"></audio>
 
-<!-- MODAL -->
 <div id="modal-overlay" onclick="closeModal()"></div>
 <div id="neon-modal">
     <div id="modal-title" style="color:var(--pink);font-size:14px;font-weight:bold;">INFO</div>
@@ -83,32 +83,28 @@ body{
     <button onclick="closeModal()" style="padding:8px 25px;border-radius:20px;border:1px solid var(--pink);color:var(--pink);background:none;font-weight:bold;cursor:pointer;">OK</button>
 </div>
 
-<!-- HEADER -->
 <div class="header">
     <div class="header-user" onclick="openProfileMenu()" title="Profile">
-        <i class="fa-solid fa-circle-user" style="color:var(--yellow);"></i>
-        <span id="display-username" style="color:var(--yellow)">GUEST</span>
+        <i class="fa-solid fa-circle-user" style="color:var(--yellow);font-size:22px;"></i>
+        <span id="display-username" style="color:var(--yellow);font-size:8px;display:block;">GUEST</span>
     </div>
     <div class="balance-box">
-        <div style="font-size:8px;color:#aaa">SALDO UTAMA</div>
+        <div style="font-size:8px;color:#aaa;">SALDO UTAMA</div>
         <div id="game-display-saldo">IDR 0</div>
     </div>
-    <div onclick="showLogout()" style="width:40px;text-align:center;cursor:pointer;" title="Logout">
-        <i class="fa-solid fa-sign-out-alt" style="color:var(--pink);font-size:18px;"></i>
+    <div onclick="showLogout()" style="width:40px;text-align:center;cursor:pointer;font-size:18px;color:var(--pink);" title="Logout">
+        <i class="fa-solid fa-sign-out-alt"></i>
     </div>
 </div>
 
-<!-- BOARD -->
 <div id="board-wrapper">
     <canvas id="plinko-canvas"></canvas>
 </div>
 
-<!-- MULTIPLIER SLOTS -->
 <div class="multiplier-container">
     <div class="multiplier-row" id="slot-row"></div>
 </div>
 
-<!-- CONTROLS -->
 <div class="controls">
     <div class="mode-row">
         <button class="btn-mode active" id="m-normal" onclick="setSpeed('normal')">NORMAL</button>
@@ -116,9 +112,9 @@ body{
         <button class="btn-mode" id="m-auto" onclick="toggleAuto()">AUTO: OFF</button>
     </div>
     <div class="bet-row">
-        <button class="bet-btn" onclick="changeBet(-1)"><i class="fa-solid fa-circle-minus"></i></button>
-        <div id="current-bet">1.000</div>
-        <button class="bet-btn" onclick="changeBet(1)" style="color:var(--blue)"><i class="fa-solid fa-circle-plus"></i></button>
+        <button class="bet-btn" onclick="changeBet(-1)" id="bet-minus"><i class="fa-solid fa-circle-minus"></i></button>
+        <div id="current-bet">400</div>
+        <button class="bet-btn" onclick="changeBet(1)" id="bet-plus" style="color:var(--blue)"><i class="fa-solid fa-circle-plus"></i></button>
     </div>
     <button class="btn-play" id="main-btn" onclick="handlePlay()">PLAY BALL</button>
     <div class="nav-bottom">
@@ -129,188 +125,261 @@ body{
 </div>
 
 <div id="info-box"></div>
+<div class="status-indicator" id="status-indicator">🟢 ONLINE</div>
 
 <script src="global.js"></script>
 <script>
 /**
  * ════════════════════════════════════════════════════════════════
- * NEON PLINKO VIP - v6.0 INTEGRATED
+ * PLINKO GAME v6.1 PRODUCTION READY
  * 
- * Fully integrated dengan global.js v5.0 & Code.gs v6.0
+ * FIXES:
+ * [1] Ball landing accuracy - proper LAND_Y & slot mapping
+ * [2] Physics gravity reduced - slower di mode normal
+ * [3] Multiple balls support - spawn immediately tanpa tunggu
+ * [4] Bet array lengkap - 400,600,800,...,10000
+ * [5] Saldo sync real-time - terhubung ke _session user
+ * [6] Multi-user optimization - better lock, retry, timeout
+ * [7] Multi-device support - responsive & stable
+ * [8] Production logging - untuk debug & monitoring
  * ════════════════════════════════════════════════════════════════
- * 
- * PERBAIKAN v6.0:
- * [1] Gunakan GameEngine.processPlay() dari global.js
- * [2] Ball landing PASTI sesuai server response
- * [3] Winrate & maxwin diatur oleh server (Code.gs)
- * [4] Session management via _session dari global.js
- * [5] syncSaldoUI() untuk update balance
- * [6] No hardcoded API — semua via global.js
  */
 
 // ════════════════════════════════════════════════════════════════
-// GAME CONFIG & CONSTANTS
+// PRODUCTION CONFIG
 // ════════════════════════════════════════════════════════════════
 
-var ROWS   = 9;
-var MULTS  = [10, 3, 1.5, 0.5, 0.2, 0.2, 0.5, 1.5, 3, 10];
-var BETS   = [1000, 2000, 5000, 10000, 25000, 50000, 100000];
-var BALL_R = 6;
-var PEG_R  = 3.5;
-
-var canvas, ctx, BW, BH;
-var pegs = [], balls = [], floaters = [];
-var speedMode = 'normal', isAuto = false, autoTimer = null;
-var betIdx = 2; // Default 5000
-var isPlaying = false;
-
-var slotStartX = 0, slotItemW = 0;
-var LAND_Y_RATIO = 0.88;
-
-var PHYSICS = {
-    normal: { grav: 0.35, bounce: 0.5, friction: 0.98 },
-    turbo:  { grav: 0.65, bounce: 0.45, friction: 0.97 }
+const GAME_CONFIG = {
+    // Physics (OPTIMIZED untuk smooth gameplay)
+    ROWS: 9,
+    BALL_R: 6,
+    PEG_R: 3.5,
+    LAND_Y_RATIO: 0.92,  // INCREASED untuk accuracy
+    
+    // Bet array (SESUAI REQUEST)
+    BETS: [400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000, 4000, 6000, 8000, 10000],
+    DEFAULT_BET_IDX: 0, // Start dengan 400
+    
+    // Multipliers
+    MULTS: [10, 3, 1.5, 0.5, 0.2, 0.2, 0.5, 1.5, 3, 10],
+    
+    // Physics (REDUCED untuk smooth gameplay)
+    PHYSICS: {
+        normal: { grav: 0.25, bounce: 0.45, friction: 0.99 },  // Lebih lambat
+        turbo:  { grav: 0.50, bounce: 0.42, friction: 0.98 }   // Medium cepat
+    },
+    
+    // Timeouts & Retry
+    API_TIMEOUT: 8000,  // 8 detik max
+    RETRY_COUNT: 3,
+    RETRY_DELAY: 500,   // 500ms antara retry
+    
+    // Multi-user
+    SYNC_INTERVAL: 15000  // Sync saldo setiap 15 detik
 };
 
 // ════════════════════════════════════════════════════════════════
-// SETUP
+// STATE MANAGEMENT
+// ════════════════════════════════════════════════════════════════
+
+var STATE = {
+    canvas: null,
+    ctx: null,
+    BW: 0,
+    BH: 0,
+    pegs: [],
+    balls: [],
+    floaters: [],
+    
+    speedMode: 'normal',
+    isAuto: false,
+    autoTimer: null,
+    betIdx: GAME_CONFIG.DEFAULT_BET_IDX,
+    
+    isPlaying: false,
+    activePlayCount: 0,  // Track concurrent plays
+    
+    slotStartX: 0,
+    slotItemW: 0,
+    
+    lastSaldoSync: 0,
+    lastErrorTime: 0
+};
+
+// ════════════════════════════════════════════════════════════════
+// SETUP CANVAS & PEGS
 // ════════════════════════════════════════════════════════════════
 
 function setupCanvas() {
-    canvas = document.getElementById('plinko-canvas');
-    ctx    = canvas.getContext('2d');
+    STATE.canvas = document.getElementById('plinko-canvas');
+    STATE.ctx = STATE.canvas.getContext('2d');
     var wrap = document.getElementById('board-wrapper');
-    BW = wrap.offsetWidth;
-    BH = wrap.offsetHeight;
+    STATE.BW = wrap.offsetWidth;
+    STATE.BH = wrap.offsetHeight;
 
     var dpr = window.devicePixelRatio || 1;
-    canvas.width  = BW * dpr;
-    canvas.height = BH * dpr;
-    canvas.style.width  = BW + 'px';
-    canvas.style.height = BH + 'px';
-    ctx.scale(dpr, dpr);
+    STATE.canvas.width = STATE.BW * dpr;
+    STATE.canvas.height = STATE.BH * dpr;
+    STATE.canvas.style.width = STATE.BW + 'px';
+    STATE.canvas.style.height = STATE.BH + 'px';
+    STATE.ctx.scale(dpr, dpr);
 
     // Generate pegs
-    pegs = [];
-    var spY = (BH - 40) / ROWS;
-    var spX = BW / (ROWS + 2.5);
+    STATE.pegs = [];
+    var spY = (STATE.BH - 40) / GAME_CONFIG.ROWS;
+    var spX = STATE.BW / (GAME_CONFIG.ROWS + 2.5);
     var lastRowPegs = [];
 
-    for (var r = 0; r < ROWS; r++) {
-        var cnt    = r + 3;
-        var startX = (BW - (cnt - 1) * spX) / 2;
+    for (var r = 0; r < GAME_CONFIG.ROWS; r++) {
+        var cnt = r + 3;
+        var startX = (STATE.BW - (cnt - 1) * spX) / 2;
         for (var c = 0; c < cnt; c++) {
             var px = startX + c * spX;
             var py = 30 + r * spY;
-            pegs.push({ x: px, y: py, glow: 0 });
-            if (r === ROWS - 1) lastRowPegs.push(px);
+            STATE.pegs.push({ x: px, y: py, glow: 0 });
+            if (r === GAME_CONFIG.ROWS - 1) lastRowPegs.push(px);
         }
     }
 
-    // Setup slot positions
-    slotStartX = lastRowPegs[0];
-    var slotEndX   = lastRowPegs[lastRowPegs.length - 1];
-    var totalW     = slotEndX - slotStartX;
-    slotItemW      = totalW / MULTS.length;
+    // Setup slots
+    STATE.slotStartX = lastRowPegs[0];
+    var slotEndX = lastRowPegs[lastRowPegs.length - 1];
+    var totalW = slotEndX - STATE.slotStartX;
+    STATE.slotItemW = totalW / GAME_CONFIG.MULTS.length;
 
     var slotRow = document.getElementById('slot-row');
     slotRow.innerHTML = '';
-    slotRow.style.left  = slotStartX + 'px';
+    slotRow.style.left = STATE.slotStartX + 'px';
     slotRow.style.width = totalW + 'px';
 
-    MULTS.forEach(function(m, i) {
+    GAME_CONFIG.MULTS.forEach(function(m, i) {
         var s = document.createElement('div');
         s.id = 'slot-' + i;
         s.className = 'slot ' + (m >= 3 ? 's-high' : m >= 1 ? 's-mid' : 's-low');
-        s.style.width = (100 / MULTS.length) + '%';
+        s.style.width = (100 / GAME_CONFIG.MULTS.length) + '%';
         s.textContent = m + 'x';
         slotRow.appendChild(s);
     });
+    
+    logDebug('Canvas setup completed: ' + STATE.BW + 'x' + STATE.BH);
 }
 
 function slotCenterX(i) {
-    return slotStartX + (i + 0.5) * slotItemW;
+    return STATE.slotStartX + (i + 0.5) * STATE.slotItemW;
 }
 
 // ════════════════════════════════════════════════════════════════
-// SPAWN & PLAY
+// SPAWN & PLAY - MULTIPLE BALLS SUPPORT
 // ════════════════════════════════════════════════════════════════
 
 async function spawnBall() {
-    if (isPlaying) return;
-    
-    var bet = BETS[betIdx];
+    // Allow multiple balls - tidak perlu tunggu ball sebelumnya
+    var bet = GAME_CONFIG.BETS[STATE.betIdx];
     var saldo = getSaldo();
     
     if (saldo < bet) {
-        showModal('Saldo tidak cukup untuk bet IDR ' + formatIDR(bet), 'SALDO KURANG');
+        showModal('Saldo tidak cukup! Butuh IDR ' + formatIDR(bet), 'SALDO KURANG');
         stopAuto();
         return;
     }
 
-    isPlaying = true;
-    document.getElementById('main-btn').disabled = true;
-
-    var ball = {
-        x:             BW / 2 + (Math.random() - 0.5) * 15,
-        y:             -15,
-        vx:            (Math.random() - 0.5) * 2,
-        vy:            2,
-        bet:           bet,
-        status:        'falling',
-        targetSlotIdx: null,
-        targetMult:    null,
-        winAmount:     0,
-        landed:        false,
-        isDone:        false
-    };
-
-    balls.push(ball);
-
-    // Show loading
+    STATE.isPlaying = true;
+    STATE.activePlayCount++;
+    updatePlayButton();
     showInfo('⏳ Processing...');
 
+    var ball = {
+        x: STATE.BW / 2 + (Math.random() - 0.5) * 20,
+        y: -15,
+        vx: (Math.random() - 0.5) * 2,
+        vy: 2,
+        bet: bet,
+        status: 'falling',
+        targetSlotIdx: null,
+        targetMult: null,
+        winAmount: 0,
+        landed: false,
+        isDone: false,
+        startTime: Date.now()
+    };
+
+    STATE.balls.push(ball);
+    logDebug('Ball spawned. Active balls: ' + STATE.balls.length);
+
     try {
-        // Call GameEngine.processPlay dari global.js
-        var result = await GameEngine.processPlay(bet);
+        // Call dengan timeout & retry
+        var result = await callGamePlayWithRetry(bet, 3);
 
         if (!result || result.result !== 'SUCCESS') {
-            showModal('Transaksi gagal atau saldo tidak cukup.', 'ERROR');
             ball.isDone = true;
-            isPlaying = false;
-            document.getElementById('main-btn').disabled = false;
+            showModal(result.message || 'Transaksi gagal', 'ERROR');
+            STATE.activePlayCount--;
             hideInfo();
+            updatePlayButton();
             return;
         }
 
-        // Server response menentukan slot & multiplier
-        var mult = result.multiplier || 1;
-        var slotIdx = findSlotByMultiplier(mult);
-
+        // Set target dari server response
+        var slotIdx = findSlotByMultiplier(result.multiplier);
         ball.targetSlotIdx = slotIdx;
-        ball.targetMult    = mult;
-        ball.winAmount     = result.winAmount || 0;
-        ball.status        = 'ready';
+        ball.targetMult = result.multiplier;
+        ball.winAmount = result.winAmount || 0;
+        ball.status = 'ready';
 
+        // Update saldo dari server response
+        if (result.newSaldo !== undefined) {
+            syncSaldoUI(result.newSaldo);
+        }
+
+        logDebug('Play success: ' + result.multiplier + 'x, win: ' + result.winAmount);
         hideInfo();
 
     } catch (err) {
         console.error('Play error:', err);
-        showModal('Koneksi error: ' + err.message, 'ERROR');
         ball.isDone = true;
-        isPlaying = false;
-        document.getElementById('main-btn').disabled = false;
+        showModal('Error: ' + err.message, 'ERROR');
+        STATE.activePlayCount--;
         hideInfo();
+    } finally {
+        STATE.isPlaying = false;
+        updatePlayButton();
+    }
+}
+
+async function callGamePlayWithRetry(bet, retries) {
+    for (var i = 0; i < retries; i++) {
+        try {
+            var timeoutPromise = new Promise(function(_, reject) {
+                setTimeout(function() {
+                    reject(new Error('Request timeout'));
+                }, GAME_CONFIG.API_TIMEOUT);
+            });
+
+            var apiPromise = GameEngine.processPlay(bet);
+            var result = await Promise.race([apiPromise, timeoutPromise]);
+            
+            if (result && result.result === 'SUCCESS') {
+                return result;
+            }
+            
+            if (i < retries - 1) {
+                await sleep(GAME_CONFIG.RETRY_DELAY);
+            }
+        } catch (err) {
+            console.warn('Retry attempt ' + (i+1) + ' failed:', err.message);
+            if (i === retries - 1) throw err;
+            await sleep(GAME_CONFIG.RETRY_DELAY);
+        }
     }
 }
 
 function findSlotByMultiplier(mult) {
     mult = parseFloat(mult) || 1;
     var closest = 0;
-    var minDiff = Math.abs(MULTS[0] - mult);
+    var minDiff = Math.abs(GAME_CONFIG.MULTS[0] - mult);
     
-    for (var i = 1; i < MULTS.length; i++) {
-        var diff = Math.abs(MULTS[i] - mult);
+    for (var i = 1; i < GAME_CONFIG.MULTS.length; i++) {
+        var diff = Math.abs(GAME_CONFIG.MULTS[i] - mult);
         if (diff < minDiff) {
             minDiff = diff;
             closest = i;
@@ -324,72 +393,90 @@ function findSlotByMultiplier(mult) {
 // ════════════════════════════════════════════════════════════════
 
 function updatePhysics() {
-    var ph    = PHYSICS[speedMode];
-    var LAND_Y = BH * LAND_Y_RATIO;
+    var ph = GAME_CONFIG.PHYSICS[STATE.speedMode];
+    var LAND_Y = STATE.BH * GAME_CONFIG.LAND_Y_RATIO;
 
-    balls.forEach(function(b) {
-        if (b.isDone) return;
+    for (var bi = STATE.balls.length - 1; bi >= 0; bi--) {
+        var b = STATE.balls[bi];
+        if (b.isDone) {
+            STATE.balls.splice(bi, 1);
+            continue;
+        }
 
-        var progY = b.y / BH;
+        var progY = b.y / STATE.BH;
 
-        // HARD LOCK ZONE (progY > 0.78)
-        if (b.status === 'ready' && progY > 0.78) {
-            var tx   = slotCenterX(b.targetSlotIdx);
+        // HARD LOCK ZONE (progY > 0.80)
+        if (b.status === 'ready' && progY > 0.80) {
+            var tx = slotCenterX(b.targetSlotIdx);
             var diff = tx - b.x;
-            var lockStr = progY > 0.85 ? 0.55 : 0.30;
-            b.x  += diff * lockStr;
-            b.vx  = diff * (lockStr * 0.6);
+            var lockStr = progY > 0.90 ? 0.65 : (progY > 0.85 ? 0.50 : 0.25);
+            b.x += diff * lockStr;
+            b.vx = diff * (lockStr * 0.5);
         }
-        // STEERING ZONE (progY 0.45 - 0.78)
+        // STEERING ZONE (progY 0.45 - 0.80)
         else if (b.status === 'ready' && progY > 0.45) {
-            var tx2   = slotCenterX(b.targetSlotIdx);
+            var tx2 = slotCenterX(b.targetSlotIdx);
             var diff2 = tx2 - b.x;
-            var prog  = (progY - 0.45) / (0.78 - 0.45);
-            b.vx += diff2 * 0.18 * prog;
-            var maxVx = Math.abs(diff2) * 0.5 + 2;
-            if (b.vx >  maxVx) b.vx =  maxVx;
-            if (b.vx < -maxVx) b.vx = -maxVx;
+            var prog = (progY - 0.45) / (0.80 - 0.45);
+            b.vx += diff2 * 0.15 * prog;
+            var maxVx = Math.abs(diff2) * 0.4 + 1.5;
+            b.vx = Math.max(-maxVx, Math.min(maxVx, b.vx));
         }
 
-        // CHECK LANDING
+        // CHECK LANDING - ACCURATE
         if (!b.landed && b.y >= LAND_Y && b.status === 'ready') {
             b.landed = true;
-            b.isDone = true;
             onBallLand(b);
-            return;
+            b.isDone = true;
+            STATE.activePlayCount--;
+            continue;
         }
 
-        // Physics
+        // Physics calculation
         b.vy += ph.grav;
         b.vx *= ph.friction;
-        b.x  += b.vx;
-        b.y  += b.vy;
+        b.x += b.vx;
+        b.y += b.vy;
 
         // Peg collision
-        for (var pi = 0; pi < pegs.length; pi++) {
-            var p    = pegs[pi];
-            var dx   = b.x - p.x;
-            var dy   = b.y - p.y;
+        for (var pi = 0; pi < STATE.pegs.length; pi++) {
+            var p = STATE.pegs[pi];
+            var dx = b.x - p.x;
+            var dy = b.y - p.y;
             var dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < BALL_R + PEG_R) {
+            
+            if (dist < GAME_CONFIG.BALL_R + GAME_CONFIG.PEG_R) {
                 var ang = Math.atan2(dy, dx);
                 var spd = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
-                b.vx = Math.cos(ang) * spd * ph.bounce + (Math.random() - 0.5) * 0.3;
-                b.vy = Math.abs(Math.sin(ang) * spd * ph.bounce) + 0.4;
-                b.x  = p.x + Math.cos(ang) * (BALL_R + PEG_R + 1);
-                b.y  = p.y + Math.sin(ang) * (BALL_R + PEG_R + 1);
+                b.vx = Math.cos(ang) * spd * ph.bounce + (Math.random() - 0.5) * 0.2;
+                b.vy = Math.abs(Math.sin(ang) * spd * ph.bounce) + 0.3;
+                b.x = p.x + Math.cos(ang) * (GAME_CONFIG.BALL_R + GAME_CONFIG.PEG_R + 1);
+                b.y = p.y + Math.sin(ang) * (GAME_CONFIG.BALL_R + GAME_CONFIG.PEG_R + 1);
                 p.glow = 1.0;
-                playSound('snd-hit', 0.12);
+                playSound('snd-hit', 0.08);
                 break;
             }
         }
 
         // Boundaries
-        if (b.x < BALL_R)      { b.x = BALL_R;      b.vx = Math.abs(b.vx) * 0.5; }
-        if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx = -Math.abs(b.vx) * 0.5; }
-    });
+        if (b.x < GAME_CONFIG.BALL_R) {
+            b.x = GAME_CONFIG.BALL_R;
+            b.vx = Math.abs(b.vx) * 0.4;
+        }
+        if (b.x > STATE.BW - GAME_CONFIG.BALL_R) {
+            b.x = STATE.BW - GAME_CONFIG.BALL_R;
+            b.vx = -Math.abs(b.vx) * 0.4;
+        }
 
-    balls = balls.filter(function(b) { return !b.isDone; });
+        // Timeout check - prevent stuck balls
+        if (Date.now() - b.startTime > 15000) {
+            logDebug('Ball timeout - forcing land');
+            b.landed = true;
+            onBallLand(b);
+            b.isDone = true;
+            STATE.activePlayCount--;
+        }
+    }
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -397,35 +484,41 @@ function updatePhysics() {
 // ════════════════════════════════════════════════════════════════
 
 function onBallLand(b) {
-    // Flash slot
+    // Flash slot dengan animation
     var slotEl = document.getElementById('slot-' + b.targetSlotIdx);
     if (slotEl) {
         slotEl.classList.add('active');
-        setTimeout(function() { slotEl.classList.remove('active'); }, 300);
+        setTimeout(function() {
+            slotEl.classList.remove('active');
+        }, 400);
     }
 
     // Sound
-    if (b.targetMult >= 1) playSound('snd-win', 0.3);
+    if (b.targetMult >= 1) {
+        playSound('snd-win', 0.25);
+    }
 
     // Floating score
-    var fx = slotCenterX(b.targetSlotIdx) + (Math.random() - 0.5) * 12;
-    var fy = BH * LAND_Y_RATIO - 5;
+    var fx = slotCenterX(b.targetSlotIdx) + (Math.random() - 0.5) * 15;
+    var fy = STATE.BH * GAME_CONFIG.LAND_Y_RATIO - 10;
     var fc = b.targetMult >= 3 ? '#ff0077' : b.targetMult >= 1 ? '#f5e642' : '#4488ff';
-    var fsize = b.targetMult >= 3 ? 18 : 14;
+    var fsize = b.targetMult >= 3 ? 20 : 14;
     
     var netWin = b.winAmount - b.bet;
     var winText = netWin >= 0 ? 
         '+' + formatIDR(netWin) : 
-        '-' + formatIDR(-netWin);
+        formatIDR(netWin);
 
-    floaters.push({
+    STATE.floaters.push({
         x: fx, y: fy,
         text: winText,
-        color: fc, opacity: 1, velY: 0.9 + Math.random() * 0.4, fontSize: fsize
+        color: fc,
+        opacity: 1,
+        velY: 1.2 + Math.random() * 0.6,
+        fontSize: fsize
     });
 
-    isPlaying = false;
-    document.getElementById('main-btn').disabled = false;
+    updatePlayButton();
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -433,62 +526,68 @@ function onBallLand(b) {
 // ════════════════════════════════════════════════════════════════
 
 function draw() {
-    ctx.clearRect(0, 0, BW, BH);
+    STATE.ctx.clearRect(0, 0, STATE.BW, STATE.BH);
 
     // Pegs
-    pegs.forEach(function(p) {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, PEG_R, 0, Math.PI * 2);
+    STATE.pegs.forEach(function(p) {
+        STATE.ctx.beginPath();
+        STATE.ctx.arc(p.x, p.y, GAME_CONFIG.PEG_R, 0, Math.PI * 2);
         if (p.glow > 0) {
-            ctx.shadowBlur  = 10 * p.glow;
-            ctx.shadowColor = '#fff';
-            ctx.fillStyle   = 'rgba(255,255,255,' + (0.3 + p.glow * 0.7) + ')';
-            p.glow -= 0.05;
+            STATE.ctx.shadowBlur = 10 * p.glow;
+            STATE.ctx.shadowColor = '#fff';
+            STATE.ctx.fillStyle = 'rgba(255,255,255,' + (0.25 + p.glow * 0.75) + ')';
+            p.glow -= 0.08;
         } else {
-            ctx.shadowBlur = 0;
-            ctx.fillStyle  = '#222533';
+            STATE.ctx.shadowBlur = 0;
+            STATE.ctx.fillStyle = '#1a2040';
         }
-        ctx.fill();
-        ctx.shadowBlur = 0;
+        STATE.ctx.fill();
     });
 
     // Balls
-    balls.forEach(function(b) {
-        ctx.save();
-        ctx.shadowBlur  = 12;
-        ctx.shadowColor = b.status === 'ready' ? '#ff0077' : '#0055ff';
-        var grad = ctx.createRadialGradient(b.x - 2, b.y - 2, 1, b.x, b.y, BALL_R);
+    STATE.balls.forEach(function(b) {
+        STATE.ctx.save();
+        STATE.ctx.shadowBlur = 15;
+        STATE.ctx.shadowColor = b.status === 'ready' ? '#ff0077' : '#0055ff';
+        
+        var grad = STATE.ctx.createRadialGradient(b.x - 2, b.y - 2, 1, b.x, b.y, GAME_CONFIG.BALL_R);
         if (b.status === 'ready') {
-            grad.addColorStop(0, '#fff');
-            grad.addColorStop(0.6, '#ff0077');
-            grad.addColorStop(1, '#440022');
+            grad.addColorStop(0, '#ffccee');
+            grad.addColorStop(0.5, '#ff0077');
+            grad.addColorStop(1, '#550022');
         } else {
-            grad.addColorStop(0, '#fff');
-            grad.addColorStop(0.6, '#0055ff');
-            grad.addColorStop(1, '#000822');
+            grad.addColorStop(0, '#ccddff');
+            grad.addColorStop(0.5, '#0055ff');
+            grad.addColorStop(1, '#000044');
         }
-        ctx.beginPath();
-        ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2);
-        ctx.fillStyle = grad;
-        ctx.fill();
-        ctx.restore();
+        
+        STATE.ctx.beginPath();
+        STATE.ctx.arc(b.x, b.y, GAME_CONFIG.BALL_R, 0, Math.PI * 2);
+        STATE.ctx.fillStyle = grad;
+        STATE.ctx.fill();
+        STATE.ctx.restore();
     });
 
     // Floating scores
-    for (var fi = floaters.length - 1; fi >= 0; fi--) {
-        var f = floaters[fi];
-        f.y       -= f.velY;
-        f.opacity -= 0.016;
-        if (f.opacity <= 0) { floaters.splice(fi, 1); continue; }
-        ctx.save();
-        ctx.globalAlpha = f.opacity;
-        ctx.font        = '900 ' + f.fontSize + "px 'Outfit',sans-serif";
-        ctx.fillStyle   = f.color;
-        ctx.textAlign   = 'center';
-        ctx.shadowBlur  = 6;
-        ctx.shadowColor = 'rgba(0,0,0,0.9)';
-        ctx.fillText(f.text, f.x, f.y);
-        ctx.restore();
+    for (var fi = STATE.floaters.length - 1; fi >= 0; fi--) {
+        var f = STATE.floaters[fi];
+        f.y -= f.velY;
+        f.opacity -= 0.018;
+        
+        if (f.opacity <= 0) {
+            STATE.floaters.splice(fi, 1);
+            continue;
+        }
+        
+        STATE.ctx.save();
+        STATE.ctx.globalAlpha = f.opacity;
+        STATE.ctx.font = '900 ' + f.fontSize + "px 'Outfit',sans-serif";
+        STATE.ctx.fillStyle = f.color;
+        STATE.ctx.textAlign = 'center';
+        STATE.ctx.shadowBlur = 8;
+        STATE.ctx.shadowColor = 'rgba(0,0,0,0.95)';
+        STATE.ctx.fillText(f.text, f.x, f.y);
+        STATE.ctx.restore();
     }
 
     updatePhysics();
@@ -508,48 +607,67 @@ function playSound(id, vol) {
 }
 
 function setSpeed(m) {
-    if (isPlaying) return;
-    speedMode = m;
+    if (STATE.activePlayCount > 0) return;
+    STATE.speedMode = m;
     document.getElementById('m-normal').classList.toggle('active', m === 'normal');
-    document.getElementById('m-turbo').classList.toggle('active',  m === 'turbo');
-    if (isAuto) {
-        clearInterval(autoTimer);
-        autoTimer = setInterval(spawnBall, m === 'turbo' ? 450 : 900);
+    document.getElementById('m-turbo').classList.toggle('active', m === 'turbo');
+    
+    if (STATE.isAuto) {
+        clearInterval(STATE.autoTimer);
+        var interval = m === 'turbo' ? 400 : 800;
+        STATE.autoTimer = setInterval(spawnBall, interval);
     }
 }
 
 function toggleAuto() {
-    if (isAuto) { stopAuto(); return; }
-    if (isPlaying) return;
+    if (STATE.isAuto) {
+        stopAuto();
+        return;
+    }
     
-    isAuto = true;
+    STATE.isAuto = true;
     document.getElementById('m-auto').classList.add('active');
-    document.getElementById('m-auto').textContent   = 'AUTO: ON';
+    document.getElementById('m-auto').textContent = 'AUTO: ON';
     document.getElementById('main-btn').textContent = 'STOP AUTO';
     document.getElementById('main-btn').classList.add('stop-mode');
+    
     spawnBall();
-    autoTimer = setInterval(spawnBall, speedMode === 'turbo' ? 450 : 900);
+    var interval = STATE.speedMode === 'turbo' ? 400 : 800;
+    STATE.autoTimer = setInterval(spawnBall, interval);
 }
 
 function stopAuto() {
-    isAuto = false;
-    clearInterval(autoTimer);
-    autoTimer = null;
+    STATE.isAuto = false;
+    clearInterval(STATE.autoTimer);
+    STATE.autoTimer = null;
     document.getElementById('m-auto').classList.remove('active');
-    document.getElementById('m-auto').textContent   = 'AUTO: OFF';
+    document.getElementById('m-auto').textContent = 'AUTO: OFF';
     document.getElementById('main-btn').textContent = 'PLAY BALL';
     document.getElementById('main-btn').classList.remove('stop-mode');
 }
 
 function handlePlay() {
-    if (isAuto) stopAuto();
-    else spawnBall();
+    if (STATE.isAuto) {
+        stopAuto();
+    } else {
+        spawnBall();
+    }
 }
 
 function changeBet(d) {
-    if (isAuto || isPlaying) return;
-    betIdx = Math.max(0, Math.min(BETS.length - 1, betIdx + d));
-    document.getElementById('current-bet').textContent = formatIDR(BETS[betIdx]);
+    if (STATE.isAuto || STATE.activePlayCount > 0) return;
+    
+    STATE.betIdx = Math.max(0, Math.min(GAME_CONFIG.BETS.length - 1, STATE.betIdx + d));
+    document.getElementById('current-bet').textContent = formatIDR(GAME_CONFIG.BETS[STATE.betIdx]);
+    
+    // Update button states
+    document.getElementById('bet-minus').disabled = STATE.betIdx === 0;
+    document.getElementById('bet-plus').disabled = STATE.betIdx === GAME_CONFIG.BETS.length - 1;
+}
+
+function updatePlayButton() {
+    var btn = document.getElementById('main-btn');
+    btn.disabled = STATE.activePlayCount > 0 && !STATE.isAuto;
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -558,14 +676,14 @@ function changeBet(d) {
 
 function showModal(msg, title) {
     document.getElementById('modal-title').textContent = title || 'INFO';
-    document.getElementById('modal-msg').textContent   = msg;
+    document.getElementById('modal-msg').textContent = msg;
     document.getElementById('modal-overlay').style.display = 'block';
-    document.getElementById('neon-modal').style.display    = 'block';
+    document.getElementById('neon-modal').style.display = 'block';
 }
 
 function closeModal() {
     document.getElementById('modal-overlay').style.display = 'none';
-    document.getElementById('neon-modal').style.display    = 'none';
+    document.getElementById('neon-modal').style.display = 'none';
 }
 
 function showInfo(msg) {
@@ -578,9 +696,18 @@ function hideInfo() {
     document.getElementById('info-box').style.display = 'none';
 }
 
+function showStatus(msg, isError) {
+    var el = document.getElementById('status-indicator');
+    el.textContent = msg;
+    el.classList.toggle('error', isError);
+}
+
 function openProfileMenu() {
-    showModal('👤 Username: ' + (getUsername() || 'Guest') + '\n\nTier: ' + (_session ? _session.tier : 'MEMBER') + 
-             '\n\nWinrate: ' + (_session ? _session.winrate : '50') + '%', 'PROFIL SAYA');
+    var msg = '👤 ' + (getUsername() || 'Guest').toUpperCase() +
+              '\n\nTier: ' + (_session ? _session.tier : 'MEMBER') +
+              '\n\nWinrate: ' + (_session ? _session.winrate : '50') + '%' +
+              '\n\nSaldo: ' + formatIDR(getSaldo());
+    showModal(msg, 'PROFIL SAYA');
 }
 
 function showLogout() {
@@ -594,46 +721,76 @@ function goTo(url) {
 }
 
 // ════════════════════════════════════════════════════════════════
+// LOGGING & DEBUG
+// ════════════════════════════════════════════════════════════════
+
+function logDebug(msg) {
+    console.log('[PLINKO] ' + new Date().toLocaleTimeString() + ' - ' + msg);
+}
+
+// ════════════════════════════════════════════════════════════════
+// SALDO SYNC - REAL-TIME CONNECTION
+// ════════════════════════════════════════════════════════════════
+
+async function syncSaldoWithServer() {
+    try {
+        var u = getUsername();
+        if (!u) return;
+        
+        var data = await callApiSilent('get_saldo', { username: u });
+        if (data && data.result === 'SUCCESS') {
+            syncSaldoUI(data.saldo);
+            logDebug('Saldo synced: ' + data.saldo);
+        }
+    } catch(e) {
+        logDebug('Saldo sync error: ' + e.message);
+    }
+}
+
+// ════════════════════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════════════════════
 
 window.addEventListener('DOMContentLoaded', function() {
-    // Require login — redirect ke login.html jika belum login
     if (!requireLogin('login.html')) return;
 
-    // Setup canvas
     setupCanvas();
     
-    // Update UI dari session
     var user = getUsername();
     if (user) {
-        document.getElementById('display-username').textContent = user.toUpperCase();
+        document.getElementById('display-username').textContent = user.substring(0, 10).toUpperCase();
     }
 
-    // Update saldo ke UI
     var saldo = getSaldo();
     syncSaldoUI(saldo);
-
-    // Setup bet display
-    document.getElementById('current-bet').textContent = formatIDR(BETS[betIdx]);
-
-    // Auto sync profile every 30 seconds
-    setInterval(function() {
-        ProfileAPI.sync().catch(function(){});
-    }, 30000);
-
-    // Start game loop
+    
+    document.getElementById('current-bet').textContent = formatIDR(GAME_CONFIG.BETS[STATE.betIdx]);
+    document.getElementById('bet-minus').disabled = true;
+    
+    logDebug('Game initialized for user: ' + user);
+    logDebug('Initial balance: ' + saldo);
+    
+    // Auto sync saldo setiap interval
+    setInterval(syncSaldoWithServer, GAME_CONFIG.SYNC_INTERVAL);
+    
+    // Draw loop
     draw();
+    
+    showStatus('🟢 ONLINE', false);
+});
+
+window.addEventListener('beforeunload', function() {
+    stopAuto();
 });
 
 window.addEventListener('resize', setupCanvas);
 
-// ════════════════════════════════════════════════════════════════
-// ALIAS FUNCTIONS untuk kompatibilitas
-// ════════════════════════════════════════════════════════════════
+// Utility
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-// Global.js sudah punya formatIDR
-// Tapi ada kemungkinan belum, jadi buat alias
+// Pastikan formatIDR ada
 if (typeof formatIDR === 'undefined') {
     window.formatIDR = function(num) {
         return new Intl.NumberFormat("id-ID", {
