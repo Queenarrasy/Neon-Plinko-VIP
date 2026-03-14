@@ -1,17 +1,25 @@
 // --- CONFIGURATION SUPABASE ---
 const SUPABASE_URL = "https://bgffnmwrviyqpeevzjsn.supabase.co";
-const SUPABASE_KEY = "sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani"; // Ini adalah Anon/Public Key Anda
+const SUPABASE_KEY = "sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani"; 
 
 // Inisialisasi Client Supabase
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// --- GLOBAL UTILITIES (Bisa dipakai di semua halaman) ---
+// --- GLOBAL UTILITIES ---
 
-// 1. Cek apakah user sudah login
-function checkSession() {
-    const user = localStorage.getItem('user_neon');
+// Ambil Username yang sedang login
+function getUsername() {
+    return localStorage.getItem('user_neon');
+}
+
+// 1. Cek apakah user sudah login & arahkan sesuai role jika di index
+async function checkSession() {
+    const user = getUsername();
+    
+    // Jika tidak ada user dan bukan di halaman login, lempar ke login
     if (!user && !window.location.href.includes('index.html')) {
         window.location.href = 'index.html';
+        return null;
     }
     return user;
 }
@@ -22,16 +30,16 @@ function formatIDR(amount) {
         style: 'currency',
         currency: 'IDR',
         minimumFractionDigits: 0
-    }).format(amount);
+    }).format(amount || 0).replace("Rp", "IDR");
 }
 
-// 3. Update Saldo secara Visual di UI
+// 3. Update Saldo secara Visual
 async function updateUISaldo() {
-    const user = localStorage.getItem('user_neon');
-    const displayEl = document.getElementById('display-saldo'); // Pastikan ID ini ada di HTML Anda
+    const user = getUsername();
+    const displayEl = document.getElementById('display-saldo');
     
     if (user && displayEl) {
-        const { data, error } = await _supabase
+        const { data } = await _supabase
             .from('profiles')
             .select('saldo')
             .eq('username', user)
@@ -39,7 +47,6 @@ async function updateUISaldo() {
             
         if (data) {
             displayEl.innerText = formatIDR(data.saldo);
-            // Simpan cache saldo di localstorage untuk transisi halus
             localStorage.setItem('cached_saldo', data.saldo);
         }
     }
@@ -47,11 +54,6 @@ async function updateUISaldo() {
 
 // 4. Logout Global
 function logout() {
-    localStorage.removeItem('user_neon');
+    localStorage.clear(); // Bersihkan semua sesi
     window.location.href = 'index.html';
-}
-
-// Auto-run session check saat file di-load
-if (!window.location.href.includes('index.html')) {
-    checkSession();
 }
