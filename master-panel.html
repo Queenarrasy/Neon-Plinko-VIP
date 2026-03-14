@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEON MASTER CONTROL - V4.6 ULTIMATE</title>
+    <title>NEON MASTER - SUPABASE ADMIN</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
         :root { 
@@ -12,7 +12,6 @@
             --neon-pink: 0 0 15px var(--pink);
             --neon-blue: 0 0 15px var(--blue);
             --neon-yellow: 0 0 15px var(--yellow);
-            --neon-green: 0 0 15px var(--green);
         }
 
         body { 
@@ -20,415 +19,253 @@
             padding: 20px; margin: 0; overflow-x: hidden;
         }
 
-        /* --- UI COMPONENTS --- */
         .header { 
             text-align: center; padding: 15px; border: 2px solid var(--blue); 
-            box-shadow: var(--neon-blue), inset 0 0 10px var(--blue); 
-            border-radius: 15px; background: rgba(0, 212, 255, 0.05); margin-bottom: 20px; 
+            box-shadow: var(--neon-blue); border-radius: 15px; margin-bottom: 20px; 
         }
-        .header h2 { margin: 0; color: var(--pink); text-shadow: var(--neon-pink); text-transform: uppercase; letter-spacing: 2px; font-size: 18px; }
 
-        /* PANIC AREA - SESSION TIMER */
+        /* PANIC AREA */
         .panic-container {
             background: rgba(255, 0, 0, 0.05); border: 2px dashed var(--pink);
             padding: 15px; border-radius: 15px; text-align: center; margin-bottom: 20px;
-            box-shadow: inset 0 0 15px rgba(255, 0, 119, 0.2);
         }
-        .panic-grid { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
-        .btn-panic-timer {
+        .btn-panic {
             background: #000; color: white; border: 2px solid var(--pink);
-            padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer;
-            transition: 0.3s; font-size: 12px;
+            padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; margin: 5px;
         }
-        .btn-panic-timer:hover { background: var(--pink); box-shadow: var(--neon-pink); }
-        .panic-status { font-size: 11px; margin-top: 10px; color: var(--yellow); font-weight: bold; text-transform: uppercase; }
+        .btn-panic:hover { background: var(--pink); box-shadow: var(--neon-pink); }
 
         /* DEPOSIT PANEL */
         .depo-panel {
             border: 1px solid var(--green); background: rgba(0, 255, 136, 0.03);
             border-radius: 12px; padding: 10px; margin-bottom: 20px;
-            box-shadow: inset 0 0 10px rgba(0,255,136,0.1);
         }
         .depo-table { width: 100%; border-collapse: collapse; font-size: 11px; }
         .depo-table th { color: var(--green); text-align: left; padding: 8px; border-bottom: 1px solid #333; }
         .depo-table td { padding: 8px; border-bottom: 1px solid #222; }
-        .btn-approve {
-            background: var(--green); color: black; border: none; padding: 5px 10px;
-            border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 10px;
-        }
-        .btn-approve:disabled { background: #333; color: #666; cursor: not-allowed; }
 
         /* USER MONITOR */
         .user-box { 
             background: rgba(255,255,255,0.02); border: 1px solid var(--blue); 
-            padding: 12px; margin-top: 10px; border-radius: 12px; transition: 0.4s;
+            padding: 12px; margin-top: 10px; border-radius: 12px;
         }
-        .user-info { display: flex; justify-content: space-between; align-items: center; }
         .username { color: var(--blue); font-size: 14px; font-weight: bold; text-shadow: var(--neon-blue); }
-        .balance-val { font-weight: bold; font-size: 16px; transition: 0.5s; }
-        .balance-up { color: var(--green); text-shadow: 0 0 10px var(--green); }
-        .balance-down { color: var(--pink); text-shadow: 0 0 10px var(--pink); }
+        .balance-val { font-weight: bold; font-size: 16px; color: var(--green); }
         
-        .status-badge { font-size: 8px; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 5px; }
-        .status-online { color: var(--green); border: 1px solid var(--green); }
-        .status-offline { color: #555; border: 1px solid #333; }
+        .status-online { color: var(--green); font-size: 9px; border: 1px solid var(--green); padding: 1px 4px; border-radius: 3px; }
+        .status-offline { color: #555; font-size: 9px; border: 1px solid #333; padding: 1px 4px; border-radius: 3px; }
 
-        /* CONTROLS */
         .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-        .select-strategy {
-            background: #000; color: var(--yellow); border: 1px solid var(--yellow); 
-            padding: 8px; border-radius: 6px; font-size: 10px; grid-column: span 2;
-        }
-        .btn-action { 
-            background: #000; color: white; border: 1px solid #444; 
-            padding: 8px; border-radius: 6px; font-size: 9px; cursor: pointer; font-weight: bold;
-        }
-        .btn-action:hover { border-color: var(--blue); color: var(--blue); }
+        .select-wr { background: #000; color: var(--yellow); border: 1px solid var(--yellow); padding: 5px; border-radius: 5px; grid-column: span 2; }
+        .btn-action { background: #111; color: #fff; border: 1px solid #444; padding: 8px; border-radius: 5px; cursor: pointer; font-size: 10px; }
 
-        /* MODALS & TOAST */
-        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 999; backdrop-filter: blur(5px); }
-        .neon-modal { 
-            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            width: 80%; max-width: 320px; background: #0a0b1a; border: 2px solid var(--yellow); 
-            box-shadow: var(--neon-yellow); border-radius: 15px; padding: 20px; z-index: 1000; text-align: center;
-        }
         #toast { 
             visibility: hidden; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); 
-            background: var(--blue); color: black; padding: 10px 20px; border-radius: 8px; font-weight: bold; z-index: 2000;
-            transition: 0.3s;
+            background: var(--blue); color: #000; padding: 10px 20px; border-radius: 8px; font-weight: bold; z-index: 2000;
         }
         #toast.show { visibility: visible; }
-        #toast.error { background: var(--pink); color: white; }
-
-        /* Loading spinner */
-        .loading-text { color: #444; font-size: 11px; text-align: center; padding: 10px; }
+        
+        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 999; }
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #0a0b1a; border: 2px solid var(--blue); padding: 20px; z-index: 1000; border-radius: 10px; text-align: center; width: 280px;}
     </style>
 </head>
 <body>
 
     <div class="panic-container">
-        <h3 style="color:var(--pink); text-shadow: var(--neon-pink); font-size:11px; margin:0;">
-            <i class="fas fa-radiation"></i> GLOBAL PANIC SESSION (WR 10%)
-        </h3>
-        <div class="panic-grid">
-            <button class="btn-panic-timer" onclick="startPanicSession(3)">3 MIN</button>
-            <button class="btn-panic-timer" onclick="startPanicSession(5)">5 MIN</button>
-            <button class="btn-panic-timer" style="border-color:var(--blue)" onclick="stopPanicSession()">OFF</button>
-        </div>
-        <div id="panic-timer-display" class="panic-status">STATUS: SYSTEM SECURE</div>
+        <h3 style="color:var(--pink); font-size:12px; margin-bottom:10px;">GLOBAL SYSTEM CONTROL</h3>
+        <button class="btn-panic" onclick="globalPanic(10)">ACTIVATE PANIC (WR 10%)</button>
+        <button class="btn-panic" style="border-color:var(--blue)" onclick="globalPanic(50)">RESTORE NORMAL (WR 50%)</button>
+        <div id="panic-status" style="font-size:10px; color:var(--yellow); margin-top:10px;">SYSTEM STATUS: STABLE</div>
     </div>
 
     <div class="depo-panel">
-        <h3 style="color:var(--green); font-size:12px; margin:0 0 10px 0; text-transform: uppercase;">
-            <i class="fas fa-wallet"></i> Pending Deposits
-        </h3>
-        <div id="depo-list">
-            <p class="loading-text">Checking for requests...</p>
-        </div>
+        <h3 style="color:var(--green); font-size:12px; margin:0 0 10px 0;">PENDING DEPOSITS</h3>
+        <div id="depo-list">Memuat antrean deposit...</div>
     </div>
 
     <div class="header">
-        <h2>LIVE PLAYER MONITOR</h2>
-        <div id="clock" style="font-size:10px; color:var(--yellow); margin-top:5px;"></div>
+        <h2 style="margin:0; font-size:16px; color:var(--pink);">LIVE MONITOR</h2>
+        <div id="clock" style="font-size:10px; color:var(--yellow);"></div>
     </div>
 
-    <div id="display-area"></div>
+    <div id="user-display"></div>
 
-    <div class="overlay" id="common-overlay"></div>
-    <div class="neon-modal" id="common-modal">
-        <h3 id="modal-title" style="color:var(--blue); font-size:16px;">TITLE</h3>
-        <input type="number" id="modal-input" style="width:80%; padding:10px; margin:15px 0; background:#000; border:1px solid var(--blue); color:#fff; text-align:center;" placeholder="Masukkan nilai...">
-        <div style="display:flex; gap:10px; justify-content:center;">
-            <button id="modal-ok-btn" style="background:var(--blue); border:none; padding:10px 15px; border-radius:5px; font-weight:bold; cursor:pointer;">CONFIRM</button>
-            <button onclick="closeModal()" style="background:#333; color:#fff; border:none; padding:10px 15px; border-radius:5px; cursor:pointer;">CANCEL</button>
-        </div>
+    <div class="overlay" id="overlay"></div>
+    <div class="modal" id="modal">
+        <h4 id="modal-title" style="color:var(--blue)">ADJUST</h4>
+        <input type="number" id="modal-input" style="width:100%; padding:10px; margin:10px 0; background:#000; border:1px solid var(--blue); color:#fff;">
+        <button id="modal-confirm" style="background:var(--blue); padding:10px; border:none; width:100%; font-weight:bold;">CONFIRM</button>
+        <button onclick="closeModal()" style="background:none; color:#555; border:none; margin-top:10px;">Cancel</button>
     </div>
 
-    <div id="toast">SYSTEM UPDATED</div>
+    <div id="toast">ACTION SUCCESS</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
 
     <script>
-        // ─── URL SERVER — sama dengan global.js ──────────────────
-        const API_URL = "https://script.google.com/macros/s/AKfycbzYTC11njbEBtAsdpbaRLJRt13j7iEKCkANV1SgxxguV_zFUyZ6Z7FAj0SKuw4d5ThmKw/exec";
+        // Memastikan hanya admin yang bisa akses (Opsional: Tambahkan login admin)
+        
+        async function fetchAllData() {
+            // 1. Fetch Users
+            const { data: users, error: errU } = await _supabase
+                .from('profiles')
+                .select('*')
+                .order('last_active', { ascending: false });
+            
+            if(users) renderUsers(users);
 
-        let isProcessing = false;
-        let lastBalances = {};
-        let panicCountdown = null;
-        let panicEndTime   = null;
-
-        // ─── CORE API CALL (POST) ────────────────────────────────
-        // Menggunakan pola yang sama dengan global.js: coba GET dulu, fallback POST
-        async function callAPI(payload) {
-            try {
-                // Coba GET dulu (lebih cepat, sama dengan global.js)
-                const url = API_URL + '?data=' + encodeURIComponent(JSON.stringify(payload));
-                const r   = await fetch(url, { redirect: 'follow' });
-                const t   = await r.text();
-                const j   = JSON.parse(t);
-                // getAllUsers & get_pending_deposits mengembalikan array langsung
-                if (j !== undefined) return j;
-            } catch(e) {}
-            // Fallback POST
-            try {
-                const r2  = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
-                return JSON.parse(await r2.text());
-            } catch(e) {
-                return { result: 'ERROR', message: 'Koneksi gagal.' };
-            }
+            // 2. Fetch Pending Deposits
+            // Kita asumsikan ada tabel 'deposits' dengan kolom 'status'
+            const { data: depos, error: errD } = await _supabase
+                .from('deposits')
+                .select('*')
+                .eq('status', 'PROSES');
+            
+            if(depos) renderDeposits(depos);
         }
 
-        // ─── FETCH SEMUA DATA (USER & DEPO) ─────────────────────
-        async function fetchMasterData() {
-            if (isProcessing) return;
-            try {
-                // Fetch semua user untuk Live Monitor
-                const users = await callAPI({ action: 'getAllUsers' });
-                if (Array.isArray(users)) renderUsers(users);
-
-                // Fetch deposit pending
-                const deposits = await callAPI({ action: 'get_pending_deposits' });
-                if (Array.isArray(deposits)) renderDeposits(deposits);
-
-            } catch(e) { console.error('Sync Error:', e); }
-        }
-
-        // ─── RENDER DEPOSITS ─────────────────────────────────────
-        function renderDeposits(data) {
+        function renderDeposits(depos) {
             const container = document.getElementById('depo-list');
-            if (!data || data.length === 0) {
-                container.innerHTML = `<p style="font-size:10px; color:#444; text-align:center;">No pending deposits.</p>`;
+            if(depos.length === 0) {
+                container.innerHTML = '<p style="font-size:10px; color:#444; text-align:center;">Tidak ada deposit pending.</p>';
                 return;
             }
 
-            let html = `<table class="depo-table">
-                <tr><th>USER</th><th>NOMINAL</th><th>METHOD</th><th>AKSI</th></tr>`;
-            
-            data.forEach(d => {
+            let html = '<table class="depo-table"><tr><th>USER</th><th>JUMLAH</th><th>AKSI</th></tr>';
+            depos.forEach(d => {
                 html += `
-                <tr>
-                    <td><b>${d.username}</b><br><span style="color:#555;font-size:9px">${d.tanggal}</span></td>
-                    <td style="color:var(--green)">IDR ${Number(d.nominal).toLocaleString('id-ID')}</td>
-                    <td style="color:var(--yellow);font-size:10px">${d.method}</td>
-                    <td><button class="btn-approve" id="approve-btn-${d.row}" onclick="approveDeposit(${d.row}, this)">APPROVE</button></td>
-                </tr>`;
+                    <tr>
+                        <td>${d.username}</td>
+                        <td style="color:var(--green)">IDR ${d.nominal.toLocaleString()}</td>
+                        <td><button onclick="approveDepo('${d.id}', '${d.username}', ${d.nominal})" style="background:var(--green); border:none; font-size:9px; padding:3px 7px; border-radius:3px; font-weight:bold;">APPROVE</button></td>
+                    </tr>
+                `;
             });
-            container.innerHTML = html + `</table>`;
+            container.innerHTML = html + '</table>';
         }
 
-        // ─── RENDER USERS ────────────────────────────────────────
         function renderUsers(users) {
-            const area = document.getElementById('display-area');
+            const container = document.getElementById('user-display');
+            container.innerHTML = '';
 
             users.forEach(u => {
-                let userDiv = document.getElementById(`user-${u.username}`);
-                const currentSaldo = Number(u.saldo);
-                const oldSaldo     = lastBalances[u.username] !== undefined ? lastBalances[u.username] : currentSaldo;
-                
-                let balanceClass = '';
-                if (currentSaldo > oldSaldo) balanceClass = 'balance-up';
-                else if (currentSaldo < oldSaldo) balanceClass = 'balance-down';
-                
-                lastBalances[u.username] = currentSaldo;
-
-                if (!userDiv) {
-                    userDiv = document.createElement('div');
-                    userDiv.id        = `user-${u.username}`;
-                    userDiv.className = 'user-box';
-                    area.appendChild(userDiv);
-                }
-
-                const isOnline = u.status.toLowerCase() === 'online';
-
-                userDiv.innerHTML = `
-                    <div class="user-info">
+                const isOnline = (new Date() - new Date(u.last_active)) < 60000; // Aktif dalam 1 menit terakhir
+                const div = document.createElement('div');
+                div.className = 'user-box';
+                div.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
                         <div>
                             <span class="username">${u.username.toUpperCase()}</span>
-                            <span class="status-badge ${isOnline ? 'status-online' : 'status-offline'}">${u.status.toUpperCase()}</span>
-                            <br>
-                            <span style="font-size:9px; color:#888">${u.namaLengkap} | ${u.tier}</span>
+                            <span class="${isOnline ? 'status-online' : 'status-offline'}">${isOnline ? 'ONLINE' : 'OFFLINE'}</span>
+                            <div style="font-size:9px; color:#666;">Tier: ${u.tier || 'MEMBER'}</div>
                         </div>
                         <div style="text-align:right">
-                            <div class="balance-val ${balanceClass}">IDR ${currentSaldo.toLocaleString('id-ID')}</div>
-                            <div style="font-size:9px; color:#666">
-                                WR: <span style="color:var(--yellow)">${u.winrate}%</span> &nbsp;|&nbsp;
-                                MAX: <span style="color:var(--pink)">IDR ${Number(u.maxWinLimit).toLocaleString('id-ID')}</span>
-                            </div>
+                            <div class="balance-val">IDR ${u.saldo.toLocaleString()}</div>
+                            <div style="font-size:10px; color:var(--yellow)">WR: ${u.winrate}% | Limit: ${u.max_win_limit || 0}</div>
                         </div>
                     </div>
                     <div class="controls">
-                        <select class="select-strategy" onchange="updateWR('${u.username}', this.value, this)">
-                            <option value="">⚙ WR SEKARANG: ${u.winrate}%</option>
-                            <option value="3">3% — KURAS TOTAL</option>
-                            <option value="10">10% — SANGAT KETAT</option>
-                            <option value="40">40% — KURAS HALUS</option>
-                            <option value="50">50% — FAIR PLAY</option>
-                            <option value="75">75% — GACOR</option>
-                            <option value="90">90% — SANGAT GACOR</option>
-                            <option value="100">100% — PASTI JP</option>
+                        <select class="select-wr" onchange="updateWinrate('${u.username}', this.value)">
+                            <option value="">-- GANTI WINRATE --</option>
+                            <option value="5">5% (KURAS TOTAL)</option>
+                            <option value="25">25% (KETAT)</option>
+                            <option value="50">50% (NORMAL)</option>
+                            <option value="80">80% (GACOR)</option>
+                            <option value="100">100% (JP PASTI)</option>
                         </select>
-                        <button class="btn-action" onclick="prepareInject('${u.username}')">
-                            <i class="fas fa-coins"></i> ADJUST CREDIT
-                        </button>
-                        <button class="btn-action" onclick="prepareMaxwin('${u.username}')">
-                            <i class="fas fa-shield-halved"></i> SET MAXWIN
-                        </button>
+                        <button class="btn-action" onclick="openAdjust('${u.username}', 'saldo')"><i class="fas fa-coins"></i> INJECT SALDO</button>
+                        <button class="btn-action" onclick="openAdjust('${u.username}', 'limit')"><i class="fas fa-shield"></i> SET MAXWIN</button>
                     </div>
                 `;
-            });
-
-            // Hapus user-box yang sudah tidak ada di data
-            const existingDivs = area.querySelectorAll('.user-box');
-            const activeUsernames = users.map(u => `user-${u.username}`);
-            existingDivs.forEach(div => {
-                if (!activeUsernames.includes(div.id)) div.remove();
+                container.appendChild(div);
             });
         }
 
-        // ─── ACTIONS ─────────────────────────────────────────────
+        // --- ACTIONS ---
 
-        // PANIC: set WR semua user → 10% selama N menit
-        async function startPanicSession(min) {
-            if (!confirm(`Aktifkan Global Panic ${min} menit?\nWR SEMUA pemain akan menjadi 10%.`)) return;
-            showToast('INITIATING PANIC...', false);
-            const res = await callAPI({ action: 'set_global_panic', minutes: min });
-            if (res && res.result === 'SUCCESS') {
-                panicEndTime = Date.now() + min * 60 * 1000;
-                startPanicCountdown(min * 60);
-                showToast(`PANIC AKTIF — ${min} MENIT`, false);
-                fetchMasterData();
-            } else {
-                showToast('GAGAL: ' + (res.message || 'Error'), true);
+        async function approveDepo(depoId, username, amount) {
+            if(!confirm(`Approve IDR ${amount.toLocaleString()} untuk ${username}?`)) return;
+
+            // 1. Update status deposit
+            await _supabase.from('deposits').update({ status: 'BERHASIL' }).eq('id', depoId);
+            
+            // 2. Tambah saldo user (Menggunakan RPC agar aman)
+            const { error } = await _supabase.rpc('admin_add_saldo', { 
+                target_user: username, 
+                amount_to_add: amount 
+            });
+
+            if(!error) {
+                showToast("DEPOSIT APPROVED ✅");
+                fetchAllData();
             }
         }
 
-        async function stopPanicSession() {
-            const res = await callAPI({ action: 'set_global_panic', minutes: 0 });
-            if (res && res.result === 'SUCCESS') {
-                clearInterval(panicCountdown);
-                document.getElementById('panic-timer-display').innerText = 'STATUS: SYSTEM SECURE';
-                showToast('PANIC DEACTIVATED — WR PULIH', false);
-                fetchMasterData();
-            } else {
-                showToast('GAGAL MATIKAN PANIC', true);
+        async function updateWinrate(username, newRate) {
+            const { error } = await _supabase
+                .from('profiles')
+                .update({ winrate: parseInt(newRate) })
+                .eq('username', username);
+            
+            if(!error) showToast(`WR ${username} -> ${newRate}%`);
+        }
+
+        async function globalPanic(rate) {
+            const label = rate < 20 ? "AKTIF" : "NORMAL";
+            if(!confirm(`Set SEMUA User ke WR ${rate}%?`)) return;
+
+            const { error } = await _supabase
+                .from('profiles')
+                .update({ winrate: rate })
+                .not('username', 'eq', 'admin'); // Jangan ubah admin
+
+            if(!error) {
+                document.getElementById('panic-status').innerText = `SYSTEM STATUS: ${label} (${rate}%)`;
+                showToast("GLOBAL WR UPDATED");
+                fetchAllData();
             }
         }
 
-        function startPanicCountdown(totalSec) {
-            clearInterval(panicCountdown);
-            let remaining = totalSec;
-            const el = document.getElementById('panic-timer-display');
-            panicCountdown = setInterval(() => {
-                remaining--;
-                const m = Math.floor(remaining / 60);
-                const s = remaining % 60;
-                el.innerText = `STATUS: PANIC ACTIVE — ${m}:${String(s).padStart(2,'0')} TERSISA`;
-                if (remaining <= 0) {
-                    clearInterval(panicCountdown);
-                    // Auto-matikan panic saat waktu habis
-                    callAPI({ action: 'set_global_panic', minutes: 0 }).then(() => {
-                        el.innerText = 'STATUS: PANIC ENDED — SYSTEM SECURE';
-                        fetchMasterData();
-                    });
+        // --- UI & MODALS ---
+
+        function openAdjust(username, type) {
+            document.getElementById('modal-title').innerText = `ADJUST ${type.toUpperCase()}: ${username}`;
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById('modal').style.display = 'block';
+            
+            document.getElementById('modal-confirm').onclick = async () => {
+                const val = parseInt(document.getElementById('modal-input').value);
+                if(type === 'saldo') {
+                    await _supabase.rpc('admin_set_saldo', { target_user: username, new_amount: val });
+                } else {
+                    await _supabase.from('profiles').update({ max_win_limit: val }).eq('username', username);
                 }
-            }, 1000);
-        }
-
-        // APPROVE DEPOSIT
-        async function approveDeposit(row, btnEl) {
-            if (!confirm('Setujui deposit ini? Saldo akan masuk otomatis ke user.')) return;
-            if (btnEl) { btnEl.disabled = true; btnEl.innerText = '...'; }
-            showToast('PROCESSING DEPOSIT...', false);
-            const res = await callAPI({ action: 'approve_deposit', row: row });
-            if (res && res.result === 'SUCCESS') {
-                showToast('✅ DEPOSIT BERHASIL DIAPPROVE!', false);
-                fetchMasterData();
-            } else {
-                showToast('GAGAL: ' + (res.message || 'Error server'), true);
-                if (btnEl) { btnEl.disabled = false; btnEl.innerText = 'APPROVE'; }
-            }
-        }
-
-        // UPDATE WINRATE PER USER
-        async function updateWR(user, rate, selectEl) {
-            if (!rate) return;
-            showToast(`UPDATING WR ${user}...`, false);
-            const res = await callAPI({ action: 'updateWinrate', targetUser: user, newRate: rate });
-            if (res && res.result === 'SUCCESS') {
-                showToast(`✅ WR ${user} → ${rate}%`, false);
-                fetchMasterData();
-            } else {
-                showToast('GAGAL UPDATE WR: ' + (res.message || ''), true);
-            }
-            if (selectEl) selectEl.value = ''; // reset dropdown
-        }
-
-        // ADJUST SALDO (inject/deduct)
-        function prepareInject(user) {
-            showModal(`ADJUST SALDO: ${user.toUpperCase()}\n(+angka = tambah, -angka = kurangi)`, (val) => {
-                const amount = parseFloat(val);
-                if (isNaN(amount)) { showToast('Nilai tidak valid', true); return; }
-                callAPI({ action: 'adminUpdateSaldo', targetUser: user, amount: amount })
-                    .then(res => {
-                        if (res && res.result === 'SUCCESS') {
-                            showToast(`✅ SALDO ${user} DIUPDATE`, false);
-                            fetchMasterData();
-                        } else {
-                            showToast('GAGAL: ' + (res.message || ''), true);
-                        }
-                    });
-            });
-        }
-
-        // SET MAXWIN LIMIT
-        function prepareMaxwin(user) {
-            showModal(`SET LIMIT MAXWIN: ${user.toUpperCase()}\n(contoh: 500000 = IDR 500.000)`, (val) => {
-                const maxwin = parseFloat(val);
-                if (isNaN(maxwin) || maxwin < 0) { showToast('Nilai tidak valid', true); return; }
-                callAPI({ action: 'setMaxwinLimit', targetUser: user, maxwin: maxwin })
-                    .then(res => {
-                        if (res && res.result === 'SUCCESS') {
-                            showToast(`✅ MAXWIN ${user} → IDR ${maxwin.toLocaleString('id-ID')}`, false);
-                            fetchMasterData();
-                        } else {
-                            showToast('GAGAL: ' + (res.message || ''), true);
-                        }
-                    });
-            });
-        }
-
-        // ─── UI HELPERS ──────────────────────────────────────────
-        function showModal(title, cb) {
-            document.getElementById('modal-title').innerText = title;
-            document.getElementById('modal-input').value    = '';
-            document.getElementById('common-overlay').style.display = 'block';
-            document.getElementById('common-modal').style.display   = 'block';
-            document.getElementById('modal-ok-btn').onclick = () => {
-                cb(document.getElementById('modal-input').value);
                 closeModal();
+                showToast("UPDATE SUCCESS");
+                fetchAllData();
             };
         }
 
         function closeModal() {
-            document.getElementById('common-overlay').style.display = 'none';
-            document.getElementById('common-modal').style.display   = 'none';
+            document.getElementById('overlay').style.display = 'none';
+            document.getElementById('modal').style.display = 'none';
         }
 
-        let toastTimer = null;
-        function showToast(msg, isError = false) {
+        function showToast(msg) {
             const t = document.getElementById('toast');
             t.innerText = msg;
-            t.className = isError ? 'show error' : 'show';
-            clearTimeout(toastTimer);
-            toastTimer = setTimeout(() => { t.className = ''; }, 2500);
+            t.className = 'show';
+            setTimeout(() => t.className = '', 3000);
         }
 
-        // ─── CLOCK & LOOP ────────────────────────────────────────
         setInterval(() => { 
-            document.getElementById('clock').innerText = new Date().toLocaleString('id-ID'); 
+            document.getElementById('clock').innerText = new Date().toLocaleString(); 
         }, 1000);
-        
+
         window.onload = () => {
-            fetchMasterData();
-            setInterval(fetchMasterData, 4000); // sync tiap 4 detik
+            fetchAllData();
+            setInterval(fetchAllData, 5000); // Auto sync per 5 detik
         };
     </script>
 </body>
