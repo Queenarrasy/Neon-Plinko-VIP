@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>NEON PLINKO VIP</title>
+<title>NEON PLINKO VIP - Integrated v6.0</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -20,17 +20,29 @@ body{
   background:var(--bg);color:#dde0f0;font-family:'Outfit',sans-serif;
   background-image: radial-gradient(circle at 50% -20%, #1a1b3a 0%, transparent 70%);
 }
+
+/* ─── MODAL ─── */
 #modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(5px);z-index:9998;}
 #neon-modal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
   background:linear-gradient(160deg,#07091d,#0b0d24);border-radius:20px;z-index:9999;
   padding:25px;text-align:center;width:85%;max-width:320px;border:1px solid var(--bp);box-shadow:var(--gp);
   animation:mpop .3s cubic-bezier(.34,1.56,.64,1);}
 @keyframes mpop{from{opacity:0;transform:translate(-50%,-50%) scale(.8)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+
+/* ─── HEADER ─── */
 .header{padding:12px 15px;display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.4);border-bottom:1px solid rgba(0,85,255,0.2);}
 .balance-box{flex:1;margin:0 15px;background:rgba(0,0,0,0.5);border:1px solid var(--bp);border-radius:30px;padding:5px 15px;text-align:center;box-shadow:var(--gp);}
 #game-display-saldo{font-family:'Cinzel Decorative',serif;font-size:16px;font-weight:900;color:#fff;text-shadow:var(--gp);}
+.header-user{text-align:center;cursor:pointer;transition:0.2s;}
+.header-user:hover{opacity:0.8;}
+.header-user i{font-size:22px;}
+.header-user span{font-size:8px;display:block;}
+
+/* ─── GAME BOARD ─── */
 #board-wrapper{flex:1;position:relative;width:100%;max-height:50vh;overflow:hidden;margin-top:10px;}
 #plinko-canvas{display:block;width:100%;height:100%;}
+
+/* ─── SLOTS ─── */
 .multiplier-container{position:relative;height:34px;margin-bottom:10px;width:100%;padding:0;}
 .multiplier-row{display:flex;position:absolute;height:100%;top:0;}
 .slot{height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;border-radius:4px;margin:0 1px;transition:0.1s ease-out;}
@@ -38,6 +50,8 @@ body{
 .s-high{background:linear-gradient(to bottom, var(--pink), #80003c);color:#fff;}
 .s-mid{background:linear-gradient(to bottom, var(--yellow), #807700);color:#000;}
 .s-low{background:linear-gradient(to bottom, var(--blue), #002266);color:#fff;}
+
+/* ─── CONTROLS ─── */
 .controls{padding:15px;background:rgba(5,7,25,0.9);border-top:1px solid rgba(0,85,255,0.2);display:flex;flex-direction:column;gap:12px;}
 .mode-row{display:flex;gap:8px;}
 .btn-mode{flex:1;padding:10px;border-radius:12px;font-size:10px;font-weight:700;border:1px solid #333;background:rgba(255,255,255,0.05);color:#888;cursor:pointer;}
@@ -45,11 +59,15 @@ body{
 .bet-row{display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.4);border:1px solid rgba(0,85,255,0.2);border-radius:50px;padding:5px 15px;}
 .bet-btn{font-size:24px;color:var(--pink);background:none;border:none;cursor:pointer;}
 #current-bet{font-family:'Cinzel Decorative',serif;font-size:18px;font-weight:900;color:var(--yellow);}
-.btn-play{width:100%;padding:16px;border-radius:50px;font-family:'Cinzel Decorative',serif;font-size:14px;font-weight:900;background:linear-gradient(90deg,var(--pink),var(--blue));color:#fff;border:none;box-shadow:var(--gp);cursor:pointer;}
+.btn-play{width:100%;padding:16px;border-radius:50px;font-family:'Cinzel Decorative',serif;font-size:14px;font-weight:900;background:linear-gradient(90deg,var(--pink),var(--blue));color:#fff;border:none;box-shadow:var(--gp);cursor:pointer;transition:all 0.3s;}
+.btn-play:disabled{opacity:0.5;cursor:not-allowed;}
 .btn-play.stop-mode{background:var(--yellow);color:#000;box-shadow:var(--gy);}
 .nav-bottom{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-.nav-btn{display:flex;flex-direction:column;align-items:center;padding:10px;border-radius:15px;text-decoration:none;font-size:10px;border:1px solid #222;color:#fff;}
+.nav-btn{display:flex;flex-direction:column;align-items:center;padding:10px;border-radius:15px;text-decoration:none;font-size:10px;border:1px solid #222;color:#fff;cursor:pointer;background:none;}
 .nav-btn i{font-size:18px;margin-bottom:4px;}
+
+/* ─── INFO BOX ─── */
+#info-box{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);color:#0f0;padding:8px 16px;border-radius:5px;font-size:12px;max-width:90%;text-align:center;z-index:100;display:none;border:1px solid rgba(15,255,0,0.5);}
 </style>
 </head>
 <body>
@@ -57,33 +75,40 @@ body{
 <audio id="snd-hit" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3" preload="auto"></audio>
 <audio id="snd-win" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3" preload="auto"></audio>
 
+<!-- MODAL -->
 <div id="modal-overlay" onclick="closeModal()"></div>
 <div id="neon-modal">
     <div id="modal-title" style="color:var(--pink);font-size:14px;font-weight:bold;">INFO</div>
     <div id="modal-msg" style="margin:15px 0; font-size:13px;"></div>
-    <button onclick="closeModal()" style="padding:8px 25px;border-radius:20px;border:1px solid var(--pink);color:var(--pink);background:none;font-weight:bold;">OK</button>
+    <button onclick="closeModal()" style="padding:8px 25px;border-radius:20px;border:1px solid var(--pink);color:var(--pink);background:none;font-weight:bold;cursor:pointer;">OK</button>
 </div>
 
+<!-- HEADER -->
 <div class="header">
-    <div onclick="location.href='profil.html'" style="text-align:center;cursor:pointer;">
-        <i class="fa-solid fa-circle-user" style="color:var(--yellow);font-size:22px;"></i>
-        <span style="font-size:8px;display:block;color:var(--yellow)">PROFIL</span>
+    <div class="header-user" onclick="openProfileMenu()" title="Profile">
+        <i class="fa-solid fa-circle-user" style="color:var(--yellow);"></i>
+        <span id="display-username" style="color:var(--yellow)">GUEST</span>
     </div>
     <div class="balance-box">
         <div style="font-size:8px;color:#aaa">SALDO UTAMA</div>
         <div id="game-display-saldo">IDR 0</div>
     </div>
-    <div style="width:40px"></div>
+    <div onclick="showLogout()" style="width:40px;text-align:center;cursor:pointer;" title="Logout">
+        <i class="fa-solid fa-sign-out-alt" style="color:var(--pink);font-size:18px;"></i>
+    </div>
 </div>
 
+<!-- BOARD -->
 <div id="board-wrapper">
     <canvas id="plinko-canvas"></canvas>
 </div>
 
+<!-- MULTIPLIER SLOTS -->
 <div class="multiplier-container">
     <div class="multiplier-row" id="slot-row"></div>
 </div>
 
+<!-- CONTROLS -->
 <div class="controls">
     <div class="mode-row">
         <button class="btn-mode active" id="m-normal" onclick="setSpeed('normal')">NORMAL</button>
@@ -92,44 +117,54 @@ body{
     </div>
     <div class="bet-row">
         <button class="bet-btn" onclick="changeBet(-1)"><i class="fa-solid fa-circle-minus"></i></button>
-        <div id="current-bet">400</div>
+        <div id="current-bet">1.000</div>
         <button class="bet-btn" onclick="changeBet(1)" style="color:var(--blue)"><i class="fa-solid fa-circle-plus"></i></button>
     </div>
     <button class="btn-play" id="main-btn" onclick="handlePlay()">PLAY BALL</button>
     <div class="nav-bottom">
-        <a href="withdraw.html" class="nav-btn" style="color:var(--yellow);border-color:var(--by);"><i class="fa-solid fa-money-bill-transfer"></i><span>WITHDRAW</span></a>
-        <a href="deposit.html" class="nav-btn" style="color:var(--pink);border-color:var(--bp);"><i class="fa-solid fa-wallet"></i><span>DEPOSIT</span></a>
-        <a href="reward.html" class="nav-btn" style="color:var(--blue);border-color:var(--bb);"><i class="fa-solid fa-gift"></i><span>REWARD</span></a>
+        <button class="nav-btn" style="color:var(--yellow);border-color:var(--by);" onclick="goTo('withdraw.html')"><i class="fa-solid fa-money-bill-transfer"></i><span>WITHDRAW</span></button>
+        <button class="nav-btn" style="color:var(--pink);border-color:var(--bp);" onclick="goTo('deposit.html')"><i class="fa-solid fa-wallet"></i><span>DEPOSIT</span></button>
+        <button class="nav-btn" style="color:var(--blue);border-color:var(--bb);" onclick="goTo('reward.html')"><i class="fa-solid fa-gift"></i><span>REWARD</span></button>
     </div>
 </div>
+
+<div id="info-box"></div>
 
 <script src="global.js"></script>
 <script>
 /**
- * NEON PLINKO VIP — v7.0 FINAL
- *
- * FIX UTAMA:
- * [1] Slot berkedip TEPAT saat bola menyentuh zona slot (bukan setelah keluar canvas)
- *     → Trigger onBallLand di b.y >= LAND_Y (80% board), bukan BH-2
- * [2] Hard-lock X di zona bawah — bola DIPAKSA masuk ke tengah slot target
- *     → Tidak bisa meleset, tidak ada delay visual
- * [3] _pendingLand tetap ada untuk kasus server lambat (jarang)
+ * ════════════════════════════════════════════════════════════════
+ * NEON PLINKO VIP - v6.0 INTEGRATED
+ * 
+ * Fully integrated dengan global.js v5.0 & Code.gs v6.0
+ * ════════════════════════════════════════════════════════════════
+ * 
+ * PERBAIKAN v6.0:
+ * [1] Gunakan GameEngine.processPlay() dari global.js
+ * [2] Ball landing PASTI sesuai server response
+ * [3] Winrate & maxwin diatur oleh server (Code.gs)
+ * [4] Session management via _session dari global.js
+ * [5] syncSaldoUI() untuk update balance
+ * [6] No hardcoded API — semua via global.js
  */
+
+// ════════════════════════════════════════════════════════════════
+// GAME CONFIG & CONSTANTS
+// ════════════════════════════════════════════════════════════════
 
 var ROWS   = 9;
 var MULTS  = [10, 3, 1.5, 0.5, 0.2, 0.2, 0.5, 1.5, 3, 10];
-var BETS   = [400, 800, 1000, 2000, 5000, 10000, 20000];
+var BETS   = [1000, 2000, 5000, 10000, 25000, 50000, 100000];
 var BALL_R = 6;
 var PEG_R  = 3.5;
 
 var canvas, ctx, BW, BH;
-var pegs = [], balls = [], _pendingLand = [], floaters = [];
+var pegs = [], balls = [], floaters = [];
 var speedMode = 'normal', isAuto = false, autoTimer = null;
-var betIdx = 0, _displaySaldo = 0;
-var slotStartX = 0, slotItemW = 0;
+var betIdx = 2; // Default 5000
+var isPlaying = false;
 
-// LAND_Y: % tinggi board di mana bola dianggap "masuk slot"
-// Harus sinkron dengan posisi visual slot row (di bawah canvas)
+var slotStartX = 0, slotItemW = 0;
 var LAND_Y_RATIO = 0.88;
 
 var PHYSICS = {
@@ -137,7 +172,10 @@ var PHYSICS = {
     turbo:  { grav: 0.65, bounce: 0.45, friction: 0.97 }
 };
 
-// ── SETUP ────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════
+// SETUP
+// ════════════════════════════════════════════════════════════════
+
 function setupCanvas() {
     canvas = document.getElementById('plinko-canvas');
     ctx    = canvas.getContext('2d');
@@ -152,6 +190,7 @@ function setupCanvas() {
     canvas.style.height = BH + 'px';
     ctx.scale(dpr, dpr);
 
+    // Generate pegs
     pegs = [];
     var spY = (BH - 40) / ROWS;
     var spX = BW / (ROWS + 2.5);
@@ -168,7 +207,7 @@ function setupCanvas() {
         }
     }
 
-    // Posisi slot sejajar dengan deretan peg bawah
+    // Setup slot positions
     slotStartX = lastRowPegs[0];
     var slotEndX   = lastRowPegs[lastRowPegs.length - 1];
     var totalW     = slotEndX - slotStartX;
@@ -189,21 +228,28 @@ function setupCanvas() {
     });
 }
 
-// Hitung posisi X tengah slot i (dalam koordinat canvas)
 function slotCenterX(i) {
     return slotStartX + (i + 0.5) * slotItemW;
 }
 
-// ── SPAWN ────────────────────────────────────────────────────
-function spawnBall() {
+// ════════════════════════════════════════════════════════════════
+// SPAWN & PLAY
+// ════════════════════════════════════════════════════════════════
+
+async function spawnBall() {
+    if (isPlaying) return;
+    
     var bet = BETS[betIdx];
-    if (_displaySaldo < bet) {
-        showModal('Saldo tidak cukup!', 'WARNING');
-        stopAuto(); return;
+    var saldo = getSaldo();
+    
+    if (saldo < bet) {
+        showModal('Saldo tidak cukup untuk bet IDR ' + formatIDR(bet), 'SALDO KURANG');
+        stopAuto();
+        return;
     }
 
-    _displaySaldo -= bet;
-    updateSaldoDisplay();
+    isPlaying = true;
+    document.getElementById('main-btn').disabled = true;
 
     var ball = {
         x:             BW / 2 + (Math.random() - 0.5) * 15,
@@ -211,102 +257,109 @@ function spawnBall() {
         vx:            (Math.random() - 0.5) * 2,
         vy:            2,
         bet:           bet,
-        status:        'wait',
+        status:        'falling',
         targetSlotIdx: null,
         targetMult:    null,
         winAmount:     0,
-        landed:        false, // [FIX 1] cegah double-land
+        landed:        false,
         isDone:        false
     };
 
     balls.push(ball);
 
-    if (typeof GameEngine !== 'undefined') {
-        GameEngine.processPlay(bet)
-            .then(function(res) {
-                if (!res || res.result !== 'SUCCESS') {
-                    _displaySaldo += bet;
-                    updateSaldoDisplay();
-                    ball.isDone = true;
-                    _pendingLand = _pendingLand.filter(function(b){ return b !== ball; });
-                    return;
-                }
+    // Show loading
+    showInfo('⏳ Processing...');
 
-                var slots = [];
-                MULTS.forEach(function(m, i) { if (m === res.multiplier) slots.push(i); });
-                var tIdx = slots.length ? slots[Math.floor(Math.random() * slots.length)] : Math.floor(MULTS.length / 2);
+    try {
+        // Call GameEngine.processPlay dari global.js
+        var result = await GameEngine.processPlay(bet);
 
-                ball.targetSlotIdx = tIdx;
-                ball.targetMult    = res.multiplier;
-                ball.winAmount     = res.winAmount || 0;
-                ball.status        = 'ready';
+        if (!result || result.result !== 'SUCCESS') {
+            showModal('Transaksi gagal atau saldo tidak cukup.', 'ERROR');
+            ball.isDone = true;
+            isPlaying = false;
+            document.getElementById('main-btn').disabled = false;
+            hideInfo();
+            return;
+        }
 
-                // [FIX 3] Bola sudah keluar canvas sebelum server reply
-                var pi = _pendingLand.indexOf(ball);
-                if (pi >= 0) {
-                    _pendingLand.splice(pi, 1);
-                    if (!ball.landed) onBallLand(ball);
-                }
-            })
-            .catch(function() {
-                _displaySaldo += bet;
-                updateSaldoDisplay();
-                ball.isDone = true;
-                _pendingLand = _pendingLand.filter(function(b){ return b !== ball; });
-            });
+        // Server response menentukan slot & multiplier
+        var mult = result.multiplier || 1;
+        var slotIdx = findSlotByMultiplier(mult);
+
+        ball.targetSlotIdx = slotIdx;
+        ball.targetMult    = mult;
+        ball.winAmount     = result.winAmount || 0;
+        ball.status        = 'ready';
+
+        hideInfo();
+
+    } catch (err) {
+        console.error('Play error:', err);
+        showModal('Koneksi error: ' + err.message, 'ERROR');
+        ball.isDone = true;
+        isPlaying = false;
+        document.getElementById('main-btn').disabled = false;
+        hideInfo();
     }
 }
 
-// ── PHYSICS ──────────────────────────────────────────────────
+function findSlotByMultiplier(mult) {
+    mult = parseFloat(mult) || 1;
+    var closest = 0;
+    var minDiff = Math.abs(MULTS[0] - mult);
+    
+    for (var i = 1; i < MULTS.length; i++) {
+        var diff = Math.abs(MULTS[i] - mult);
+        if (diff < minDiff) {
+            minDiff = diff;
+            closest = i;
+        }
+    }
+    return closest;
+}
+
+// ════════════════════════════════════════════════════════════════
+// PHYSICS & COLLISION
+// ════════════════════════════════════════════════════════════════
+
 function updatePhysics() {
     var ph    = PHYSICS[speedMode];
-    var LAND_Y = BH * LAND_Y_RATIO; // Y di mana bola dianggap masuk slot
+    var LAND_Y = BH * LAND_Y_RATIO;
 
     balls.forEach(function(b) {
         if (b.isDone) return;
 
         var progY = b.y / BH;
 
-        // ═══ ZONA LOCK (progY > 0.78) ═══
-        // Hard-lock X ke tengah slot target agar tidak meleset
-        // [FIX 2] Override penuh — bola tidak bisa lari ke slot lain
+        // HARD LOCK ZONE (progY > 0.78)
         if (b.status === 'ready' && progY > 0.78) {
             var tx   = slotCenterX(b.targetSlotIdx);
             var diff = tx - b.x;
-            // Makin ke bawah, makin kuat lock-nya
             var lockStr = progY > 0.85 ? 0.55 : 0.30;
             b.x  += diff * lockStr;
             b.vx  = diff * (lockStr * 0.6);
         }
-        // ═══ ZONA STEER (progY 0.45 - 0.78) ═══
+        // STEERING ZONE (progY 0.45 - 0.78)
         else if (b.status === 'ready' && progY > 0.45) {
             var tx2   = slotCenterX(b.targetSlotIdx);
             var diff2 = tx2 - b.x;
             var prog  = (progY - 0.45) / (0.78 - 0.45);
             b.vx += diff2 * 0.18 * prog;
-            // Batasi vx agar tidak overshoot
             var maxVx = Math.abs(diff2) * 0.5 + 2;
             if (b.vx >  maxVx) b.vx =  maxVx;
             if (b.vx < -maxVx) b.vx = -maxVx;
         }
 
-        // [FIX 1] CEK LANDING sebelum physics bergerak
-        // Trigger saat bola mencapai LAND_Y — tepat saat menyentuh slot secara visual
-        if (!b.landed && b.y >= LAND_Y) {
+        // CHECK LANDING
+        if (!b.landed && b.y >= LAND_Y && b.status === 'ready') {
             b.landed = true;
             b.isDone = true;
-
-            if (b.status === 'ready') {
-                // Data server sudah ada → flash slot sekarang
-                onBallLand(b);
-            } else {
-                // Server belum reply → simpan, flash saat reply datang
-                _pendingLand.push(b);
-            }
-            return; // Stop physics untuk bola ini
+            onBallLand(b);
+            return;
         }
 
-        // Gravitasi & gerak
+        // Physics
         b.vy += ph.grav;
         b.vx *= ph.friction;
         b.x  += b.vx;
@@ -331,7 +384,7 @@ function updatePhysics() {
             }
         }
 
-        // Batas kiri-kanan
+        // Boundaries
         if (b.x < BALL_R)      { b.x = BALL_R;      b.vx = Math.abs(b.vx) * 0.5; }
         if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx = -Math.abs(b.vx) * 0.5; }
     });
@@ -339,19 +392,19 @@ function updatePhysics() {
     balls = balls.filter(function(b) { return !b.isDone; });
 }
 
-// ── LANDING ──────────────────────────────────────────────────
-function onBallLand(b) {
-    // Saldo
-    _displaySaldo += b.winAmount;
-    updateSaldoDisplay();
+// ════════════════════════════════════════════════════════════════
+// ON BALL LAND
+// ════════════════════════════════════════════════════════════════
 
-    // [FIX 1] Slot berkedip TEPAT saat bola masuk — tidak terlambat
+function onBallLand(b) {
+    // Flash slot
     var slotEl = document.getElementById('slot-' + b.targetSlotIdx);
     if (slotEl) {
         slotEl.classList.add('active');
         setTimeout(function() { slotEl.classList.remove('active'); }, 300);
     }
 
+    // Sound
     if (b.targetMult >= 1) playSound('snd-win', 0.3);
 
     // Floating score
@@ -359,17 +412,26 @@ function onBallLand(b) {
     var fy = BH * LAND_Y_RATIO - 5;
     var fc = b.targetMult >= 3 ? '#ff0077' : b.targetMult >= 1 ? '#f5e642' : '#4488ff';
     var fsize = b.targetMult >= 3 ? 18 : 14;
+    
+    var netWin = b.winAmount - b.bet;
+    var winText = netWin >= 0 ? 
+        '+' + formatIDR(netWin) : 
+        '-' + formatIDR(-netWin);
+
     floaters.push({
         x: fx, y: fy,
-        text: b.winAmount > 0 ? '+' + Math.floor(b.winAmount).toLocaleString('id-ID') : '-' + b.bet.toLocaleString('id-ID'),
+        text: winText,
         color: fc, opacity: 1, velY: 0.9 + Math.random() * 0.4, fontSize: fsize
     });
 
-    // Score list (opsional, bisa dihapus jika pakai floaters saja)
-    // tidak ditambahkan di sini agar tidak duplikat dengan versi sebelumnya
+    isPlaying = false;
+    document.getElementById('main-btn').disabled = false;
 }
 
-// ── DRAW ─────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════
+// DRAW LOOP
+// ════════════════════════════════════════════════════════════════
+
 function draw() {
     ctx.clearRect(0, 0, BW, BH);
 
@@ -433,7 +495,10 @@ function draw() {
     requestAnimationFrame(draw);
 }
 
-// ── CONTROLS ─────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════
+// UI CONTROLS
+// ════════════════════════════════════════════════════════════════
+
 function playSound(id, vol) {
     try {
         var s = document.getElementById(id).cloneNode();
@@ -443,6 +508,7 @@ function playSound(id, vol) {
 }
 
 function setSpeed(m) {
+    if (isPlaying) return;
     speedMode = m;
     document.getElementById('m-normal').classList.toggle('active', m === 'normal');
     document.getElementById('m-turbo').classList.toggle('active',  m === 'turbo');
@@ -454,6 +520,8 @@ function setSpeed(m) {
 
 function toggleAuto() {
     if (isAuto) { stopAuto(); return; }
+    if (isPlaying) return;
+    
     isAuto = true;
     document.getElementById('m-auto').classList.add('active');
     document.getElementById('m-auto').textContent   = 'AUTO: ON';
@@ -465,25 +533,28 @@ function toggleAuto() {
 
 function stopAuto() {
     isAuto = false;
-    clearInterval(autoTimer); autoTimer = null;
+    clearInterval(autoTimer);
+    autoTimer = null;
     document.getElementById('m-auto').classList.remove('active');
     document.getElementById('m-auto').textContent   = 'AUTO: OFF';
     document.getElementById('main-btn').textContent = 'PLAY BALL';
     document.getElementById('main-btn').classList.remove('stop-mode');
 }
 
-function handlePlay() { if (isAuto) stopAuto(); else spawnBall(); }
+function handlePlay() {
+    if (isAuto) stopAuto();
+    else spawnBall();
+}
 
 function changeBet(d) {
-    if (isAuto) return;
+    if (isAuto || isPlaying) return;
     betIdx = Math.max(0, Math.min(BETS.length - 1, betIdx + d));
-    document.getElementById('current-bet').textContent = BETS[betIdx].toLocaleString('id-ID');
+    document.getElementById('current-bet').textContent = formatIDR(BETS[betIdx]);
 }
 
-function updateSaldoDisplay() {
-    var el = document.getElementById('game-display-saldo');
-    if (el) el.textContent = 'IDR ' + Math.floor(Math.max(0, _displaySaldo)).toLocaleString('id-ID');
-}
+// ════════════════════════════════════════════════════════════════
+// UI HELPERS
+// ════════════════════════════════════════════════════════════════
 
 function showModal(msg, title) {
     document.getElementById('modal-title').textContent = title || 'INFO';
@@ -491,45 +562,85 @@ function showModal(msg, title) {
     document.getElementById('modal-overlay').style.display = 'block';
     document.getElementById('neon-modal').style.display    = 'block';
 }
+
 function closeModal() {
     document.getElementById('modal-overlay').style.display = 'none';
     document.getElementById('neon-modal').style.display    = 'none';
 }
 
-// ── INIT ─────────────────────────────────────────────────────
+function showInfo(msg) {
+    var el = document.getElementById('info-box');
+    el.textContent = msg;
+    el.style.display = 'block';
+}
+
+function hideInfo() {
+    document.getElementById('info-box').style.display = 'none';
+}
+
+function openProfileMenu() {
+    showModal('👤 Username: ' + (getUsername() || 'Guest') + '\n\nTier: ' + (_session ? _session.tier : 'MEMBER') + 
+             '\n\nWinrate: ' + (_session ? _session.winrate : '50') + '%', 'PROFIL SAYA');
+}
+
+function showLogout() {
+    if (confirm('Logout?')) {
+        AuthAPI.logout();
+    }
+}
+
+function goTo(url) {
+    window.location.href = url;
+}
+
+// ════════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════════
+
 window.addEventListener('DOMContentLoaded', function() {
-    if (typeof requireLogin === 'function') {
-        var sess = requireLogin('index.html');
-        if (!sess) return;
-        _displaySaldo = sess.saldo || 0;
-    } else if (typeof getSaldo === 'function') {
-        _displaySaldo = getSaldo();
-    } else if (typeof _session !== 'undefined' && _session) {
-        _displaySaldo = _session.saldo || 0;
-    }
+    // Require login — redirect ke login.html jika belum login
+    if (!requireLogin('login.html')) return;
 
+    // Setup canvas
     setupCanvas();
-    updateSaldoDisplay();
-    document.getElementById('current-bet').textContent = BETS[betIdx].toLocaleString('id-ID');
-
-    if (typeof getUsername === 'function' && typeof callApiSilent === 'function') {
-        var u = getUsername();
-        callApiSilent('set_session_start', { username: u }).catch(function(){});
-        callApiSilent('set_status', { username: u, status: 'ONLINE' }).catch(function(){});
+    
+    // Update UI dari session
+    var user = getUsername();
+    if (user) {
+        document.getElementById('display-username').textContent = user.toUpperCase();
     }
 
-    if (typeof ProfileAPI !== 'undefined' && ProfileAPI.sync) {
-        ProfileAPI.sync().then(function() {
-            if (balls.length === 0 && _pendingLand.length === 0) {
-                if (typeof getSaldo === 'function') _displaySaldo = getSaldo();
-                updateSaldoDisplay();
-            }
-        }).catch(function(){});
-    }
+    // Update saldo ke UI
+    var saldo = getSaldo();
+    syncSaldoUI(saldo);
 
+    // Setup bet display
+    document.getElementById('current-bet').textContent = formatIDR(BETS[betIdx]);
+
+    // Auto sync profile every 30 seconds
+    setInterval(function() {
+        ProfileAPI.sync().catch(function(){});
+    }, 30000);
+
+    // Start game loop
     draw();
 });
+
 window.addEventListener('resize', setupCanvas);
+
+// ════════════════════════════════════════════════════════════════
+// ALIAS FUNCTIONS untuk kompatibilitas
+// ════════════════════════════════════════════════════════════════
+
+// Global.js sudah punya formatIDR
+// Tapi ada kemungkinan belum, jadi buat alias
+if (typeof formatIDR === 'undefined') {
+    window.formatIDR = function(num) {
+        return new Intl.NumberFormat("id-ID", {
+            style: "currency", currency: "IDR", maximumFractionDigits: 0
+        }).format(num || 0);
+    };
+}
 </script>
 </body>
 </html>
