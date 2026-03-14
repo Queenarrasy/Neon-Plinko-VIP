@@ -3,89 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEON PLINKO VIP</title>
+    <title>NEON PLINKO VIP — ENGINE</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
         :root { --pink: #ff0077; --blue: #00d4ff; --bg: #02030d; }
-        body { background: var(--bg); color: white; font-family: 'Outfit', sans-serif; margin: 0; overflow-x: hidden; }
+        body { background: var(--bg); color: white; font-family: 'Outfit', sans-serif; margin: 0; overflow: hidden; text-align: center; }
         
-        /* TOP BAR */
         .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: rgba(0,0,0,0.8); border-bottom: 1px solid var(--blue); position: sticky; top:0; z-index: 100; }
         .saldo-box { background: rgba(0, 212, 255, 0.1); padding: 8px 15px; border-radius: 50px; border: 1px solid var(--blue); color: var(--blue); font-weight: bold; }
         
-        /* DEPOSIT MODAL */
-        .btn-depo { background: var(--pink); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px var(--pink); }
+        #game-canvas { width: 100%; max-width: 600px; height: 500px; margin: auto; display: block; }
+        
+        .controls { padding: 20px; background: #050614; border-top: 1px solid #1a1b2e; position: fixed; bottom: 0; width: 100%; box-sizing: border-box; }
+        .bet-input { background: #000; border: 1px solid var(--blue); color: white; padding: 10px; border-radius: 5px; width: 100px; margin-right: 10px; }
+        .drop-btn { background: linear-gradient(90deg, var(--blue), var(--pink)); border: none; padding: 12px 30px; color: white; font-weight: bold; border-radius: 8px; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; }
+        
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; }
-        .modal-content { background: #050614; padding: 30px; border-radius: 20px; border: 1px solid var(--pink); width: 90%; max-width: 400px; text-align: center; }
-        input { width: 100%; padding: 15px; margin: 15px 0; background: #111; border: 1px solid #333; color: white; border-radius: 10px; }
-
-        /* GAME AREA */
-        .game-container { height: 70vh; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, #0a0c20 0%, #02030d 100%); position: relative; }
-        .placeholder-text { color: rgba(255,255,255,0.1); font-size: 40px; font-weight: 900; text-transform: uppercase; letter-spacing: 10px; }
+        .modal-content { background: #050614; padding: 30px; border-radius: 20px; border: 1px solid var(--pink); width: 85%; max-width: 350px; }
     </style>
 </head>
 <body>
 
 <div class="top-bar">
-    <div style="font-weight: 900; color: var(--pink);">NEON VIP</div>
-    <div class="saldo-box">IDR <span id="display-saldo">0</span></div>
-    <button class="btn-depo" onclick="openDepo()">DEPOSIT</button>
+    <div style="font-weight: 900; color: var(--pink);">NEON PLINKO</div>
+    <div class="saldo-box"><span id="display-saldo">Loading...</span></div>
+    <button onclick="openDepo()" style="background:var(--blue); border:none; padding:5px 10px; border-radius:5px; font-weight:bold;">DEPOSIT</button>
 </div>
 
-<div class="game-container">
-    <div class="placeholder-text">PLINKO ENGINE</div>
-    </div>
+<div id="game-area">
+    <canvas id="game-canvas"></canvas>
+</div>
+
+<div class="controls">
+    <input type="number" id="bet-amount" class="bet-input" value="1000" min="100">
+    <button class="drop-btn" onclick="dropBall()">DROP BALL</button>
+</div>
 
 <div id="modal-depo" class="modal">
     <div class="modal-content">
-        <h2 style="color:var(--pink)">ISI SALDO</h2>
-        <p style="font-size: 12px; color: #888;">Masukkan nominal deposit (Min. 10.000)</p>
-        <input type="number" id="depo-amount" placeholder="Contoh: 50000">
-        <select id="depo-method" style="width:100%; padding:10px; background:#111; color:white; border-radius:10px; border:1px solid #333;">
-            <option value="DANA">DANA</option>
-            <option value="OVO">OVO</option>
-            <option value="BCA">BCA</option>
-        </select>
-        <button class="btn-depo" style="width:100%; margin-top:20px;" onclick="submitDepo()">KIRIM PERMINTAAN</button>
-        <button onclick="closeDepo()" style="background:none; border:none; color:#555; margin-top:15px; cursor:pointer;">Batal</button>
+        <h3>DEPOSIT</h3>
+        <input type="number" id="depo-amt" placeholder="Nominal" style="width:100%; padding:10px; margin:10px 0;">
+        <button class="drop-btn" style="width:100%" onclick="submitDepo()">KIRIM</button>
+        <button onclick="closeDepo()" style="background:none; border:none; color:gray; margin-top:10px;">Batal</button>
     </div>
 </div>
 
 <script>
-    async function initGame() {
+    const { Engine, Render, Runner, Bodies, Composite, Events } = Matter;
+    const engine = Engine.create();
+    const world = engine.world;
+    let currentWinrate = 50;
+    let isDropping = false;
+
+    async function init() {
         const user = getUsername();
-        if(!user) window.location.href = 'index.html';
+        if(!user) return window.location.href = 'index.html';
+        
+        // Ambil Data Profile (Saldo & Winrate)
+        const { data } = await _supabase.from('profiles').select('*').eq('username', user).single();
+        document.getElementById('display-saldo').innerText = "IDR " + data.saldo.toLocaleString();
+        currentWinrate = data.winrate;
+
+        setupCanvas();
+    }
+
+    function setupCanvas() {
+        const canvas = document.getElementById('game-canvas');
+        const render = Render.create({
+            canvas: canvas,
+            engine: engine,
+            options: { width: 600, height: 500, wireframes: false, background: 'transparent' }
+        });
+
+        // Buat Pin (Pasak Plinko)
+        for (let row = 2; row < 10; row++) {
+            for (let col = 0; col < row; col++) {
+                const x = 300 + (col - row / 2 + 0.5) * 40;
+                const y = row * 40 + 50;
+                Composite.add(world, Bodies.circle(x, y, 4, { isStatic: true, render: { fillStyle: '#00d4ff' } }));
+            }
+        }
+
+        // Buat Lubang Pembagi (Multiplier)
+        const multipliers = [10, 2, 0.5, 0.2, 0.5, 2, 10];
+        multipliers.forEach((val, i) => {
+            const x = 110 + i * 63;
+            const sensor = Bodies.rectangle(x, 480, 50, 20, { 
+                isStatic: true, isSensor: true, label: 'm_'+val,
+                render: { fillStyle: val > 1 ? '#ff0077' : '#333' }
+            });
+            Composite.add(world, sensor);
+        });
+
+        Render.run(render);
+        Runner.run(Runner.create(), engine);
+    }
+
+    async function dropBall() {
+        if(isDropping) return;
+        const bet = parseInt(document.getElementById('bet-amount').value);
+        const user = getUsername();
+
+        // Cek Saldo
+        const { data: p } = await _supabase.from('profiles').select('saldo').eq('username', user).single();
+        if(p.saldo < bet) return alert("Saldo tidak cukup!");
+
+        isDropping = true;
+        
+        // Potong Saldo Langsung
+        await _supabase.from('profiles').update({ saldo: p.saldo - bet }).eq('username', user);
         updateUISaldo();
-        // Cek Winrate secara diam-diam (untuk engine game)
-        const { data } = await _supabase.from('profiles').select('winrate').eq('username', user).single();
-        console.log("Current Winrate:", data.winrate + "%");
+
+        // Logic Manipulasi Winrate: Geser posisi drop awal
+        // Jika Winrate tinggi, bola drop agak ke pinggir (lubang besar). Jika rendah, di tengah (lubang kecil).
+        let startX = 300 + (Math.random() * 20 - 10);
+        if(currentWinrate > 70) startX = (Math.random() > 0.5) ? 260 : 340; 
+        if(currentWinrate < 30) startX = 300;
+
+        const ball = Bodies.circle(startX, 20, 8, {
+            restitution: 0.5, friction: 0.02,
+            render: { fillStyle: '#fff' }
+        });
+        Composite.add(world, ball);
+
+        // Deteksi Masuk Lubang
+        Events.on(engine, 'collisionStart', (event) => {
+            event.pairs.forEach(async (pair) => {
+                if (pair.bodyA === ball || pair.bodyB === ball) {
+                    const sensor = pair.bodyA.label.startsWith('m_') ? pair.bodyA : pair.bodyB;
+                    if(sensor.label && sensor.label.startsWith('m_')) {
+                        const mult = parseFloat(sensor.label.split('_')[1]);
+                        const winAmount = Math.floor(bet * mult);
+                        
+                        Composite.remove(world, ball);
+                        if(!ball.processed) {
+                            ball.processed = true;
+                            await finishRound(winAmount);
+                        }
+                    }
+                }
+            });
+        });
+    }
+
+    async function finishRound(win) {
+        const user = getUsername();
+        const { data } = await _supabase.from('profiles').select('saldo').eq('username', user).single();
+        await _supabase.from('profiles').update({ saldo: data.saldo + win }).eq('username', user);
+        
+        alert(win > 0 ? "MENANG: IDR " + win.toLocaleString() : "KALAH!");
+        updateUISaldo();
+        isDropping = false;
     }
 
     function openDepo() { document.getElementById('modal-depo').style.display = 'flex'; }
     function closeDepo() { document.getElementById('modal-depo').style.display = 'none'; }
-
-    async function submitDepo() {
-        const amt = document.getElementById('depo-amount').value;
-        const method = document.getElementById('depo-method').value;
-        const user = getUsername();
-
-        if(amt < 10000) return alert("Minimal deposit IDR 10.000");
-
-        const { error } = await _supabase.from('deposits').insert([
-            { username: user, nominal: amt, metode: method, status: 'PROSES' }
-        ]);
-
-        if(!error) {
-            alert("Permintaan Deposit Terkirim! Silakan tunggu konfirmasi Admin.");
-            closeDepo();
-        } else {
-            alert("Gagal mengirim deposit.");
-        }
-    }
-
-    window.onload = initGame;
+    
+    window.onload = init;
 </script>
 </body>
 </html>
