@@ -113,8 +113,7 @@ body{
 <script src="global.js"></script>
 <script>
 /**
- * NEON PLINKO VIP - PRODUCTION RELEASE v10.0
- * Fitur: Particle Floating Score, Turbo Fix, High-Accuracy Slot Detection
+ * NEON PLINKO VIP - FINAL PRODUCTION READY
  */
 
 const ROWS = 9;
@@ -129,8 +128,8 @@ let speedMode = 'normal', isAuto = false, autoTimer = null;
 let betIdx = 0, _displaySaldo = 0;
 
 const PHYSICS = {
-    normal: { grav: 0.38, bounce: 0.48, friction: 0.98, steer: 0.1, pullLimit: 0.45 },
-    turbo: { grav: 0.68, bounce: 0.42, friction: 0.96, steer: 0.2, pullLimit: 0.45 }
+    normal: { grav: 0.35, bounce: 0.5, friction: 0.98, steer: 0.12, pullLimit: 0.45 },
+    turbo: { grav: 0.65, bounce: 0.45, friction: 0.97, steer: 0.22, pullLimit: 0.45 }
 };
 
 function setupCanvas() {
@@ -202,6 +201,7 @@ function spawnBall() {
     };
     balls.push(ball);
 
+    // Simulasi atau Integrasi API
     if(typeof GameEngine !== 'undefined') {
         GameEngine.processPlay(bet).then(res => {
             if (!res || res.result !== 'SUCCESS') {
@@ -239,25 +239,28 @@ function updatePhysics() {
                 b.vx = Math.cos(angle) * speed * ph.bounce + (Math.random()-0.5)*0.3;
                 b.vy = Math.abs(Math.sin(angle) * speed * ph.bounce) + 0.4;
                 p.glow = 1.0;
-                playSound('snd-hit', 0.15);
+                playSound('snd-hit', 0.12);
             }
         });
 
+        // Magnet Logic yang Diperkuat (Fixing Video 1 & 2)
         if (b.status === 'ready' && b.targetSlotIdx !== null) {
             let targetX = window.slotData.startX + (b.targetSlotIdx + 0.5) * window.slotData.width;
             let progY = b.y / BH;
             if (progY > ph.pullLimit) {
                 let diff = targetX - b.x;
-                // Kekuatan tarikan meningkat seiring bola mendekati dasar
-                let pullStrength = progY > 0.88 ? 1.0 : ph.steer;
-                b.vx += diff * pullStrength * 0.2;
+                // Tarikan semakin presisi saat mendekati slot
+                let strength = progY > 0.85 ? 0.8 : ph.steer;
+                b.vx += diff * strength * 0.15;
             }
         }
 
-        if (b.x < BALL_R) { b.x = BALL_R; b.vx *= -0.4; }
-        if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx *= -0.4; }
+        // Batas samping
+        if (b.x < BALL_R) { b.x = BALL_R; b.vx *= -0.5; }
+        if (b.x > BW - BALL_R) { b.x = BW - BALL_R; b.vx *= -0.5; }
 
-        if (b.y > BH + 5) {
+        // Deteksi pendaratan (Fixing Sinkronisasi)
+        if (b.y > BH - 2) { 
             b.isDone = true;
             if (b.status === 'ready') onBallLand(b);
             else _pendingLand.push(b);
@@ -267,31 +270,34 @@ function updatePhysics() {
 }
 
 function onBallLand(b) {
+    // 1. Update Saldo Real-time
     _displaySaldo += b.winAmount;
     updateSaldoDisplay();
     
+    // 2. Efek Visual Slot
     const slotEl = document.getElementById(`slot-${b.targetSlotIdx}`);
     if (slotEl) {
         slotEl.classList.add('active');
-        setTimeout(() => slotEl.classList.remove('active'), 200);
+        setTimeout(() => slotEl.classList.remove('active'), 180);
     }
-    
-    if (b.targetMult >= 1) playSound('snd-win', 0.3);
+    if (b.targetMult >= 1) playSound('snd-win', 0.25);
 
-    // Score Particle Logic
+    // 3. Floating Score System (Fixing Tumpukan di Video 2)
     let floatX = window.slotData.startX + (b.targetSlotIdx + 0.5) * window.slotData.width;
-    // Berikan sedikit random X agar tidak menumpuk di satu garis lurus (Video 2 Fix)
-    floatX += (Math.random() - 0.5) * 12;
+    // Offset random agar tidak saling menutupi
+    floatX += (Math.random() - 0.5) * 15;
 
     let floatColor = b.targetMult >= 3 ? '#ff0077' : (b.targetMult >= 1 ? '#f5e642' : '#0055ff');
     let winStr = b.winAmount > 0 ? '+ ' + Math.floor(b.winAmount).toLocaleString('id-ID') : '0';
     
     floaters.push({
         x: floatX,
-        y: BH - 10,
+        y: BH - 15,
         text: winStr,
         color: floatColor,
         opacity: 1,
+        // Kecepatan naik random agar terlihat lebih organik
+        velY: 0.8 + Math.random() * 0.5,
         fontSize: b.targetMult >= 3 ? 18 : 14
     });
 }
@@ -299,15 +305,15 @@ function onBallLand(b) {
 function draw() {
     ctx.clearRect(0, 0, BW, BH);
 
-    // Render Pegs
+    // Render Pegs (Pasak)
     pegs.forEach(p => {
         ctx.beginPath();
         ctx.arc(p.x, p.y, PEG_R, 0, Math.PI*2);
-        ctx.fillStyle = p.glow > 0 ? `rgba(255,255,255,${0.3 + p.glow*0.7})` : '#2a2d42';
+        ctx.fillStyle = p.glow > 0 ? `rgba(255,255,255,${0.3 + p.glow*0.7})` : '#222533';
         if(p.glow > 0) {
-            ctx.shadowBlur = 12 * p.glow;
+            ctx.shadowBlur = 10 * p.glow;
             ctx.shadowColor = '#fff';
-            p.glow -= 0.04;
+            p.glow -= 0.05;
         } else { ctx.shadowBlur = 0; }
         ctx.fill();
     });
@@ -315,11 +321,11 @@ function draw() {
     // Render Balls
     balls.forEach(b => {
         ctx.save();
-        ctx.shadowBlur = 15;
+        ctx.shadowBlur = 12;
         ctx.shadowColor = b.status === 'ready' ? '#ff0077' : '#0055ff';
         let grad = ctx.createRadialGradient(b.x-2, b.y-2, 1, b.x, b.y, BALL_R);
         if(b.status === 'ready') {
-            grad.addColorStop(0, '#fff'); grad.addColorStop(0.6, '#ff0077'); grad.addColorStop(1, '#330011');
+            grad.addColorStop(0, '#fff'); grad.addColorStop(0.6, '#ff0077'); grad.addColorStop(1, '#440022');
         } else {
             grad.addColorStop(0, '#fff'); grad.addColorStop(0.6, '#0055ff'); grad.addColorStop(1, '#000822');
         }
@@ -330,22 +336,22 @@ function draw() {
         ctx.restore();
     });
 
-    // Render Floating Scores (Papan Score Melayang)
-    floaters.forEach((f, index) => {
-        f.y -= 1.0; // Naik ke atas
-        f.opacity -= 0.015; // Memudar
+    // Render Floating Scores
+    floaters.forEach((f, idx) => {
+        f.y -= f.velY;
+        f.opacity -= 0.015;
         
         ctx.save();
         ctx.globalAlpha = Math.max(0, f.opacity);
         ctx.font = `900 ${f.fontSize}px 'Outfit', sans-serif`;
         ctx.fillStyle = f.color;
         ctx.textAlign = "center";
-        ctx.shadowBlur = 6;
-        ctx.shadowColor = f.color;
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = 'rgba(0,0,0,0.8)';
         ctx.fillText(f.text, f.x, f.y);
         ctx.restore();
 
-        if(f.opacity <= 0) floaters.splice(index, 1);
+        if(f.opacity <= 0) floaters.splice(idx, 1);
     });
 
     updatePhysics();
@@ -373,7 +379,7 @@ function toggleAuto() {
         btn.classList.add('active'); btn.textContent = "AUTO: ON";
         mainBtn.textContent = "STOP AUTO"; mainBtn.classList.add('stop-mode');
         spawnBall();
-        autoTimer = setInterval(spawnBall, speedMode === 'turbo' ? 450 : 1000);
+        autoTimer = setInterval(spawnBall, speedMode === 'turbo' ? 450 : 900);
     } else {
         stopAuto();
     }
@@ -413,7 +419,6 @@ function closeModal() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-    // Sync Initial Balance
     if(typeof getSaldo === 'function') _displaySaldo = getSaldo();
     else if(typeof _session !== 'undefined') _displaySaldo = _session.saldo || 0;
 
