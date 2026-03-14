@@ -8,61 +8,72 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --pink: #ff0077; --blue: #00d4ff; --gold: #f5e642; --bg: #030510; --green: #00ff88; --red: #ff3131; }
+        :root { 
+            --pink-neon: #ff0077; 
+            --blue-neon: #00d4ff; 
+            --deepblue-neon: #0044ff;
+            --yellow-neon: #f5e642; 
+            --bg: #030510; 
+            --red-alert: #ff3131; 
+        }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; min-height: 100vh; overflow-x: hidden; }
 
+        /* Login Security */
         #gate-keeper { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
-        .gate-card { width: 90%; max-width: 380px; padding: 40px 30px; border-radius: 30px; background: rgba(255,255,255,0.02); border: 2px solid var(--blue); box-shadow: 0 0 40px rgba(0,212,255,0.2); text-align: center; }
+        .gate-card { width: 90%; max-width: 380px; padding: 40px 30px; border-radius: 30px; background: rgba(255,255,255,0.02); border: 2px solid var(--blue-neon); box-shadow: 0 0 40px rgba(0,212,255,0.2); text-align: center; }
 
+        /* App Layout */
         #main-app { display: none; }
-        .nav-top { background: rgba(5,6,20,0.95); padding: 15px 20px; border-bottom: 1px solid rgba(0,212,255,0.2); position: sticky; top: 0; z-index: 100; display: flex; flex-direction: column; gap: 10px; }
+        .nav-top { background: rgba(5,6,20,0.95); padding: 15px 20px; border-bottom: 1px solid rgba(0,212,255,0.2); position: sticky; top: 0; z-index: 100; display: flex; flex-direction: column; gap: 8px; }
         .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 70px; background: #050614; border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-around; align-items: center; padding-bottom: env(safe-area-inset-bottom); }
-        .nav-btn { color: rgba(255,255,255,0.3); font-size: 22px; cursor: pointer; text-align: center; }
-        .nav-btn span { display: block; font-size: 9px; margin-top: 4px; font-weight: 800; text-transform: uppercase; }
-        .nav-btn.active { color: var(--blue); text-shadow: 0 0 10px var(--blue); }
+        
+        .nav-btn { color: rgba(255,255,255,0.3); font-size: 20px; cursor: pointer; text-align: center; flex: 1; }
+        .nav-btn span { display: block; font-size: 8px; margin-top: 4px; font-weight: 800; text-transform: uppercase; }
+        .nav-btn.active { color: var(--blue-neon); text-shadow: 0 0 10px var(--blue-neon); }
 
         .content { padding: 20px; padding-bottom: 100px; }
-        .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 20px; padding: 20px; margin-bottom: 15px; }
-        .btn-act { padding: 12px; border-radius: 10px; border: none; font-weight: 900; font-size: 11px; cursor: pointer; transition: 0.2s; }
+        .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 20px; padding: 20px; margin-bottom: 15px; position: relative; }
         
-        /* Panic Button Style */
-        .panic-btn { background: var(--red); color: #fff; font-weight: 900; padding: 10px; border-radius: 8px; border: none; cursor: pointer; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 49, 49, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(255, 49, 49, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 49, 49, 0); } }
-        .panic-active { background: #550000; animation: none; border: 1px solid var(--red); }
+        /* Neon Colors for Balance */
+        .profit { color: var(--pink-neon); text-shadow: 0 0 8px var(--pink-neon); }
+        .loss { color: var(--deepblue-neon); text-shadow: 0 0 8px var(--deepblue-neon); }
+        .neutral { color: var(--yellow-neon); }
+
+        .panic-btn { background: var(--red-alert); color: #fff; font-weight: 900; padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-size: 11px; }
+        .panic-active { background: #550000; border: 1px solid var(--red-alert); }
         
-        .input-mini { background: #000; border: 1px solid #333; color: var(--green); padding: 5px; border-radius: 5px; width: 60px; text-align: center; }
-        .save-btn { background: var(--green); color: #000; padding: 8px 15px; border-radius: 8px; font-size: 11px; font-weight: 900; border: none; cursor: pointer; }
+        .input-mini { background: #000; border: 1px solid #333; color: var(--yellow-neon); padding: 5px; border-radius: 5px; width: 65px; text-align: center; }
+        .search-box { width: 100%; padding: 14px; border-radius: 12px; background: #000; border: 1px solid var(--blue-neon); color: #fff; margin-bottom: 15px; }
+        .save-btn { background: var(--blue-neon); color: #000; padding: 10px 15px; border-radius: 8px; font-size: 11px; font-weight: 900; border: none; width: 100%; }
     </style>
 </head>
 <body>
 
     <div id="gate-keeper">
         <div class="gate-card">
-            <h1 style="font-family:'Cinzel Decorative'; color:var(--blue); font-size:1.5rem;">ACCESS GATE</h1>
-            <input type="text" id="master-user" style="width:100%; padding:15px; border-radius:10px; background:#000; border:1px solid #333; color:#fff; margin:20px 0 10px;" placeholder="Admin Username">
-            <input type="password" id="master-pass" style="width:100%; padding:15px; border-radius:10px; background:#000; border:1px solid #333; color:#fff; margin-bottom:20px;" placeholder="Master Password">
-            <button onclick="checkAccess()" style="width:100%; padding:15px; border-radius:10px; border:none; background:var(--blue); color:#000; font-weight:900;">DECRYPT & ENTER</button>
+            <h1 style="font-family:'Cinzel Decorative'; color:var(--blue-neon); font-size:1.5rem;">ACCESS GATE</h1>
+            <input type="text" id="master-user" style="width:100%; padding:15px; border-radius:10px; background:#000; border:1px solid #333; color:#fff; margin:20px 0 10px;" placeholder="Username">
+            <input type="password" id="master-pass" style="width:100%; padding:15px; border-radius:10px; background:#000; border:1px solid #333; color:#fff; margin-bottom:20px;" placeholder="Password">
+            <button onclick="checkAccess()" style="width:100%; padding:15px; border-radius:10px; border:none; background:var(--blue-neon); color:#000; font-weight:900;">DECRYPT</button>
         </div>
     </div>
 
     <div id="main-app">
         <div class="nav-top">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div style="font-family:'Cinzel Decorative'; font-weight:900; color:var(--pink);">NEON MASTER</div>
+                <div style="font-family:'Cinzel Decorative'; font-weight:900; color:var(--pink-neon);">NEON MASTER</div>
                 <button id="panic-btn-global" class="panic-btn" onclick="togglePanicMode()">
-                    <i class="fa-solid fa-skull"></i> PANIC MODE: OFF
+                    <i class="fa-solid fa-skull"></i> PANIC
                 </button>
             </div>
-            <div id="panic-timer" style="display:none; text-align:center; color:var(--red); font-weight:900; font-size:12px; letter-spacing:2px;">
-                MODE KURAS AKTIF: <span id="timer-val">05:00</span>
-            </div>
-            <div id="online-stats" style="font-size:10px; font-weight:800; color:var(--gold);">SINKRONISASI...</div>
+            <div id="panic-timer" style="display:none; text-align:center; color:var(--red-alert); font-weight:900; font-size:10px;">MODE KURAS: <span id="timer-val">05:00</span></div>
+            <div id="online-stats" style="font-size:10px; font-weight:800; color:var(--yellow-neon);">SYNCING...</div>
         </div>
 
         <div class="content">
             <div id="tab-finance" class="page">
-                <h2 style="font-size:14px; margin-bottom:15px; color:var(--blue);">ANTREAN TRANSAKSI</h2>
+                <h2 style="font-size:14px; margin-bottom:15px; color:var(--blue-neon);">PENDING TX</h2>
                 <div id="finance-list">Memuat...</div>
             </div>
 
@@ -70,12 +81,23 @@
                 <input type="text" id="user-search" class="search-box" placeholder="Cari User..." onkeyup="filterUsers()">
                 <div id="user-list">Memuat Pemain...</div>
             </div>
+
+            <div id="tab-reward" class="page" style="display:none">
+                <h2 style="font-size:14px; margin-bottom:15px; color:var(--blue-neon);">GIFT SYSTEM</h2>
+                <div class="card">
+                    <input type="text" id="gift-target" class="search-box" placeholder="Target Username">
+                    <input type="number" id="gift-amt" class="search-box" placeholder="Nominal IDR">
+                    <textarea id="gift-msg" class="search-box" style="height:80px;">Bonus Jackpot Master!</textarea>
+                    <button class="save-btn" onclick="sendGift()">KIRIM KE INBOX</button>
+                </div>
+            </div>
         </div>
 
         <nav class="nav-bottom">
-            <div class="nav-btn active" onclick="switchNav('finance', this)"><i class="fa-solid fa-cash-register"></i><span>Keuangan</span></div>
+            <div class="nav-btn active" onclick="switchNav('finance', this)"><i class="fa-solid fa-cash-register"></i><span>Kasir</span></div>
             <div class="nav-btn" onclick="switchNav('users', this)"><i class="fa-solid fa-users-gear"></i><span>Pemain</span></div>
-            <div class="nav-btn" onclick="logout()"><i class="fa-solid fa-power-off"></i><span>Exit</span></div>
+            <div class="nav-btn" onclick="switchNav('reward', this)"><i class="fa-solid fa-gift"></i><span>Hadiah</span></div>
+            <div class="nav-btn" onclick="logout()"><i class="fa-solid fa-power-off"></i><span>Keluar</span></div>
         </nav>
     </div>
 
@@ -86,8 +108,6 @@
 
     const MASTER_KEY = { u: "admin_neon", p: "master777" };
     let usersData = [];
-    let isPanic = false;
-    let panicTimer;
 
     function checkAccess() {
         if(document.getElementById('master-user').value === MASTER_KEY.u && document.getElementById('master-pass').value === MASTER_KEY.p) {
@@ -95,64 +115,12 @@
             document.getElementById('gate-keeper').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
             initDashboard();
-        } else { alert("AKSES DITOLAK!"); }
+        } else { alert("ACCESS DENIED"); }
     }
 
     async function initDashboard() {
         loadFinance(); loadUsers();
-        setInterval(loadFinance, 10000); 
-    }
-
-    async function togglePanicMode() {
-        if(isPanic) return; // Mencegah klik ganda saat aktif
-
-        const confirmMode = confirm("AKTIFKAN MODE KURAS? Winrate Global semua pemain akan menjadi 10% selama 5 menit!");
-        if(!confirmMode) return;
-
-        isPanic = true;
-        const btn = document.getElementById('panic-btn-global');
-        const timerDiv = document.getElementById('panic-timer');
-        btn.classList.add('panic-active');
-        btn.innerHTML = `<i class="fa-solid fa-radiation"></i> MODE KURAS AKTIF`;
-        timerDiv.style.display = 'block';
-
-        // EKSEKUSI GLOBAL UPDATE: Winrate 10% untuk SEMUA
-        const { error } = await _supabase.from('profiles').update({ winrate: 10 }).neq('username', 'admin_neon');
-        
-        if(error) {
-            alert("Gagal eksekusi Panic Mode!");
-            resetPanicUI();
-            return;
-        }
-
-        let timeLeft = 300; // 5 Menit (300 detik)
-        panicTimer = setInterval(() => {
-            timeLeft--;
-            let mins = Math.floor(timeLeft / 60);
-            let secs = timeLeft % 60;
-            document.getElementById('timer-val').innerText = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-
-            if(timeLeft <= 0) {
-                stopPanicMode();
-            }
-        }, 1000);
-    }
-
-    async function stopPanicMode() {
-        clearInterval(panicTimer);
-        // Kembalikan ke Winrate Standar (Misal: 60%)
-        await _supabase.from('profiles').update({ winrate: 60 }).neq('username', 'admin_neon');
-        resetPanicUI();
-        alert("MODE KURAS BERAKHIR. Winrate dikembalikan ke standar (60%).");
-        loadUsers();
-    }
-
-    function resetPanicUI() {
-        isPanic = false;
-        const btn = document.getElementById('panic-btn-global');
-        btn.classList.remove('panic-active');
-        btn.innerHTML = `<i class="fa-solid fa-skull"></i> PANIC MODE: OFF`;
-        document.getElementById('panic-timer').style.display = 'none';
+        setInterval(() => { loadFinance(); loadUsers(); }, 15000);
     }
 
     async function loadFinance() {
@@ -160,10 +128,14 @@
         const { data: wd } = await _supabase.from('withdrawals').select('*').eq('status', 'PROSES');
         let html = '';
         if(depo) depo.forEach(d => {
-            html += `<div class="card"><b>${d.username}</b> <span style="color:var(--blue)">+${(d.net_receive || 0).toLocaleString()}</span><br>
-            <button class="save-btn" style="margin-top:10px" onclick="approveDepo('${d.id}', '${d.username}', ${d.net_receive})">APPROVE</button></div>`;
+            html += `<div class="card"><b>${d.username}</b> <span class="profit">+${d.net_receive}</span><br>
+            <button class="save-btn" style="margin-top:10px" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive})">APPROVE DEPO</button></div>`;
         });
-        document.getElementById('finance-list').innerHTML = html || '<p style="opacity:0.5; text-align:center;">Antrean Bersih</p>';
+        if(wd) wd.forEach(w => {
+            html += `<div class="card"><b>${w.username}</b> <span class="loss">-${w.amount}</span><br>
+            <button class="save-btn" style="background:var(--pink-neon); margin-top:10px" onclick="approveWd('${w.id}')">APPROVE WD</button></div>`;
+        });
+        document.getElementById('finance-list').innerHTML = html || 'Bersih';
     }
 
     async function loadUsers() {
@@ -171,31 +143,53 @@
         if(data) {
             usersData = data;
             renderUsers(data);
-            document.getElementById('online-stats').innerText = data.length + " PEMAIN TERDAFTAR";
+            document.getElementById('online-stats').innerText = data.length + " PEMAIN AKTIF";
         }
     }
 
     function renderUsers(list) {
-        document.getElementById('user-list').innerHTML = list.map(u => `
+        document.getElementById('user-list').innerHTML = list.map(u => {
+            // Logika Warna Saldo (Dibandingkan modal_awal)
+            const saldo = u.saldo || 0;
+            const modal = u.modal_awal || 0;
+            let saldoClass = 'neutral';
+            if (saldo > modal) saldoClass = 'profit';
+            else if (saldo < modal) saldoClass = 'loss';
+
+            return `
             <div class="card">
                 <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
                     <b>${u.username}</b>
-                    <span style="color:var(--gold)">Rp ${(u.saldo || 0).toLocaleString()}</span>
+                    <span class="${saldoClass}" style="font-weight:900; font-size:16px;">Rp ${saldo.toLocaleString()}</span>
                 </div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:11px;">
                     <div>WR: <input type="number" class="input-mini" id="wr-${u.id}" value="${u.winrate || 0}"> %</div>
-                    <div>MAX: <input type="number" class="input-mini" style="width:70px" id="mx-${u.id}" value="${u.max_win_limit || 0}"></div>
+                    <div>MAX: <input type="number" class="input-mini" style="width:80px" id="mx-${u.id}" value="${u.max_win_limit || 0}"></div>
                 </div>
-                <button class="save-btn" style="width:100%; margin-top:10px;" onclick="updateSetting('${u.id}')">SIMPAN</button>
+                <button class="save-btn" style="margin-top:10px; background:transparent; border:1px solid var(--blue-neon); color:var(--blue-neon);" onclick="updateSetting('${u.id}')">SIMPAN SETTING</button>
             </div>
-        `).join('');
+        `}).join('');
     }
 
     async function updateSetting(id) {
         const wr = document.getElementById(`wr-${id}`).value;
         const mx = document.getElementById(`mx-${id}`).value;
         await _supabase.from('profiles').update({ winrate: parseInt(wr), max_win_limit: parseInt(mx) }).eq('id', id);
-        alert("Setting Terupdate!");
+        alert("Pemain diupdate!");
+    }
+
+    async function sendGift() {
+        const user = document.getElementById('gift-target').value;
+        const amt = document.getElementById('gift-amt').value;
+        const msg = document.getElementById('gift-msg').value;
+        if(!user || !amt) return alert("Lengkapi data!");
+        
+        const { error } = await _supabase.from('inbox').insert([{ 
+            username: user, title: "REWARD MASTER", message: msg, reward_amount: amt, status: 'UNREAD' 
+        }]);
+        
+        if(!error) { alert("Reward Terkirim!"); document.getElementById('gift-amt').value = ""; }
+        else alert("Gagal kirim reward!");
     }
 
     function switchNav(tab, el) {
@@ -203,6 +197,11 @@
         document.getElementById('tab-' + tab).style.display = 'block';
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         el.classList.add('active');
+    }
+
+    function filterUsers() {
+        const q = document.getElementById('user-search').value.toLowerCase();
+        renderUsers(usersData.filter(u => u.username.toLowerCase().includes(q)));
     }
 
     function logout() { sessionStorage.clear(); window.location.reload(); }
