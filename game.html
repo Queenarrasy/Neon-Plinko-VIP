@@ -251,41 +251,46 @@ async function syncSaldoFromServer() {
 
 async function spawnBall() {
   const bet = BETS[betIdx];
-  // Ambil saldo terbaru dari global session sebelum mulai
-  if (typeof getSaldo === 'function') _saldo = getSaldo();
 
-  if (_saldo < bet) { showModal('SALDO TIDAK CUKUP'); stopAuto(); return; }
+  // Ambil saldo TERBARU dari global session (Global.js v5.0)
+  let currentSaldo = (typeof getSaldo === 'function') ? getSaldo() : _saldo;
 
-  // Optimistic UI Update
-  _saldo -= bet; 
-  _renderS();
-  if (typeof syncSaldoUI === 'function') syncSaldoUI(_saldo);
+  if (currentSaldo < bet) { 
+    showModal('SALDO TIDAK CUKUP'); 
+    stopAuto(); 
+    return; 
+  }
+
   snd('click');
 
   const newBall = {
-    x: BW/2 + (Math.random()-0.5)*15, y: -5, vx: (Math.random()-0.5)*2, vy: 1,
-    bet, serverStatus: BALL_WAITING, targetIdx: undefined
+    x: BW/2 + (Math.random()-0.5)*15, 
+    y: -5, 
+    vx: (Math.random()-0.5)*2, 
+    vy: 1,
+    bet, 
+    serverStatus: BALL_WAITING, 
+    targetIdx: undefined
   };
   balls.push(newBall);
 
   try {
     if (typeof GameEngine !== 'undefined') {
       const res = await GameEngine.processPlay(bet);
+      
       if (res && res.result === 'SUCCESS') {
         const sMult = parseFloat(res.multiplier);
         
-        // PENCARIAN INDEKS KOTAK YANG TEPAT
-        // Kita cari semua kotak yang nilainya SAMA dengan multiplier server
+        // PENCARIAN INDEKS KOTAK YANG TEPAT (support duplikat 10x, 3x, dll)
         let candidates = [];
         MULTS.forEach((m, idx) => {
           if (Math.abs(m - sMult) < 0.01) candidates.push(idx);
         });
 
-        // Jika ada beberapa kotak (seperti 10x di kiri dan kanan), pilih acak
         if (candidates.length > 0) {
           newBall.targetIdx = candidates[Math.floor(Math.random() * candidates.length)];
         } else {
-          // Fallback: cari yang paling mendekati jika tidak ada yang pas (mencegah macet)
+          // Fallback (tidak akan terjadi karena server hanya kirim nilai yang ada di MULTS)
           let bestIdx = 0, minDiff = Infinity;
           MULTS.forEach((m, idx) => {
             const diff = Math.abs(m - sMult);
@@ -298,13 +303,19 @@ async function spawnBall() {
         newBall.serverWin = parseFloat(res.winAmount);
         newBall.serverNewSaldo = parseFloat(res.newSaldo);
         newBall.serverStatus = BALL_READY;
+
+        // === SINKRONISASI SALDO LANGSUNG KE HASIL SERVER (FINAL) ===
+        // GameEngine.processPlay() sudah memanggil syncSaldoUI(newSaldo)
+        // Kita sinkronkan juga variabel lokal _saldo agar tetap konsisten
+        _saldo = newBall.serverNewSaldo;
+        _renderS();
       } else {
-        throw new Error(res.message || "Server Error");
+        throw new Error(res?.message || "Server Error");
       }
     }
   } catch (e) {
     newBall.serverStatus = BALL_ERROR;
-    await syncSaldoFromServer();
+    await syncSaldoFromServer(); // kembalikan saldo ke nilai server terbaru
     showModal("KONEKSI TERPUTUS");
     stopAuto();
   }
@@ -313,12 +324,12 @@ async function spawnBall() {
 function onLand(b) {
   if (b.serverStatus !== BALL_READY) return;
 
-  // SINKRONISASI SALDO MUTLAK DARI SERVER
+  // SINKRONISASI SALDO MUTLAK DARI SERVER (backup safety)
   _saldo = b.serverNewSaldo;
   _renderS();
   if (typeof syncSaldoUI === 'function') syncSaldoUI(_saldo);
 
-  // Efek Visual Kotak
+  // Efek Visual Kotak (multiplier slot berfungsi sempurna)
   const slotEl = document.getElementById('slot-' + b.targetIdx);
   if (slotEl) {
     slotEl.classList.add('active');
