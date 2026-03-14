@@ -2,81 +2,96 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>NEON PLINKO VIP</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;900&display=swap" rel="stylesheet">
     <style>
         :root { 
-            --pink: #ff0077; --blue: #00d4ff; --yellow: #fbff00; --bg: #070816; 
+            --pink: #ff0077; --blue: #00d4ff; --yellow: #fbff00; --bg: #02030d; 
             --pink-neon: 0 0 5px var(--pink), 0 0 10px var(--pink);
             --blue-neon: 0 0 5px var(--blue), 0 0 10px var(--blue);
             --yellow-neon: 0 0 5px var(--yellow), 0 0 10px var(--yellow);
         }
         
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { background: var(--bg); color: white; font-family: 'Outfit', sans-serif; margin: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
-        .header { display: flex; justify-content: center; align-items: center; padding: 15px 10px; position: relative; z-index: 100; background: var(--bg); border-bottom: 1px solid rgba(0,212,255,0.2); }
         
+        /* Header & Balance */
+        .header { display: flex; justify-content: center; align-items: center; padding: 15px 10px; position: relative; z-index: 100; background: var(--bg); border-bottom: 1px solid rgba(0,212,255,0.1); }
         .prof-container, .settings-container { position: absolute; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
         .prof-container { left: 20px; } .settings-container { right: 20px; }
         .prof-link, .settings-link { font-size: 24px; color: var(--pink); text-shadow: var(--pink-neon); }
         .prof-text, .settings-text { font-size: 8px; font-weight: 900; margin-top: 2px; color: var(--blue); }
 
-        .balance-box { background: rgba(0,0,0,0.6); border: 2px solid var(--blue); border-radius: 20px; padding: 5px 20px; text-align: center; min-width: 150px; box-shadow: var(--blue-neon); }
+        .balance-box { background: rgba(0,0,0,0.6); border: 2px solid var(--blue); border-radius: 20px; padding: 5px 20px; text-align: center; min-width: 160px; box-shadow: var(--blue-neon); }
         #display-saldo { font-size: 18px; font-weight: 900; color: var(--yellow); text-shadow: var(--yellow-neon); }
+        #tier-name { font-size: 9px; color: var(--blue); display: block; letter-spacing: 1px; }
 
-        #game-container { position: relative; width: 100%; height: 380px; margin-top: 10px; overflow: hidden; }
-        .peg { position: absolute; width: 6px; height: 6px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 8px #fff; z-index: 5; opacity: 0.6; }
+        /* Game Board */
+        #game-container { position: relative; width: 100%; height: 380px; margin-top: 5px; overflow: hidden; }
+        .peg { position: absolute; width: 6px; height: 6px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 8px #fff; z-index: 5; opacity: 0.5; }
         .ball { position: absolute; width: 14px; height: 14px; background: radial-gradient(circle at 30% 30%, var(--pink), #900); border-radius: 50%; box-shadow: 0 0 15px var(--pink); z-index: 10; transform: translate(-50%, -50%); pointer-events: none; }
 
+        /* Multipliers */
         .multipliers { display: flex; justify-content: center; gap: 4px; padding: 0 10px; z-index: 80; }
-        .slot { flex: 1; height: 35px; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 10px; font-weight: 900; border: 1px solid rgba(255,255,255,0.1); transition: 0.2s; }
-        .m-high { background: var(--pink); box-shadow: var(--pink-neon); color: white; }
+        .slot { flex: 1; height: 35px; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 10px; font-weight: 900; border: 1px solid rgba(255,255,255,0.1); transition: 0.2s; color: #fff; }
+        .m-high { background: var(--pink); box-shadow: var(--pink-neon); }
         .m-mid { background: var(--yellow); color: black; box-shadow: var(--yellow-neon); }
         .m-low { background: var(--blue); color: black; box-shadow: var(--blue-neon); }
 
-        .play-area { padding: 20px; flex-grow: 1; display: flex; flex-direction: column; gap: 15px; background: rgba(255,255,255,0.02); border-top-left-radius: 30px; border-top-right-radius: 30px; }
+        /* Controls */
+        .play-area { padding: 20px; flex-grow: 1; display: flex; flex-direction: column; gap: 12px; background: rgba(255,255,255,0.02); border-top-left-radius: 30px; border-top-right-radius: 30px; border-top: 1px solid rgba(255,255,255,0.1); }
         .mode-toggles { display: flex; justify-content: center; gap: 10px; }
-        .toggle { flex: 1; padding: 12px; border-radius: 15px; font-size: 12px; font-weight: 900; cursor: pointer; border: 1px solid #333; background: #000; color: #666; transition: 0.3s; }
+        .toggle { flex: 1; padding: 12px; border-radius: 15px; font-size: 11px; font-weight: 900; cursor: pointer; border: 1px solid #333; background: #000; color: #666; transition: 0.3s; text-align: center; }
         .toggle.active { border-color: var(--pink); color: var(--pink); box-shadow: var(--pink-neon); }
         
-        .bet-selector { display: flex; align-items: center; justify-content: space-between; background: #000; border-radius: 50px; padding: 10px 25px; border: 1px solid var(--blue); }
-        .btn-main { width: 100%; padding: 16px; border-radius: 50px; border: none; font-weight: 900; font-size: 18px; cursor: pointer; background: linear-gradient(90deg, var(--pink), var(--blue)); color: white; box-shadow: 0 0 20px rgba(255,0,119,0.5); }
-        .btn-main:disabled { opacity: 0.5; cursor: not-allowed; }
+        .bet-selector { display: flex; align-items: center; justify-content: space-between; background: #000; border-radius: 50px; padding: 8px 25px; border: 1px solid var(--blue); box-shadow: inset 0 0 10px rgba(0,212,255,0.1); }
+        .btn-main { width: 100%; padding: 16px; border-radius: 50px; border: none; font-weight: 900; font-size: 18px; cursor: pointer; background: linear-gradient(90deg, var(--pink), var(--blue)); color: white; box-shadow: 0 0 20px rgba(255,0,119,0.4); text-transform: uppercase; }
+        .btn-main:disabled { opacity: 0.6; cursor: not-allowed; }
 
-        #score-board { position: absolute; left: 10px; top: 100px; width: 100px; display: flex; flex-direction: column; gap: 5px; z-index: 50; }
-        .score-item { background: rgba(0,0,0,0.8); border: 1px solid var(--pink); font-size: 10px; padding: 5px; border-radius: 5px; color: var(--yellow); text-align: center; animation: slideIn 0.3s ease-out; }
-        @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+        /* Popups */
+        #score-board { position: absolute; left: 10px; top: 110px; width: 100px; display: flex; flex-direction: column; gap: 5px; z-index: 50; }
+        .score-item { background: rgba(0,0,0,0.85); border-left: 3px solid var(--pink); font-size: 10px; padding: 6px; border-radius: 4px; color: var(--yellow); animation: slideIn 0.3s ease-out; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        @keyframes slideIn { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        
+        .win-tag { position: absolute; font-weight: 900; color: var(--yellow); text-shadow: var(--yellow-neon); font-size: 20px; pointer-events: none; z-index: 1000; animation: floatUp 1s ease-out forwards; }
+        @keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-100px); opacity: 0; } }
     </style>
 </head>
 <body>
+
+    <audio id="snd-click" src="https://www.soundjay.com/buttons/button-16.mp3"></audio>
+    <audio id="snd-win" src="https://www.soundjay.com/buttons/button-3.mp3"></audio>
+    <audio id="snd-drop" src="https://www.soundjay.com/interface/button-21.mp3"></audio>
 
     <div id="score-board"></div>
 
     <div class="header">
         <div class="prof-container" onclick="location.href='profil.html'">
-            <i class="fa-solid fa-user-astronaut prof-link"></i>
+            <i class="fa-solid fa-circle-user prof-link"></i>
             <span class="prof-text">PROFIL</span>
         </div>
         <div class="balance-box">
-            <span id="display-username" style="font-size: 9px; color: var(--blue); display: block; margin-bottom: 2px;">LOADING...</span>
+            <span id="tier-name">VIP PLAYER</span>
             <span id="display-saldo">IDR 0</span>
         </div>
         <div class="settings-container" onclick="location.href='settings.html'">
-            <i class="fa-solid fa-sliders settings-link"></i>
-            <span class="settings-text">PANEL</span>
+            <i class="fa-solid fa-gear settings-link"></i>
+            <span class="settings-text">SETTING</span>
         </div>
     </div>
 
     <div id="game-container"></div>
 
     <div class="multipliers" id="multi-row">
-        <div class="slot m-high">10x</div>
-        <div class="slot m-mid">3x</div>
-        <div class="slot m-low">1.5x</div>
-        <div class="slot m-low" style="background:#444;">0.2x</div>
-        <div class="slot m-low">0.5x</div>
-        <div class="slot m-mid">3x</div>
-        <div class="slot m-high">10x</div>
+        <div class="slot m-high" data-m="10">10x</div>
+        <div class="slot m-mid" data-m="3">3x</div>
+        <div class="slot m-low" data-m="1.5">1.5x</div>
+        <div class="slot m-low" data-m="0.2" style="background:#444;">0.2x</div>
+        <div class="slot m-low" data-m="0.5">0.5x</div>
+        <div class="slot m-mid" data-m="3">3x</div>
+        <div class="slot m-high" data-m="10">10x</div>
     </div>
 
     <div class="play-area">
@@ -86,36 +101,32 @@
         </div>
         
         <div class="bet-selector">
-            <button style="background:none; border:none; color:var(--pink); font-size: 24px; font-weight:900;" onclick="changeBet(-1)">-</button>
-            <div id="current-bet" style="font-size: 20px; font-weight: 900; color:var(--yellow);">1,000</div>
-            <button style="background:none; border:none; color:var(--pink); font-size: 24px; font-weight:900;" onclick="changeBet(1)">+</button>
+            <button style="background:none; border:none; color:var(--pink); font-size: 28px; font-weight:900;" onclick="changeBet(-1)">-</button>
+            <div id="current-bet" style="font-size: 22px; font-weight: 900; color:var(--blue);">1,000</div>
+            <button style="background:none; border:none; color:var(--pink); font-size: 28px; font-weight:900;" onclick="changeBet(1)">+</button>
         </div>
         
-        <button class="btn-main" id="play-btn" onclick="handlePlay()">TARUHAN</button>
+        <button class="btn-main" id="play-btn" onclick="handlePlay()">MULAI MAIN</button>
     </div>
 
     <script src="global.js"></script>
     <script>
-        // 1. Inisialisasi & Sinkronisasi Session
-        const session = JSON.parse(localStorage.getItem('plinko_session') || '{}');
-        const username = session.username;
-
-        if (!username) {
-            alert("Sesi berakhir, silakan login kembali.");
-            location.href = 'index.html';
-        }
-
-        // 2. Konfigurasi Game
-        const container = document.getElementById('game-container');
-        const bets = [200, 500, 1000, 2000, 5000, 10000, 25000, 50000, 100000];
-        const slotMultipliers = [10, 3, 1.5, 0.2, 0.5, 3, 10]; // Sesuai urutan visual
+        // Konfigurasi & State
+        const BETS = [200, 500, 1000, 2000, 5000, 10000, 25000, 50000, 100000];
+        const SLOTS = [10, 3, 1.5, 0.2, 0.5, 3, 10]; // Sesuai urutan visual kiri ke kanan
         let betIdx = 2;
         let isAuto = false;
         let autoInterval = null;
         let pegLocations = [];
-        let activeBalls = [];
+        const container = document.getElementById('game-container');
 
-        // 3. Render Paku (Pegs)
+        // Fungsi Audio
+        function playSnd(id) {
+            const s = document.getElementById(id);
+            if(s) { s.currentTime = 0; s.play().catch(()=>{}); }
+        }
+
+        // Render Paku
         function initPegs() {
             container.innerHTML = '';
             pegLocations = [];
@@ -124,7 +135,7 @@
             for (let r = 2; r <= rows; r++) {
                 for (let i = 0; i < r; i++) {
                     const x = centerX + (i - (r - 1) / 2) * 35; 
-                    const y = r * 32; 
+                    const y = r * 30; 
                     const peg = document.createElement('div');
                     peg.className = 'peg';
                     peg.style.left = x + 'px';
@@ -135,66 +146,67 @@
             }
         }
 
-        // 4. Logika Bermain (Sinkron ke App Script)
+        // Jalankan Game via App Script
         async function handlePlay() {
-            if (isAuto && autoInterval) {
+            playSnd('snd-click');
+            const betAmount = BETS[betIdx];
+            const session = getSession();
+            
+            if (!session || session.saldo < betAmount) {
+                showNeonAlert("Saldo tidak cukup!", "INFO");
                 setMode('normal');
                 return;
             }
 
             const btn = document.getElementById('play-btn');
-            const betAmount = bets[betIdx];
-            
-            // Cek saldo lokal dulu
-            if (session.saldo < betAmount) {
-                showNeonAlert("Saldo tidak mencukupi!", "GAGAL");
-                return;
-            }
+            if (!isAuto) btn.disabled = true;
 
-            // Jalankan Request ke App Script (Action: game_play sesuai v6.0)
-            btn.disabled = true;
             try {
+                // Sesuai Action "game_play" di App Script v6.0
                 const res = await callApiSilent("game_play", {
-                    username: username,
+                    username: getUsername(),
                     bet: betAmount
                 });
 
                 if (res.result === "SUCCESS") {
-                    // Update saldo lokal agar responsif
                     syncSaldoUI(res.newSaldo);
-                    // Jalankan bola dengan multiplier yang sudah ditentukan server
                     dropBall(res.multiplier, res.winAmount);
                 } else {
-                    showNeonAlert(res.message, "INFO");
+                    showNeonAlert(res.message, "GAGAL");
+                    setMode('normal');
                 }
             } catch (e) {
-                console.error(e);
+                console.error("Game Error:", e);
             } finally {
-                btn.disabled = false;
+                if (!isAuto) btn.disabled = false;
             }
         }
 
         function dropBall(targetMult, winAmount) {
+            playSnd('snd-drop');
             const ballEl = document.createElement('div');
             ballEl.className = 'ball';
             container.appendChild(ballEl);
 
-            // Tentukan target X berdasarkan multiplier dari server
-            const slotsCount = slotMultipliers.length;
-            const targetIdx = slotMultipliers.indexOf(targetMult);
+            // Cari index slot mana yang memiliki multiplier tersebut
+            // Note: Jika ada 2 slot (kiri & kanan) pilih acak agar natural
+            const potentialIndexes = [];
+            SLOTS.forEach((m, i) => { if(m === targetMult) potentialIndexes.push(i); });
+            const targetIdx = potentialIndexes[Math.floor(Math.random() * potentialIndexes.length)];
+            
             const centerX = container.offsetWidth / 2;
-            const targetX = (centerX - 120) + (targetIdx * 40); // Estimasi posisi horizontal kotak
+            // Hitung target horizontal (lebar slot kira-kira 1/7 dari container)
+            const targetX = (container.offsetWidth / 7) * (targetIdx + 0.5);
 
             let ball = {
                 el: ballEl,
                 x: centerX + (Math.random() - 0.5) * 10,
                 y: 10,
-                vx: (targetX - centerX) / 100, // Beri dorongan awal halus ke arah target
-                vy: 2,
-                targetX: targetX
+                vx: (targetX - centerX) / 80, // Dorongan awal halus agar mengarah ke target
+                vy: 1.5
             };
 
-            const gravity = 0.25;
+            const gravity = 0.22;
             const friction = 0.98;
 
             const animate = setInterval(() => {
@@ -203,79 +215,113 @@
                 ball.x += ball.vx;
                 ball.y += ball.vy;
 
-                // Pantulan Paku
+                // Tabrakan Paku
                 pegLocations.forEach(p => {
                     const dx = ball.x - p.x;
                     const dy = ball.y - p.y;
                     const dist = Math.sqrt(dx*dx + dy*dy);
                     if (dist < 10) {
                         const angle = Math.atan2(dy, dx);
-                        ball.vx += Math.cos(angle) * 1.5;
-                        ball.vy = Math.abs(Math.sin(angle) * 3);
+                        const force = 1.2;
+                        ball.vx += Math.cos(angle) * force;
+                        ball.vy = Math.abs(Math.sin(angle) * force) + 1.5;
+                        // Tambahkan sedikit randomness agar tidak kaku
+                        ball.vx += (Math.random() - 0.5) * 0.5;
                     }
                 });
 
-                // Dinding
-                if (ball.x < 15 || ball.x > container.offsetWidth - 15) ball.vx *= -1;
+                // Batas Dinding
+                if (ball.x < 15 || ball.x > container.offsetWidth - 15) ball.vx *= -0.6;
 
                 ball.el.style.left = ball.x + 'px';
                 ball.el.style.top = ball.y + 'px';
 
-                // Masuk Kotak
+                // Masuk Slot
                 if (ball.y > 375) {
                     clearInterval(animate);
                     ball.el.remove();
                     
-                    // Trigger efek visual di slot
-                    const slots = document.querySelectorAll('.slot');
-                    const hitIdx = Math.floor(Math.max(0, Math.min(6, (ball.x / container.offsetWidth) * 7)));
-                    slots[hitIdx].style.transform = "scale(1.2)";
-                    setTimeout(() => slots[hitIdx].style.transform = "scale(1)", 200);
+                    // Efek Visual Slot
+                    const slotEls = document.querySelectorAll('.slot');
+                    const finalIdx = Math.floor(Math.max(0, Math.min(6, (ball.x / container.offsetWidth) * 7)));
+                    const hitSlot = slotEls[finalIdx];
+                    
+                    if(hitSlot) {
+                        hitSlot.style.transform = "scale(1.2)";
+                        hitSlot.style.filter = "brightness(1.5)";
+                        setTimeout(() => {
+                            hitSlot.style.transform = "scale(1)";
+                            hitSlot.style.filter = "brightness(1)";
+                        }, 200);
+                    }
 
                     if (winAmount > 0) {
+                        playSnd('snd-win');
                         addScoreItem(`WIN IDR ${winAmount.toLocaleString()}`);
+                        showWinTag(ball.x, winAmount);
                     }
                     
-                    // Sync ulang profil untuk memastikan saldo benar
+                    // Sinkronisasi terakhir untuk keamanan
                     ProfileAPI.sync();
                 }
             }, 16);
         }
 
-        // 5. UI Helpers
+        // Helpers UI
         function setMode(m) {
             isAuto = (m === 'auto');
             document.getElementById('btn-normal').classList.toggle('active', !isAuto);
             document.getElementById('btn-auto').classList.toggle('active', isAuto);
-            document.getElementById('play-btn').innerText = isAuto ? "BERHENTI" : "TARUHAN";
+            document.getElementById('play-btn').innerText = isAuto ? "STOP AUTO" : "MULAI MAIN";
             
             if (isAuto) {
-                autoInterval = setInterval(() => {
-                    if (!document.getElementById('play-btn').disabled) handlePlay();
-                }, 1500);
+                handlePlay(); // Start first
+                autoInterval = setInterval(handlePlay, 1200);
             } else {
                 clearInterval(autoInterval);
             }
         }
 
         function changeBet(d) {
-            betIdx = Math.max(0, Math.min(bets.length - 1, betIdx + d));
-            document.getElementById('current-bet').innerText = bets[betIdx].toLocaleString();
+            if (isAuto) return;
+            betIdx = Math.max(0, Math.min(BETS.length - 1, betIdx + d));
+            document.getElementById('current-bet').innerText = BETS[betIdx].toLocaleString();
+            playSnd('snd-click');
         }
 
         function addScoreItem(text) {
             const board = document.getElementById('score-board');
-            const item = document.createElement('div');
-            item.className = 'score-item';
-            item.innerText = text;
-            board.prepend(item);
-            setTimeout(() => item.remove(), 3000);
+            const div = document.createElement('div');
+            div.className = 'score-item';
+            div.innerText = text;
+            board.prepend(div);
+            if(board.children.length > 5) board.lastChild.remove();
+            setTimeout(() => div.remove(), 4000);
         }
 
-        window.onload = () => {
+        function showWinTag(x, amt) {
+            const tag = document.createElement('div');
+            tag.className = 'win-tag';
+            tag.style.left = x + 'px';
+            tag.style.top = '300px';
+            tag.innerText = `+${amt.toLocaleString()}`;
+            document.body.appendChild(tag);
+            setTimeout(() => tag.remove(), 1000);
+        }
+
+        // Inisialisasi awal
+        window.addEventListener('load', async () => {
             initPegs();
-            ProfileAPI.sync(); // Ambil data terbaru saat buka game
-        };
+            const u = getUsername();
+            if(!u) { location.href = 'index.html'; return; }
+            
+            // Sync data profil (Tier & Saldo)
+            const data = await ProfileAPI.sync();
+            if(data) {
+                document.getElementById('tier-name').innerText = (data.tier || 'MEMBER') + " PLAYER";
+                document.getElementById('display-username').innerText = u.toUpperCase();
+            }
+        });
     </script>
 </body>
 </html>
