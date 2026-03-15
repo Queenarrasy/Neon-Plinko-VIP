@@ -33,12 +33,13 @@
         .card-wd { border-left: 4px solid var(--pink); box-shadow: 0 0 10px rgba(255,0,119,0.1); }
         .card-depo { border-left: 4px solid var(--green); box-shadow: 0 0 10px rgba(0,255,136,0.1); }
 
-        input { width: 100%; padding: 12px; background: #000; border: 1px solid #333; color: #fff; border-radius: 10px; margin-bottom: 10px; font-family: 'Outfit'; }
+        input, textarea, select { width: 100%; padding: 12px; background: #000; border: 1px solid #333; color: #fff; border-radius: 10px; margin-bottom: 10px; font-family: 'Outfit'; }
         .input-mini { width: 100%; text-align: center; padding: 5px; color: var(--yellow); background: #000; border: 1px solid #444; border-radius: 5px; }
 
         .btn-main { background: linear-gradient(90deg, var(--blue), var(--deepblue)); color: #000; padding: 12px; border-radius: 10px; font-size: 11px; font-weight: 900; border: none; width: 100%; cursor: pointer; text-transform: uppercase; }
         .btn-main:disabled { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; }
         .btn-red { background: var(--pink); color: #fff; }
+        .btn-gift { background: linear-gradient(90deg, var(--pink), #b400dc); color: #fff; }
 
         .profit { color: var(--green); }
         .loss { color: var(--pink); }
@@ -78,11 +79,26 @@
                 <input type="text" id="search-user" placeholder="Cari username..." onkeyup="filterUser()" style="border-color:var(--blue);">
                 <div id="list-user">Memuat data pemain...</div>
             </div>
+
+            <div id="tab-gift" class="page" style="display:none">
+                <h2 style="font-size:14px; margin-bottom:15px; color:var(--pink); border-bottom:1px solid rgba(255,0,119,0.2); padding-bottom:5px;">KIRIM HADIAH (INBOX)</h2>
+                <div class="card">
+                    <span class="card-label">FORM KIRIM SALDO</span>
+                    <select id="gift-target">
+                        <option value="">PILIH USER...</option>
+                    </select>
+                    <input type="number" id="gift-amount" placeholder="Nominal Saldo (Rp)">
+                    <textarea id="gift-msg" rows="3" placeholder="Pesan untuk pemain (Contoh: Bonus Event Referral)"></textarea>
+                    <button id="btn-send-gift" class="btn-main btn-gift" onclick="sendGift()">KIRIM KE INBOX</button>
+                </div>
+                <p style="font-size:10px; opacity:0.5; text-align:center;">Hadiah akan muncul di halaman reward.html pemain secara instan.</p>
+            </div>
         </div>
 
         <nav class="nav-bottom">
             <div class="nav-btn active" onclick="switchTab('kasir', this)"><i class="fa-solid fa-cash-register"></i><span>Kasir</span></div>
             <div class="nav-btn" onclick="switchTab('user', this)"><i class="fa-solid fa-users-gear"></i><span>User</span></div>
+            <div class="nav-btn" onclick="switchTab('gift', this)"><i class="fa-solid fa-gift"></i><span>Gift</span></div>
             <div class="nav-btn" onclick="logout()"><i class="fa-solid fa-power-off"></i><span>Exit</span></div>
         </nav>
     </div>
@@ -95,7 +111,6 @@
     </div>
 
 <script>
-    // KONFIGURASI SUPABASE
     const SUPA_URL = "https://bgffnmwrviyqpeevzjsn.supabase.co"; 
     const SUPA_KEY = "sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani"; 
     const _supa = supabase.createClient(SUPA_URL, SUPA_KEY);
@@ -114,131 +129,50 @@
         } else { alert("AKSES DITOLAK!"); }
     }
 
-    function refreshData() { loadKasir(); loadUser(); }
+    function refreshData() { loadKasir(); loadUser(); loadGiftTarget(); }
 
-    // --- LOGIKA KASIR (DEPOSIT & WITHDRAW) ---
     async function loadKasir() {
         let html = '';
-
-        // 1. Ambil Data Deposit PROSES
         const { data: depo } = await _supa.from('deposits').select('*').eq('status', 'PROSES');
-        // 2. Ambil Data Withdraw PROSES
         const { data: wd } = await _supa.from('withdrawals').select('*').eq('status', 'PROSES');
-        // 3. Ambil Profile untuk data rekening
         const { data: profiles } = await _supa.from('profiles').select('username, bank_name, rekening, saldo');
 
-        // RENDER DEPOSIT
-        if(depo && depo.length > 0) {
-            depo.forEach(x => {
-                html += `
-                <div class="card card-depo">
-                    <span class="card-label" style="color:var(--green)">DEPOSIT REQUEST</span>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                        <b>${x.username.toUpperCase()}</b> 
-                        <span class="profit" style="font-weight:900;">+${Number(x.net_receive).toLocaleString()}</span>
-                    </div>
-                    <div class="info-text"><i class="fa-solid fa-clock"></i> ${new Date(x.created_at).toLocaleString()}</div>
-                    <div style="margin-top:15px; display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                        <button class="btn-main" style="background:var(--green)" onclick="approveAction(this, 'deposits', '${x.id}', '${x.username}')">APPROVE</button>
-                        <button class="btn-main btn-red" onclick="rejectAction(this, 'deposits', '${x.id}')">REJECT</button>
-                    </div>
-                </div>`;
-            });
-        }
+        if(depo) depo.forEach(x => {
+            html += `<div class="card card-depo"><span class="card-label" style="color:var(--green)">DEPOSIT REQUEST</span><div style="display:flex; justify-content:space-between;"><b>${x.username.toUpperCase()}</b><span class="profit">+${Number(x.net_receive).toLocaleString()}</span></div><div style="margin-top:15px; display:grid; grid-template-columns:1fr 1fr; gap:10px;"><button class="btn-main" style="background:var(--green)" onclick="approveAction(this, 'deposits', '${x.id}', '${x.username}')">APPROVE</button><button class="btn-main btn-red" onclick="rejectAction(this, 'deposits', '${x.id}')">REJECT</button></div></div>`;
+        });
 
-        // RENDER WITHDRAW
-        if(wd && wd.length > 0) {
-            wd.forEach(w => {
-                const p = profiles.find(u => u.username === w.username);
-                const rekInfo = p ? `${p.bank_name} - ${p.rekening}` : "Data Rekening Tidak Ada";
-                
-                html += `
-                <div class="card card-wd">
-                    <span class="card-label" style="color:var(--pink)">WITHDRAWAL REQUEST</span>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                        <b>${w.username.toUpperCase()}</b> 
-                        <span class="loss" style="font-weight:900;">-Rp ${Number(w.amount).toLocaleString()}</span>
-                    </div>
-                    <div class="info-text"><i class="fa-solid fa-university"></i> ${rekInfo}</div>
-                    <div class="info-text"><i class="fa-solid fa-wallet"></i> Sisa Saldo: Rp ${p ? Number(p.saldo).toLocaleString() : 0}</div>
-                    <div style="margin-top:15px; display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                        <button class="btn-main" style="background:var(--blue); color:#fff;" onclick="approveAction(this, 'withdrawals', '${w.id}', '${w.username}')">APPROVE (SUDAH TF)</button>
-                        <button class="btn-main btn-red" onclick="rejectWithdraw(this, '${w.id}', '${w.username}', ${w.amount})">REJECT (REFUND)</button>
-                    </div>
-                </div>`;
-            });
-        }
-
-        document.getElementById('list-kasir').innerHTML = html || '<div style="text-align:center;padding:40px;opacity:0.3; font-size:12px;">Tidak ada permintaan baru</div>';
+        if(wd) wd.forEach(w => {
+            const p = profiles.find(u => u.username === w.username);
+            html += `<div class="card card-wd"><span class="card-label" style="color:var(--pink)">WITHDRAWAL REQUEST</span><div style="display:flex; justify-content:space-between;"><b>${w.username.toUpperCase()}</b><span class="loss">-Rp ${Number(w.amount).toLocaleString()}</span></div><div class="info-text">${p ? p.bank_name + ' - ' + p.rekening : 'No Rek?'}</div><div style="margin-top:15px; display:grid; grid-template-columns:1fr 1fr; gap:10px;"><button class="btn-main" style="background:var(--blue); color:#fff;" onclick="approveAction(this, 'withdrawals', '${w.id}', '${w.username}')">APPROVE</button><button class="btn-main btn-red" onclick="rejectWithdraw(this, '${w.id}', '${w.username}', ${w.amount})">REJECT</button></div></div>`;
+        });
+        document.getElementById('list-kasir').innerHTML = html || '<div style="text-align:center;padding:40px;opacity:0.3;">Antrean Bersih</div>';
     }
 
-    // APPROVE LOGIC (Universal)
     async function approveAction(btn, table, id, user) {
-        if(btn.disabled) return;
-        if(!confirm(`Konfirmasi sukses untuk ${user}?`)) return;
         btn.disabled = true;
-
-        try {
-            const { error } = await _supa.from(table).update({ status: 'SUKSES' }).eq('id', id);
-            if(error) throw error;
-            showAlert("TRANSAKSI BERHASIL!");
-            loadKasir();
-        } catch(e) { showAlert("GAGAL: " + e.message); btn.disabled = false; }
+        const { error } = await _supa.from(table).update({ status: 'SUKSES' }).eq('id', id);
+        if(!error) { showAlert("BERHASIL!"); loadKasir(); }
     }
 
-    // REJECT DEPOSIT (Hanya ubah status)
-    async function rejectAction(btn, table, id) {
-        if(!confirm("Tolak deposit ini?")) return;
+    async function rejectWithdraw(btn, id, user, amount) {
         btn.disabled = true;
-        await _supa.from(table).update({ status: 'GAGAL' }).eq('id', id);
-        loadKasir();
+        const { data: profile } = await _supa.from('profiles').select('saldo').eq('username', user).single();
+        await _supa.from('profiles').update({ saldo: profile.saldo + amount }).eq('username', user);
+        await _supa.from('withdrawals').update({ status: 'GAGAL' }).eq('id', id);
+        showAlert("WD DITOLAK & REFUND!"); loadKasir();
     }
 
-    // REJECT WITHDRAW (Wajib Refund Saldo)
-    async function rejectWithdraw(btn, id, username, amount) {
-        if(!confirm(`Tolak WD ${username}? Saldo Rp ${amount.toLocaleString()} akan dikembalikan ke pemain.`)) return;
-        btn.disabled = true;
-
-        try {
-            // 1. Ambil Saldo Saat Ini
-            const { data: profile } = await _supa.from('profiles').select('saldo').eq('username', username).single();
-            const saldoSekarang = Number(profile.saldo);
-
-            // 2. Kembalikan Saldo (Refund)
-            const { error: errRefund } = await _supa.from('profiles').update({ saldo: saldoSekarang + amount }).eq('username', username);
-            if(errRefund) throw errRefund;
-
-            // 3. Update Status WD jadi GAGAL
-            await _supa.from('withdrawals').update({ status: 'GAGAL' }).eq('id', id);
-
-            showAlert("WD DITOLAK & SALDO DIREDFUND!");
-            loadKasir();
-            loadUser(); // Refresh data user juga
-        } catch(e) { showAlert("GAGAL REFUND: " + e.message); btn.disabled = false; }
-    }
-
-    // --- LOGIKA USER MANAGEMENT ---
     async function loadUser() {
         const { data } = await _supa.from('profiles').select('*').order('username', {ascending:true});
         if(data) {
             document.getElementById('list-user').innerHTML = data.map(u => `
                 <div class="card user-item" data-name="${u.username.toLowerCase()}">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <b>${u.username.toUpperCase()}</b>
-                        <span class="profit" style="font-weight:800;">Rp ${Number(u.saldo).toLocaleString()}</span>
-                    </div>
-                    <div style="font-size:10px; color:#777; margin:5px 0;">${u.bank_name || 'Bank?'} - ${u.rekening || 'Rek?'}</div>
+                    <div style="display:flex; justify-content:space-between;"><b>${u.username.toUpperCase()}</b><span class="profit">Rp ${Number(u.saldo).toLocaleString()}</span></div>
                     <div style="margin-top:10px; display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                        <div>
-                            <small style="font-size:9px; color:var(--blue)">WINRATE %</small>
-                            <input type="number" class="input-mini" id="wr-${u.id}" value="${u.winrate || 30}">
-                        </div>
-                        <div>
-                            <small style="font-size:9px; color:var(--yellow)">MAX WIN LIMIT</small>
-                            <input type="number" class="input-mini" id="mwl-${u.id}" value="${u.max_win_limit || 1000000}">
-                        </div>
+                        <div><small style="font-size:9px;">WINRATE %</small><input type="number" class="input-mini" id="wr-${u.id}" value="${u.winrate || 30}"></div>
+                        <div><small style="font-size:9px;">MAX WIN</small><input type="number" class="input-mini" id="mwl-${u.id}" value="${u.max_win_limit || 1000000}"></div>
                     </div>
-                    <button class="btn-main" style="margin-top:10px; background:transparent; border:1px solid var(--blue); color:var(--blue); font-size:10px;" onclick="saveUser('${u.id}', '${u.username}')">UPDATE SETTINGS</button>
+                    <button class="btn-main" style="margin-top:10px; background:transparent; border:1px solid var(--blue); color:var(--blue);" onclick="saveUser('${u.id}', '${u.username}')">SAVE</button>
                 </div>
             `).join('');
         }
@@ -247,11 +181,49 @@
     async function saveUser(id, user) {
         const wr = document.getElementById(`wr-${id}`).value;
         const mwl = document.getElementById(`mwl-${id}`).value;
+        await _supa.from('profiles').update({ winrate: parseInt(wr), max_win_limit: parseInt(mwl) }).eq('id', id);
+        showAlert("SAVED!");
+    }
+
+    // --- FUNGSI BARU: GIFT SYSTEM ---
+    async function loadGiftTarget() {
+        const { data } = await _supa.from('profiles').select('username').order('username', {ascending:true});
+        if(data) {
+            document.getElementById('gift-target').innerHTML = '<option value="">PILIH USER...</option>' + 
+                data.map(u => `<option value="${u.username}">${u.username.toUpperCase()}</option>`).join('');
+        }
+    }
+
+    async function sendGift() {
+        const target = document.getElementById('gift-target').value;
+        const amount = document.getElementById('gift-amount').value;
+        const msg = document.getElementById('gift-msg').value;
+        const btn = document.getElementById('btn-send-gift');
+
+        if(!target || !amount || !msg) return showAlert("Lengkapi form hadiah!");
+        
+        btn.disabled = true;
+        btn.innerText = "SENDING...";
+
         try {
-            await _supa.from('profiles').update({ winrate: parseInt(wr), max_win_limit: parseInt(mwl) }).eq('id', id);
-            showAlert("PENGATURAN " + user + " DISIMPAN!");
-            loadUser();
-        } catch(e) { alert("Gagal!"); }
+            const { error } = await _supa.from('inbox').insert([{
+                username: target,
+                nominal: parseInt(amount),
+                pesan: msg,
+                status: 'UNCLAIMED'
+            }]);
+
+            if(error) throw error;
+
+            showAlert("HADIAH TERKIRIM KE " + target.toUpperCase());
+            document.getElementById('gift-amount').value = '';
+            document.getElementById('gift-msg').value = '';
+        } catch(e) {
+            showAlert("GAGAL: " + e.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "KIRIM KE INBOX";
+        }
     }
 
     function filterUser() {
@@ -265,6 +237,7 @@
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         el.classList.add('active');
         if(tab === 'user') loadUser();
+        if(tab === 'gift') loadGiftTarget();
     }
 
     function logout() { sessionStorage.clear(); window.location.reload(); }
