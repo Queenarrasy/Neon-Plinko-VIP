@@ -6,6 +6,8 @@
     <title>PROFIL VIP - NEON PLINKO</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
     <style>
         :root{
           --pink:#ff0077;--blue:#0055ff;--yellow:#f5e642;--green:#26a17b;--bg:#02030d;
@@ -35,22 +37,20 @@
           display: flex; align-items: center; gap: 20px; box-shadow: var(--gp);
           position: relative; overflow: hidden;
         }
-        .profile-hero::after { content:''; position:absolute; top:0; right:0; width:100px; height:100px; background:var(--pink); filter:blur(80px); opacity:0.1; }
-        
         .avatar-ring{width:70px; height:70px; border-radius:50%; border:2px solid var(--pink); background:rgba(255,0,119,.1); display:flex; align-items:center; justify-content:center; box-shadow: inset 0 0 15px rgba(255,0,119,0.2);}
         .avatar-ring i{font-size:35px; color:var(--pink); text-shadow:var(--gp);}
         
-        .profile-info h2{font-family:'Cinzel Decorative',serif; font-size:18px; font-weight:900; color:#fff; margin-bottom:5px; text-shadow: 0 0 10px rgba(255,255,255,0.2);}
-        .profile-tier{font-size:10px; font-weight:800; letter-spacing:1px; color:var(--yellow); background:rgba(245,230,66,0.1); border:1px solid var(--yellow); padding:4px 12px; border-radius:50px; text-transform:uppercase;}
+        .profile-info h2{font-family:'Cinzel Decorative',serif; font-size:18px; font-weight:900; color:#fff; margin-bottom:5px; text-transform: uppercase;}
+        .profile-tier{font-size:10px; font-weight:800; letter-spacing:1px; color:var(--yellow); background:rgba(245,230,66,0.1); border:1px solid var(--yellow); padding:4px 12px; border-radius:50px; text-transform:uppercase; display:inline-block;}
 
         /* Saldo */
         .saldo-card{
-          background:rgba(255,255,255,0.03); border:1px solid var(--yellow); border-radius:20px; padding:25px; text-align:center; box-shadow:var(--gy);
+          background:rgba(255,255,255,0.03); border:1px solid var(--yellow); border-radius:20px; padding:25px; text-align:center; box-shadow:var(--gy); margin-top:5px;
         }
         .saldo-val{font-family:'Cinzel Decorative',serif; font-size:30px; font-weight:900; color:var(--yellow); text-shadow: 0 0 15px rgba(245,230,66,0.3);}
 
         /* Info List */
-        .section-label{font-size:11px; font-weight:800; color:var(--blue); letter-spacing:1px; margin-top:10px; text-transform:uppercase;}
+        .section-label{font-size:11px; font-weight:800; color:var(--blue); letter-spacing:1px; margin-top:10px; text-transform:uppercase; display:flex; align-items:center; gap:8px;}
         .info-grid{display:flex; flex-direction:column; gap:8px;}
         .info-row{background:rgba(255,255,255,0.03); border:1px solid rgba(0,85,255,0.1); border-radius:15px; padding:15px 18px; display:flex; justify-content:space-between; align-items:center;}
         .info-key{font-size:10px; font-weight:600; color:rgba(255,255,255,0.4); text-transform:uppercase;}
@@ -62,7 +62,7 @@
         .stat-val{font-size:15px; font-weight:900; margin-top:8px;}
 
         /* Buttons */
-        .btn-action{width:100%; padding:16px; border-radius:50px; border:none; cursor:pointer; font-weight:800; text-transform:uppercase; font-size:14px; margin-top:10px; transition: 0.3s;}
+        .btn-action{width:100%; padding:16px; border-radius:50px; border:none; cursor:pointer; font-weight:800; text-transform:uppercase; font-size:14px; margin-top:10px; transition: 0.3s; display:flex; align-items:center; justify-content:center; gap:10px;}
         .btn-logout{background:linear-gradient(90deg, #ff0077, #aa0044); color:white; box-shadow:var(--gp);}
         .btn-logout:active{transform:scale(0.95); opacity:0.8;}
 
@@ -71,12 +71,18 @@
         .nav-item { color: #444; text-decoration: none; text-align: center; font-size: 10px; font-weight: 700; flex: 1; transition: 0.3s; }
         .nav-item.active { color: var(--pink); }
         .nav-item i { font-size: 20px; display: block; margin-bottom: 5px; }
+
+        /* Modal simple */
+        #modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .modal-box { background: #0a0b1e; border: 2px solid var(--pink); border-radius: 25px; padding: 30px; width: 85%; max-width: 320px; text-align: center; box-shadow: var(--gp); }
     </style>
 </head>
 <body>
 
+<audio id="snd-click" src="https://cdn.pixabay.com/audio/2022/03/15/audio_c8b417f73c.mp3"></audio>
+
 <div class="header">
-  <a href="game.html" class="btn-back"><i class="fa-solid fa-chevron-left"></i></a>
+  <a href="game.html" class="btn-back" onclick="playSnd()"><i class="fa-solid fa-chevron-left"></i></a>
   <div class="header-title">PROFIL VIP</div>
   <div style="width:35px;"></div>
 </div>
@@ -91,19 +97,19 @@
   </div>
 
   <div class="saldo-card">
-    <div style="font-size:10px; opacity:0.6; letter-spacing:2px; margin-bottom:10px;">CREDIT BALANCE</div>
+    <div style="font-size:10px; opacity:0.6; letter-spacing:2px; margin-bottom:5px;">CREDIT BALANCE</div>
     <div class="saldo-val" id="display-saldo">IDR 0</div>
   </div>
 
-  <div class="section-label">Data Pengiriman Dana</div>
+  <div class="section-label"><i class="fa-solid fa-shield-halved"></i> Data Pengiriman Dana</div>
   <div class="info-grid">
-    <div class="info-row"><span class="info-key">Penerima</span><span class="info-val" id="profile-fullname">-</span></div>
-    <div class="info-row"><span class="info-key">Kontak WA</span><span class="info-val" id="profile-phone">-</span></div>
-    <div class="info-row"><span class="info-key">Bank/E-Wallet</span><span class="info-val" id="profile-bank">-</span></div>
-    <div class="info-row"><span class="info-key">No Rekening</span><span class="info-val" id="profile-rek">-</span></div>
+    <div class="info-row"><span class="info-key">Penerima</span><span class="info-val" id="profile-fullname">...</span></div>
+    <div class="info-row"><span class="info-key">Kontak WA</span><span class="info-val" id="profile-phone">...</span></div>
+    <div class="info-row"><span class="info-key">Bank/E-Wallet</span><span class="info-val" id="profile-bank">...</span></div>
+    <div class="info-row"><span class="info-key">No Rekening</span><span class="info-val" id="profile-rek">...</span></div>
   </div>
 
-  <div class="section-label">Aktivitas Finansial</div>
+  <div class="section-label"><i class="fa-solid fa-chart-line"></i> Aktivitas Finansial</div>
   <div class="stats-grid">
     <div class="stat-box">
       <div style="font-size:9px; opacity:0.5; font-weight:700;">TOTAL DEPOSIT</div>
@@ -115,7 +121,9 @@
     </div>
   </div>
 
-  <button class="btn-action btn-logout" onclick="logout()"><i class="fa-solid fa-power-off"></i> KELUAR DARI SESI</button>
+  <button class="btn-action btn-logout" onclick="handleLogout()"><i class="fa-solid fa-power-off"></i> KELUAR DARI SESI</button>
+  
+  <p style="text-align:center; font-size:9px; opacity:0.3; margin-top:10px;">NEON PLINKO VIP v2.0 &bull; SECURE SESSION</p>
 </div>
 
 <div class="nav-bar">
@@ -125,13 +133,36 @@
     <a href="profil.html" class="nav-item active"><i class="fas fa-user-shield"></i>PROFIL</a>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js"></script>
+<div id="modal-overlay">
+    <div class="modal-box">
+        <h3 style="color:var(--pink); font-family:'Cinzel Decorative'; font-size:18px">LOGOUT?</h3>
+        <p style="margin:20px 0; font-size:14px; color:#ccc;">Apakah Master yakin ingin keluar dari sesi ini?</p>
+        <div style="display:flex; gap:10px;">
+            <button class="btn-action" onclick="closeModal()" style="background:#333; margin:0;">BATAL</button>
+            <button class="btn-action btn-logout" onclick="prosesLogout()" style="margin:0;">YA, KELUAR</button>
+        </div>
+    </div>
+</div>
 
 <script>
+function playSnd() {
+    const s = document.getElementById('snd-click');
+    if(s) { s.currentTime = 0; s.play(); }
+}
+
 async function initProfile() {
     const user = getUsername();
-    if (!user) return;
+    if (!user) {
+        window.location.href = 'index.html';
+        return;
+    }
+
+    // Tampilkan Username di Header
+    document.getElementById('display-username').innerText = user;
+
+    // Sinkron Saldo & Username global dari config.js
+    // Fungsi syncNeonData() biasanya sudah mengupdate display-saldo di config.js
+    if(typeof syncNeonData === "function") syncNeonData();
 
     try {
         // 1. Ambil Data Detail Profil
@@ -146,7 +177,7 @@ async function initProfile() {
             document.getElementById('profile-phone').innerText = profile.nomor_hp || '-';
             document.getElementById('profile-bank').innerText = profile.bank_name || 'Belum diatur';
             document.getElementById('profile-rek').innerText = profile.rekening || 'Belum diatur';
-            document.getElementById('profile-tier').innerText = profile.role || 'VIP MEMBER';
+            if(profile.role) document.getElementById('profile-tier').innerText = profile.role.toUpperCase();
         }
 
         // 2. Hitung Statistik Transaksi
@@ -157,7 +188,7 @@ async function initProfile() {
 }
 
 async function updateStats(username) {
-    // Total Deposit Sukses
+    // Total Deposit Sukses (net_receive adalah saldo bersih yang masuk)
     const { data: depoData } = await _supabase
         .from('deposits')
         .select('net_receive')
@@ -165,7 +196,7 @@ async function updateStats(username) {
         .eq('status', 'SUKSES');
     
     let sumDepo = 0;
-    if (depoData) depoData.forEach(d => sumDepo += (d.net_receive || 0));
+    if (depoData) depoData.forEach(d => sumDepo += (parseFloat(d.net_receive) || 0));
     document.getElementById('total-depo').innerText = formatIDR(sumDepo);
 
     // Total Withdraw Sukses
@@ -176,11 +207,32 @@ async function updateStats(username) {
         .eq('status', 'SUKSES');
 
     let sumWd = 0;
-    if (wdData) wdData.forEach(w => sumWd += (w.amount || 0));
+    if (wdData) wdData.forEach(w => sumWd += (parseFloat(w.amount) || 0));
     document.getElementById('total-wd').innerText = formatIDR(sumWd);
 }
 
-// Jalankan fungsi saat halaman dimuat
+// Handler Logout
+function handleLogout() {
+    playSnd();
+    document.getElementById('modal-overlay').style.display = 'flex';
+}
+
+function closeModal() {
+    playSnd();
+    document.getElementById('modal-overlay').style.display = 'none';
+}
+
+function prosesLogout() {
+    localStorage.removeItem('neon_user');
+    localStorage.removeItem('cached_saldo');
+    window.location.href = 'index.html';
+}
+
+// Format Rupiah Helper
+function formatIDR(v) {
+    return "IDR " + v.toLocaleString('id-ID');
+}
+
 window.onload = initProfile;
 </script>
 
