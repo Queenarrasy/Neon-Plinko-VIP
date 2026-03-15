@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { 
-            --pink: #ff0077; --blue: #0022ff; --yellow: #fbff00; --bg: #02030d; --deep-blue: #0011bb;
+            --pink: #ff0077; --blue: #0022ff; --yellow: #fbff00; --bg: #02030d; --deep-blue: #000c40;
             --gp: 0 0 20px rgba(255, 0, 119, 0.8);
             --gy: 0 0 15px rgba(251, 255, 0, 0.6);
             --gb: 0 0 15px rgba(0, 34, 255, 0.6);
@@ -20,38 +20,48 @@
         body { 
             background: var(--bg); 
             background-image: 
-                radial-gradient(circle at center, rgba(0, 34, 255, 0.1) 0%, transparent 70%),
-                linear-gradient(rgba(0, 34, 255, 0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 34, 255, 0.05) 1px, transparent 1px);
-            background-size: 100% 100%, 40px 40px, 40px 40px;
+                linear-gradient(rgba(0, 34, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 34, 255, 0.1) 1px, transparent 1px),
+                radial-gradient(circle at 50% 50%, var(--deep-blue) 0%, var(--bg) 100%);
+            background-size: 30px 30px, 30px 30px, 100% 100%;
             color: #fff; font-family: 'Outfit', sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; 
+        }
+
+        /* EFEK LATAR BELAKANG ANIMASI */
+        body::before {
+            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 20% 30%, rgba(255, 0, 119, 0.05) 0%, transparent 40%),
+                        radial-gradient(circle at 80% 70%, rgba(251, 255, 0, 0.05) 0%, transparent 40%);
+            pointer-events: none; z-index: 0;
         }
 
         /* HEADER */
         .header { 
-            height: 85px; padding: 0 15px; display: flex; align-items: center; justify-content: space-between;
+            height: 90px; padding: 0 15px; display: flex; align-items: center; justify-content: space-between;
             background: rgba(5, 6, 20, 0.95); border-bottom: 2px solid var(--blue); z-index: 100;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
         }
-        .header-left { flex: 1; display: flex; flex-direction: column; align-items: flex-start; cursor: pointer; }
+        
+        .header-left { flex: 1; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
         .header-left i { font-size: 24px; color: var(--pink); filter: drop-shadow(var(--gp)); }
         .header-left span { font-size: 8px; font-weight: 800; color: var(--pink); margin-top: 3px; letter-spacing: 1px; }
 
-        .header-center { flex: 1.5; display: flex; justify-content: center; }
+        .header-center { flex: 2; display: flex; justify-content: center; }
         .balance-box { 
             background: #000; border: 2px solid var(--yellow); 
-            padding: 4px 10px; border-radius: 12px; box-shadow: var(--gy); text-align: center; min-width: 120px;
+            padding: 6px 15px; border-radius: 12px; box-shadow: var(--gy); text-align: center; min-width: 150px;
         }
-        .balance-label { display: block; font-size: 7px; font-weight: 800; color: var(--yellow); opacity: 0.8; }
-        #saldo-text { color: var(--yellow); font-weight: 900; font-size: 14px; text-shadow: var(--gy); }
+        .balance-label { display: block; font-size: 7px; font-weight: 800; color: var(--yellow); opacity: 0.9; letter-spacing: 1.5px; margin-bottom: 2px; }
+        #saldo-text { color: var(--yellow); font-weight: 900; font-size: 16px; text-shadow: var(--gy); }
 
-        .header-right { flex: 2; display: flex; justify-content: flex-end; align-items: center; }
-        .logo-main { font-family: 'Cinzel Decorative'; font-weight: 900; line-height: 1.1; text-align: right; font-size: 14px; color: #fff; }
-        .logo-main .n-text { color: var(--pink); text-shadow: var(--gp); }
-        .logo-main .p-text { color: var(--blue); text-shadow: var(--gb); }
-        .logo-main .v-tag { color: var(--yellow); text-shadow: var(--gy); font-size: 16px; margin-left: 2px; }
+        .header-right { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .logo-main { font-family: 'Cinzel Decorative'; font-weight: 900; line-height: 1; text-align: center; }
+        .logo-main .n-text { font-size: 14px; color: var(--pink); text-shadow: var(--gp); display: block; margin-bottom: 2px; }
+        .logo-main .p-text { font-size: 10px; color: var(--blue); text-shadow: var(--gb); }
+        .logo-main .v-tag { color: var(--yellow); font-size: 11px; }
 
         /* GAME AREA */
-        #game-area { flex: 1; position: relative; display: flex; justify-content: center; overflow: hidden; }
+        #game-area { flex: 1; position: relative; display: flex; justify-content: center; overflow: hidden; z-index: 1; }
         #board-wrapper { position: relative; width: 100%; max-width: 400px; height: 100%; display: flex; flex-direction: column; align-items: center; }
         canvas { max-height: 70%; width: 100%; z-index: 5; }
 
@@ -62,9 +72,8 @@
             border: 1px solid rgba(255,255,255,0.2); transition: all 0.2s;
         }
         .m-slot.hit-win { transform: scale(1.4) translateY(-8px); filter: brightness(1.8); box-shadow: 0 0 25px var(--yellow); z-index: 10; }
-        .m-slot.hit-lose { transform: scale(1.1); filter: brightness(1.2); box-shadow: 0 0 10px var(--blue); }
 
-        /* WIN PANEL - SMALLER & LOWER */
+        /* WIN PANEL */
         #win-panel {
             width: 80%; height: 45px; background: rgba(0, 5, 20, 0.8); 
             border: 1.5px solid var(--blue); border-top: 1.5px solid var(--pink);
@@ -77,7 +86,7 @@
         /* CONTROLLERS */
         .controls { 
             background: #050614; padding: 15px 20px 20px; border-top: 2px solid var(--blue); 
-            border-radius: 30px 30px 0 0; z-index: 100;
+            border-radius: 30px 30px 0 0; z-index: 100; box-shadow: 0 -5px 20px rgba(0,0,0,0.8);
         }
         .bet-row { display: flex; justify-content: center; align-items: center; margin-bottom: 12px; gap: 20px; }
         .bet-val { font-size: 20px; font-weight: 900; color: var(--yellow); font-family: 'Cinzel Decorative'; min-width: 80px; text-align: center; text-shadow: var(--gy); }
@@ -130,14 +139,14 @@
         </div>
         <div class="header-center">
             <div class="balance-box">
-                <span class="balance-label">SALDO</span>
+                <span class="balance-label">SALDO UTAMA</span>
                 <span id="saldo-text">IDR 0</span>
             </div>
         </div>
         <div class="header-right">
             <div class="logo-main">
-                <span class="n-text">NEON</span> <span class="p-text">PLINKO</span><br>
-                <span class="v-tag">VIP</span>
+                <span class="n-text">NEON</span>
+                <span class="p-text">PLINKO <b class="v-tag">VIP</b></span>
             </div>
         </div>
     </div>
@@ -287,9 +296,8 @@
 
         const slotEl = document.getElementById('slot-' + slotIdx);
         if(slotEl) {
-            const hitClass = m >= 1 ? 'hit-win' : 'hit-lose';
-            slotEl.classList.add(hitClass);
-            setTimeout(() => slotEl.classList.remove(hitClass), 350);
+            slotEl.classList.add('hit-win');
+            setTimeout(() => slotEl.classList.remove('hit-win'), 350);
         }
         
         if(win > 0) playSound('snd-win');
