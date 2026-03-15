@@ -7,10 +7,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js"></script>
     
     <style>
-        :root { --pink: #ff0077; --blue: #00d4ff; --yellow: #fbff00; --bg: #02030d; --gp: 0 0 15px rgba(255, 0, 119, 0.4); }
+        :root { 
+            --pink: #ff0077; --blue: #00d4ff; --yellow: #fbff00; --bg: #02030d; 
+            --gp: 0 0 20px rgba(255, 0, 119, 0.6);
+            --gb: 0 0 20px rgba(0, 212, 255, 0.6);
+        }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         
         body { 
@@ -21,10 +24,10 @@
         }
 
         .auth-card {
-            width: 92%; max-width: 420px; background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(0, 212, 255, 0.2); border-radius: 35px;
+            width: 92%; max-width: 420px; background: rgba(5, 6, 20, 0.8);
+            border: 2px solid var(--blue); border-radius: 30px;
             padding: 25px; backdrop-filter: blur(25px);
-            box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+            box-shadow: 0 0 40px rgba(0, 212, 255, 0.2);
             animation: fadeIn 0.8s ease-out;
             max-height: 95vh; overflow-y: auto;
         }
@@ -32,43 +35,49 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
         .logo-text { 
-            font-family: 'Cinzel Decorative'; text-align: center; font-size: 24px; 
-            margin-bottom: 20px; color: var(--pink); 
-            text-shadow: 0 0 15px var(--pink); letter-spacing: 2px;
+            font-family: 'Cinzel Decorative'; text-align: center; font-size: 26px; 
+            margin-bottom: 25px; color: var(--pink); 
+            text-shadow: var(--gp); letter-spacing: 3px; font-weight: 900;
         }
 
-        .tabs { display: flex; background: rgba(0,0,0,0.5); border-radius: 20px; margin-bottom: 20px; padding: 5px; }
-        .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; border-radius: 15px; font-weight: 800; transition: 0.3s; color: rgba(255,255,255,0.3); font-size: 13px; }
-        .tab.active { background: linear-gradient(135deg, var(--blue), var(--pink)); color: #fff; box-shadow: 0 5px 15px rgba(255,0,119,0.3); }
+        .tabs { display: flex; background: rgba(0,0,0,0.6); border-radius: 50px; margin-bottom: 25px; padding: 5px; border: 1px solid rgba(255,255,255,0.1); }
+        .tab { flex: 1; padding: 12px; text-align: center; cursor: pointer; border-radius: 50px; font-weight: 800; transition: 0.3s; color: rgba(255,255,255,0.3); font-size: 13px; letter-spacing: 1px; }
+        .tab.active { background: linear-gradient(135deg, var(--blue), var(--pink)); color: #fff; box-shadow: var(--gp); }
 
-        .input-group { margin-bottom: 12px; position: relative; }
-        .input-group i.main-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--blue); font-size: 16px; }
-        .input-group i.eye-icon { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.3); font-size: 16px; cursor: pointer; padding: 5px; }
+        .input-group { margin-bottom: 15px; position: relative; }
+        .input-group i.main-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--blue); font-size: 16px; text-shadow: 0 0 5px var(--blue); }
+        .input-group i.eye-icon { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.4); font-size: 16px; cursor: pointer; padding: 5px; }
         
         input, select { 
-            width: 100%; padding: 14px 40px 14px 45px; background: rgba(0,0,0,0.6); 
-            border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; color: #fff;
+            width: 100%; padding: 14px 45px; background: rgba(0,0,0,0.7); 
+            border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 15px; color: #fff;
             outline: none; font-family: 'Outfit'; font-size: 14px; transition: 0.3s;
         }
-        input:focus { border-color: var(--blue); box-shadow: 0 0 10px rgba(0, 212, 255, 0.2); }
+        input:focus { border-color: var(--pink); box-shadow: 0 0 15px rgba(255, 0, 119, 0.3); }
+
+        select option { background: #0a0b1e; color: #fff; }
 
         .btn-auth {
-            width: 100%; padding: 16px; border-radius: 50px; border: none;
-            background: linear-gradient(180deg, var(--blue) 0%, #008eb3 100%);
+            width: 100%; padding: 18px; border-radius: 50px; border: none;
+            background: linear-gradient(180deg, var(--blue), #0077ff);
             color: #fff; font-family: 'Cinzel Decorative'; font-weight: 900;
-            font-size: 15px; cursor: pointer; margin-top: 10px;
-            box-shadow: 0 6px 0 #005f78, 0 10px 20px rgba(0, 212, 255, 0.3);
-            transition: 0.2s;
+            font-size: 16px; cursor: pointer; margin-top: 15px;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+            transition: 0.2s; text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
-        .btn-auth:active { transform: translateY(4px); box-shadow: 0 2px 0 #005f78; }
-        .btn-auth:disabled { opacity: 0.6; cursor: not-allowed; filter: grayscale(1); }
+        .btn-auth:active { transform: scale(0.98); opacity: 0.8; }
+        .btn-auth:disabled { opacity: 0.5; filter: grayscale(1); }
 
-        /* Custom Alert Theme */
-        #custom-alert { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
-        .alert-box { width: 85%; max-width: 320px; background: #0a0b1e; border: 2px solid var(--blue); border-radius: 25px; padding: 30px; text-align: center; box-shadow: 0 0 30px rgba(0, 212, 255, 0.2); }
-        .alert-btn { width: 100%; background: var(--blue); border: none; color: #000; padding: 12px; border-radius: 50px; margin-top: 20px; font-weight: 900; cursor: pointer; font-family: 'Outfit'; }
+        /* Custom Alert Neon Style */
+        #custom-alert { display: none; position: fixed; inset: 0; background: rgba(2, 3, 13, 0.95); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+        .alert-box { width: 85%; max-width: 320px; background: #050614; border: 2px solid var(--pink); border-radius: 25px; padding: 35px 25px; text-align: center; box-shadow: var(--gp); }
+        .alert-icon { font-size: 50px; color: var(--yellow); margin-bottom: 20px; text-shadow: 0 0 10px var(--yellow); }
+        .alert-btn { width: 100%; background: var(--pink); border: none; color: #fff; padding: 15px; border-radius: 50px; margin-top: 25px; font-weight: 900; cursor: pointer; font-family: 'Outfit'; box-shadow: var(--gp); }
 
-        .pass-hint { font-size: 10px; color: rgba(255,255,255,0.4); margin: -8px 0 12px 10px; }
+        .pass-hint { font-size: 10px; color: var(--yellow); margin: -8px 0 12px 10px; font-weight: 600; opacity: 0.8; }
+        
+        /* Hide scrollbar */
+        .auth-card::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
@@ -96,10 +105,10 @@
         </div>
         
         <div id="extra-fields" style="display:none">
-            <p class="pass-hint">* Min 6 Karakter (Wajib Huruf & Angka)</p>
+            <p class="pass-hint">* Min 6 Karakter (Huruf & Angka)</p>
             <div class="input-group">
                 <i class="fa-solid fa-id-card main-icon"></i>
-                <input type="text" id="full_name" placeholder="Nama Sesuai Rekening">
+                <input type="text" id="full_name" placeholder="Nama Rekening">
             </div>
             <div class="input-group">
                 <i class="fa-solid fa-university main-icon"></i>
@@ -125,7 +134,7 @@
 
         <button class="btn-auth" id="main-btn" onclick="processAuth()">MASUK SISTEM</button>
         
-        <a href="https://api.whatsapp.com/send?phone=6289510249551&text=Halo%20Admin%20Neon%20Plinko,%20Saya%20butuh%20bantuan." target="_blank" style="display:block; text-align:center; margin-top:20px; color:#25D366; text-decoration:none; font-size:13px; font-weight: 700;">
+        <a href="https://api.whatsapp.com/send?phone=6289510249551&text=Halo%20Admin%20Neon%20Plinko,%20Saya%20butuh%20bantuan." target="_blank" style="display:block; text-align:center; margin-top:25px; color:var(--blue); text-decoration:none; font-size:12px; font-weight: 800; letter-spacing: 1px;">
             <i class="fa-brands fa-whatsapp"></i> HUBUNGI ADMIN VIP
         </a>
     </div>
@@ -133,18 +142,23 @@
 
 <div id="custom-alert">
     <div class="alert-box">
-        <i class="fa-solid fa-circle-exclamation" style="font-size: 40px; color: var(--pink); margin-bottom: 15px; display: block;"></i>
-        <div id="a-msg" style="font-size: 14px; line-height: 1.5; color: #fff;"></div>
+        <i class="fa-solid fa-triangle-exclamation alert-icon"></i>
+        <div id="a-msg" style="font-size: 15px; line-height: 1.6; color: #fff; font-weight: 500;"></div>
         <button class="alert-btn" onclick="closeAlert()">MENGERTI</button>
     </div>
 </div>
 
 <script>
+    // KONFIGURASI SUPABASE (Sesuaikan dengan data Master)
+    const SUPA_URL = "https://bgffnmwrviyqpeevzjsn.supabase.co"; 
+    const SUPA_KEY = "sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani"; 
+    const _supabase = supabase.createClient(SUPA_URL, SUPA_KEY);
+
     let mode = 'login';
 
     function playSnd() {
         const s = document.getElementById('snd-click');
-        if(s) { s.currentTime = 0; s.play(); }
+        if(s) { s.currentTime = 0; s.play().catch(()=>{}); }
     }
 
     function togglePassword() {
@@ -175,7 +189,6 @@
 
     function closeAlert() { playSnd(); document.getElementById('custom-alert').style.display = 'none'; }
 
-    // Logic Validasi Password: Min 6 karakter, harus ada huruf DAN angka
     function validatePassword(p) {
         const regex = /^(?=.*[a-zA-Z])(?=.*[0-9]).{6,}$/;
         return regex.test(p);
@@ -187,7 +200,7 @@
         const password = document.getElementById('pass').value.trim();
         const btn = document.getElementById('main-btn');
 
-        if(!username || !password) return showAlert("Harap isi semua kolom!");
+        if(!username || !password) return showAlert("Wajib isi Username & Password!");
 
         btn.innerText = "SINKRONISASI...";
         btn.disabled = true;
@@ -201,7 +214,14 @@
                 .single();
 
             if(data) {
-                localStorage.setItem('neon_user', username);
+                // LOGIKA SESSION SECURITY
+                const newSid = Math.random().toString(36).substring(7); // Generate ID Sesi
+                localStorage.setItem('user_session', username); // Untuk identitas di game
+                localStorage.setItem('local_sid', newSid); // Untuk kunci di HP ini
+
+                // Update ID Sesi ke Database (Menendang HP lain)
+                await _supabase.from('profiles').update({ last_session_id: newSid }).eq('username', username);
+
                 window.location.href = 'game.html';
             } else {
                 showAlert("Akses Ditolak! Username atau Password salah.");
@@ -209,41 +229,31 @@
                 btn.disabled = false;
             }
         } else {
-            // MODE DAFTAR
+            // PROSES DAFTAR
             const name = document.getElementById('full_name').value.trim();
             const bank = document.getElementById('bank').value;
             const acc = document.getElementById('acc_no').value.trim();
             const refInput = document.getElementById('ref').value.trim();
 
             if(!name || !bank || !acc) {
-                btn.innerText = "BUAT AKUN VIP";
-                btn.disabled = false;
-                return showAlert("Data Rekening tidak lengkap!");
+                btn.disabled = false; btn.innerText = "BUAT AKUN VIP";
+                return showAlert("Lengkapi data Rekening Anda!");
             }
 
-            // Validasi Password Rumit
             if(!validatePassword(password)) {
-                btn.innerText = "BUAT AKUN VIP";
-                btn.disabled = false;
-                return showAlert("Password tidak valid! Wajib minimal 6 karakter dengan kombinasi huruf dan angka.");
+                btn.disabled = false; btn.innerText = "BUAT AKUN VIP";
+                return showAlert("Password minimal 6 karakter, wajib kombinasi huruf dan angka.");
             }
 
             try {
-                // 1. Cek Username Duplikat
+                // Cek duplikat
                 const { data: userExist } = await _supabase.from('profiles').select('username').eq('username', username).single();
                 if(userExist) {
                     btn.disabled = false; btn.innerText = "BUAT AKUN VIP";
-                    return showAlert("Username '" + username + "' sudah terdaftar!");
+                    return showAlert("Username sudah digunakan!");
                 }
 
-                // 2. Cek Rekening Duplikat (Anti-Fraud)
-                const { data: accExist } = await _supabase.from('profiles').select('rekening').eq('rekening', acc).single();
-                if(accExist) {
-                    btn.disabled = false; btn.innerText = "BUAT AKUN VIP";
-                    return showAlert("Nomor Rekening ini sudah digunakan akun lain!");
-                }
-
-                // 3. Eksekusi Pendaftaran
+                // Eksekusi Daftar
                 const { error: insError } = await _supabase.from('profiles').insert([{
                     username: username,
                     password: password,
@@ -251,20 +261,19 @@
                     bank_name: bank,
                     rekening: acc,
                     referred_by: refInput || 'DIRECT',
-                    referral_code: "NEON-" + Math.random().toString(36).substr(2, 5).toUpperCase(),
                     saldo: 0,
-                    role: 'MEMBER',
-                    winrate: 30, // Default winrate
-                    max_win_limit: 5000000
+                    winrate: 30,
+                    max_win_limit: 5000000,
+                    last_session_id: "" // Inisialisasi kosong
                 }]);
 
                 if(insError) throw insError;
 
-                showAlert("Registrasi Berhasil! Silahkan login dengan akun baru Anda.");
+                showAlert("Registrasi Berhasil! Silahkan login.");
                 setTimeout(() => location.reload(), 2000);
 
             } catch (err) {
-                showAlert("Kesalahan Sistem: " + err.message);
+                showAlert("Sistem Sibuk: " + err.message);
                 btn.disabled = false; btn.innerText = "BUAT AKUN VIP";
             }
         }
