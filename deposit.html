@@ -2,90 +2,100 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
     <title>DEPOSIT - NEON PLINKO VIP</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@400;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root {
-          --pink: #ff0077; --blue: #0055ff; --cyan: #00f2ff; --yellow: #f5e642; --bg: #02030d;
-          --gp: 0 0 10px rgba(255, 0, 119, 0.5);
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; padding-bottom: 30px; }
-        .header { height: 65px; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(2,3,13,0.95); border-bottom: 1px solid var(--blue); position: sticky; top: 0; z-index: 100; }
+        :root { --pink: #ff0077; --blue: #0055ff; --cyan: #00f2ff; --bg: #02030d; }
+        body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; margin: 0; padding-bottom: 30px; }
+        .header { height: 65px; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--blue); background: rgba(2,3,13,0.9); position: sticky; top: 0; z-index: 100; }
         .container { padding: 20px; max-width: 500px; margin: auto; }
-        .method-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-        .method-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(0,85,255,0.2); padding: 15px; border-radius: 15px; text-align: center; }
-        .method-item.active { border-color: var(--pink); box-shadow: var(--gp); }
-        .form-box { background: rgba(5,6,20,0.8); border: 1px solid rgba(255,255,255,0.05); padding: 20px; border-radius: 20px; }
-        input[type=number] { width: 100%; padding: 15px; background: #000; border: 1px solid var(--blue); border-radius: 12px; color: #fff; font-size: 18px; margin-bottom: 15px; outline: none; }
-        .btn-main { width: 100%; padding: 16px; border-radius: 50px; border: none; background: linear-gradient(90deg, var(--pink), #b400dc); color: #fff; font-weight: 900; font-size: 16px; cursor: pointer; }
+        .form-box { background: rgba(5,6,20,0.8); border: 1px solid rgba(255,255,255,0.05); padding: 20px; border-radius: 20px; margin-bottom: 20px; }
+        input { width: 100%; padding: 15px; background: #000; border: 1px solid var(--blue); border-radius: 12px; color: #fff; font-size: 18px; font-weight: 800; margin-bottom: 15px; outline: none; }
+        .btn-main { width: 100%; padding: 16px; border-radius: 50px; border: none; background: linear-gradient(90deg, var(--pink), #b400dc); color: #fff; font-weight: 900; cursor: pointer; }
         .history-item { background: rgba(255,255,255,0.02); padding: 15px; border-radius: 15px; margin-bottom: 10px; border-left: 3px solid var(--blue); }
+        .amt-btn { background: rgba(0,85,255,0.1); border: 1px solid var(--blue); color: #fff; padding: 10px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div class="header">
         <a href="game.html" style="color:#fff;"><i class="fa-solid fa-arrow-left"></i></a>
-        <div style="font-family:'Cinzel Decorative'; color:var(--pink); font-size:14px; font-weight:900;">DEPOSIT CENTER</div>
+        <div style="font-family:'Cinzel Decorative'; color:var(--pink); font-size:14px;">DEPOSIT CENTER</div>
         <div style="width:20px"></div>
     </div>
 
     <div class="container">
-        <div class="method-grid">
-            <div class="method-item active" id="m-qris" onclick="selectMethod('QRIS')">QRIS</div>
-            <div class="method-item" id="m-usdt" onclick="selectMethod('USDT')">USDT</div>
-        </div>
-
         <div class="form-box">
-            <input type="number" id="input-amount" placeholder="Nominal IDR">
-            <div id="qris-area" style="text-align:center; margin-bottom:15px;">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=MAYA_DEPOSIT_NEON" style="width:180px; border-radius:10px; border:2px solid #fff;">
+            <label style="font-size:11px; color:var(--blue); display:block; margin-bottom:10px;">NOMINAL DEPOSIT (IDR)</label>
+            <input type="number" id="input-amount" placeholder="Min 20.000">
+            
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:20px;">
+                <button class="amt-btn" onclick="document.getElementById('input-amount').value=20000">20K</button>
+                <button class="amt-btn" onclick="document.getElementById('input-amount').value=50000">50K</button>
+                <button class="amt-btn" onclick="document.getElementById('input-amount').value=100000">100K</button>
             </div>
-            <button class="btn-main" onclick="prosesDeposit()">KONFIRMASI DEPOSIT</button>
+
+            <div style="text-align:center; margin-bottom:20px;">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=DEPOSIT_NEON" style="width:150px; border:2px solid #fff; border-radius:10px;">
+                <p style="font-size:10px; color:var(--cyan); margin-top:10px;">SILAHKAN SCAN & KONFIRMASI</p>
+            </div>
+
+            <button class="btn-main" id="btn-submit" onclick="prosesDeposit()">KONFIRMASI SEKARANG</button>
         </div>
 
-        <div class="history-sec" style="margin-top:20px;">
-            <label style="font-size:12px; color:var(--blue);">RIWAYAT</label>
-            <div id="depo-history" style="margin-top:10px;"></div>
-        </div>
+        <h4 style="font-size:12px; color:var(--blue); margin-bottom:10px;">RIWAYAT TERAKHIR</h4>
+        <div id="depo-history"></div>
     </div>
 
 <script>
-    // GANTI SESUAI SETTING MASTER
     const sb_url = "https://bgffnmwrviyqpeevzjsn.supabase.co"; 
     const sb_key = "sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani";
     const _supabase = supabase.createClient(sb_url, sb_key);
 
     async function prosesDeposit() {
-        const user = localStorage.getItem('neon_user'); 
-        const amt = document.getElementById('input-amount').value;
-        if(!user || !amt) return alert("Data tidak lengkap!");
+        const user = localStorage.getItem('neon_user');
+        const amt = parseFloat(document.getElementById('input-amount').value);
+        if(!user) return alert("Silahkan login kembali");
+        if(!amt || amt < 20000) return alert("Minimal deposit IDR 20.000");
+
+        document.getElementById('btn-submit').innerText = "MENGIRIM...";
 
         const { error } = await _supabase.from('deposits').insert([{ 
-            username: user, amount: parseInt(amt), method: 'QRIS', net_receive: parseInt(amt), status: 'PROSES' 
+            username: user, amount: amt, method: 'QRIS', net_receive: amt, status: 'PROSES' 
         }]);
 
-        if(!error) { alert("Terkirim!"); loadHistory(); }
+        if(!error) {
+            alert("Deposit Berhasil Dikirim!");
+            document.getElementById('input-amount').value = "";
+            loadHistory();
+        }
+        document.getElementById('btn-submit').innerText = "KONFIRMASI SEKARANG";
     }
 
     async function loadHistory() {
         const user = localStorage.getItem('neon_user');
-        const { data } = await _supabase.from('deposits').select('*').eq('username', user).order('created_at', {ascending: false});
+        if(!user) return;
+
+        const { data, error } = await _supabase.from('deposits').select('*').eq('username', user).order('created_at', {ascending: false}).limit(5);
         
         let html = "";
         if(data && data.length > 0) {
             data.forEach(i => {
                 const sColor = i.status === 'SUKSES' ? '#00ff88' : (i.status === 'PROSES' ? '#f5e642' : '#ff3131');
-                html += `<div class="history-item" style="border-left: 4px solid ${sColor}">
-                    <div style="display:flex; justify-content:space-between; font-size:12px;"><b>${i.method}</b><span style="color:${sColor}">${i.status}</span></div>
-                    <div style="font-size:16px; font-weight:900; margin-top:5px;">Rp ${i.amount.toLocaleString()}</div>
-                </div>`;
+                html += `
+                    <div class="history-item" style="border-left-color: ${sColor}">
+                        <div style="display:flex; justify-content:space-between; font-size:11px;">
+                            <span style="color:var(--cyan)">${i.method}</span>
+                            <span style="color:${sColor}; font-weight:800">${i.status}</span>
+                        </div>
+                        <div style="font-size:16px; font-weight:800; margin-top:5px;">Rp ${i.amount.toLocaleString()}</div>
+                    </div>`;
             });
-        }
-        document.getElementById('depo-history').innerHTML = html || "Belum ada riwayat";
+        } else { html = "<p style='opacity:0.3; font-size:12px; text-align:center;'>Belum ada transaksi</p>"; }
+        document.getElementById('depo-history').innerHTML = html;
     }
 
     window.onload = loadHistory;
