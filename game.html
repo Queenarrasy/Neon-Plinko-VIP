@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { 
-            --pink: #ff0077; --blue: #0022ff; --yellow: #fbff00; --bg: #02030d;
+            --pink: #ff0077; --blue: #0022ff; --yellow: #fbff00; --bg: #02030d; --gold: #f5a623; --emerald: #00ffcc;
             --gp: 0 0 20px rgba(255, 0, 119, 0.8);
             --gy: 0 0 15px rgba(251, 255, 0, 0.6);
             --gb: 0 0 15px rgba(0, 34, 255, 0.6);
@@ -27,82 +27,76 @@
             color: #fff; font-family: 'Outfit', sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; 
         }
 
-        /* HEADER SECTION */
+        /* HEADER */
         .header { 
             height: 85px; padding: 0 15px; display: flex; align-items: center; justify-content: space-between;
             background: rgba(5, 6, 20, 0.9); border-bottom: 2px solid var(--blue); z-index: 100;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
         }
-        
         .header-left { flex: 1; display: flex; flex-direction: column; align-items: flex-start; cursor: pointer; }
         .header-left i { font-size: 28px; color: var(--pink); filter: drop-shadow(var(--gp)); }
         .header-left span { font-size: 9px; font-weight: 800; color: var(--pink); margin-top: 4px; text-shadow: var(--gp); letter-spacing: 1px; }
 
-        .header-center { flex: 2; display: flex; justify-content: center; align-items: center; }
+        .header-center { flex: 2; display: flex; justify-content: center; }
         .balance-box { 
             background: rgba(0,0,0,0.9); border: 2px solid var(--yellow); 
-            padding: 4px 15px; border-radius: 15px; box-shadow: var(--gy);
-            text-align: center; min-width: 150px;
+            padding: 4px 15px; border-radius: 15px; box-shadow: var(--gy); text-align: center; min-width: 150px;
         }
-        .balance-label { display: block; font-size: 8px; font-weight: 800; color: var(--yellow); opacity: 0.8; letter-spacing: 1px; }
+        .balance-label { display: block; font-size: 8px; font-weight: 800; color: var(--yellow); opacity: 0.8; }
         #saldo-text { color: var(--yellow); font-weight: 900; font-size: 16px; text-shadow: var(--gy); }
 
         .header-right { flex: 1; display: flex; flex-direction: column; align-items: flex-end; }
-        .logo-main { font-family: 'Cinzel Decorative'; color: #fff; font-size: 10px; font-weight: 900; line-height: 1.1; text-align: right; }
+        .logo-main { font-family: 'Cinzel Decorative'; color: #fff; font-size: 10px; font-weight: 900; text-align: right; }
         .logo-main span { color: var(--blue); text-shadow: var(--gb); font-size: 13px; }
-        .vip-tag { font-size: 14px; color: var(--pink); text-shadow: var(--gp); margin-left: 2px; }
-        .neon-accents { display: flex; gap: 3px; margin-top: 4px; }
-        .acc-line { width: 12px; height: 3px; border-radius: 2px; }
-        .acc-p { background: var(--pink); box-shadow: var(--gp); }
-        .acc-b { background: var(--blue); box-shadow: var(--gb); }
-        .acc-y { background: var(--yellow); box-shadow: var(--gy); }
+        .vip-tag { font-size: 14px; color: var(--pink); text-shadow: var(--gp); }
 
+        /* GAME AREA */
         #game-area { flex: 1; position: relative; display: flex; justify-content: center; overflow: hidden; }
         #board-wrapper { position: relative; width: 100%; max-width: 400px; height: 100%; display: flex; flex-direction: column; align-items: center; }
-        canvas { max-height: 80%; width: 100%; z-index: 5; filter: drop-shadow(0 0 5px rgba(0,34,255,0.2)); }
+        canvas { max-height: 75%; width: 100%; z-index: 5; }
 
-        #side-history { position: absolute; right: 10px; top: 20px; width: 75px; display: flex; flex-direction: column; gap: 8px; z-index: 50; }
-        .history-item { background: rgba(5, 6, 20, 0.9); border: 1.5px solid var(--blue); padding: 8px 4px; border-radius: 10px; text-align: center; animation: slideIn 0.3s ease-out; box-shadow: var(--gb); }
-        .history-item.win { border-color: var(--yellow); box-shadow: var(--gy); }
-        .history-val { display: block; font-size: 10px; font-weight: 800; color: #fff; }
-        .history-multi { font-size: 9px; color: var(--pink); font-weight: 900; }
-
-        .m-bar { width: 95%; display: flex; justify-content: center; gap: 4px; padding-bottom: 10px; margin-top: -15px; }
+        .m-bar { width: 95%; display: flex; justify-content: center; gap: 4px; padding-bottom: 5px; margin-top: -10px; }
         .m-slot { 
             flex: 1; height: 32px; border-radius: 6px; font-size: 9px; font-weight: 900; 
             display: flex; align-items: center; justify-content: center; color: #fff; 
-            border: 1px solid rgba(255,255,255,0.2); transition: all 0.1s;
+            border: 1px solid rgba(255,255,255,0.2); transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .m-slot.hit { transform: scale(1.3); filter: brightness(1.5); box-shadow: 0 0 20px #fff; z-index: 10; }
+        .m-slot.hit-win { transform: scale(1.4) translateY(-5px); filter: brightness(1.8); box-shadow: 0 0 25px var(--yellow); z-index: 10; border-color: #fff; }
+        .m-slot.hit-lose { transform: scale(1.2); filter: brightness(1.2); box-shadow: 0 0 15px var(--blue); z-index: 10; }
 
-        .controls { background: #050614; padding: 15px; border-top: 1px solid var(--blue); border-radius: 25px 25px 0 0; z-index: 100; box-shadow: 0 -10px 30px rgba(0,0,0,0.8); }
+        /* FIXED WIN SCORE PANEL (Diatas Bet) */
+        #win-panel {
+            width: 90%; height: 50px; background: rgba(0,0,0,0.6); border: 1px solid rgba(0,34,255,0.3);
+            border-radius: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center;
+            font-family: 'Cinzel Decorative'; position: relative; overflow: hidden;
+        }
+        #win-display { font-size: 20px; font-weight: 900; letter-spacing: 2px; transition: all 0.3s; color: rgba(255,255,255,0.2); }
+        #win-display.active { transform: scale(1.1); text-shadow: 0 0 15px currentColor; }
+
+        /* CONTROLLERS */
+        .controls { background: #050614; padding: 15px; border-top: 1px solid var(--blue); border-radius: 25px 25px 0 0; z-index: 100; }
         .bet-row { display: flex; justify-content: center; align-items: center; margin-bottom: 12px; gap: 20px; }
-        .bet-val { font-size: 24px; font-weight: 900; color: var(--yellow); font-family: 'Cinzel Decorative'; min-width: 80px; text-align: center; text-shadow: var(--gy); }
-        .bet-btn-circ { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--blue); display: flex; align-items: center; justify-content: center; color: var(--blue); box-shadow: var(--gb); background: rgba(0,0,0,0.5); }
+        .bet-val { font-size: 24px; font-weight: 900; color: var(--yellow); font-family: 'Cinzel Decorative'; min-width: 90px; text-align: center; text-shadow: var(--gy); }
+        .bet-btn-circ { width: 42px; height: 42px; border-radius: 50%; border: 2px solid var(--blue); display: flex; align-items: center; justify-content: center; color: var(--blue); box-shadow: var(--gb); background: rgba(0,0,0,0.5); font-size: 18px; }
 
         .mode-row { display: flex; gap: 8px; margin-bottom: 12px; }
-        .mode-btn { flex: 1; padding: 10px; border-radius: 12px; border: 1px solid rgba(0, 34, 255, 0.4); background: transparent; color: #fff; font-size: 10px; font-weight: 800; letter-spacing: 1px; }
+        .mode-btn { flex: 1; padding: 10px; border-radius: 12px; border: 1px solid rgba(0, 34, 255, 0.4); background: transparent; color: #fff; font-size: 10px; font-weight: 800; }
         .mode-btn.active { background: var(--blue); box-shadow: var(--gb); border-color: #fff; }
         .mode-btn.auto-active { background: var(--pink); border-color: #fff; animation: glow-p 1s infinite alternate; }
 
-        .btn-drop { width: 100%; padding: 15px; border-radius: 30px; border: none; background: linear-gradient(90deg, var(--blue), var(--pink)); color: #fff; font-family: 'Cinzel Decorative'; font-weight: 900; font-size: 18px; box-shadow: var(--gp); cursor: pointer; text-transform: uppercase; letter-spacing: 2px; }
+        .btn-drop { width: 100%; padding: 15px; border-radius: 30px; border: none; background: linear-gradient(90deg, var(--blue), var(--pink)); color: #fff; font-family: 'Cinzel Decorative'; font-weight: 900; font-size: 18px; box-shadow: var(--gp); cursor: pointer; text-transform: uppercase; }
         .btn-drop.stop-mode { background: #ff0000; box-shadow: 0 0 20px #ff0000; }
 
-        /* FIX FLOATING SCORE 1 BARIS */
-        .f-score { 
-            position: absolute; font-weight: 900; font-size: 18px; 
-            animation: floatUp 0.8s ease-out forwards; pointer-events: none; z-index: 500; 
-            text-shadow: 2px 2px 4px #000; white-space: nowrap;
-            display: flex; align-items: center; gap: 5px;
-        }
-        @keyframes floatUp { 0% { transform: translateY(0) scale(0.6); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(-120px) scale(1.4); opacity: 0; } }
+        /* NAV BAR */
+        .nav-bar { height: 75px; background: #000; display: flex; justify-content: space-between; align-items: center; border-top: 2px solid rgba(0,34,255,0.3); padding: 0 15px; }
+        .nav-item { text-decoration: none; display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
+        .nav-item i { font-size: 24px; filter: drop-shadow(0 0 5px currentColor); }
+        .nav-item span { font-size: 10px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; }
+        
+        /* Nav Colors */
+        .nav-depo { color: var(--gold); }
+        .nav-wd { color: var(--pink); }
+        .nav-reward { color: var(--emerald); }
 
-        .nav-bar { height: 65px; background: #000; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid rgba(0,34,255,0.3); }
-        .nav-item { text-decoration: none; text-align: center; font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.4); }
-        .nav-item i { font-size: 20px; display: block; margin-bottom: 3px; }
-        .nav-item.active { color: #fff; }
-
-        @keyframes slideIn { from { transform: translateX(50px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         @keyframes glow-p { from { box-shadow: 0 0 5px var(--pink); } to { box-shadow: 0 0 25px var(--pink); } }
     </style>
 </head>
@@ -132,19 +126,17 @@
         </div>
         <div class="header-right">
             <div class="logo-main">NEON<br><span>PLINKO</span><b class="vip-tag">VIP</b></div>
-            <div class="neon-accents">
-                <div class="acc-line acc-p"></div>
-                <div class="acc-line acc-b"></div>
-                <div class="acc-line acc-y"></div>
-            </div>
         </div>
     </div>
 
     <div id="game-area">
         <div id="board-wrapper">
-            <div id="side-history"></div>
             <canvas id="canvas"></canvas>
             <div class="m-bar" id="m-bar"></div>
+            
+            <div id="win-panel">
+                <div id="win-display">READY TO DROP</div>
+            </div>
         </div>
     </div>
 
@@ -163,10 +155,18 @@
     </div>
 
     <div class="nav-bar">
-        <a href="deposit.html" class="nav-item"><i class="fas fa-wallet" style="color: var(--yellow);"></i>DEPO</a>
-        <a href="withdraw.html" class="nav-item"><i class="fas fa-university" style="color: var(--pink);"></i>WD</a>
-        <a href="game.html" class="nav-item active"><i class="fas fa-play-circle" style="color: var(--blue);"></i>PLAY</a>
-        <a href="reward.html" class="nav-item"><i class="fas fa-box-open" style="color: #f5a623;"></i>HADIAH</a>
+        <a href="deposit.html" class="nav-item nav-depo">
+            <i class="fas fa-wallet"></i>
+            <span>DEPOSIT</span>
+        </a>
+        <a href="withdraw.html" class="nav-item nav-wd">
+            <i class="fas fa-university"></i>
+            <span>WITHDRAW</span>
+        </a>
+        <a href="reward.html" class="nav-item nav-reward">
+            <i class="fas fa-gem"></i>
+            <span>HADIAH</span>
+        </a>
     </div>
 
 <script>
@@ -204,10 +204,9 @@
             for (let c = 0; c < pins; c++) {
                 let x = 190 + (c - pins / 2 + 0.5) * 34;
                 let y = 65 + r * 40;
-                // PIN (PAKU) DENGAN EFEK NYALA
                 Composite.add(engine.world, Bodies.circle(x, y, 3.5, { 
                     isStatic: true, restitution: 0.8, label: 'pin',
-                    render: { fillStyle: '#fff', strokeStyle: 'var(--blue)', lineWidth: 1 } 
+                    render: { fillStyle: '#fff' } 
                 }));
             }
         }
@@ -226,14 +225,11 @@
         Events.on(engine, 'collisionStart', (event) => {
             event.pairs.forEach(pair => {
                 const bA = pair.bodyA; const bB = pair.bodyB;
-                
-                // Efek Pantulan Paku
                 if(bA.label === 'pin' || bB.label === 'pin') {
                     const pin = bA.label === 'pin' ? bA : bB;
                     pin.render.fillStyle = '#fbff00';
                     setTimeout(() => { pin.render.fillStyle = '#fff'; }, 100);
                 }
-
                 if (bB.label.startsWith('m_') && bA.label === 'ball') handleWin(bA, bB.label);
                 else if (bA.label.startsWith('m_') && bB.label === 'ball') handleWin(bB, bA.label);
             });
@@ -248,7 +244,6 @@
         updateBalanceUI();
         await _supa.from('profiles').update({ saldo: balance }).eq('username', username);
 
-        // BOLA NEON PINK
         const ball = Bodies.circle(190 + (Math.random() * 4 - 2), 15, 7.5, { 
             label: 'ball', restitution: 0.5, friction: 0.01, frictionAir: 0.02, 
             render: { fillStyle: '#ff0077', strokeStyle: '#fff', lineWidth: 2 } 
@@ -269,40 +264,25 @@
         balance += win;
         updateBalanceUI();
         
-        // Animasi Slot Hit
+        // Update Win Panel & Animasi Slot
+        const winDisp = document.getElementById('win-display');
+        winDisp.classList.remove('active');
+        void winDisp.offsetWidth; // Trigger reflow
+        
+        winDisp.innerText = `WIN: IDR ${win.toLocaleString()} (x${m})`;
+        winDisp.style.color = m >= 1 ? 'var(--yellow)' : 'var(--blue)';
+        winDisp.classList.add('active');
+
         const slotEl = document.getElementById('slot-' + slotIdx);
         if(slotEl) {
-            slotEl.classList.add('hit');
-            setTimeout(() => slotEl.classList.remove('hit'), 300);
+            const hitClass = m >= 1 ? 'hit-win' : 'hit-lose';
+            slotEl.classList.add(hitClass);
+            setTimeout(() => slotEl.classList.remove(hitClass), 300);
         }
-
-        showFloatingScore(ball.position.x, win, m);
-        updateSideHistory(win, m);
         
         if(win > 0) playSound('snd-win');
         Composite.remove(engine.world, ball);
         await _supa.from('profiles').update({ saldo: balance }).eq('username', username);
-    }
-
-    // Floating Score 1 Baris PASTI
-    function showFloatingScore(x, amt, m) {
-        const el = document.createElement('div');
-        el.className = 'f-score';
-        el.style.left = (x - 50) + 'px'; 
-        el.style.bottom = '120px';
-        el.style.color = m >= 1 ? 'var(--yellow)' : 'var(--pink)';
-        el.innerHTML = `<span>(x${m})</span> <span>${amt.toLocaleString()}</span>`;
-        document.getElementById('board-wrapper').appendChild(el);
-        setTimeout(() => el.remove(), 800);
-    }
-
-    function updateSideHistory(amt, m) {
-        const container = document.getElementById('side-history');
-        const item = document.createElement('div');
-        item.className = 'history-item' + (m >= 1 ? ' win' : '');
-        item.innerHTML = `<span class="history-multi">x${m}</span><span class="history-val">${amt.toLocaleString()}</span>`;
-        container.prepend(item);
-        if(container.children.length > 3) container.removeChild(container.lastChild);
     }
 
     function changeBet(d) { if(isAuto) return; playSound('snd-click'); betIdx = Math.max(0, Math.min(BET_LIST.length - 1, betIdx + d)); document.getElementById('bet-display').innerText = BET_LIST[betIdx].toLocaleString(); }
