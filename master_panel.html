@@ -16,7 +16,6 @@
         * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
         body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; min-height: 100vh; overflow-x: hidden; }
         
-        /* Login Screen */
         #gate-keeper { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
         .gate-card { width: 90%; max-width: 380px; padding: 40px; border-radius: 30px; background: rgba(255,255,255,0.02); border: 2px solid var(--blue); text-align: center; box-shadow: var(--shadow-b); }
         
@@ -31,7 +30,7 @@
         .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; margin-bottom: 15px; }
         .card-label { font-size: 10px; color: var(--blue); font-weight: 800; text-transform: uppercase; margin-bottom: 10px; display: block; }
 
-        input, textarea { width: 100%; padding: 12px; background: #000; border: 1px solid #333; color: #fff; border-radius: 10px; margin-bottom: 10px; font-family: 'Outfit'; }
+        input { width: 100%; padding: 12px; background: #000; border: 1px solid #333; color: #fff; border-radius: 10px; margin-bottom: 10px; font-family: 'Outfit'; }
         .input-mini { width: 100%; text-align: center; padding: 5px; color: var(--yellow); background: #000; border: 1px solid #444; border-radius: 5px; }
 
         .btn-main { background: linear-gradient(90deg, var(--blue), var(--deepblue)); color: #000; padding: 12px; border-radius: 10px; font-size: 12px; font-weight: 900; border: none; width: 100%; cursor: pointer; text-transform: uppercase; }
@@ -39,9 +38,7 @@
         .btn-red { background: var(--pink); color: #fff; }
 
         .profit { color: var(--green); }
-        .loss { color: var(--pink); }
-
-        /* Custom Alert */
+        
         #custom-alert { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
         .alert-box { width: 85%; max-width: 320px; background: #0a0b1e; border: 2px solid var(--blue); border-radius: 20px; padding: 25px; text-align: center; box-shadow: var(--shadow-b); }
     </style>
@@ -113,7 +110,6 @@
 
     function refreshData() { loadKasir(); loadUser(); }
 
-    // --- LOGIKA KASIR (TRIGGER BASED) ---
     async function loadKasir() {
         const { data: d } = await _supa.from('deposits').select('*').eq('status', 'PROSES');
         let h = '';
@@ -142,7 +138,8 @@
         btn.innerText = "LOCKING...";
 
         try {
-            // CUKUP UPDATE STATUS. SQL TRIGGER DI SUPABASE AKAN MENAMBAH SALDO SECARA OTOMATIS & AMAN.
+            // HANYA UPDATE STATUS. 
+            // Saldo harus diproses oleh SQL Trigger di Supabase.
             const { data, error } = await _supa
                 .from(table)
                 .update({ status: 'SUKSES' })
@@ -150,9 +147,10 @@
                 .eq('status', 'PROSES')
                 .select();
 
-            if(error || !data || data.length === 0) throw new Error("Transaksi sudah diproses sebelumnya!");
+            if(error) throw error;
+            if(!data || data.length === 0) throw new Error("Sudah diproses!");
 
-            showAlert("BERHASIL! Status 'SUKSES'. Saldo otomatis diperbarui oleh SQL Trigger.");
+            showAlert("BERHASIL! Status diperbarui.");
             loadKasir();
         } catch(e) {
             showAlert("GAGAL: " + e.message);
@@ -167,38 +165,34 @@
         loadKasir();
     }
 
-    // --- LOGIKA USER MANAGEMENT ---
     async function loadUser() {
         const { data } = await _supa.from('profiles').select('*').order('username', {ascending:true});
-        if(data) renderUser(data);
-    }
-
-    function renderUser(list) {
-        document.getElementById('list-user').innerHTML = list.map(u => `
-            <div class="card user-item" data-name="${u.username.toLowerCase()}">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <b>${u.username.toUpperCase()}</b>
-                    <span class="profit" style="font-weight:800;">Rp ${Number(u.saldo).toLocaleString()}</span>
-                </div>
-                <div style="margin-top:15px; display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                    <div>
-                        <small style="font-size:9px; color:var(--blue)">WINRATE %</small>
-                        <input type="number" class="input-mini" id="wr-${u.id}" value="${u.winrate || 30}">
+        if(data) {
+            document.getElementById('list-user').innerHTML = data.map(u => `
+                <div class="card user-item" data-name="${u.username.toLowerCase()}">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <b>${u.username.toUpperCase()}</b>
+                        <span class="profit" style="font-weight:800;">Rp ${Number(u.saldo).toLocaleString()}</span>
                     </div>
-                    <div>
-                        <small style="font-size:9px; color:var(--yellow)">MAX WIN LIMIT</small>
-                        <input type="number" class="input-mini" id="mwl-${u.id}" value="${u.max_win_limit || 1000000}">
+                    <div style="margin-top:15px; display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                        <div>
+                            <small style="font-size:9px; color:var(--blue)">WINRATE %</small>
+                            <input type="number" class="input-mini" id="wr-${u.id}" value="${u.winrate || 30}">
+                        </div>
+                        <div>
+                            <small style="font-size:9px; color:var(--yellow)">MAX WIN LIMIT</small>
+                            <input type="number" class="input-mini" id="mwl-${u.id}" value="${u.max_win_limit || 1000000}">
+                        </div>
                     </div>
+                    <button class="btn-main" style="margin-top:10px; background:transparent; border:1px solid var(--blue); color:var(--blue); font-size:10px;" onclick="saveUser('${u.id}', '${u.username}')">UPDATE SETTINGS</button>
                 </div>
-                <button class="btn-main" style="margin-top:10px; background:transparent; border:1px solid var(--blue); color:var(--blue); font-size:10px;" onclick="saveUser('${u.id}', '${u.username}')">UPDATE SETTINGS</button>
-            </div>
-        `).join('');
+            `).join('');
+        }
     }
 
     async function saveUser(id, user) {
         const wr = document.getElementById(`wr-${id}`).value;
         const mwl = document.getElementById(`mwl-${id}`).value;
-        
         try {
             await _supa.from('profiles').update({ 
                 winrate: parseInt(wr), 
@@ -206,7 +200,7 @@
             }).eq('id', id);
             showAlert("PENGATURAN " + user + " DISIMPAN!");
             loadUser();
-        } catch(e) { alert("Gagal Update!"); }
+        } catch(e) { alert("Gagal!"); }
     }
 
     function filterUser() {
