@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-    <title>NEON COMMAND CENTER — V3 ULTRA INTEGRITY</title>
+    <title>NEON COMMAND CENTER — V4 FINAL PRE-RELEASE</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -17,289 +17,205 @@
         * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
         body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; min-height: 100vh; overflow-x: hidden; }
         
-        #gate-keeper { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; background-image: radial-gradient(circle at center, #111 0%, #000 100%); }
-        .gate-card { width: 90%; max-width: 380px; padding: 40px 30px; border-radius: 30px; background: rgba(255,255,255,0.02); border: 2px solid var(--blue-neon); text-align: center; box-shadow: var(--gb); }
+        #gate-keeper { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .gate-card { width: 90%; max-width: 380px; padding: 40px; border-radius: 30px; background: rgba(255,255,255,0.02); border: 2px solid var(--blue-neon); text-align: center; box-shadow: var(--gb); }
         
         #main-app { display: none; }
         .nav-top { background: rgba(5,6,20,0.95); padding: 15px 20px; border-bottom: 1px solid rgba(0,212,255,0.2); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
-        .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 75px; background: #050614; border-top: 1px solid rgba(0,212,255,0.3); display: flex; justify-content: space-around; align-items: center; padding-bottom: env(safe-area-inset-bottom); z-index: 1000; }
+        .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 75px; background: #050614; border-top: 1px solid rgba(0,212,255,0.3); display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
         .nav-btn { color: rgba(255,255,255,0.3); font-size: 20px; cursor: pointer; text-align: center; flex: 1; transition: 0.3s; }
         .nav-btn span { display: block; font-size: 8px; margin-top: 4px; font-weight: 800; text-transform: uppercase; }
         .nav-btn.active { color: var(--blue-neon); text-shadow: var(--gb); }
 
         .content { padding: 20px; padding-bottom: 100px; max-width: 600px; margin: auto; }
-        .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; margin-bottom: 15px; position: relative; }
+        .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; margin-bottom: 15px; }
         .card-label { font-size: 10px; color: var(--blue-neon); font-weight: 800; text-transform: uppercase; margin-bottom: 10px; display: block; }
+
+        input, textarea { width: 100%; padding: 12px; background: #000; border: 1px solid #333; color: #fff; border-radius: 10px; margin-bottom: 10px; }
+        .save-btn { background: linear-gradient(90deg, var(--blue-neon), var(--deepblue-neon)); color: #000; padding: 12px; border-radius: 10px; font-size: 12px; font-weight: 900; border: none; width: 100%; cursor: pointer; text-transform: uppercase; }
+        .save-btn:disabled { opacity: 0.5; filter: grayscale(1); }
 
         .profit { color: var(--green-neon); }
         .loss { color: var(--pink-neon); }
 
-        input, textarea, select { width: 100%; padding: 12px; background: #000; border: 1px solid #333; color: #fff; border-radius: 10px; margin-bottom: 10px; font-family: 'Outfit'; }
-        .input-mini { width: 75px; text-align: center; margin: 0; display: inline-block; padding: 5px; color: var(--yellow-neon); background: #000; border: 1px solid #444; border-radius: 5px; }
-
-        .save-btn { background: linear-gradient(90deg, var(--blue-neon), var(--deepblue-neon)); color: #000; padding: 12px; border-radius: 10px; font-size: 12px; font-weight: 900; border: none; width: 100%; cursor: pointer; text-transform: uppercase; }
-        .save-btn:disabled { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; }
-        .btn-approve { background: var(--green-neon); }
-        .btn-reject { background: var(--pink-neon); color: #fff; }
-
+        /* Alert Custom */
         #custom-alert { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-        .alert-box { width: 85%; max-width: 320px; background: #0a0b1e; border: 2px solid var(--blue-neon); border-radius: 20px; padding: 25px; text-align: center; box-shadow: var(--gb); }
+        .alert-box { width: 85%; max-width: 320px; background: #0a0b1e; border: 2px solid var(--blue-neon); border-radius: 20px; padding: 25px; text-align: center; }
     </style>
 </head>
 <body>
 
     <div id="gate-keeper">
         <div class="gate-card">
-            <h1 style="font-family:'Cinzel Decorative'; color:var(--blue-neon); font-size:1.5rem;">SYSTEM ADMIN</h1>
-            <p style="font-size:10px; opacity:0.5; margin-bottom:25px;">NEON PLINKO VIP — MASTER ACCESS</p>
-            <input type="text" id="master-user" placeholder="Admin ID">
-            <input type="password" id="master-pass" placeholder="Master Key">
-            <button onclick="checkAccess()" class="save-btn">DECRYPT ACCESS</button>
+            <h1 style="font-family:'Cinzel Decorative'; color:var(--blue-neon); font-size:1.5rem;">MASTER NEON</h1>
+            <input type="text" id="m-user" placeholder="Admin ID" style="margin-top:20px">
+            <input type="password" id="m-pass" placeholder="Master Key">
+            <button onclick="loginMaster()" class="save-btn">LOGIN</button>
         </div>
     </div>
 
     <div id="main-app">
         <div class="nav-top">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div style="font-family:'Cinzel Decorative'; font-weight:900; color:var(--pink-neon);">NEON COMMAND</div>
-                <button onclick="syncAll()" style="background:none; border:none; color:var(--yellow-neon); font-size:12px; font-weight:800;"><i class="fa-solid fa-sync"></i> SYNC ALL</button>
+                <div style="font-family:'Cinzel Decorative'; font-weight:900; color:var(--pink-neon);">COMMAND CENTER</div>
+                <div id="status-sync" style="font-size:10px; color:var(--yellow-neon);"><i class="fa-solid fa-bolt"></i> LIVE</div>
             </div>
         </div>
 
         <div class="content">
-            <div id="tab-finance" class="page">
-                <h2 style="font-size:14px; margin-bottom:15px; color:var(--blue-neon); letter-spacing:1px;">TRANSACTION QUEUE</h2>
-                <div id="finance-list">Memuat transaksi...</div>
+            <div id="tab-kasir" class="page">
+                <h2 style="font-size:14px; margin-bottom:15px;">TRANS-QUEUE</h2>
+                <div id="list-kasir">Memuat...</div>
             </div>
 
-            <div id="tab-users" class="page" style="display:none">
-                <input type="text" id="user-search" placeholder="Cari username..." onkeyup="filterUsers()" style="border-color:var(--blue-neon);">
-                <div id="user-list">Memuat data pemain...</div>
-            </div>
-
-            <div id="tab-reward" class="page" style="display:none">
-                <h2 style="font-size:14px; margin-bottom:15px; color:var(--blue-neon);">GIFT SYSTEM</h2>
-                <div class="card">
-                    <span class="card-label">Kirim Saldo Manual</span>
-                    <input type="text" id="gift-target" placeholder="Username Target">
-                    <input type="number" id="gift-amt" placeholder="Nominal (Contoh: 50000)">
-                    <textarea id="gift-msg" placeholder="Pesan Inbox..."></textarea>
-                    <button class="save-btn" id="btn-gift" onclick="sendGift()">KIRIM SALDO</button>
-                </div>
+            <div id="tab-user" class="page" style="display:none">
+                <input type="text" id="search-u" placeholder="Cari pemain..." onkeyup="filterU()">
+                <div id="list-user">Memuat...</div>
             </div>
         </div>
 
         <nav class="nav-bottom">
-            <div class="nav-btn active" onclick="switchNav('finance', this)"><i class="fa-solid fa-cash-register"></i><span>Kasir</span></div>
-            <div class="nav-btn" onclick="switchNav('users', this)"><i class="fa-solid fa-users-gear"></i><span>Pemain</span></div>
-            <div class="nav-btn" onclick="switchNav('reward', this)"><i class="fa-solid fa-gift"></i><span>Hadiah</span></div>
+            <div class="nav-btn active" onclick="switchNav('kasir', this)"><i class="fa-solid fa-cash-register"></i><span>Kasir</span></div>
+            <div class="nav-btn" onclick="switchNav('user', this)"><i class="fa-solid fa-users-gear"></i><span>User</span></div>
             <div class="nav-btn" onclick="logout()"><i class="fa-solid fa-power-off"></i><span>Exit</span></div>
         </nav>
     </div>
 
     <div id="custom-alert">
         <div class="alert-box">
-            <div id="a-msg" style="margin-bottom:20px; font-size:14px; line-height:1.6;"></div>
-            <button class="save-btn" onclick="closeAlert()">CONFIRMED</button>
+            <p id="a-msg" style="margin-bottom:20px"></p>
+            <button class="save-btn" onclick="closeAlert()">OKE</button>
         </div>
     </div>
 
 <script>
-    const sb_url = "https://bgffnmwrviyqpeevzjsn.supabase.co"; 
-    const sb_key = "sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani"; 
-    const _supabase = supabase.createClient(sb_url, sb_key);
+    // --- KONFIGURASI SUPABASE (TANPA FILE LUAR) ---
+    const SB_URL = "https://bgffnmwrviyqpeevzjsn.supabase.co"; 
+    const SB_KEY = "sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani"; 
+    const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
-    const MASTER_KEY = { u: "admin_neon", p: "master777" };
+    const MASTER_ID = "admin_neon";
+    const MASTER_KEY = "master777";
 
     function showAlert(m) { document.getElementById('a-msg').innerText = m; document.getElementById('custom-alert').style.display = 'flex'; }
     function closeAlert() { document.getElementById('custom-alert').style.display = 'none'; }
 
-    function checkAccess() {
-        if(document.getElementById('master-user').value === MASTER_KEY.u && document.getElementById('master-pass').value === MASTER_KEY.p) {
-            sessionStorage.setItem('master_auth', 'true');
+    function loginMaster() {
+        if(document.getElementById('m-user').value === MASTER_ID && document.getElementById('m-pass').value === MASTER_KEY) {
+            sessionStorage.setItem('master_login', 'true');
             document.getElementById('gate-keeper').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
-            initDashboard();
-        } else { alert("AKSES DITOLAK!"); }
+            loadKasir();
+        } else { alert("Akses Ditolak!"); }
     }
 
-    function initDashboard() { loadFinance(); loadUsers(); }
-    function syncAll() { loadFinance(); loadUsers(); }
-
-    // --- LOGIKA KASIR (ANTI-DOUBLE INPUT) ---
-    async function loadFinance() {
-        const { data: depo } = await _supabase.from('deposits').select('*').eq('status', 'PROSES');
-        const { data: wd } = await _supabase.from('withdrawals').select('*').eq('status', 'PROSES');
-        
-        let html = '';
-        if(depo) depo.forEach(d => {
-            html += `
-            <div class="card" style="border-left:4px solid var(--green-neon)">
-                <span class="card-label">DEPOSIT REQUEST</span>
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <b>${d.username.toUpperCase()}</b> <span class="profit" style="font-weight:900;">+${Number(d.net_receive).toLocaleString()}</span>
-                </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:15px;">
-                    <button class="save-btn btn-approve" onclick="approveDepo(this, '${d.id}','${d.username}', ${d.net_receive})">APPROVE</button>
-                    <button class="save-btn btn-reject" onclick="rejectTx(this, 'deposits','${d.id}')">REJECT</button>
-                </div>
-            </div>`;
-        });
-
-        if(wd) wd.forEach(w => {
-            html += `
-            <div class="card" style="border-left:4px solid var(--pink-neon)">
-                <span class="card-label">WITHDRAWAL</span>
-                <div style="display:flex; justify-content:space-between;">
-                    <div><b>${w.username.toUpperCase()}</b><br><small style="opacity:0.5;">${w.bank_name} - ${w.rekening}</small></div>
-                    <span class="loss" style="font-weight:900;">-${Number(w.amount).toLocaleString()}</span>
-                </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:15px;">
-                    <button class="save-btn" style="background:var(--blue-neon)" onclick="approveWD(this, '${w.id}')">SUCCESS</button>
-                    <button class="save-btn btn-reject" onclick="rejectTx(this, 'withdrawals','${w.id}')">REJECT</button>
-                </div>
-            </div>`;
-        });
-
-        document.getElementById('finance-list').innerHTML = html || '<div style="text-align:center;padding:40px;opacity:0.5;">Antrean Kosong</div>';
-    }
-
+    // --- LOGIKA UTAMA: APPROVE DEPOSIT (ULTRA PROTECTED) ---
     async function approveDepo(btn, id, user, amt) {
         if(btn.disabled) return;
-        const addAmount = Number(amt);
-        if(!confirm(`Tambahkan Rp ${addAmount.toLocaleString()} ke ${user}?`)) return;
+        const depositAmt = Number(amt);
+        if(!confirm(`Approve Rp ${depositAmt.toLocaleString()} untuk ${user}?`)) return;
 
         btn.disabled = true;
-        btn.innerText = "LOCKING...";
+        btn.innerText = "WAIT...";
 
         try {
-            // STEP 1: Kunci status di Database duluan (PENTING!)
+            // 1. Kunci Transaksi (Update Status duluan)
             const { data: lock, error: lErr } = await _supabase
                 .from('deposits')
                 .update({ status: 'SUKSES' })
                 .eq('id', id)
-                .eq('status', 'PROSES') // Pastikan status masih PROSES
+                .eq('status', 'PROSES')
                 .select();
 
-            if(lErr || !lock || lock.length === 0) throw new Error("Gagal! Transaksi mungkin sudah diproses.");
+            if(lErr || !lock || lock.length === 0) throw new Error("Transaksi sudah diproses!");
 
-            // STEP 2: Ambil saldo terbaru
+            // 2. Ambil saldo real-time
             const { data: p } = await _supabase.from('profiles').select('saldo').eq('username', user).single();
-            const newSaldo = (Number(p.saldo) || 0) + addAmount;
+            const saldoBaru = Number(p.saldo) + depositAmt;
 
-            // STEP 3: Update Saldo
-            await _supabase.from('profiles').update({ saldo: newSaldo }).eq('username', user);
+            // 3. Update Saldo
+            await _supabase.from('profiles').update({ saldo: saldoBaru }).eq('username', user);
 
-            showAlert(`BERHASIL!\n${user} : Rp ${newSaldo.toLocaleString()}`);
-            loadFinance();
-        } catch(e) { 
-            showAlert(e.message); 
-            loadFinance(); // Refresh list agar data basi hilang
+            showAlert(`SUKSES! Saldo ${user} sekarang: Rp ${saldoBaru.toLocaleString()}`);
+            loadKasir();
+        } catch(e) {
+            showAlert("GAGAL: " + e.message);
+            loadKasir();
         }
     }
 
-    async function approveWD(btn, id) {
-        btn.disabled = true;
-        await _supabase.from('withdrawals').update({ status: 'SUKSES' }).eq('id', id);
-        loadFinance();
+    async function loadKasir() {
+        const { data: d } = await _supabase.from('deposits').select('*').eq('status', 'PROSES');
+        let h = '';
+        if(d) d.forEach(x => {
+            h += `
+            <div class="card" style="border-left:4px solid var(--green-neon)">
+                <span class="card-label">DEPO REQUEST</span>
+                <div style="display:flex; justify-content:space-between">
+                    <b>${x.username}</b> <span class="profit">+${Number(x.net_receive).toLocaleString()}</span>
+                </div>
+                <button class="save-btn" style="margin-top:15px" onclick="approveDepo(this, '${x.id}','${x.username}', ${x.net_receive})">APPROVE</button>
+            </div>`;
+        });
+        document.getElementById('list-kasir').innerHTML = h || '<p style="opacity:0.5;text-align:center">Kosong</p>';
     }
 
-    async function rejectTx(btn, table, id) {
-        if(!confirm("Tolak transaksi ini?")) return;
-        btn.disabled = true;
-        await _supabase.from(table).update({ status: 'GAGAL' }).eq('id', id);
-        loadFinance();
-    }
-
-    // --- LOGIKA PEMAIN (KOREKSI SALDO) ---
-    async function loadUsers() {
-        const { data } = await _supabase.from('profiles').select('*').order('username', {ascending: true});
-        if(data) renderUsers(data);
-    }
-
-    function renderUsers(list) {
-        document.getElementById('user-list').innerHTML = list.map(u => `
-            <div class="card user-item" data-name="${u.username.toLowerCase()}">
-                <div style="display:flex; justify-content:space-between;">
-                    <b>${u.username.toUpperCase()} <span class="badge">${u.role}</span></b>
-                    <span class="profit">Rp ${Number(u.saldo).toLocaleString()}</span>
+    async function loadUser() {
+        const { data: u } = await _supabase.from('profiles').select('*').order('username', {ascending:true});
+        let h = '';
+        if(u) u.forEach(x => {
+            h += `
+            <div class="card user-item" data-name="${x.username.toLowerCase()}">
+                <div style="display:flex; justify-content:space-between">
+                    <b>${x.username}</b> <span class="profit">Rp ${Number(x.saldo).toLocaleString()}</span>
                 </div>
                 <div style="margin-top:15px; display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                     <div>
-                        <small style="font-size:9px; color:var(--blue-neon)">WINRATE %</small>
-                        <input type="number" class="input-mini" style="width:100%" id="wr-${u.id}" value="${u.winrate || 30}">
+                        <small style="font-size:9px">WINRATE %</small>
+                        <input type="number" id="wr-${x.id}" value="${x.winrate || 30}" style="padding:5px">
                     </div>
                     <div>
-                        <small style="font-size:9px; color:var(--pink-neon)">KOREKSI (±)</small>
-                        <input type="number" class="input-mini" style="width:100%" id="adj-${u.id}" placeholder="+/-">
+                        <small style="font-size:9px">ADJUST (±)</small>
+                        <input type="number" id="adj-${x.id}" placeholder="+/-" style="padding:5px">
                     </div>
                 </div>
-                <button class="save-btn" style="margin-top:10px; font-size:10px; background:transparent; border:1px solid var(--blue-neon); color:var(--blue-neon)" onclick="saveUser('${u.id}', '${u.username}')">SAVE CHANGES</button>
-            </div>
-        `).join('');
+                <button class="save-btn" style="background:transparent; border:1px solid var(--blue-neon); color:var(--blue-neon); font-size:10px;" onclick="saveU('${x.id}', '${x.username}')">SAVE USER</button>
+            </div>`;
+        });
+        document.getElementById('list-user').innerHTML = h;
     }
 
-    async function saveUser(id, user) {
+    async function saveU(id, user) {
         const wr = document.getElementById(`wr-${id}`).value;
         const adj = Number(document.getElementById(`adj-${id}`).value);
-        
         try {
             await _supabase.from('profiles').update({ winrate: parseInt(wr) }).eq('id', id);
-            
             if(adj !== 0) {
                 const { data: p } = await _supabase.from('profiles').select('saldo').eq('id', id).single();
-                const newS = (Number(p.saldo) || 0) + adj;
-                await _supabase.from('profiles').update({ saldo: newS }).eq('id', id);
+                await _supabase.from('profiles').update({ saldo: Number(p.saldo) + adj }).eq('id', id);
             }
-            
-            showAlert("DATA " + user + " TER-UPDATE!");
-            loadUsers();
-        } catch(e) { alert("GAGAL!"); }
+            showAlert("Berhasil Update " + user);
+            loadUser();
+        } catch(e) { alert("Gagal!"); }
     }
 
-    function filterUsers() {
-        const q = document.getElementById('user-search').value.toLowerCase();
+    function switchNav(t, el) {
+        document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+        document.getElementById('tab-' + t).style.display = 'block';
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        el.classList.add('active');
+        if(t === 'user') loadUser();
+        else loadKasir();
+    }
+
+    function filterU() {
+        const q = document.getElementById('search-u').value.toLowerCase();
         document.querySelectorAll('.user-item').forEach(i => i.style.display = i.getAttribute('data-name').includes(q) ? 'block' : 'none');
     }
 
-    // --- LOGIKA GIFT ---
-    async function sendGift() {
-        const user = document.getElementById('gift-target').value.trim();
-        const amt = Number(document.getElementById('gift-amt').value);
-        const msg = document.getElementById('gift-msg').value;
-        const btn = document.getElementById('btn-gift');
-
-        if(!user || !amt) return alert("Lengkapi data!");
-        btn.disabled = true;
-
-        try {
-            const { data: p } = await _supabase.from('profiles').select('saldo').eq('username', user).single();
-            if(!p) throw new Error("User tidak ditemukan!");
-
-            const newTotal = (Number(p.saldo) || 0) + amt;
-            await _supabase.from('profiles').update({ saldo: newTotal }).eq('username', user);
-
-            await _supabase.from('inbox').insert([{
-                username: user, pesan: msg || "Bonus dari Admin!", nominal: amt, status: 'UNCLAIMED'
-            }]);
-
-            showAlert("GIFT TERKIRIM KE " + user);
-            document.getElementById('gift-amt').value = '';
-            loadUsers();
-        } catch(e) { showAlert(e.message); }
-        btn.disabled = false;
-    }
-
-    function switchNav(tab, el) {
-        document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
-        document.getElementById('tab-' + tab).style.display = 'block';
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        el.classList.add('active');
-        if(tab === 'users') loadUsers();
-    }
-
     function logout() { sessionStorage.clear(); window.location.reload(); }
-    window.onload = () => { if(sessionStorage.getItem('master_auth') === 'true') { document.getElementById('gate-keeper').style.display = 'none'; document.getElementById('main-app').style.display = 'block'; initDashboard(); } };
+    
+    window.onload = () => { if(sessionStorage.getItem('master_login') === 'true') { loginMaster(); } };
 </script>
 </body>
 </html>
