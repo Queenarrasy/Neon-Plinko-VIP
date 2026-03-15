@@ -17,6 +17,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
         body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; min-height: 100vh; overflow-x: hidden; }
         
+        /* Gate Keeper */
         #gate-keeper { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; background-image: radial-gradient(circle at center, #111 0%, #000 100%); }
         .gate-card { width: 90%; max-width: 380px; padding: 40px 30px; border-radius: 30px; background: rgba(255,255,255,0.02); border: 2px solid var(--blue-neon); text-align: center; box-shadow: var(--gb); }
         
@@ -32,18 +33,24 @@
         .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; margin-bottom: 15px; position: relative; }
         .card-label { font-size: 10px; color: var(--blue-neon); font-weight: 800; text-transform: uppercase; margin-bottom: 10px; display: block; }
 
-        .profit { color: var(--green-neon); }
-        .loss { color: var(--pink-neon); }
+        .profit { color: var(--green-neon); text-shadow: 0 0 10px rgba(0,255,136,0.2); }
+        .loss { color: var(--pink-neon); text-shadow: 0 0 10px rgba(255,0,119,0.2); }
 
-        input, textarea { width: 100%; padding: 12px; background: #000; border: 1px solid #333; color: #fff; border-radius: 10px; margin-bottom: 10px; font-family: 'Outfit'; }
-        .input-mini { width: 80px; text-align: center; margin: 0; display: inline-block; padding: 5px; color: var(--yellow-neon); background: #000; border: 1px solid #444; }
+        input, textarea, select { width: 100%; padding: 12px; background: #000; border: 1px solid #333; color: #fff; border-radius: 10px; margin-bottom: 10px; font-family: 'Outfit'; font-size: 14px; }
+        .input-mini { width: 75px; text-align: center; margin: 0; display: inline-block; padding: 5px; color: var(--yellow-neon); background: #000; border: 1px solid #444; border-radius: 5px; }
 
-        .save-btn { background: linear-gradient(90deg, var(--blue-neon), var(--deepblue-neon)); color: #000; padding: 12px; border-radius: 10px; font-size: 12px; font-weight: 900; border: none; width: 100%; cursor: pointer; text-transform: uppercase; }
-        .save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .save-btn { background: linear-gradient(90deg, var(--blue-neon), var(--deepblue-neon)); color: #000; padding: 12px; border-radius: 10px; font-size: 12px; font-weight: 900; border: none; width: 100%; cursor: pointer; text-transform: uppercase; transition: 0.2s; }
+        .save-btn:active { transform: scale(0.98); }
+        .save-btn:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
+        
         .btn-approve { background: var(--green-neon); color: #000; }
         .btn-reject { background: var(--pink-neon); color: #fff; }
 
-        .badge { font-size: 9px; padding: 2px 8px; border-radius: 4px; background: rgba(255,255,255,0.1); margin-left: 5px; vertical-align: middle; }
+        .badge { font-size: 9px; padding: 2px 8px; border-radius: 4px; background: rgba(255,255,255,0.1); margin-left: 5px; vertical-align: middle; color: var(--blue-neon); border: 1px solid rgba(0,212,255,0.3); }
+        
+        /* Alert Custom */
+        #custom-alert { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .alert-box { width: 85%; max-width: 320px; background: #0a0b1e; border: 2px solid var(--blue-neon); border-radius: 20px; padding: 25px; text-align: center; }
     </style>
 </head>
 <body>
@@ -51,7 +58,7 @@
     <div id="gate-keeper">
         <div class="gate-card">
             <h1 style="font-family:'Cinzel Decorative'; color:var(--blue-neon); font-size:1.5rem; letter-spacing:3px;">SYSTEM ADMIN</h1>
-            <p style="font-size:10px; opacity:0.5; margin-bottom:25px;">RESTRICTED AREA - NEON PLINKO</p>
+            <p style="font-size:10px; opacity:0.5; margin-bottom:25px;">RESTRICTED AREA - NEON PLINKO VIP</p>
             <input type="text" id="master-user" placeholder="Admin Username">
             <input type="password" id="master-pass" placeholder="Master Password">
             <button onclick="checkAccess()" class="save-btn" style="margin-top:10px;">DECRYPT ACCESS</button>
@@ -62,29 +69,32 @@
         <div class="nav-top">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <div style="font-family:'Cinzel Decorative'; font-weight:900; color:var(--pink-neon); text-shadow:var(--gp);">NEON COMMAND</div>
-                <div id="online-count" style="font-size:10px; font-weight:800; color:var(--yellow-neon);"><i class="fa-solid fa-circle-dot"></i> LIVE ADMIN</div>
+                <div id="online-count" style="font-size:10px; font-weight:800; color:var(--yellow-neon);"><i class="fa-solid fa-circle-dot"></i> MASTER ACTIVE</div>
             </div>
         </div>
 
         <div class="content">
             <div id="tab-finance" class="page">
-                <h2 style="font-size:14px; margin-bottom:15px; color:var(--blue-neon);"><i class="fa-solid fa-receipt"></i> KASIR (DEPO/WD)</h2>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h2 style="font-size:14px; color:var(--blue-neon);"><i class="fa-solid fa-receipt"></i> ANTRIAN TRANSAKSI</h2>
+                    <button onclick="loadFinance()" style="background:none; border:none; color:var(--blue-neon); font-size:12px;"><i class="fa-solid fa-sync"></i> REFRESH</button>
+                </div>
                 <div id="finance-list">Memuat transaksi...</div>
             </div>
 
             <div id="tab-users" class="page" style="display:none">
-                <input type="text" id="user-search" placeholder="Cari Username..." onkeyup="filterUsers()" style="border-color:var(--blue-neon);">
+                <input type="text" id="user-search" placeholder="Cari Username Pemain..." onkeyup="filterUsers()" style="border-color:var(--blue-neon); box-shadow: var(--gb);">
                 <div id="user-list">Memuat data pemain...</div>
             </div>
 
             <div id="tab-reward" class="page" style="display:none">
-                <h2 style="font-size:14px; margin-bottom:15px; color:var(--blue-neon);"><i class="fa-solid fa-gift"></i> KIRIM REWARD</h2>
+                <h2 style="font-size:14px; margin-bottom:15px; color:var(--blue-neon);"><i class="fa-solid fa-gift"></i> SYSTEM REWARD / GIFT</h2>
                 <div class="card">
-                    <span class="card-label">Target & Nominal</span>
-                    <input type="text" id="gift-target" placeholder="Username">
-                    <input type="number" id="gift-amt" placeholder="Nominal (Angka Saja)">
-                    <textarea id="gift-msg" placeholder="Pesan Inbox (Opsional)"></textarea>
-                    <button class="save-btn" id="btn-gift" onclick="sendGift()">KIRIM SALDO</button>
+                    <span class="card-label">Kirim Saldo Gratis</span>
+                    <input type="text" id="gift-target" placeholder="Username Target">
+                    <input type="number" id="gift-amt" placeholder="Nominal Hadiah (Contoh: 50000)">
+                    <textarea id="gift-msg" placeholder="Pesan untuk Pemain (Akan muncul di Inbox)"></textarea>
+                    <button class="save-btn" id="btn-gift" onclick="sendGift()">KIRIM HADIAH SEKARANG</button>
                 </div>
             </div>
         </div>
@@ -97,12 +107,22 @@
         </nav>
     </div>
 
+    <div id="custom-alert">
+        <div class="alert-box">
+            <div id="a-msg" style="margin-bottom:20px; font-size:14px; line-height:1.5;"></div>
+            <button class="save-btn" onclick="closeAlert()">MENGERTI</button>
+        </div>
+    </div>
+
 <script>
     const sb_url = "https://bgffnmwrviyqpeevzjsn.supabase.co"; 
     const sb_key = "sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani"; 
     const _supabase = supabase.createClient(sb_url, sb_key);
 
     const MASTER_KEY = { u: "admin_neon", p: "master777" };
+
+    function showAlert(m) { document.getElementById('a-msg').innerText = m; document.getElementById('custom-alert').style.display = 'flex'; }
+    function closeAlert() { document.getElementById('custom-alert').style.display = 'none'; }
 
     function checkAccess() {
         const u = document.getElementById('master-user').value;
@@ -118,88 +138,95 @@
     async function initDashboard() {
         loadFinance();
         loadUsers();
-        setInterval(() => { if(document.getElementById('tab-finance').style.display !== 'none') loadFinance(); }, 20000);
+        // Auto Sync Kasir tiap 15 detik
+        setInterval(() => { if(document.getElementById('tab-finance').style.display !== 'none') loadFinance(); }, 15000);
     }
 
-    // --- LOGIKA KASIR (FIXED CALCULATION) ---
+    // --- LOGIKA KASIR (INTEGRITY SECURED) ---
     async function loadFinance() {
-        const { data: depo } = await _supabase.from('deposits').select('*').eq('status', 'PROSES');
-        const { data: wd } = await _supabase.from('withdrawals').select('*').eq('status', 'PROSES');
+        const { data: depo } = await _supabase.from('deposits').select('*').eq('status', 'PROSES').order('created_at', {ascending: false});
+        const { data: wd } = await _supabase.from('withdrawals').select('*').eq('status', 'PROSES').order('created_at', {ascending: false});
         
         let html = '';
-        if(depo) depo.forEach(d => {
-            html += `
-            <div class="card" style="border-left:4px solid var(--green-neon)">
-                <span class="card-label">DEPOSIT</span>
-                <div style="display:flex; justify-content:space-between;">
-                    <b>${d.username}</b> <span class="profit">+${Number(d.net_receive).toLocaleString()}</span>
-                </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:15px;">
-                    <button class="save-btn btn-approve" onclick="approveDepo(this, '${d.id}','${d.username}', ${d.net_receive})">APPROVE</button>
-                    <button class="save-btn btn-reject" onclick="rejectTx(this, 'deposits','${d.id}')">REJECT</button>
-                </div>
-            </div>`;
-        });
+        if(depo && depo.length > 0) {
+            depo.forEach(d => {
+                html += `
+                <div class="card" style="border-left:4px solid var(--green-neon)">
+                    <span class="card-label">DEPOSIT REQUEST</span>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <b>${d.username.toUpperCase()}</b> <span class="profit" style="font-weight:900; font-size:1.1rem;">+${Number(d.net_receive).toLocaleString()}</span>
+                    </div>
+                    <div style="font-size:11px; margin-top:5px; opacity:0.6;">Metode: ${d.method}</div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:15px;">
+                        <button class="save-btn btn-approve" onclick="approveDepo(this, '${d.id}','${d.username}', ${d.net_receive})">APPROVE</button>
+                        <button class="save-btn btn-reject" onclick="rejectTx(this, 'deposits','${d.id}')">REJECT</button>
+                    </div>
+                </div>`;
+            });
+        }
 
-        if(wd) wd.forEach(w => {
-            html += `
-            <div class="card" style="border-left:4px solid var(--pink-neon)">
-                <span class="card-label">WITHDRAWAL</span>
-                <div style="display:flex; justify-content:space-between;">
-                    <div><b>${w.username}</b><br><small>${w.bank_name} - ${w.rekening}</small></div>
-                    <span class="loss">-${Number(w.amount).toLocaleString()}</span>
-                </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:15px;">
-                    <button class="save-btn" style="background:var(--blue-neon)" onclick="approveWD(this, '${w.id}')">SUKSES</button>
-                    <button class="save-btn btn-reject" onclick="rejectTx(this, 'withdrawals','${w.id}')">BATAL</button>
-                </div>
-            </div>`;
-        });
+        if(wd && wd.length > 0) {
+            wd.forEach(w => {
+                html += `
+                <div class="card" style="border-left:4px solid var(--pink-neon)">
+                    <span class="card-label">WITHDRAWAL REQUEST</span>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div><b>${w.username.toUpperCase()}</b><br><small style="opacity:0.6;">${w.bank_name} - ${w.rekening}</small></div>
+                        <span class="loss" style="font-weight:900; font-size:1.1rem;">-${Number(w.amount).toLocaleString()}</span>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:15px;">
+                        <button class="save-btn" style="background:var(--blue-neon)" onclick="approveWD(this, '${w.id}')">TRANSFERED</button>
+                        <button class="save-btn btn-reject" onclick="rejectTx(this, 'withdrawals','${w.id}')">REJECT</button>
+                    </div>
+                </div>`;
+            });
+        }
 
-        document.getElementById('finance-list').innerHTML = html || '<div style="text-align:center;padding:40px;opacity:0.5;">Antrean Bersih</div>';
+        document.getElementById('finance-list').innerHTML = html || '<div style="text-align:center;padding:50px;opacity:0.3; font-size:12px;">TIDAK ADA ANTRIAN</div>';
     }
 
     async function approveDepo(btn, id, user, amt) {
-        // VALIDASI KEAMANAN: Pastikan amt adalah angka murni
-        const addAmount = Number(amt);
-        if(!confirm(`Konfirmasi penambahan saldo Rp ${addAmount.toLocaleString()} untuk ${user}?`)) return;
+        // Konversi amt ke Number untuk mencegah String Concatenation
+        const depositAmount = Number(amt);
+        if(!confirm(`Tambahkan Rp ${depositAmount.toLocaleString()} ke saldo ${user}?`)) return;
 
         btn.disabled = true;
-        btn.innerText = "SINKRONISASI...";
+        btn.innerText = "PROCESSING...";
 
         try {
-            // 1. Ambil saldo real-time (Audit Langsung ke DB)
+            // STEP 1: Ambil saldo terbaru LANGSUNG dari Database (Audit)
             const { data: profile, error: fErr } = await _supabase.from('profiles').select('saldo').eq('username', user).single();
-            if(!profile) throw new Error("User tidak ditemukan");
+            if(fErr || !profile) throw new Error("Gagal mengambil data pemain!");
 
-            // 2. Kalkulasi Matematika Murni (Bukan String)
-            const oldSaldo = Number(profile.saldo) || 0;
-            const newSaldo = oldSaldo + addAmount;
+            // STEP 2: Hitung Saldo Baru (Matematika Murni)
+            const currentSaldo = Number(profile.saldo) || 0;
+            const finalSaldo = currentSaldo + depositAmount;
 
-            // 3. Update Saldo Pemain
-            const { error: uErr } = await _supabase.from('profiles').update({ saldo: newSaldo }).eq('username', user);
+            // STEP 3: Update Saldo ke Database
+            const { error: uErr } = await _supabase.from('profiles').update({ saldo: finalSaldo }).eq('username', user);
             if(uErr) throw uErr;
 
-            // 4. Tandai Deposit Selesai
+            // STEP 4: Update Status Deposit
             await _supabase.from('deposits').update({ status: 'SUKSES' }).eq('id', id);
 
-            alert(`SUKSES! Saldo ${user} sekarang: Rp ${newSaldo.toLocaleString()}`);
+            showAlert(`DEPOSIT BERHASIL!\nSaldo ${user} kini Rp ${finalSaldo.toLocaleString()}`);
             loadFinance();
         } catch(e) {
-            alert("GAGAL: " + e.message);
+            showAlert("KESALAHAN SISTEM: " + e.message);
             btn.disabled = false;
+            btn.innerText = "APPROVE";
         }
     }
 
     async function approveWD(btn, id) {
-        if(!confirm("Tandai WD ini sudah ditransfer?")) return;
+        if(!confirm("Tandai transaksi Withdraw ini sukses (Sudah Transfer)?")) return;
         btn.disabled = true;
         await _supabase.from('withdrawals').update({ status: 'SUKSES' }).eq('id', id);
         loadFinance();
     }
 
     async function rejectTx(btn, table, id) {
-        if(!confirm("Batalkan transaksi ini?")) return;
+        if(!confirm("Anda yakin ingin MENOLAK transaksi ini?")) return;
         btn.disabled = true;
         await _supabase.from(table).update({ status: 'GAGAL' }).eq('id', id);
         loadFinance();
@@ -212,72 +239,124 @@
     }
 
     function renderUsers(list) {
-        document.getElementById('user-list').innerHTML = list.map(u => `
+        document.getElementById('user-list').innerHTML = list.map(u => {
+            const s = Number(u.saldo) || 0;
+            return `
             <div class="card user-item" data-name="${u.username.toLowerCase()}">
-                <div style="display:flex; justify-content:space-between;">
-                    <b>${u.username.toUpperCase()} <span class="badge">${u.role}</span></b>
-                    <span class="profit">Rp ${Number(u.saldo).toLocaleString()}</span>
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <b>${u.username.toUpperCase()}</b> <span class="badge">${u.role}</span><br>
+                        <small style="opacity:0.5;">${u.bank_name} | ${u.rekening}</small>
+                    </div>
+                    <div class="profit" style="font-weight:800; font-size:15px;">Rp ${s.toLocaleString()}</div>
                 </div>
-                <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
-                    <small>WR:</small> <input type="number" class="input-mini" id="wr-${u.id}" value="${u.winrate}">
-                    <button class="save-btn" style="padding:5px; width:60px; background:transparent; border:1px solid var(--blue-neon); color:var(--blue-neon)" onclick="updateUser('${u.id}')">SAVE</button>
+                
+                <div style="margin-top:15px; display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div>
+                        <small style="font-size:9px; color:var(--blue-neon)">SET WINRATE (%)</small>
+                        <input type="number" class="input-mini" style="width:100%" id="wr-${u.id}" value="${u.winrate || 30}">
+                    </div>
+                    <div>
+                        <small style="font-size:9px; color:var(--pink-neon)">KOREKSI SALDO (±)</small>
+                        <input type="number" class="input-mini" style="width:100%" id="adj-${u.id}" placeholder="+/-">
+                    </div>
                 </div>
-            </div>
-        `).join('');
+                <button class="save-btn" style="margin-top:10px; background:transparent; border:1px solid var(--blue-neon); color:var(--blue-neon); font-size:10px;" onclick="saveUserChanges('${u.id}', '${u.username}')">SIMPAN PERUBAHAN PEMAIN</button>
+            </div>`;
+        }).join('');
     }
 
-    async function updateUser(id) {
+    async function saveUserChanges(id, username) {
         const wr = document.getElementById(`wr-${id}`).value;
-        await _supabase.from('profiles').update({ winrate: parseInt(wr) }).eq('id', id);
-        alert("UPDATED!");
+        const adj = Number(document.getElementById(`adj-${id}`).value);
+        
+        try {
+            // Update Winrate
+            await _supabase.from('profiles').update({ winrate: parseInt(wr) }).eq('id', id);
+            
+            // Jika ada input koreksi saldo
+            if(adj !== 0) {
+                const { data: p } = await _supabase.from('profiles').select('saldo').eq('id', id).single();
+                const newSaldo = (Number(p.saldo) || 0) + adj;
+                await _supabase.from('profiles').update({ saldo: newSaldo }).eq('id', id);
+                document.getElementById(`adj-${id}`).value = ''; // Reset input
+            }
+            
+            showAlert(`Data ${username} berhasil diperbarui!`);
+            loadUsers();
+        } catch(e) { alert("Gagal Simpan!"); }
     }
 
     function filterUsers() {
         const q = document.getElementById('user-search').value.toLowerCase();
-        document.querySelectorAll('.user-item').forEach(i => i.style.display = i.getAttribute('data-name').includes(q) ? 'block' : 'none');
+        document.querySelectorAll('.user-item').forEach(i => {
+            i.style.display = i.getAttribute('data-name').includes(q) ? 'block' : 'none';
+        });
     }
 
     // --- LOGIKA REWARD (SAFE) ---
     async function sendGift() {
         const user = document.getElementById('gift-target').value.trim();
         const amt = Number(document.getElementById('gift-amt').value);
-        const msg = document.getElementById('gift-msg').value;
+        const msg = document.getElementById('gift-msg').value.trim();
         const btn = document.getElementById('btn-gift');
 
-        if(!user || !amt) return alert("Lengkapi data!");
+        if(!user || !amt) return alert("Harap isi username dan nominal hadiah!");
         btn.disabled = true;
+        btn.innerText = "SENDING REWARD...";
 
         try {
             const { data: profile } = await _supabase.from('profiles').select('saldo').eq('username', user).single();
-            if(!profile) throw new Error("User tidak ada");
+            if(!profile) throw new Error("Username tidak ditemukan di sistem!");
 
             const newTotal = Number(profile.saldo) + amt;
             await _supabase.from('profiles').update({ saldo: newTotal }).eq('username', user);
 
-            // Masuk ke Inbox
+            // Masukkan ke log deposit sebagai 'BONUS'
+            await _supabase.from('deposits').insert([{
+                username: user,
+                amount: amt,
+                net_receive: amt,
+                method: 'REWARD_ADMIN',
+                status: 'SUKSES'
+            }]);
+
+            // Kirim ke Inbox Player
             await _supabase.from('inbox').insert([{
                 username: user,
-                pesan: msg || "Bonus saldo dari Admin!",
+                pesan: msg || `Anda menerima bonus saldo sebesar Rp ${amt.toLocaleString()} dari Admin.`,
                 nominal: amt,
                 status: 'UNCLAIMED'
             }]);
 
-            alert("HADIAH TERKIRIM!");
+            showAlert(`GIFT BERHASIL!\nRp ${amt.toLocaleString()} dikirim ke ${user}`);
             document.getElementById('gift-amt').value = '';
+            document.getElementById('gift-msg').value = '';
             loadUsers();
-        } catch(e) { alert(e.message); }
+        } catch(e) { showAlert("GAGAL: " + e.message); }
         btn.disabled = false;
+        btn.innerText = "KIRIM HADIAH SEKARANG";
     }
 
+    // Navigation
     function switchNav(tab, el) {
         document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
         document.getElementById('tab-' + tab).style.display = 'block';
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         el.classList.add('active');
+        if(tab === 'users') loadUsers();
+        if(tab === 'finance') loadFinance();
     }
 
     function logout() { sessionStorage.clear(); window.location.reload(); }
-    window.onload = () => { if(sessionStorage.getItem('master_auth') === 'true') { document.getElementById('gate-keeper').style.display = 'none'; document.getElementById('main-app').style.display = 'block'; initDashboard(); } };
+    
+    window.onload = () => { 
+        if(sessionStorage.getItem('master_auth') === 'true') { 
+            document.getElementById('gate-keeper').style.display = 'none'; 
+            document.getElementById('main-app').style.display = 'block'; 
+            initDashboard(); 
+        } 
+    };
 </script>
 </body>
 </html>
