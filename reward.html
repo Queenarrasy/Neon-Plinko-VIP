@@ -173,66 +173,60 @@ function playSnd(type) {
 
 async function init() {
     if(!USERNAME) return;
-    
-    // 1. Get Profile & Ref Code
     const { data: profile } = await _supabase.from('profiles').select('*').eq('username', USERNAME).single();
     if(profile) {
         document.getElementById('ref-code').innerText = profile.referral_code || "NEON-" + USERNAME.toUpperCase();
     }
-
-    // 2. Load Stats & Valid Friends
     loadReferralStats();
-    
-    // 3. Load Inbox
     loadInbox();
-
-    // 4. Check Daily
-    checkDailyStatus();
+    checkDailyStatus(); // Pengecekan 1x sehari
 }
 
-async function loadReferralStats() {
-    try {
-        // Cari teman yang diajak (kolom 'invited_by' di tabel profiles)
-        const { data: friends } = await _supabase.from('profiles').select('username').eq('invited_by', USERNAME);
-        
-        if (friends && friends.length > 0) {
-            const friendList = friends.map(f => f.username);
-            
-            // Cek siapa saja yang sudah DEPOSIT minimal 20.000 (status SUKSES)
-            const { data: validDepo } = await _supabase.from('deposits')
-                .select('username')
-                .in('username', friendList)
-                .eq('status', 'SUKSES')
-                .gte('amount', 20000);
+// --- FIX CORE: DAILY CHECKIN (KUNCI 1X SEHARI) ---
+async function checkDailyStatus() {
+    const now = new Date();
+    const startOfDay = new Date(now.setHours(0,0,0,0)).toISOString();
+    const endOfDay = new Date(now.setHours(23,59,59,999)).toISOString();
 
-            // Filter Unik
-            const uniqueValids = [...new Set(validDepo.map(d => d.username))];
-            validFriendCount = uniqueValids.length;
-            
-            document.getElementById('valid-ref').innerText = validFriendCount;
-            const totalBonus = validFriendCount * 5000;
-            document.getElementById('bonus-ref').innerText = "Rp " + totalBonus.toLocaleString();
+    const { data } = await _supabase.from('deposits')
+        .select('id')
+        .eq('username', USERNAME)
+        .eq('keterangan', 'DAILY_BONUS')
+        .gte('created_at', startOfDay)
+        .lte('created_at', endOfDay);
 
-            // Cek apakah hari ini MINGGU (Day 0)
-            const isSunday = new Date().getDay() === 0;
-            const btnRef = document.getElementById('btn-claim-ref');
-            
-            if(isSunday && totalBonus > 0) {
-                btnRef.disabled = false;
-                btnRef.innerText = "KLAIM Rp " + totalBonus.toLocaleString();
-            } else if (!isSunday) {
-                btnRef.innerText = "BUKA HARI MINGGU";
-            }
-        }
-    } catch (e) { console.error(e); }
+    if(data && data.length > 0) {
+        const btn = document.getElementById('btn-daily');
+        btn.disabled = true;
+        btn.innerText = "SUDAH KLAIM HARI INI";
+        btn.style.opacity = "0.5";
+    }
 }
 
 async function handleDailyClaim() {
     playSnd('click');
     const btn = document.getElementById('btn-daily');
+    if(btn.disabled) return;
+    
     btn.disabled = true;
+    btn.innerText = "PROSES...";
 
     try {
+        const now = new Date();
+        const startOfDay = new Date(now.setHours(0,0,0,0)).toISOString();
+        
+        const { data: existing } = await _supabase.from('deposits')
+            .select('id')
+            .eq('username', USERNAME)
+            .eq('keterangan', 'DAILY_BONUS')
+            .gte('created_at', startOfDay);
+
+        if (existing && existing.length > 0) {
+            showModal("INFO", "Master sudah mengambil jatah hari ini!");
+            btn.innerText = "SUDAH KLAIM HARI INI";
+            return;
+        }
+
         const { data: p } = await _supabase.from('profiles').select('saldo').eq('username', USERNAME).single();
         const bonus = 1000;
 
@@ -247,24 +241,42 @@ async function handleDailyClaim() {
         }]);
 
         playSnd('success');
-        showModal("SUKSES", "Bonus harian Rp 1.000 telah masuk ke saldo Master.");
-        btn.innerText = "SUDAH KLAIM";
-    } catch (e) { btn.disabled = false; }
+        showModal("BERHASIL", "Bonus harian Rp 1.000 masuk ke saldo!");
+        btn.innerText = "SUDAH KLAIM HARI INI";
+        syncNeonData();
+    } catch (e) { btn.disabled = false; btn.innerText = "KLAIM Rp 1.000"; }
 }
 
-async function checkDailyStatus() {
-    const today = new Date().toISOString().split('T')[0];
-    const { data } = await _supabase.from('deposits')
-        .select('id')
-        .eq('username', USERNAME)
-        .eq('keterangan', 'DAILY_BONUS')
-        .gte('created_at', today + ' 00:00:00');
+// --- REFERRAL LOGIC ---
+async function loadReferralStats() {
+    try {
+        const { data: friends } = await _supabase.from('profiles').select('username').eq('invited_by', USERNAME);
+        if (friends && friends.length > 0) {
+            const friendList = friends.map(f => f.username);
+            const { data: validDepo } = await _supabase.from('deposits')
+                .select('username')
+                .in('username', friendList)
+                .eq('status', 'SUKSES')
+                .gte('amount', 20000);
 
-    if(data && data.length > 0) {
-        const btn = document.getElementById('btn-daily');
-        btn.disabled = true;
-        btn.innerText = "SUDAH KLAIM";
-    }
+            const uniqueValids = [...new Set(validDepo.map(d => d.username))];
+            validFriendCount = uniqueValids.length;
+            
+            document.getElementById('valid-ref').innerText = validFriendCount;
+            const totalBonus = validFriendCount * 5000;
+            document.getElementById('bonus-ref').innerText = "Rp " + totalBonus.toLocaleString();
+
+            const isSunday = new Date().getDay() === 0;
+            const btnRef = document.getElementById('btn-claim-ref');
+            
+            if(isSunday && totalBonus > 0) {
+                btnRef.disabled = false;
+                btnRef.innerText = "KLAIM Rp " + totalBonus.toLocaleString();
+            } else if (!isSunday) {
+                btnRef.innerText = "BUKA HARI MINGGU";
+            }
+        }
+    } catch (e) { console.error(e); }
 }
 
 async function processRefClaim() {
@@ -275,11 +287,7 @@ async function processRefClaim() {
 
     try {
         const { data: p } = await _supabase.from('profiles').select('saldo').eq('username', USERNAME).single();
-        
-        // Update Saldo
         await _supabase.from('profiles').update({ saldo: p.saldo + totalBonus }).eq('username', USERNAME);
-        
-        // Catat Log
         await _supabase.from('deposits').insert([{
             username: USERNAME,
             amount: totalBonus,
@@ -290,13 +298,12 @@ async function processRefClaim() {
         }]);
 
         playSnd('success');
-        showModal("KLAIM BERHASIL", `Saldo referral sebesar Rp ${totalBonus.toLocaleString()} telah dicairkan!`);
-        
-        // Reset tampilan (tetapi data di DB tetap tersimpan history-nya)
+        showModal("KLAIM BERHASIL", `Saldo referral Rp ${totalBonus.toLocaleString()} cair!`);
         document.getElementById('bonus-ref').innerText = "Rp 0";
     } catch (e) { btn.disabled = false; }
 }
 
+// --- INBOX GIFT SYSTEM ---
 async function loadInbox() {
     const list = document.getElementById('mail-list');
     const { data } = await _supabase.from('inbox')
@@ -328,9 +335,8 @@ async function claimMail(id, amt) {
         const { data: p } = await _supabase.from('profiles').select('saldo').eq('username', USERNAME).single();
         await _supabase.from('profiles').update({ saldo: p.saldo + amt }).eq('username', USERNAME);
         await _supabase.from('inbox').update({ status: 'CLAIMED' }).eq('id', id);
-        
         playSnd('success');
-        showModal("BONUS DITERIMA", "Hadiah saldo telah ditambahkan ke akun Master.");
+        showModal("BONUS DITERIMA", "Hadiah saldo telah ditambahkan!");
         loadInbox();
     } catch (e) { alert("Gagal klaim!"); }
 }
@@ -339,7 +345,7 @@ function copyRef() {
     playSnd('click');
     const code = document.getElementById('ref-code').innerText;
     navigator.clipboard.writeText(code);
-    showModal("COPIED!", "Kode Referral Master berhasil disalin.");
+    showModal("COPIED!", "Kode Referral disalin.");
 }
 
 function showModal(t, m) {
