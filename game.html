@@ -2,129 +2,96 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-    <title>NEON PLINKO VIP</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+    <title>NEON PLINKO — AR GAMING ENGINE</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Outfit:wght@300;600;800&display=swap" rel="stylesheet">
     <style>
         :root { 
-            --pink: #ff0077; --blue: #00d4ff; --deepblue: #0044ff; 
-            --yellow: #f5e642; --bg: #030510; 
+            --pink: #ff0077; --blue: #0055ff; --cyan: #00f2ff; --yellow: #f5e642; --bg: #02030d;
+            --gp: 0 0 15px rgba(255, 0, 119, 0.7);
+            --gb: 0 0 15px rgba(0, 85, 255, 0.7);
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
-        body { 
-            background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; 
-            height: 100vh; overflow: hidden; display: flex; flex-direction: column;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 
-        /* 1. TOP NAVIGATION (FLUID DESIGN) */
-        .top-nav {
-            display: flex; justify-content: space-around; align-items: center;
-            padding: 15px 5px; background: rgba(0, 68, 255, 0.05);
-            border-bottom: 1px solid rgba(0, 212, 255, 0.2); backdrop-filter: blur(15px);
-        }
-        .nav-item { 
-            text-align: center; color: var(--blue); text-decoration: none; 
-            font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
-            transition: 0.3s;
-        }
-        .nav-item:active { color: var(--pink); text-shadow: 0 0 10px var(--pink); }
+        /* Header Neon */
+        .header { height: 65px; padding: 0 15px; display: flex; justify-content: space-between; align-items: center; background: rgba(5, 6, 20, 0.95); border-bottom: 2px solid var(--blue); box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 100; }
+        .logo { font-family: 'Cinzel Decorative'; color: var(--pink); font-size: 14px; letter-spacing: 2px; text-shadow: var(--gp); font-weight: 900; }
+        .balance-box { background: rgba(0,0,0,0.7); border: 2px solid var(--pink); padding: 6px 15px; border-radius: 50px; display: flex; align-items: center; gap: 8px; box-shadow: var(--gp); }
+        #saldo-text { color: var(--yellow); font-weight: 800; text-shadow: 0 0 5px var(--yellow); }
 
-        /* 2. HEADER INFO */
-        .header-info {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 20px 25px 10px;
-        }
-        #balance-val { 
-            color: var(--yellow); font-size: 18px; font-weight: 800; 
-            text-shadow: 0 0 15px rgba(245, 230, 66, 0.4); 
-        }
-        .game-logo { 
-            font-family: 'Cinzel Decorative'; color: var(--pink); font-size: 15px; 
-            text-shadow: 0 0 10px var(--pink);
-        }
+        /* Game Area */
+        #game-area { flex: 1; position: relative; display: flex; justify-content: center; overflow: hidden; background: radial-gradient(circle at center, #050614 0%, #02030d 100%); }
+        #board-wrapper { position: relative; width: 100%; max-width: 400px; height: 100%; }
+        
+        .m-bar { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: center; gap: 4px; padding: 0 10px; }
+        .m-slot { flex: 1; height: 35px; border-radius: 6px; font-size: 10px; font-weight: 900; display: flex; align-items: center; justify-content: center; color: #fff; border: 1px solid rgba(255,255,255,0.1); transition: 0.2s; }
 
-        /* 3. GAME AREA */
-        #game-area { flex-grow: 1; position: relative; width: 100%; overflow: hidden; }
-        canvas { display: block; margin: 0 auto; }
+        /* Controls Panel */
+        .controls { background: #050614; padding: 15px; border-top: 2px solid var(--blue); }
+        .bet-row { display: flex; justify-content: space-around; align-items: center; margin-bottom: 15px; }
+        .bet-val { font-size: 26px; font-weight: 900; color: var(--yellow); font-family: 'Cinzel Decorative'; text-shadow: 0 0 10px rgba(245,230,66,0.5); }
+        .bet-btn { font-size: 35px; color: var(--blue); filter: drop-shadow(0 0 5px var(--blue)); cursor: pointer; }
 
-        /* 4. SCOREBOARD (FLOATING LEFT) */
-        #win-log { position: absolute; top: 10px; left: 15px; z-index: 10; pointer-events: none; }
-        .win-entry { 
-            background: rgba(255, 0, 119, 0.1); border-left: 3px solid var(--pink);
-            padding: 8px 15px; margin-bottom: 8px; border-radius: 6px;
-            font-size: 12px; font-weight: 800; color: var(--pink); animation: slideIn 0.4s ease-out;
-        }
-        @keyframes slideIn { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+        .mode-row { display: flex; gap: 10px; margin-bottom: 15px; }
+        .mode-btn { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid var(--blue); background: rgba(0,85,255,0.05); color: #fff; font-size: 11px; font-weight: 800; }
+        .mode-btn.active { background: var(--blue); box-shadow: var(--gb); }
+        .mode-btn.auto-active { background: var(--pink); border-color: #fff; animation: pulse 1s infinite; box-shadow: var(--gp); }
 
-        /* 5. CONTROL PANEL (MODERN & SOFT) */
-        .control-panel { 
-            padding: 25px; background: linear-gradient(0deg, #030510 80%, transparent);
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .bet-adjuster { 
-            display: flex; align-items: center; justify-content: center; gap: 30px; margin-bottom: 20px;
-        }
-        .btn-circle { 
-            width: 48px; height: 48px; border-radius: 50%; border: 2px solid var(--blue);
-            background: transparent; color: var(--blue); font-size: 24px; font-weight: 900;
-            box-shadow: inset 0 0 10px rgba(0, 212, 255, 0.2);
-        }
-        .btn-circle:active { background: var(--blue); color: #000; }
-        #bet-display { font-size: 32px; font-weight: 900; color: var(--yellow); min-width: 100px; text-align: center; }
+        .btn-main { width: 100%; padding: 18px; border-radius: 50px; border: none; background: linear-gradient(90deg, var(--blue), var(--pink)); color: #fff; font-family: 'Cinzel Decorative'; font-weight: 900; font-size: 20px; box-shadow: var(--gp); cursor: pointer; }
 
-        .mode-buttons { display: flex; gap: 10px; margin-bottom: 20px; }
-        .btn-m { 
-            flex: 1; padding: 12px; border-radius: 16px; border: 1px solid var(--deepblue);
-            background: rgba(0, 68, 255, 0.1); color: #fff; font-size: 11px; font-weight: 700; 
-            text-transform: uppercase; letter-spacing: 1px;
-        }
-        .btn-m.active { 
-            background: var(--pink); border-color: var(--pink); 
-            box-shadow: 0 0 20px rgba(255, 0, 119, 0.5); 
-        }
+        /* Navigation Bawah */
+        .nav-bar { height: 75px; background: #000; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid var(--blue); }
+        .nav-item { color: rgba(255,255,255,0.4); text-decoration: none; text-align: center; font-size: 9px; flex:1; font-weight: 700; }
+        .nav-item.active { color: var(--cyan); text-shadow: var(--gb); }
+        .nav-item i { font-size: 20px; display: block; margin-bottom: 4px; }
 
-        .btn-main-drop { 
-            width: 100%; padding: 20px; border-radius: 20px; border: none;
-            background: linear-gradient(90deg, var(--deepblue), var(--pink));
-            color: #fff; font-size: 20px; font-weight: 900; letter-spacing: 4px;
-            box-shadow: 0 10px 30px rgba(255, 0, 119, 0.3);
-        }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(0.96); opacity: 0.8; } 100% { transform: scale(1); } }
+        .f-score { position: absolute; font-weight: 900; font-size: 24px; animation: floatUp 1s forwards; pointer-events: none; text-shadow: 0 0 10px rgba(0,0,0,1); }
+        @keyframes floatUp { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-100px); opacity: 0; } }
     </style>
 </head>
 <body>
 
-    <div class="top-nav">
-        <a href="profil.html" class="nav-item">PROFIL</a>
-        <a href="deposit.html" class="nav-item">DEPOSIT</a>
-        <a href="withdraw.html" class="nav-item">WITHDRAW</a>
-        <a href="reward.html" class="nav-item">REWARD</a>
-    </div>
-
-    <div class="header-info">
-        <div id="balance-val">IDR 0</div>
-        <div class="game-logo">NEON PLINKO</div>
+    <div class="header">
+        <div class="logo">NEON PLINKO</div>
+        <div class="balance-box">
+            <span id="saldo-text">IDR 0</span>
+        </div>
     </div>
 
     <div id="game-area">
-        <div id="win-log"></div>
+        <div id="board-wrapper">
+            <canvas id="canvas"></canvas>
+            <div class="m-bar" id="m-bar"></div>
+        </div>
     </div>
 
-    <div class="control-panel">
-        <div class="bet-adjuster">
-            <button class="btn-circle" onclick="adj(-100)">-</button>
-            <div id="bet-display">200</div>
-            <button class="btn-circle" onclick="adj(100)">+</button>
+    <div class="controls">
+        <div class="bet-row">
+            <i class="fa-solid fa-square-minus bet-btn" onclick="changeBet(-1)"></i>
+            <div class="bet-val" id="bet-display">400</div>
+            <i class="fa-solid fa-square-plus bet-btn" onclick="changeBet(1)"></i>
         </div>
 
-        <div class="mode-buttons">
-            <button class="btn-m active" id="btn-normal" onclick="setMode('NORMAL')">Normal</button>
-            <button class="btn-m" id="btn-turbo" onclick="setMode('TURBO')">Turbo</button>
-            <button class="btn-m" id="btn-auto" onclick="setMode('AUTO')">Auto</button>
+        <div class="mode-row">
+            <button class="mode-btn active" id="btn-normal" onclick="setMode('normal')">NORMAL</button>
+            <button class="mode-btn" id="btn-turbo" onclick="setMode('turbo')">TURBO</button>
+            <button class="mode-btn" id="btn-auto" onclick="toggleAuto()">AUTO</button>
         </div>
 
-        <button class="btn-main-drop" onclick="handleAction()">DROP BALL</button>
+        <button class="btn-main" id="btn-action" onclick="handleAction()">DROP BALL</button>
+    </div>
+
+    <div class="nav-bar">
+        <a href="deposit.html" class="nav-item"><i class="fas fa-plus-circle"></i>DEPO</a>
+        <a href="withdraw.html" class="nav-item"><i class="fas fa-wallet"></i>WD</a>
+        <a href="game.html" class="nav-item active"><i class="fas fa-play-circle"></i>PLAY</a>
+        <a href="reward.html" class="nav-item"><i class="fas fa-gift"></i>REWARD</a>
+        <a href="profil.html" class="nav-item"><i class="fas fa-user-circle"></i>PROFIL</a>
     </div>
 
 <script>
@@ -133,100 +100,146 @@
     const _supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 
     const { Engine, Render, Runner, Bodies, Composite, Events } = Matter;
-    const engine = Engine.create();
-    const area = document.getElementById('game-area');
-    const w = area.clientWidth, h = area.clientHeight;
+    const engine = Engine.create({ gravity: { y: 1.4 } });
+    
+    // LIST BET SESUAI PERMINTAAN
+    const BET_LIST = [400, 800, 1000, 1200, 1400, 1600, 1800, 2000, 4000, 6000, 8000, 10000];
+    let betIdx = 0;
+    let isTurbo = false, isAuto = false, autoTimer = null;
+    let balance = 0, winrate = 30, maxWinLimit = 1000000;
+    const username = "MASTER_ARA"; // Ganti dengan session user
 
-    const render = Render.create({
-        element: area, engine: engine,
-        options: { width: w, height: h, wireframes: false, background: 'transparent' }
-    });
-
-    let balance = 0, bet = 200, mode = 'NORMAL', autoLoop = null;
-    let userWinrate = 30, userMaxWin = 1000000;
-    const username = "MASTER_ARA"; // Pastikan ini sesuai dengan sistem Master
-
-    // PYRAMID CONFIG (FLUID SPACING)
-    const rows = 9;
-    const pGap = w / 10;
     const multis = [10, 5, 2, 0.5, 0.2, 0.2, 0.5, 2, 5, 10];
+    const colors = ['#ff0077', '#0055ff', '#00f2ff', '#1a1b3a', '#0a0b1e', '#0a0b1e', '#1a1b3a', '#00f2ff', '#0055ff', '#ff0077'];
 
-    for(let i=2; i<=rows; i++) {
-        for(let j=0; j<i; j++) {
-            const px = (w/2) - (i-1)*pGap/2 + j*pGap;
-            const py = 40 + (i-1)*pGap;
-            Composite.add(engine.world, Bodies.circle(px, py, 3, { isStatic: true, render: { fillStyle: '#fff' } }));
-        }
+    async function init() {
+        setupBoard();
+        await sync();
+        setInterval(sync, 4000);
     }
-
-    multis.forEach((m, i) => {
-        const bw = w / multis.length;
-        const bx = (i * bw) + bw/2;
-        const by = h - 20;
-        Composite.add(engine.world, Bodies.rectangle(bx, by, bw-4, 25, { isStatic: true, isSensor: true, label: 'm_'+m, render: { fillStyle: 'transparent' } }));
-        
-        const lbl = document.createElement('div');
-        lbl.innerHTML = `x${m}`;
-        lbl.style.cssText = `position:absolute; left:${bx-10}px; top:${by-15}px; font-size:10px; font-weight:900; color:var(--pink);`;
-        area.appendChild(lbl);
-    });
 
     async function sync() {
         const { data } = await _supa.from('profiles').select('*').eq('username', username).single();
         if(data) {
-            balance = data.saldo; userWinrate = data.winrate || 30; userMaxWin = data.max_win_limit || 1000000;
-            updateUI();
+            balance = data.saldo;
+            winrate = data.winrate || 30;
+            maxWinLimit = data.max_win_limit || 1000000;
+            document.getElementById('saldo-text').innerText = "IDR " + balance.toLocaleString();
         }
     }
 
-    function adj(v) { if(bet+v >= 100) { bet+=v; document.getElementById('bet-display').innerText = bet; } }
-    
-    function setMode(m) {
-        mode = m;
-        document.querySelectorAll('.btn-m').forEach(b => b.classList.remove('active'));
-        document.getElementById('btn-'+m.toLowerCase()).classList.add('active');
-        if(m !== 'AUTO') { clearInterval(autoLoop); autoLoop = null; }
+    function setupBoard() {
+        const canvas = document.getElementById('canvas');
+        const render = Render.create({
+            canvas: canvas, engine: engine,
+            options: { width: 400, height: 500, wireframes: false, background: 'transparent' }
+        });
+
+        // Pins (Piramida Neon)
+        for (let r = 0; r < 9; r++) {
+            let pins = r + 3;
+            for (let c = 0; c < pins; c++) {
+                let x = 200 + (c - pins / 2 + 0.5) * 38;
+                let y = 70 + r * 42;
+                Composite.add(engine.world, Bodies.circle(x, y, 3, { isStatic: true, render: { fillStyle: '#fff' } }));
+            }
+        }
+
+        const mBar = document.getElementById('m-bar');
+        multis.forEach((v, i) => {
+            const slot = document.createElement('div');
+            slot.className = 'm-slot';
+            slot.style.background = colors[i];
+            slot.style.boxShadow = `0 0 10px ${colors[i]}`;
+            slot.innerText = 'x' + v;
+            mBar.appendChild(slot);
+            Composite.add(engine.world, Bodies.rectangle(40 + i * 35, 490, 30, 10, { isStatic: true, isSensor: true, label: 'm_'+v }));
+        });
+
+        Render.run(render);
+        Runner.run(Runner.create(), engine);
     }
 
-    function handleAction() {
-        if(mode === 'AUTO') {
-            if(autoLoop) { clearInterval(autoLoop); autoLoop = null; }
-            else { autoLoop = setInterval(drop, 450); }
-        } else { drop(); }
-    }
+    function spawnBall() {
+        const bet = BET_LIST[betIdx];
+        if(balance < bet) { stopAuto(); return; }
 
-    function drop() {
-        if(balance < bet) return;
-        balance -= bet; updateUI();
-        const wrBias = (Math.random() * 100) < userWinrate ? 0 : (Math.random() * 12 - 6);
-        const b = Bodies.circle(w/2 + wrBias, 10, 6, { restitution: 0.5, friction: 0.01, label: 'ball', render: { fillStyle: 'var(--yellow)' } });
-        Composite.add(engine.world, b);
-    }
+        balance -= bet;
+        document.getElementById('saldo-text').innerText = "IDR " + balance.toLocaleString();
 
-    Events.on(engine, 'collisionStart', async (e) => {
-        e.pairs.forEach(async p => {
-            if(p.bodyA.label.startsWith('m_') && p.bodyB.label === 'ball') {
-                let m = parseFloat(p.bodyA.label.split('_')[1]);
+        // LOGIKA WINRATE (Pathfinding Bias)
+        let xPos = 200 + (Math.random() * 4 - 2);
+        if((Math.random() * 100) > winrate) {
+            xPos = Math.random() > 0.5 ? 230 : 170; // Buang ke arah multiplier zonk
+        }
+
+        const ball = Bodies.circle(xPos, 20, 7, {
+            restitution: 0.5, friction: 0.001,
+            render: { fillStyle: 'var(--yellow)', strokeStyle: '#fff', lineWidth: 1 }
+        });
+        Composite.add(engine.world, ball);
+
+        const check = setInterval(async () => {
+            if(ball.position.y > 480) {
+                clearInterval(check);
+                const sensors = Composite.allBodies(engine.world).filter(b => b.label?.startsWith('m_'));
+                let nearest = sensors[0], minD = 1000;
+                sensors.forEach(s => { let d = Math.abs(s.position.x - ball.position.x); if(d < minD) { minD = d; nearest = s; } });
+
+                let m = parseFloat(nearest.label.split('_')[1]);
                 let win = Math.floor(bet * m);
-                if(win > userMaxWin) win = Math.floor(bet * 0.2);
-                balance += win; updateUI(); showWin(win);
-                Composite.remove(engine.world, p.bodyB);
+
+                // Maxwin Limit Guard
+                if(win > maxWinLimit) win = Math.floor(bet * 0.2);
+
+                balance += win;
+                Composite.remove(engine.world, ball);
+                showScore(ball.position.x, win, m);
+                
+                // Kirim hasil ke server
                 await _supa.from('profiles').update({ saldo: balance }).eq('username', username);
             }
-        });
-    });
-
-    function showWin(v) {
-        const log = document.getElementById('win-log');
-        const d = document.createElement('div');
-        d.className = 'win-entry'; d.innerText = `+IDR ${v.toLocaleString()}`;
-        log.prepend(d);
-        if(log.children.length > 3) log.lastChild.remove();
+        }, 100);
     }
 
-    function updateUI() { document.getElementById('balance-val').innerText = `IDR ${balance.toLocaleString()}`; }
+    function showScore(x, amt, m) {
+        const el = document.createElement('div');
+        el.className = 'f-score';
+        el.style.left = x + 'px'; el.style.bottom = '100px';
+        el.style.color = m >= 1 ? 'var(--yellow)' : 'var(--pink)';
+        el.innerText = (m >= 1 ? "+" : "") + amt.toLocaleString();
+        document.getElementById('board-wrapper').appendChild(el);
+        setTimeout(() => el.remove(), 1000);
+    }
 
-    sync(); Render.run(render); Runner.run(Runner.create(), engine);
+    function changeBet(d) {
+        betIdx = Math.max(0, Math.min(BET_LIST.length - 1, betIdx + d));
+        document.getElementById('bet-display').innerText = BET_LIST[betIdx].toLocaleString();
+    }
+
+    function setMode(m) {
+        isTurbo = (m === 'turbo');
+        document.getElementById('btn-normal').classList.toggle('active', !isTurbo);
+        document.getElementById('btn-turbo').classList.toggle('active', isTurbo);
+    }
+
+    function toggleAuto() {
+        isAuto = !isAuto;
+        const btn = document.getElementById('btn-auto');
+        if(isAuto) {
+            btn.classList.add('auto-active');
+            autoTimer = setInterval(spawnBall, isTurbo ? 400 : 900);
+        } else stopAuto();
+    }
+
+    function stopAuto() {
+        isAuto = false; clearInterval(autoTimer);
+        document.getElementById('btn-auto').classList.remove('auto-active');
+    }
+
+    function handleAction() { if(isAuto) stopAuto(); else spawnBall(); }
+
+    window.onload = init;
 </script>
 </body>
 </html>
