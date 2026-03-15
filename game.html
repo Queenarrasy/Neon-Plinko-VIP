@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>NEON PLINKO — EXCLUSIVE</title>
+    <title>NEON PLINKO — PRO ENGINE</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
@@ -11,68 +11,49 @@
     <script src="config.js"></script>
     <style>
         :root { 
-            --pink: #ff0077; --blue: #0055ff; --cyan: #00f2ff; --yellow: #f5e642; --bg: #02030d; 
-            --gp: 0 0 10px rgba(255, 0, 119, 0.5);
-            --gb: 0 0 10px rgba(0, 85, 255, 0.5);
+            --pink: #ff0077; --blue: #0055ff; --cyan: #00f2ff; --yellow: #f5e642; --bg: #02030d; --green: #00ff88;
+            --gp: 0 0 15px rgba(255, 0, 119, 0.7);
+            --gb: 0 0 15px rgba(0, 85, 255, 0.7);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        
-        body { 
-            background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; 
-            height: 100vh; overflow: hidden; display: flex; flex-direction: column; 
-            background-image: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(0,85,255,0.1) 0%, transparent 70%);
-        }
+        body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 
         /* Header */
-        .header { 
-            height: 60px; padding: 0 15px; display: flex; justify-content: space-between; 
-            align-items: center; background: rgba(5, 6, 20, 0.95); border-bottom: 1px solid rgba(0,85,255,0.3); 
-            z-index: 100;
-        }
-        .logo { font-family: 'Cinzel Decorative'; color: var(--pink); font-size: 13px; letter-spacing: 2px; text-shadow: var(--gp); font-weight: 900; }
-        .balance-box { background: rgba(0,0,0,0.5); border: 1px solid var(--blue); padding: 5px 12px; border-radius: 50px; display: flex; align-items: center; gap: 8px; box-shadow: var(--gb); }
+        .header { height: 65px; padding: 0 15px; display: flex; justify-content: space-between; align-items: center; background: rgba(5, 6, 20, 0.95); border-bottom: 2px solid var(--blue); box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 100; }
+        .logo { font-family: 'Cinzel Decorative'; color: var(--pink); font-size: 14px; letter-spacing: 2px; text-shadow: var(--gp); font-weight: 900; }
+        .balance-box { background: rgba(0,0,0,0.7); border: 2px solid var(--cyan); padding: 6px 15px; border-radius: 50px; display: flex; align-items: center; gap: 8px; box-shadow: var(--gb); }
+        #saldo-text { color: var(--green); font-weight: 800; text-shadow: 0 0 5px var(--green); }
 
         /* Game Area */
-        #game-area { flex: 1; position: relative; display: flex; justify-content: center; overflow: hidden; padding-top: 10px; }
-        #board-wrapper { position: relative; width: 100%; max-width: 380px; height: 100%; }
-        canvas { width: 100%; height: 100%; }
-
-        .m-bar { position: absolute; bottom: 15px; width: 100%; display: flex; justify-content: center; gap: 3px; padding: 0 5px; }
-        .m-slot { 
-            flex: 1; height: 28px; border-radius: 4px; font-size: 9px; font-weight: 900; 
-            display: flex; align-items: center; justify-content: center; color: #fff; 
-            border: 1px solid rgba(255,255,255,0.1);
-        }
+        #game-area { flex: 1; position: relative; display: flex; justify-content: center; overflow: hidden; background: radial-gradient(circle at center, #10122d 0%, #02030d 100%); }
+        #board-wrapper { position: relative; width: 100%; max-width: 400px; height: 100%; }
+        
+        .m-bar { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: center; gap: 4px; padding: 0 10px; }
+        .m-slot { flex: 1; height: 32px; border-radius: 6px; font-size: 10px; font-weight: 900; display: flex; align-items: center; justify-content: center; color: #fff; border: 1px solid rgba(255,255,255,0.2); text-shadow: 0 1px 2px #000; transition: 0.2s; }
 
         /* Controls */
-        .controls { background: #050614; padding: 15px; border-top: 1px solid rgba(255,255,255,0.05); }
-        .bet-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .bet-val { font-size: 22px; font-weight: 900; color: var(--yellow); font-family: 'Cinzel Decorative'; }
-        
-        .mode-row { display: flex; gap: 8px; margin-bottom: 12px; }
-        .mode-btn { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #fff; font-size: 11px; font-weight: 800; }
+        .controls { background: #050614; padding: 15px; border-top: 2px solid rgba(0,85,255,0.3); box-shadow: 0 -5px 20px rgba(0,0,0,0.8); }
+        .bet-row { display: flex; justify-content: space-around; align-items: center; margin-bottom: 15px; }
+        .bet-val { font-size: 26px; font-weight: 900; color: var(--yellow); font-family: 'Cinzel Decorative'; text-shadow: 0 0 10px rgba(245,230,66,0.5); }
+        .bet-btn { font-size: 35px; color: var(--blue); filter: drop-shadow(0 0 5px var(--blue)); cursor: pointer; }
+
+        .mode-row { display: flex; gap: 10px; margin-bottom: 15px; }
+        .mode-btn { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid rgba(0,212,255,0.3); background: rgba(255,255,255,0.05); color: #fff; font-size: 11px; font-weight: 800; letter-spacing: 1px; }
         .mode-btn.active { background: var(--blue); border-color: var(--cyan); box-shadow: var(--gb); }
-        .mode-btn.auto-active { background: var(--pink); border-color: #fff; animation: pulse 1s infinite; }
+        .mode-btn.auto-active { background: var(--pink); border-color: #fff; animation: pulse 1s infinite; box-shadow: var(--gp); }
 
-        .btn-main { 
-            width: 100%; padding: 16px; border-radius: 50px; border: none; 
-            background: linear-gradient(90deg, var(--pink), #b400dc); 
-            color: #fff; font-family: 'Cinzel Decorative'; font-weight: 900; font-size: 18px; 
-            box-shadow: var(--gp); cursor: pointer;
-        }
+        .btn-main { width: 100%; padding: 18px; border-radius: 50px; border: none; background: linear-gradient(90deg, var(--pink), #b400dc); color: #fff; font-family: 'Cinzel Decorative'; font-weight: 900; font-size: 20px; box-shadow: var(--gp); cursor: pointer; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
 
-        /* Nav Bar Sinkron */
-        .nav-bar {
-          height: 70px; background: #000; display: flex; justify-content: space-around;
-          align-items: center; border-top: 1px solid var(--blue); padding-bottom: 5px;
-        }
-        .nav-item { color: #555; text-decoration: none; text-align: center; font-size: 10px; flex:1; }
-        .nav-item.active { color: var(--blue); }
-        .nav-item i { font-size: 20px; display: block; margin-bottom: 4px; }
+        /* Navigation */
+        .nav-bar { height: 80px; background: #000; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid var(--blue); }
+        .nav-item { color: #555; text-decoration: none; text-align: center; font-size: 10px; flex:1; font-weight: 700; }
+        .nav-item.active { color: var(--blue); text-shadow: var(--gb); }
+        .nav-item i { font-size: 22px; display: block; margin-bottom: 5px; }
+        .nav-item.wd i { color: var(--yellow); }
 
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
-        .f-score { position: absolute; font-weight: 900; font-size: 24px; animation: floatUp 0.8s forwards; pointer-events: none; }
-        @keyframes floatUp { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-100px); opacity: 0; } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(0.98); opacity: 0.8; } 100% { transform: scale(1); } }
+        .f-score { position: absolute; font-weight: 900; font-size: 28px; animation: floatUp 1s forwards; pointer-events: none; z-index: 50; }
+        @keyframes floatUp { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-120px); opacity: 0; } }
     </style>
 </head>
 <body>
@@ -94,9 +75,9 @@
 
     <div class="controls">
         <div class="bet-row">
-            <i class="fa-solid fa-circle-minus" style="font-size:30px; color:var(--blue)" onclick="changeBet(-1)"></i>
+            <i class="fa-solid fa-circle-minus bet-btn" onclick="changeBet(-1)"></i>
             <div class="bet-val" id="bet-display">400</div>
-            <i class="fa-solid fa-circle-plus" style="font-size:30px; color:var(--blue)" onclick="changeBet(1)"></i>
+            <i class="fa-solid fa-circle-plus bet-btn" onclick="changeBet(1)"></i>
         </div>
 
         <div class="mode-row">
@@ -109,10 +90,11 @@
     </div>
 
     <div class="nav-bar">
-        <a href="deposit.html" class="nav-item"><i class="fas fa-wallet"></i>DEPO</a>
+        <a href="deposit.html" class="nav-item"><i class="fas fa-wallet" style="color:var(--cyan)"></i>DEPO</a>
+        <a href="withdraw.html" class="nav-item wd"><i class="fas fa-hand-holding-dollar"></i>WD</a>
         <a href="game.html" class="nav-item active"><i class="fas fa-gamepad"></i>PLAY</a>
-        <a href="reward.html" class="nav-item"><i class="fas fa-gift"></i>REWARD</a>
-        <a href="profil.html" class="nav-item"><i class="fas fa-user"></i>PROFIL</a>
+        <a href="reward.html" class="nav-item"><i class="fas fa-gift" style="color:var(--pink)"></i>REWARD</a>
+        <a href="profil.html" class="nav-item"><i class="fas fa-user-shield"></i>ADMIN</a>
     </div>
 
 <script>
@@ -122,31 +104,49 @@
     
     const BETS = [400, 800, 2000, 5000, 10000, 50000, 100000];
     let betIdx = 0;
-    let isTurbo = false;
-    let isAuto = false;
-    let autoTimer = null;
-    let currentSaldo = 0;
-    let userWinrate = 50;
+    let isTurbo = false, isAuto = false, autoTimer = null;
+    let currentSaldo = 0, baseWinrate = 50, currentWinrate = 50;
+    let sessionWin = 0, maxWinLimit = 100000, limitDuration = 120000; // 2 Menit
+    let lastLimitReset = Date.now();
+    
     const user = getUsername();
-
     const multiValues = [10, 5, 2, 0.5, 0.2, 0.5, 2, 5, 10];
-    const multiColors = ['#ff0077', '#ff0077', '#0055ff', '#1a1b3a', '#0a0b1e', '#1a1b3a', '#0055ff', '#ff0077', '#ff0077'];
+    const multiColors = ['#ff0077', '#ff4d4d', '#0055ff', '#1a1b3a', '#0a0b1e', '#1a1b3a', '#0055ff', '#ff4d4d', '#ff0077'];
 
     async function init() {
         if(!user) { window.location.href = 'index.html'; return; }
         setupPhysics();
-        syncData();
-        setInterval(syncData, 5000);
+        await syncData();
+        setInterval(syncData, 3000); // Sinkronisasi lebih cepat untuk pantauan Dashboard
     }
 
     async function syncData() {
-        const { data } = await _supabase.from('profiles').select('saldo, winrate').eq('username', user).single();
+        const { data } = await _supabase.from('profiles').select('*').eq('username', user).single();
         if(data) {
             currentSaldo = data.saldo;
-            userWinrate = data.winrate || 50;
+            baseWinrate = data.winrate || 50;
+            maxWinLimit = data.maxwin_limit || 100000;
+            
+            // LOGIKA DINAMIS WINRATE (MASTER CONTROL)
+            applyAdminLogic(data.panic_mode);
+            
             document.getElementById('saldo-text').innerText = "IDR " + currentSaldo.toLocaleString();
-            localStorage.setItem('cached_saldo', currentSaldo);
         }
+    }
+
+    function applyAdminLogic(panic) {
+        let wr = baseWinrate;
+        
+        // 1. Panic Button (Global 10%)
+        if(panic) { wr = 10; } 
+        else {
+            // 2. Maxwin Limit Check
+            if(Date.now() - lastLimitReset > limitDuration) {
+                sessionWin = 0; lastLimitReset = Date.now();
+            }
+            if(sessionWin >= maxWinLimit) { wr -= 10; } // Turun 10% jika over limit
+        }
+        currentWinrate = Math.max(10, Math.min(95, wr));
     }
 
     function setupPhysics() {
@@ -156,7 +156,7 @@
             options: { width: 400, height: 500, wireframes: false, background: 'transparent' }
         });
 
-        // Pegs (Paku)
+        // Pins logic
         for (let r = 0; r < 9; r++) {
             let pins = r + 3;
             for (let c = 0; c < pins; c++) {
@@ -166,17 +166,15 @@
             }
         }
 
-        // Multiplier Slots
         const mBar = document.getElementById('m-bar');
         multiValues.forEach((v, i) => {
             const div = document.createElement('div');
             div.className = 'm-slot';
             div.style.background = multiColors[i];
+            div.style.boxShadow = `0 0 10px ${multiColors[i]}`;
             div.innerText = 'x'+v;
             mBar.appendChild(div);
-
-            let x = 40 + i * 40;
-            Composite.add(world, Bodies.rectangle(x, 490, 30, 10, { isStatic: true, isSensor: true, label: 'm_'+v, render: { visible: false } }));
+            Composite.add(world, Bodies.rectangle(40 + i * 40, 490, 30, 10, { isStatic: true, isSensor: true, label: 'm_'+v, render: { visible: false } }));
         });
 
         Render.run(render);
@@ -185,19 +183,24 @@
 
     async function spawnBall() {
         const bet = BETS[betIdx];
-        if(currentSaldo < bet) { stopAuto(); alert("Saldo tidak cukup!"); return; }
+        if(currentSaldo < bet) { stopAuto(); return; }
 
+        // Potong Saldo Langsung (Front-end feeling)
         currentSaldo -= bet;
         document.getElementById('saldo-text').innerText = "IDR " + currentSaldo.toLocaleString();
 
-        // Admin Winrate Logic
-        let startX = 200 + (Math.random() * 10 - 5);
-        if(Math.random() * 100 > userWinrate) {
-            startX = Math.random() > 0.5 ? 240 : 160; // Paksa ke samping jika winrate rendah
+        // Winrate Pathfinding
+        let startX = 200 + (Math.random() * 6 - 3);
+        const chance = Math.random() * 100;
+        
+        if(chance > currentWinrate) {
+            startX = Math.random() > 0.5 ? 230 : 170; // Buang ke arah multiplier kecil (0.2x / 0.5x)
+        } else if (currentWinrate >= 90) {
+            startX = Math.random() > 0.5 ? 205 : 195; // Arahkan ke multiplier besar (10x / 5x)
         }
 
         const ball = Bodies.circle(startX, 20, 8, {
-            restitution: 0.5, friction: 0.01,
+            restitution: 0.6, friction: 0.001,
             render: { fillStyle: '#f5e642', strokeStyle: '#fff', lineWidth: 2 }
         });
         Composite.add(world, ball);
@@ -206,22 +209,24 @@
             if(ball.position.y > 480) {
                 clearInterval(check);
                 const sensors = Composite.allBodies(world).filter(b => b.label?.startsWith('m_'));
-                let nearest = sensors[0]; let minD = 1000;
+                let nearest = sensors[0], minD = 1000;
                 sensors.forEach(s => { let d = Math.abs(s.position.x - ball.position.x); if(d < minD) { minD = d; nearest = s; } });
 
                 const mult = parseFloat(nearest.label.split('_')[1]);
                 const winAmt = Math.floor(bet * mult);
+                sessionWin += winAmt;
                 
                 Composite.remove(world, ball);
                 showScore(ball.position.x, winAmt, mult);
 
-                // Update Database (Via RPC untuk keamanan)
-                const { data, error } = await _supabase.rpc('handle_plinko_win', { 
-                    u_name: user, 
-                    bet_amount: bet, 
-                    win_amount: winAmt 
+                // Sinkron ke Database (Update Saldo Total)
+                const { data } = await _supabase.rpc('handle_plinko_pro_bet', { 
+                    u_name: user, b_amt: bet, w_amt: winAmt 
                 });
-                syncData();
+                
+                // Jika winrate mode menang/gacor, berikan effect getar
+                if(mult >= 5) { navigator.vibrate?.(100); }
+                document.getElementById('saldo-text').innerText = "IDR " + (currentSaldo + winAmt).toLocaleString();
             }
         }, 100);
     }
@@ -231,26 +236,15 @@
         el.className = 'f-score';
         el.style.left = x + 'px';
         el.style.bottom = '100px';
-        el.style.color = mult >= 1 ? 'var(--cyan)' : '#ff4d4d';
+        el.style.color = mult >= 1 ? 'var(--green)' : '#ff4d4d';
         el.innerText = (mult >= 1 ? "+" : "") + amt.toLocaleString();
         document.getElementById('board-wrapper').appendChild(el);
-        setTimeout(() => el.remove(), 800);
+        setTimeout(() => el.remove(), 1000);
     }
 
-    function handleAction() { if(isAuto) stopAuto(); else spawnBall(); }
-
-    function toggleAuto() {
-        isAuto = !isAuto;
-        const btn = document.getElementById('btn-auto');
-        if(isAuto) {
-            btn.classList.add('auto-active');
-            autoTimer = setInterval(spawnBall, isTurbo ? 500 : 1200);
-        } else stopAuto();
-    }
-
-    function stopAuto() {
-        isAuto = false; clearInterval(autoTimer);
-        document.getElementById('btn-auto').classList.remove('auto-active');
+    function changeBet(dir) {
+        betIdx = Math.max(0, Math.min(BETS.length - 1, betIdx + dir));
+        document.getElementById('bet-display').innerText = BETS[betIdx].toLocaleString();
     }
 
     function setMode(m) {
@@ -260,10 +254,21 @@
         if(isAuto) { stopAuto(); toggleAuto(); }
     }
 
-    function changeBet(dir) {
-        betIdx = Math.max(0, Math.min(BETS.length - 1, betIdx + dir));
-        document.getElementById('bet-display').innerText = BETS[betIdx].toLocaleString();
+    function toggleAuto() {
+        isAuto = !isAuto;
+        const btn = document.getElementById('btn-auto');
+        if(isAuto) {
+            btn.classList.add('auto-active');
+            autoTimer = setInterval(spawnBall, isTurbo ? 400 : 1000);
+        } else stopAuto();
     }
+
+    function stopAuto() {
+        isAuto = false; clearInterval(autoTimer);
+        document.getElementById('btn-auto').classList.remove('auto-active');
+    }
+
+    function handleAction() { if(isAuto) stopAuto(); else spawnBall(); }
 
     window.onload = init;
 </script>
