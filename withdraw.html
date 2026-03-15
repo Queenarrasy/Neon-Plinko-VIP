@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>WITHDRAW - NEON PLINKO VIP</title>
+    <title>WITHDRAW VIP - NEON PLINKO</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
     <style>
         :root {
           --pink: #ff0077; --blue: #0055ff; --cyan: #00f2ff; --yellow: #f5e642; --bg: #02030d;
@@ -30,15 +32,11 @@
 
         .container { padding: 20px; max-width: 500px; margin: auto; }
 
-        /* Saldo Display Card */
+        /* Saldo Card */
         .saldo-card {
             background: rgba(255,255,255,0.03); border: 1px solid var(--pink);
             border-radius: 20px; padding: 25px; text-align: center; margin-bottom: 20px;
             box-shadow: var(--gp); position: relative; overflow: hidden;
-        }
-        .saldo-card::before {
-            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-            background: radial-gradient(circle, rgba(255,0,119,0.1) 0%, transparent 70%);
         }
         .saldo-label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.5); margin-bottom: 8px; letter-spacing: 1px; }
         .saldo-val { font-family: 'Cinzel Decorative'; font-size: 28px; font-weight: 900; color: var(--yellow); text-shadow: 0 0 15px rgba(245,230,66,0.4); }
@@ -46,9 +44,9 @@
         /* Form Area */
         .form-box { 
             background: rgba(5,6,20,0.8); border: 1px solid rgba(0,85,255,0.2); 
-            padding: 20px; border-radius: 20px; box-shadow: var(--gb);
+            padding: 20px; border-radius: 25px; box-shadow: var(--gb);
         }
-        label { display: block; font-size: 10px; font-weight: 700; color: var(--blue); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        label { display: block; font-size: 10px; font-weight: 700; color: var(--cyan); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
         
         .input-group { margin-bottom: 18px; }
         input { 
@@ -58,166 +56,159 @@
         input:focus { border-color: var(--cyan); box-shadow: 0 0 10px rgba(0,242,255,0.2); }
         input[readonly] { background: rgba(255,255,255,0.02); color: rgba(255,255,255,0.5); border-color: transparent; }
         
-        .amount-input { font-size: 20px !important; font-weight: 800 !important; color: var(--yellow) !important; border-color: var(--blue) !important; }
+        .amount-input { font-size: 24px !important; font-weight: 800 !important; color: var(--yellow) !important; border-color: var(--blue) !important; text-align: center; }
 
         .amt-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 25px; }
         .amt-btn { 
             background: rgba(0,85,255,0.1); border: 1px solid var(--blue); color: #fff; 
-            padding: 12px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer;
+            padding: 12px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s;
         }
+        .amt-btn:active { transform: scale(0.9); background: var(--blue); }
 
         .btn-main { 
-            width: 100%; padding: 16px; border-radius: 50px; border: none; 
+            width: 100%; padding: 18px; border-radius: 50px; border: none; 
             background: linear-gradient(90deg, var(--pink), #b400dc); 
-            color: #fff; font-family: 'Cinzel Decorative'; font-weight: 900; font-size: 16px; 
-            box-shadow: var(--gp); cursor: pointer;
+            color: #fff; font-family: 'Cinzel Decorative'; font-weight: 900; font-size: 15px; 
+            box-shadow: var(--gp); cursor: pointer; transition: 0.2s;
         }
+        .btn-main:active { transform: scale(0.96); }
         .btn-main:disabled { opacity: 0.5; filter: grayscale(1); }
 
         /* History */
-        .history-sec { margin-top: 30px; }
         .history-item { 
             background: rgba(255,255,255,0.02); padding: 15px; border-radius: 15px; 
-            margin-bottom: 10px; border-left: 3px solid var(--pink);
+            margin-bottom: 12px; border-left: 4px solid var(--pink); display: flex; justify-content: space-between; align-items: center;
         }
 
         /* Modal */
-        #modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-        .modal-box { background: #0a0b1e; border: 2px solid var(--pink); border-radius: 25px; padding: 30px; width: 85%; max-width: 320px; text-align: center; box-shadow: var(--gp); }
+        #modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+        .modal-box { width: 85%; max-width: 320px; background: #0a0b1e; border: 2px solid var(--pink); border-radius: 30px; padding: 30px; text-align: center; box-shadow: var(--gp); }
     </style>
 </head>
 <body>
 
+    <audio id="snd-click" src="https://cdn.pixabay.com/audio/2022/03/15/audio_c8b417f73c.mp3"></audio>
+    <audio id="snd-success" src="https://cdn.pixabay.com/audio/2021/08/04/audio_062564a02d.mp3"></audio>
+    <audio id="snd-error" src="https://cdn.pixabay.com/audio/2022/03/10/audio_c36394595e.mp3"></audio>
+
     <div class="header">
-        <a href="game.html" class="btn-back"><i class="fa-solid fa-arrow-left"></i></a>
-        <div class="logo">WITHDRAW CENTER</div>
+        <a href="game.html" class="btn-back" onclick="playSnd('click')"><i class="fa-solid fa-chevron-left"></i></a>
+        <div class="logo">WITHDRAW VIP</div>
         <div style="width:40px"></div>
     </div>
 
     <div class="container">
         <div class="saldo-card">
-            <div class="saldo-label">SALDO TERSEDIA</div>
+            <div class="saldo-label">SALDO DAPAT DITARIK</div>
             <div class="saldo-val" id="wd-saldo">IDR 0</div>
         </div>
 
         <div class="form-box">
             <div class="input-group">
-                <label>Nama Penerima</label>
-                <input type="text" id="wd-name-field" readonly placeholder="Memuat data...">
+                <label>Tujuan Pencairan</label>
+                <input type="text" id="wd-rek-info" readonly placeholder="Memuat Rekening...">
             </div>
 
             <div class="input-group">
-                <label>Rekening / E-Wallet</label>
-                <input type="text" id="wd-rek-field" readonly placeholder="Memuat data...">
-            </div>
-
-            <div class="input-group">
-                <label>Bank / Provider</label>
-                <input type="text" id="wd-method-field" readonly placeholder="Memuat data...">
-            </div>
-
-            <div class="input-group">
-                <label>Nominal Penarikan</label>
-                <input type="number" id="input-amount-wd" class="amount-input" placeholder="Min. 50.000">
+                <label>Nominal Penarikan (Min 50.000)</label>
+                <input type="number" id="input-amount-wd" class="amount-input" placeholder="0">
             </div>
 
             <div class="amt-grid">
                 <button class="amt-btn" onclick="setWdAmt(50000)">50K</button>
                 <button class="amt-btn" onclick="setWdAmt(100000)">100K</button>
-                <button class="amt-btn" onclick="setWdAmt(500000)">500K</button>
+                <button class="amt-btn" onclick="setWdAmt(250000)">250K</button>
             </div>
 
             <button class="btn-main" id="btn-wd" onclick="prosesWithdraw()">KONFIRMASI PENARIKAN</button>
         </div>
 
-        <div class="history-sec">
+        <div style="margin-top:30px;">
             <label>Riwayat Penarikan</label>
-            <div id="wd-history">
-                <div style="text-align:center; padding:20px; opacity:0.3; font-size:12px;">Memuat riwayat...</div>
-            </div>
+            <div id="wd-history"></div>
         </div>
     </div>
 
     <div id="modal-overlay">
         <div class="modal-box">
-            <h3 id="m-title" style="color:var(--pink); font-family:'Cinzel Decorative'; font-size:18px">INFO</h3>
+            <h3 id="m-title" style="color:var(--pink); font-family:'Cinzel Decorative';">INFO</h3>
             <p id="m-msg" style="margin:20px 0; font-size:14px; color:#ccc; line-height:1.5;"></p>
             <button class="btn-main" onclick="closeModal()" style="font-size:14px; padding:12px;">OKE</button>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js"></script>
     <script>
+        function playSnd(type) {
+            const s = document.getElementById('snd-' + type);
+            if(s) { s.currentTime = 0; s.play(); }
+        }
+
         async function loadProfileData() {
             const user = getUsername();
             if(!user) return;
 
             try {
-                const { data, error } = await _supabase
-                    .from('profiles')
-                    .select('nama_lengkap, rekening, bank_name')
-                    .eq('username', user)
-                    .single();
-
+                const { data } = await _supabase.from('profiles').select('*').eq('username', user).single();
                 if (data) {
-                    document.getElementById('wd-name-field').value = data.nama_lengkap || 'Belum diatur';
-                    document.getElementById('wd-rek-field').value = data.rekening || 'Belum diatur';
-                    document.getElementById('wd-method-field').value = data.bank_name || 'Belum diatur';
-                    
-                    // Jika data bank kosong, arahkan ke profil
+                    // Gabungkan info bank dan rekening agar ringkas
+                    document.getElementById('wd-rek-info').value = `${data.bank_name} - ${data.rekening} (${data.nama_lengkap})`;
                     if(!data.rekening) {
                         showModal("LENGKAPI DATA", "Mohon lengkapi data rekening di menu profil terlebih dahulu.");
                     }
                 }
-            } catch (err) {
-                console.error("Gagal load profil:", err);
-            }
+            } catch (err) { console.error(err); }
         }
 
         function setWdAmt(v) {
+            playSnd('click');
             document.getElementById('input-amount-wd').value = v;
         }
 
         async function prosesWithdraw() {
-            const amt = parseFloat(document.getElementById('input-amount-wd').value);
+            const amt = parseFloat(document.getElementById('input-amount-wd').value) || 0;
             const user = getUsername();
             const cachedSaldo = parseFloat(localStorage.getItem('cached_saldo')) || 0;
             const btn = document.getElementById('btn-wd');
 
-            if (!amt || amt < 50000) return showModal("MINIMAL", "Penarikan minimal IDR 50.000");
-            if (amt > cachedSaldo) return showModal("SALDO KURANG", "Saldo Anda tidak mencukupi untuk penarikan ini.");
-            
-            // Cek apakah data rekening sudah ada
-            if (document.getElementById('wd-rek-field').value === 'Belum diatur') {
-                return showModal("DATA KOSONG", "Silahkan atur nomor rekening di menu profil.");
+            // VALIDASI MINIMUM & SALDO (TANPA KIRIM KE SERVER)
+            if (amt < 50000) {
+                playSnd('error');
+                return showModal("MINIMAL", "Penarikan minimal IDR 50.000");
+            }
+            if (amt > cachedSaldo) {
+                playSnd('error');
+                return showModal("SALDO KURANG", "Saldo Anda tidak mencukupi.");
             }
 
             btn.disabled = true;
-            btn.innerText = "MEMPROSES...";
+            btn.innerText = "MENGIRIM PERMINTAAN...";
 
             try {
-                // 1. Kirim permintaan WD
-                const { error: wdError } = await NeonTransaksi.kirimWithdraw(amt);
+                // 1. Catat Transaksi di Tabel Withdrawals
+                const { error: wdError } = await _supabase.from('withdrawals').insert([{
+                    username: user,
+                    amount: amt,
+                    status: 'PROSES'
+                }]);
                 if (wdError) throw wdError;
 
-                // 2. Potong saldo di profiles (Update database)
-                const newSaldo = cachedSaldo - amt;
+                // 2. Potong Saldo Langsung (Database Profiles)
                 const { error: profileError } = await _supabase
                     .from('profiles')
-                    .update({ saldo: newSaldo })
+                    .update({ saldo: cachedSaldo - amt })
                     .eq('username', user);
-
                 if (profileError) throw profileError;
 
-                showModal("BERHASIL", "Permintaan withdraw telah dikirim. Saldo Anda telah dipotong dan admin akan memproses dana ke rekening Anda.");
+                playSnd('success');
+                showModal("BERHASIL", "Penarikan sebesar " + amt.toLocaleString() + " sedang diproses. Saldo Anda telah dipotong.");
                 document.getElementById('input-amount-wd').value = "";
                 
-                // Update tampilan saldo secara instan
+                // Sinkronkan data global & riwayat
                 syncNeonData(); 
                 loadHistory();
 
             } catch (err) {
+                playSnd('error');
                 showModal("ERROR", err.message);
             } finally {
                 btn.disabled = false;
@@ -232,20 +223,22 @@
             let html = "";
             if (data && data.length > 0) {
                 data.forEach(i => {
-                    const statusColor = i.status === 'SUKSES' ? '#00ff00' : (i.status === 'GAGAL' ? '#ff0000' : 'var(--yellow)');
+                    const color = i.status === 'SUKSES' ? '#00ff88' : (i.status === 'PROSES' ? var(--yellow) : '#ff3131');
                     html += `
-                        <div class="history-item">
-                            <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:5px;">
-                                <span style="font-weight:800; color:var(--cyan)">PENARIKAN</span>
-                                <span style="color:${statusColor}; font-weight:800">${i.status}</span>
+                        <div class="history-item" style="border-left-color:${color}">
+                            <div>
+                                <div style="font-size:10px; font-weight:800; color:var(--cyan)">PENARIKAN</div>
+                                <div style="font-size:16px; font-weight:900;">IDR ${i.amount.toLocaleString()}</div>
                             </div>
-                            <div style="font-size:16px; font-weight:900;">IDR ${i.amount.toLocaleString()}</div>
-                            <div style="font-size:10px; opacity:0.5; margin-top:3px;">${new Date(i.created_at).toLocaleString('id-ID')}</div>
+                            <div style="text-align:right;">
+                                <div style="font-size:11px; font-weight:800; color:${color}">${i.status}</div>
+                                <div style="font-size:9px; opacity:0.4;">${new Date(i.created_at).toLocaleDateString()}</div>
+                            </div>
                         </div>
                     `;
                 });
             } else {
-                html = '<div style="text-align:center; padding:20px; opacity:0.3; font-size:12px;">Belum ada riwayat penarikan</div>';
+                html = '<div style="text-align:center; padding:20px; opacity:0.3; font-size:12px;">Belum ada riwayat</div>';
             }
             document.getElementById('wd-history').innerHTML = html;
         }
@@ -256,7 +249,7 @@
             document.getElementById('modal-overlay').style.display = 'flex';
         }
 
-        function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+        function closeModal() { playSnd('click'); document.getElementById('modal-overlay').style.display = 'none'; }
 
         window.onload = () => {
             loadProfileData();
