@@ -10,7 +10,7 @@
     <script src="config.js"></script>
     
     <style>
-        :root { --pink: #ff0077; --blue: #00d4ff; --yellow: #fbff00; --bg: #02030d; }
+        :root { --pink: #ff0077; --blue: #00d4ff; --yellow: #fbff00; --bg: #02030d; --gp: 0 0 15px rgba(255, 0, 119, 0.4); }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         
         body { 
@@ -43,12 +43,14 @@
 
         .input-group { margin-bottom: 12px; position: relative; }
         .input-group i.main-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--blue); font-size: 16px; }
+        .input-group i.eye-icon { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.3); font-size: 16px; cursor: pointer; padding: 5px; }
         
         input, select { 
-            width: 100%; padding: 14px 15px 14px 45px; background: rgba(0,0,0,0.6); 
+            width: 100%; padding: 14px 40px 14px 45px; background: rgba(0,0,0,0.6); 
             border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; color: #fff;
-            outline: none; font-family: 'Outfit'; font-size: 14px;
+            outline: none; font-family: 'Outfit'; font-size: 14px; transition: 0.3s;
         }
+        input:focus { border-color: var(--blue); box-shadow: 0 0 10px rgba(0, 212, 255, 0.2); }
 
         .btn-auth {
             width: 100%; padding: 16px; border-radius: 50px; border: none;
@@ -56,16 +58,22 @@
             color: #fff; font-family: 'Cinzel Decorative'; font-weight: 900;
             font-size: 15px; cursor: pointer; margin-top: 10px;
             box-shadow: 0 6px 0 #005f78, 0 10px 20px rgba(0, 212, 255, 0.3);
+            transition: 0.2s;
         }
-        .btn-auth:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-auth:active { transform: translateY(4px); box-shadow: 0 2px 0 #005f78; }
+        .btn-auth:disabled { opacity: 0.6; cursor: not-allowed; filter: grayscale(1); }
 
-        /* Alert System */
-        #custom-alert { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
-        .alert-box { width: 80%; max-width: 300px; background: #0a0b1a; border: 2px solid var(--blue); border-radius: 20px; padding: 25px; text-align: center; }
-        .alert-btn { background: var(--blue); border: none; color: white; padding: 8px 25px; border-radius: 50px; margin-top: 15px; font-weight: 800; cursor: pointer; }
+        /* Custom Alert Theme */
+        #custom-alert { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+        .alert-box { width: 85%; max-width: 320px; background: #0a0b1e; border: 2px solid var(--blue); border-radius: 25px; padding: 30px; text-align: center; box-shadow: 0 0 30px rgba(0, 212, 255, 0.2); }
+        .alert-btn { width: 100%; background: var(--blue); border: none; color: #000; padding: 12px; border-radius: 50px; margin-top: 20px; font-weight: 900; cursor: pointer; font-family: 'Outfit'; }
+
+        .pass-hint { font-size: 10px; color: rgba(255,255,255,0.4); margin: -8px 0 12px 10px; }
     </style>
 </head>
 <body>
+
+<audio id="snd-click" src="https://cdn.pixabay.com/audio/2022/03/15/audio_c8b417f73c.mp3"></audio>
 
 <div class="auth-card">
     <div class="logo-text">NEON PLINKO</div>
@@ -78,15 +86,17 @@
     <div id="auth-form">
         <div class="input-group">
             <i class="fa-solid fa-user main-icon"></i>
-            <input type="text" id="user" placeholder="Username">
+            <input type="text" id="user" placeholder="Username" autocomplete="off">
         </div>
 
         <div class="input-group">
             <i class="fa-solid fa-lock main-icon"></i>
             <input type="password" id="pass" placeholder="Password">
+            <i class="fa-solid fa-eye eye-icon" id="togglePass" onclick="togglePassword()"></i>
         </div>
         
         <div id="extra-fields" style="display:none">
+            <p class="pass-hint">* Min 6 Karakter (Wajib Huruf & Angka)</p>
             <div class="input-group">
                 <i class="fa-solid fa-id-card main-icon"></i>
                 <input type="text" id="full_name" placeholder="Nama Sesuai Rekening">
@@ -115,23 +125,42 @@
 
         <button class="btn-auth" id="main-btn" onclick="processAuth()">MASUK SISTEM</button>
         
-        <a href="https://wa.me/6289510249551" style="display:block; text-align:center; margin-top:15px; color:#25D366; text-decoration:none; font-size:12px;">
-            <i class="fa-brands fa-whatsapp"></i> Hubungi Admin
+        <a href="https://api.whatsapp.com/send?phone=6289510249551&text=Halo%20Admin%20Neon%20Plinko,%20Saya%20butuh%20bantuan." target="_blank" style="display:block; text-align:center; margin-top:20px; color:#25D366; text-decoration:none; font-size:13px; font-weight: 700;">
+            <i class="fa-brands fa-whatsapp"></i> HUBUNGI ADMIN VIP
         </a>
     </div>
 </div>
 
 <div id="custom-alert">
     <div class="alert-box">
-        <div id="a-msg" style="font-size: 14px; margin-bottom: 10px;"></div>
-        <button class="alert-btn" onclick="closeAlert()">OKE</button>
+        <i class="fa-solid fa-circle-exclamation" style="font-size: 40px; color: var(--pink); margin-bottom: 15px; display: block;"></i>
+        <div id="a-msg" style="font-size: 14px; line-height: 1.5; color: #fff;"></div>
+        <button class="alert-btn" onclick="closeAlert()">MENGERTI</button>
     </div>
 </div>
 
 <script>
     let mode = 'login';
 
+    function playSnd() {
+        const s = document.getElementById('snd-click');
+        if(s) { s.currentTime = 0; s.play(); }
+    }
+
+    function togglePassword() {
+        const p = document.getElementById('pass');
+        const icon = document.getElementById('togglePass');
+        if (p.type === "password") {
+            p.type = "text";
+            icon.classList.replace('fa-eye', 'fa-eye-slash');
+        } else {
+            p.type = "password";
+            icon.classList.replace('fa-eye-slash', 'fa-eye');
+        }
+    }
+
     function switchTab(t) {
+        playSnd();
         mode = t;
         document.getElementById('tab-login').classList.toggle('active', t === 'login');
         document.getElementById('tab-daftar').classList.toggle('active', t === 'daftar');
@@ -144,17 +173,23 @@
         document.getElementById('custom-alert').style.display = 'flex';
     }
 
-    function closeAlert() { document.getElementById('custom-alert').style.display = 'none'; }
+    function closeAlert() { playSnd(); document.getElementById('custom-alert').style.display = 'none'; }
+
+    // Logic Validasi Password: Min 6 karakter, harus ada huruf DAN angka
+    function validatePassword(p) {
+        const regex = /^(?=.*[a-zA-Z])(?=.*[0-9]).{6,}$/;
+        return regex.test(p);
+    }
 
     async function processAuth() {
-        // Menggunakan _supabase dari config.js
+        playSnd();
         const username = document.getElementById('user').value.toLowerCase().trim();
         const password = document.getElementById('pass').value.trim();
         const btn = document.getElementById('main-btn');
 
-        if(!username || !password) return showAlert("Isi Username dan Password!");
+        if(!username || !password) return showAlert("Harap isi semua kolom!");
 
-        btn.innerText = "PROSES...";
+        btn.innerText = "SINKRONISASI...";
         btn.disabled = true;
 
         if(mode === 'login') {
@@ -166,17 +201,15 @@
                 .single();
 
             if(data) {
-                // Simpan ke 3 key agar sinkron dengan semua script Master
-                localStorage.setItem('user_neon', username);
-                localStorage.setItem('username', username);
                 localStorage.setItem('neon_user', username);
                 window.location.href = 'game.html';
             } else {
-                showAlert("Login Gagal! Akun tidak ditemukan.");
+                showAlert("Akses Ditolak! Username atau Password salah.");
                 btn.innerText = "MASUK SISTEM";
                 btn.disabled = false;
             }
         } else {
+            // MODE DAFTAR
             const name = document.getElementById('full_name').value.trim();
             const bank = document.getElementById('bank').value;
             const acc = document.getElementById('acc_no').value.trim();
@@ -185,37 +218,55 @@
             if(!name || !bank || !acc) {
                 btn.innerText = "BUAT AKUN VIP";
                 btn.disabled = false;
-                return showAlert("Lengkapi data rekening!");
+                return showAlert("Data Rekening tidak lengkap!");
             }
 
-            // Cek user terdaftar
-            const { data: exist } = await _supabase.from('profiles').select('username').eq('username', username).single();
-            if(exist) {
+            // Validasi Password Rumit
+            if(!validatePassword(password)) {
                 btn.innerText = "BUAT AKUN VIP";
                 btn.disabled = false;
-                return showAlert("Username sudah dipakai!");
+                return showAlert("Password tidak valid! Wajib minimal 6 karakter dengan kombinasi huruf dan angka.");
             }
 
-            const { error: insError } = await _supabase.from('profiles').insert([{
-                username: username,
-                password: password,
-                nama_lengkap: name,
-                bank_name: bank,
-                rekening: acc,
-                referred_by: refInput || 'DIRECT',
-                referral_code: username.toUpperCase() + "-" + Math.floor(100 + Math.random() * 899),
-                saldo: 0,
-                role: 'MEMBER'
-            }]);
+            try {
+                // 1. Cek Username Duplikat
+                const { data: userExist } = await _supabase.from('profiles').select('username').eq('username', username).single();
+                if(userExist) {
+                    btn.disabled = false; btn.innerText = "BUAT AKUN VIP";
+                    return showAlert("Username '" + username + "' sudah terdaftar!");
+                }
 
-            if(insError) {
-                showAlert("Gagal: " + insError.message);
-            } else {
-                showAlert("Pendaftaran Berhasil! Silahkan Login.");
-                setTimeout(() => location.reload(), 1500);
+                // 2. Cek Rekening Duplikat (Anti-Fraud)
+                const { data: accExist } = await _supabase.from('profiles').select('rekening').eq('rekening', acc).single();
+                if(accExist) {
+                    btn.disabled = false; btn.innerText = "BUAT AKUN VIP";
+                    return showAlert("Nomor Rekening ini sudah digunakan akun lain!");
+                }
+
+                // 3. Eksekusi Pendaftaran
+                const { error: insError } = await _supabase.from('profiles').insert([{
+                    username: username,
+                    password: password,
+                    nama_lengkap: name,
+                    bank_name: bank,
+                    rekening: acc,
+                    referred_by: refInput || 'DIRECT',
+                    referral_code: "NEON-" + Math.random().toString(36).substr(2, 5).toUpperCase(),
+                    saldo: 0,
+                    role: 'MEMBER',
+                    winrate: 30, // Default winrate
+                    max_win_limit: 5000000
+                }]);
+
+                if(insError) throw insError;
+
+                showAlert("Registrasi Berhasil! Silahkan login dengan akun baru Anda.");
+                setTimeout(() => location.reload(), 2000);
+
+            } catch (err) {
+                showAlert("Kesalahan Sistem: " + err.message);
+                btn.disabled = false; btn.innerText = "BUAT AKUN VIP";
             }
-            btn.innerText = "BUAT AKUN VIP";
-            btn.disabled = false;
         }
     }
 </script>
