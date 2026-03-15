@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-    <title>NEON COMMAND — SUPREME ADMIN</title>
+    <title>NEON COMMAND — SUPREME ADMIN V7</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -12,41 +12,37 @@
             --pink: #ff0077; --blue: #00d4ff; --deepblue: #0044ff;
             --yellow: #f5e642; --bg: #030510; --green: #00ff88;
             --shadow-b: 0 0 15px rgba(0, 212, 255, 0.4);
-            --shadow-p: 0 0 15px rgba(255, 0, 119, 0.4);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
         body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; min-height: 100vh; overflow-x: hidden; }
         
+        /* GATE KEEPER */
         #gate-keeper { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
         .gate-card { width: 90%; max-width: 380px; padding: 40px; border-radius: 30px; background: rgba(255,255,255,0.02); border: 2px solid var(--blue); text-align: center; box-shadow: var(--shadow-b); }
         
         #main-app { display: none; }
-        .nav-top { background: rgba(5,6,20,0.95); padding: 15px 20px; border-bottom: 1px solid rgba(0,212,255,0.2); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
-        .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 75px; background: #050614; border-top: 1px solid rgba(0,212,255,0.3); display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
-        .nav-btn { color: rgba(255,255,255,0.3); font-size: 20px; cursor: pointer; text-align: center; flex: 1; transition: 0.3s; }
-        .nav-btn span { display: block; font-size: 8px; margin-top: 4px; font-weight: 800; text-transform: uppercase; }
-        .nav-btn.active { color: var(--blue); text-shadow: var(--shadow-b); }
+        .nav-top { background: rgba(5,6,20,0.95); padding: 15px 20px; border-bottom: 2px solid var(--blue); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
+        
+        .panic-bar { background: #600; padding: 10px; text-align: center; border-bottom: 1px solid red; display: none; font-weight: 900; color: #fff; font-size: 12px; }
+        .panic-active { display: block !important; animation: blink 1s infinite; }
+        @keyframes blink { 0% { background: #600; } 50% { background: #ff0000; } 100% { background: #600; } }
 
         .content { padding: 20px; padding-bottom: 100px; max-width: 600px; margin: auto; }
-        .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; margin-bottom: 15px; }
+        .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 18px; margin-bottom: 15px; position: relative; }
         .card-label { font-size: 10px; color: var(--blue); font-weight: 800; text-transform: uppercase; margin-bottom: 10px; display: block; }
-        .card-wd { border-left: 4px solid var(--pink); box-shadow: 0 0 10px rgba(255,0,119,0.1); }
-        .card-depo { border-left: 4px solid var(--green); box-shadow: 0 0 10px rgba(0,255,136,0.1); }
+        
+        input, select, textarea { width: 100%; padding: 12px; background: #000; border: 1px solid #333; color: #fff; border-radius: 10px; margin-bottom: 10px; font-family: 'Outfit'; }
+        .btn-main { background: linear-gradient(90deg, var(--blue), var(--deepblue)); color: #fff; padding: 14px; border-radius: 12px; font-weight: 900; border: none; width: 100%; cursor: pointer; text-transform: uppercase; font-size: 11px; }
+        .btn-panic { background: #ff0000 !important; margin-bottom: 20px; box-shadow: 0 0 20px rgba(255,0,0,0.4); }
 
-        input, textarea, select { width: 100%; padding: 12px; background: #000; border: 1px solid #333; color: #fff; border-radius: 10px; margin-bottom: 10px; font-family: 'Outfit'; }
-        .input-mini { width: 100%; text-align: center; padding: 5px; color: var(--yellow); background: #000; border: 1px solid #444; border-radius: 5px; }
+        .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 75px; background: #050614; border-top: 1px solid var(--blue); display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
+        .nav-btn { color: rgba(255,255,255,0.3); font-size: 20px; cursor: pointer; text-align: center; flex: 1; transition: 0.3s; }
+        .nav-btn span { display: block; font-size: 8px; margin-top: 4px; font-weight: 800; }
+        .nav-btn.active { color: var(--blue); text-shadow: var(--shadow-b); }
 
-        .btn-main { background: linear-gradient(90deg, var(--blue), var(--deepblue)); color: #000; padding: 12px; border-radius: 10px; font-size: 11px; font-weight: 900; border: none; width: 100%; cursor: pointer; text-transform: uppercase; }
-        .btn-main:disabled { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; }
-        .btn-red { background: var(--pink); color: #fff; }
-        .btn-gift { background: linear-gradient(90deg, var(--pink), #b400dc); color: #fff; }
-
-        .profit { color: var(--green); }
-        .loss { color: var(--pink); }
-        .info-text { font-size: 12px; color: #aaa; margin: 4px 0; }
-
-        #custom-alert { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-        .alert-box { width: 85%; max-width: 320px; background: #0a0b1e; border: 2px solid var(--blue); border-radius: 20px; padding: 25px; text-align: center; box-shadow: var(--shadow-b); }
+        .profit { color: var(--green); font-weight: 800; }
+        .loss { color: var(--pink); font-weight: 800; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     </style>
 </head>
 <body>
@@ -54,7 +50,7 @@
     <div id="gate-keeper">
         <div class="gate-card">
             <h1 style="font-family:'Cinzel Decorative'; color:var(--blue); font-size:1.5rem;">MASTER ACCESS</h1>
-            <p style="font-size:10px; opacity:0.5; margin-bottom:25px;">NEON PLINKO — V5 SUPREME</p>
+            <p style="font-size:10px; opacity:0.5; margin-bottom:25px;">NEON PLINKO — SUPREME ADMIN</p>
             <input type="text" id="adm-user" placeholder="Admin ID">
             <input type="password" id="adm-pass" placeholder="Master Key">
             <button onclick="login()" class="btn-main">DECRYPT ACCESS</button>
@@ -62,52 +58,44 @@
     </div>
 
     <div id="main-app">
+        <div id="panic-alert" class="panic-bar">⚠️ GLOBAL KURAS MODE IS ACTIVE ⚠️</div>
+        
         <div class="nav-top">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <div style="font-family:'Cinzel Decorative'; font-weight:900; color:var(--pink);">NEON COMMAND</div>
-                <button onclick="refreshData()" style="background:none; border:none; color:var(--yellow); font-size:12px; font-weight:800;"><i class="fa-solid fa-sync"></i> SYNC</button>
+                <div id="sync-status" style="font-size:9px; color:var(--green);"><i class="fas fa-sync fa-spin"></i> LIVE SYNCING</div>
             </div>
         </div>
 
         <div class="content">
             <div id="tab-kasir" class="page">
-                <h2 style="font-size:14px; margin-bottom:15px; color:var(--blue); border-bottom:1px solid rgba(0,212,255,0.2); padding-bottom:5px;">QUEUE TRANSAKSI</h2>
-                <div id="list-kasir">Memuat antrean...</div>
+                <button id="panic-btn-ui" class="btn-main btn-panic" onclick="togglePanicMode()">AKTIFKAN MODE KURAS (10%)</button>
+                <h2 style="font-size:12px; margin-bottom:15px; color:var(--blue); opacity:0.7;">PENDING TRANSACTIONS</h2>
+                <div id="list-kasir">Memuat data transaksi...</div>
             </div>
 
             <div id="tab-user" class="page" style="display:none">
-                <input type="text" id="search-user" placeholder="Cari username..." onkeyup="filterUser()" style="border-color:var(--blue);">
+                <input type="text" id="search-user" placeholder="Cari Username Pemain..." onkeyup="filterUser()">
                 <div id="list-user">Memuat data pemain...</div>
             </div>
 
             <div id="tab-gift" class="page" style="display:none">
-                <h2 style="font-size:14px; margin-bottom:15px; color:var(--pink); border-bottom:1px solid rgba(255,0,119,0.2); padding-bottom:5px;">KIRIM HADIAH (INBOX)</h2>
-                <div class="card">
-                    <span class="card-label">FORM KIRIM SALDO</span>
-                    <select id="gift-target">
-                        <option value="">PILIH USER...</option>
-                    </select>
+                <div class="card" style="border-color:var(--pink)">
+                    <span class="card-label" style="color:var(--pink)">Kirim Hadiah ke Inbox</span>
+                    <select id="gift-target"><option value="">Pilih Pemain...</option></select>
                     <input type="number" id="gift-amount" placeholder="Nominal Saldo (Rp)">
-                    <textarea id="gift-msg" rows="3" placeholder="Pesan untuk pemain (Contoh: Bonus Event Referral)"></textarea>
-                    <button id="btn-send-gift" class="btn-main btn-gift" onclick="sendGift()">KIRIM KE INBOX</button>
+                    <textarea id="gift-msg" rows="3" placeholder="Pesan (Contoh: Bonus Spesial Plinko)"></textarea>
+                    <button class="btn-main" style="background:var(--pink)" onclick="sendGift()">KIRIM HADIAH</button>
                 </div>
-                <p style="font-size:10px; opacity:0.5; text-align:center;">Hadiah akan muncul di halaman reward.html pemain secara instan.</p>
             </div>
         </div>
 
         <nav class="nav-bottom">
-            <div class="nav-btn active" onclick="switchTab('kasir', this)"><i class="fa-solid fa-cash-register"></i><span>Kasir</span></div>
-            <div class="nav-btn" onclick="switchTab('user', this)"><i class="fa-solid fa-users-gear"></i><span>User</span></div>
-            <div class="nav-btn" onclick="switchTab('gift', this)"><i class="fa-solid fa-gift"></i><span>Gift</span></div>
-            <div class="nav-btn" onclick="logout()"><i class="fa-solid fa-power-off"></i><span>Exit</span></div>
+            <div class="nav-btn active" onclick="switchTab('kasir', this)"><i class="fas fa-cash-register"></i><span>KASIR</span></div>
+            <div class="nav-btn" onclick="switchTab('user', this)"><i class="fas fa-users-gear"></i><span>USERS</span></div>
+            <div class="nav-btn" onclick="switchTab('gift', this)"><i class="fas fa-gift"></i><span>GIFT</span></div>
+            <div class="nav-btn" onclick="logout()"><i class="fas fa-power-off"></i><span>EXIT</span></div>
         </nav>
-    </div>
-
-    <div id="custom-alert">
-        <div class="alert-box">
-            <p id="a-msg" style="margin-bottom:20px; font-size:14px;"></p>
-            <button class="btn-main" onclick="closeAlert()">CONFIRM</button>
-        </div>
     </div>
 
 <script>
@@ -116,132 +104,153 @@
     const _supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 
     const AUTH = { u: "admin_neon", p: "master777" };
-
-    function showAlert(m) { document.getElementById('a-msg').innerText = m; document.getElementById('custom-alert').style.display = 'flex'; }
-    function closeAlert() { document.getElementById('custom-alert').style.display = 'none'; }
+    let isPanic = false;
 
     function login() {
         if(document.getElementById('adm-user').value === AUTH.u && document.getElementById('adm-pass').value === AUTH.p) {
             sessionStorage.setItem('adm_auth', 'true');
             document.getElementById('gate-keeper').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
-            refreshData();
-        } else { alert("AKSES DITOLAK!"); }
+            refreshAll();
+            setInterval(refreshAll, 5000); 
+        } else { alert("ACCESS DENIED!"); }
     }
 
-    function refreshData() { loadKasir(); loadUser(); loadGiftTarget(); }
+    function refreshAll() {
+        loadKasir();
+        loadUser();
+        loadGiftTarget();
+        checkPanicStatus();
+    }
 
+    // --- KASIR (DEPO & WD) ---
     async function loadKasir() {
         let html = '';
         const { data: depo } = await _supa.from('deposits').select('*').eq('status', 'PROSES');
         const { data: wd } = await _supa.from('withdrawals').select('*').eq('status', 'PROSES');
-        const { data: profiles } = await _supa.from('profiles').select('username, bank_name, rekening, saldo');
 
-        if(depo) depo.forEach(x => {
-            html += `<div class="card card-depo"><span class="card-label" style="color:var(--green)">DEPOSIT REQUEST</span><div style="display:flex; justify-content:space-between;"><b>${x.username.toUpperCase()}</b><span class="profit">+${Number(x.net_receive).toLocaleString()}</span></div><div style="margin-top:15px; display:grid; grid-template-columns:1fr 1fr; gap:10px;"><button class="btn-main" style="background:var(--green)" onclick="approveAction(this, 'deposits', '${x.id}', '${x.username}')">APPROVE</button><button class="btn-main btn-red" onclick="rejectAction(this, 'deposits', '${x.id}')">REJECT</button></div></div>`;
+        if(depo) depo.forEach(d => {
+            html += `<div class="card" style="border-left:4px solid var(--green)">
+                <span class="card-label">DEPOSIT REQUEST</span>
+                <b>${d.username.toUpperCase()}</b>
+                <div class="profit">Rp ${Number(d.net_receive).toLocaleString()}</div>
+                <div class="grid-2" style="margin-top:10px;">
+                    <button class="btn-main" style="background:var(--green)" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive})">APPROVE</button>
+                    <button class="btn-main" style="background:#444" onclick="updateStatus('deposits','${d.id}','REJECTED')">REJECT</button>
+                </div>
+            </div>`;
         });
 
         if(wd) wd.forEach(w => {
-            const p = profiles.find(u => u.username === w.username);
-            html += `<div class="card card-wd"><span class="card-label" style="color:var(--pink)">WITHDRAWAL REQUEST</span><div style="display:flex; justify-content:space-between;"><b>${w.username.toUpperCase()}</b><span class="loss">-Rp ${Number(w.amount).toLocaleString()}</span></div><div class="info-text">${p ? p.bank_name + ' - ' + p.rekening : 'No Rek?'}</div><div style="margin-top:15px; display:grid; grid-template-columns:1fr 1fr; gap:10px;"><button class="btn-main" style="background:var(--blue); color:#fff;" onclick="approveAction(this, 'withdrawals', '${w.id}', '${w.username}')">APPROVE</button><button class="btn-main btn-red" onclick="rejectWithdraw(this, '${w.id}', '${w.username}', ${w.amount})">REJECT</button></div></div>`;
+            html += `<div class="card" style="border-left:4px solid var(--pink)">
+                <span class="card-label">WITHDRAW REQUEST</span>
+                <b>${w.username.toUpperCase()}</b>
+                <div class="loss">Rp ${Number(w.amount).toLocaleString()}</div>
+                <div class="grid-2" style="margin-top:10px;">
+                    <button class="btn-main" style="background:var(--blue)" onclick="updateStatus('withdrawals','${w.id}','SUKSES')">APPROVE</button>
+                    <button class="btn-main" style="background:var(--pink)" onclick="rejectWD('${w.id}','${w.username}',${w.amount})">REJECT & REFUND</button>
+                </div>
+            </div>`;
         });
-        document.getElementById('list-kasir').innerHTML = html || '<div style="text-align:center;padding:40px;opacity:0.3;">Antrean Bersih</div>';
+        document.getElementById('list-kasir').innerHTML = html || '<p style="text-align:center; opacity:0.3; padding:20px;">Antrean Bersih</p>';
     }
 
-    async function approveAction(btn, table, id, user) {
-        btn.disabled = true;
-        const { error } = await _supa.from(table).update({ status: 'SUKSES' }).eq('id', id);
-        if(!error) { showAlert("BERHASIL!"); loadKasir(); }
-    }
-
-    async function rejectWithdraw(btn, id, user, amount) {
-        btn.disabled = true;
-        const { data: profile } = await _supa.from('profiles').select('saldo').eq('username', user).single();
-        await _supa.from('profiles').update({ saldo: profile.saldo + amount }).eq('username', user);
-        await _supa.from('withdrawals').update({ status: 'GAGAL' }).eq('id', id);
-        showAlert("WD DITOLAK & REFUND!"); loadKasir();
-    }
-
+    // --- USER CONTROL (WINRATE & MAXWIN) ---
     async function loadUser() {
         const { data } = await _supa.from('profiles').select('*').order('username', {ascending:true});
         if(data) {
             document.getElementById('list-user').innerHTML = data.map(u => `
                 <div class="card user-item" data-name="${u.username.toLowerCase()}">
-                    <div style="display:flex; justify-content:space-between;"><b>${u.username.toUpperCase()}</b><span class="profit">Rp ${Number(u.saldo).toLocaleString()}</span></div>
-                    <div style="margin-top:10px; display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                        <div><small style="font-size:9px;">WINRATE %</small><input type="number" class="input-mini" id="wr-${u.id}" value="${u.winrate || 30}"></div>
-                        <div><small style="font-size:9px;">MAX WIN</small><input type="number" class="input-mini" id="mwl-${u.id}" value="${u.max_win_limit || 1000000}"></div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <b>${u.username.toUpperCase()}</b>
+                        <span class="profit">Rp ${Number(u.saldo).toLocaleString()}</span>
                     </div>
-                    <button class="btn-main" style="margin-top:10px; background:transparent; border:1px solid var(--blue); color:var(--blue);" onclick="saveUser('${u.id}', '${u.username}')">SAVE</button>
+                    <div class="grid-2">
+                        <div><small style="font-size:9px;">WINRATE %</small><input type="number" id="wr-${u.id}" value="${u.winrate || 50}" style="margin:0"></div>
+                        <div><small style="font-size:9px;">MAXWIN LIMIT</small><input type="number" id="mw-${u.id}" value="${u.maxwin_limit || 1000000}" style="margin:0"></div>
+                    </div>
+                    <button class="btn-main" style="margin-top:10px; background:transparent; border:1px solid var(--blue); color:var(--blue); height:30px; padding:0;" onclick="saveUser('${u.id}')">UPDATE CONFIG</button>
                 </div>
             `).join('');
         }
     }
 
-    async function saveUser(id, user) {
-        const wr = document.getElementById(`wr-${id}`).value;
-        const mwl = document.getElementById(`mwl-${id}`).value;
-        await _supa.from('profiles').update({ winrate: parseInt(wr), max_win_limit: parseInt(mwl) }).eq('id', id);
-        showAlert("SAVED!");
+    // --- PANIC MODE LOGIC ---
+    async function checkPanicStatus() {
+        const { data } = await _supa.from('system_config').select('panic_mode').eq('id', 1).single();
+        isPanic = data.panic_mode;
+        document.getElementById('panic-alert').className = isPanic ? 'panic-bar panic-active' : 'panic-bar';
+        document.getElementById('panic-btn-ui').innerText = isPanic ? "MATIKAN MODE KURAS" : "AKTIFKAN MODE KURAS (10%)";
     }
 
-    // --- FUNGSI BARU: GIFT SYSTEM ---
-    async function loadGiftTarget() {
-        const { data } = await _supa.from('profiles').select('username').order('username', {ascending:true});
-        if(data) {
-            document.getElementById('gift-target').innerHTML = '<option value="">PILIH USER...</option>' + 
-                data.map(u => `<option value="${u.username}">${u.username.toUpperCase()}</option>`).join('');
-        }
+    async function togglePanicMode() {
+        const nextState = !isPanic;
+        await _supa.from('system_config').update({ panic_mode: nextState }).eq('id', 1);
+        await _supa.from('profiles').update({ panic_mode: nextState }); // Sinkron ke semua profil
+        alert("MODE KURAS: " + (nextState ? "AKTIF" : "MATI"));
+        checkPanicStatus();
+    }
+
+    // --- DATABASE ACTIONS ---
+    async function saveUser(id) {
+        const wr = document.getElementById('wr-'+id).value;
+        const mw = document.getElementById('mw-'+id).value;
+        await _supa.from('profiles').update({ winrate: parseInt(wr), maxwin_limit: parseInt(mw) }).eq('id', id);
+        alert("Pemain berhasil diatur!");
+    }
+
+    async function approveDepo(id, user, amt) {
+        const { data } = await _supa.from('profiles').select('saldo').eq('username', user).single();
+        await _supa.from('profiles').update({ saldo: data.saldo + amt }).eq('username', user);
+        await _supa.from('deposits').update({ status: 'SUKSES' }).eq('id', id);
+        refreshAll();
+    }
+
+    async function rejectWD(id, user, amt) {
+        const { data } = await _supa.from('profiles').select('saldo').eq('username', user).single();
+        await _supa.from('profiles').update({ saldo: data.saldo + amt }).eq('username', user);
+        await _supa.from('withdrawals').update({ status: 'GAGAL' }).eq('id', id);
+        refreshAll();
+    }
+
+    async function updateStatus(table, id, status) {
+        await _supa.from(table).update({ status: status }).eq('id', id);
+        refreshAll();
     }
 
     async function sendGift() {
         const target = document.getElementById('gift-target').value;
         const amount = document.getElementById('gift-amount').value;
         const msg = document.getElementById('gift-msg').value;
-        const btn = document.getElementById('btn-send-gift');
-
-        if(!target || !amount || !msg) return showAlert("Lengkapi form hadiah!");
+        if(!target || !amount) return alert("Pilih User & Nominal!");
         
-        btn.disabled = true;
-        btn.innerText = "SENDING...";
-
-        try {
-            const { error } = await _supa.from('inbox').insert([{
-                username: target,
-                nominal: parseInt(amount),
-                pesan: msg,
-                status: 'UNCLAIMED'
-            }]);
-
-            if(error) throw error;
-
-            showAlert("HADIAH TERKIRIM KE " + target.toUpperCase());
-            document.getElementById('gift-amount').value = '';
-            document.getElementById('gift-msg').value = '';
-        } catch(e) {
-            showAlert("GAGAL: " + e.message);
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "KIRIM KE INBOX";
-        }
+        await _supa.from('inbox').insert([{ username: target, nominal: parseInt(amount), pesan: msg, status: 'UNCLAIMED' }]);
+        alert("Bonus terkirim ke Inbox " + target);
+        document.getElementById('gift-amount').value = '';
     }
 
-    function filterUser() {
-        const q = document.getElementById('search-user').value.toLowerCase();
-        document.querySelectorAll('.user-item').forEach(i => i.style.display = i.getAttribute('data-name').includes(q) ? 'block' : 'none');
+    async function loadGiftTarget() {
+        const { data } = await _supa.from('profiles').select('username');
+        if(data) document.getElementById('gift-target').innerHTML = '<option value="">Pilih Pemain...</option>' + data.map(u => `<option value="${u.username}">${u.username.toUpperCase()}</option>`).join('');
     }
 
+    // --- UI TOOLS ---
     function switchTab(tab, el) {
         document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
         document.getElementById('tab-' + tab).style.display = 'block';
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         el.classList.add('active');
-        if(tab === 'user') loadUser();
-        if(tab === 'gift') loadGiftTarget();
+    }
+
+    function filterUser() {
+        const q = document.getElementById('search-user').value.toLowerCase();
+        document.querySelectorAll('.user-item').forEach(i => {
+            i.style.display = i.getAttribute('data-name').includes(q) ? 'block' : 'none';
+        });
     }
 
     function logout() { sessionStorage.clear(); window.location.reload(); }
-    window.onload = () => { if(sessionStorage.getItem('adm_auth') === 'true') { login(); } };
+    window.onload = () => { if(sessionStorage.getItem('adm_auth') === 'true') login(); };
 </script>
 </body>
 </html>
