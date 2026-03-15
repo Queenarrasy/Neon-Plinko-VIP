@@ -3,250 +3,222 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>DEPOSIT - NEON PLINKO VIP</title>
+    <title>DEPOSIT VIP - NEON PLINKO</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
     <style>
-        :root {
-          --pink: #ff0077; --blue: #0055ff; --cyan: #00f2ff; --yellow: #f5e642; --bg: #02030d;
-          --gp: 0 0 10px rgba(255, 0, 119, 0.5), 0 0 20px rgba(255, 0, 119, 0.2);
-        }
+        :root { --pink: #ff0077; --blue: #0055ff; --cyan: #00f2ff; --yellow: #f5e642; --bg: #02030d; }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; min-height: 100vh; overflow-x: hidden; }
         
-        body {
-          background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; min-height: 100vh;
-          background-image: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(0,85,255,0.08) 0%, transparent 70%);
-          padding-bottom: 30px;
-        }
-
-        .header { 
-            height: 65px; padding: 0 20px; display: flex; justify-content: space-between; 
-            align-items: center; background: rgba(2, 3, 13, 0.95); border-bottom: 1px solid var(--blue); 
-            position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px);
-        }
-        .btn-back { color: #fff; font-size: 20px; text-decoration: none; width: 40px; }
-        .logo { font-family: 'Cinzel Decorative'; color: var(--pink); font-size: 14px; text-shadow: var(--gp); font-weight: 900; }
+        /* Neon Header */
+        .header { height: 65px; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(2, 3, 13, 0.95); border-bottom: 1px solid var(--blue); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
+        .logo { font-family: 'Cinzel Decorative'; color: var(--pink); font-size: 14px; font-weight: 900; text-shadow: 0 0 10px var(--pink); }
 
         .container { padding: 20px; max-width: 500px; margin: auto; }
 
-        /* Method Tab */
+        /* Tabs Method */
         .method-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-        .method-item { 
-            background: rgba(255,255,255,0.03); border: 1px solid rgba(0,85,255,0.2); 
-            padding: 15px; border-radius: 15px; text-align: center; cursor: pointer; transition: 0.3s;
-        }
-        .method-item.active { border-color: var(--pink); background: rgba(255,0,119,0.1); box-shadow: var(--gp); }
-        .method-item i { font-size: 24px; margin-bottom: 8px; display: block; }
-        .method-item .label { font-size: 12px; font-weight: 800; }
+        .method-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(0,85,255,0.2); padding: 15px; border-radius: 20px; text-align: center; cursor: pointer; transition: 0.3s; }
+        .method-item.active { border-color: var(--pink); background: rgba(255,0,119,0.15); box-shadow: 0 0 15px rgba(255,0,119,0.4); transform: scale(1.02); }
+        .method-item i { font-size: 24px; margin-bottom: 5px; display: block; }
 
-        /* Form Area */
-        .form-box { 
-            background: rgba(5,6,20,0.8); border: 1px solid rgba(255,255,255,0.05); 
-            padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-        label { display: block; font-size: 11px; font-weight: 600; color: var(--blue); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        /* Form Card */
+        .form-box { background: rgba(5,6,20,0.8); border: 1px solid rgba(255,255,255,0.05); padding: 25px; border-radius: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
+        label { font-size: 10px; font-weight: 800; color: var(--cyan); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; display: block; }
         
-        input[type=number] { 
-            width: 100%; padding: 15px; background: #000; border: 1px solid var(--blue); 
-            border-radius: 12px; color: #fff; font-size: 18px; font-weight: 800; outline: none; margin-bottom: 15px;
-        }
-        
-        .amount-quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
-        .amt-btn { background: rgba(0,85,255,0.1); border: 1px solid var(--blue); color: #fff; padding: 10px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; }
+        input[type=number] { width: 100%; padding: 18px; background: #000; border: 2px solid var(--blue); border-radius: 15px; color: #fff; font-size: 22px; font-weight: 800; outline: none; margin-bottom: 20px; text-align: center; }
+        input:focus { border-color: var(--pink); box-shadow: 0 0 10px rgba(255,0,119,0.3); }
 
-        /* Calculation Card */
-        .calc-card { background: rgba(255,255,255,0.02); padding: 15px; border-radius: 15px; margin-bottom: 20px; border-left: 3px solid var(--yellow); }
-        .calc-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
-        .net-total { font-size: 16px; font-weight: 900; color: var(--yellow); margin-top: 5px; padding-top: 5px; border-top: 1px dashed rgba(255,255,255,0.1); }
+        /* Calc Card */
+        .calc-card { background: rgba(0,0,0,0.4); padding: 15px; border-radius: 15px; border-left: 4px solid var(--yellow); margin-bottom: 20px; }
+        .calc-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; font-weight: 600; }
+        .calc-row span:last-child { color: var(--yellow); }
+        .net-receive { margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.1); font-size: 16px; font-weight: 900; }
 
-        .pay-info { text-align: center; margin-bottom: 20px; padding: 15px; border: 1px dashed rgba(0,212,255,0.3); border-radius: 15px; }
-        .qris-img { width: 170px; height: 170px; border-radius: 10px; border: 2px solid #fff; }
-
-        .btn-main { 
-            width: 100%; padding: 16px; border-radius: 50px; border: none; 
-            background: linear-gradient(90deg, var(--pink), #b400dc); 
-            color: #fff; font-family: 'Cinzel Decorative'; font-weight: 900; font-size: 16px; 
-            box-shadow: var(--gp); cursor: pointer;
-        }
+        .btn-main { width: 100%; padding: 18px; border-radius: 50px; border: none; background: linear-gradient(90deg, var(--pink), #b400dc); color: #fff; font-family: 'Cinzel Decorative'; font-weight: 900; font-size: 15px; cursor: pointer; box-shadow: 0 5px 20px rgba(255,0,119,0.4); transition: 0.2s; }
+        .btn-main:active { transform: scale(0.96); }
 
         /* History */
-        .history-sec { margin-top: 30px; }
-        .history-item { 
-            background: rgba(255,255,255,0.02); padding: 15px; border-radius: 15px; 
-            margin-bottom: 12px; border-left: 4px solid var(--blue);
-        }
+        .history-item { background: rgba(255,255,255,0.02); padding: 15px; border-radius: 15px; margin-bottom: 12px; border-left: 4px solid var(--blue); display: flex; justify-content: space-between; align-items: center; }
 
-        /* Modal */
-        #modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-        .modal-box { background: #0a0b1e; border: 2px solid var(--pink); border-radius: 25px; padding: 30px; width: 85%; max-width: 320px; text-align: center; }
+        /* Custom Alert */
+        #modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+        .modal-box { width: 85%; max-width: 320px; background: #0a0b1e; border: 2px solid var(--pink); border-radius: 30px; padding: 30px; text-align: center; box-shadow: 0 0 30px rgba(255,0,119,0.3); }
     </style>
 </head>
 <body>
 
+    <audio id="snd-click" src="https://cdn.pixabay.com/audio/2022/03/15/audio_c8b417f73c.mp3"></audio>
+    <audio id="snd-success" src="https://cdn.pixabay.com/audio/2021/08/04/audio_062564a02d.mp3"></audio>
+    <audio id="snd-error" src="https://cdn.pixabay.com/audio/2022/03/10/audio_c36394595e.mp3"></audio>
+
     <div class="header">
-        <a href="game.html" class="btn-back"><i class="fa-solid fa-arrow-left"></i></a>
+        <a href="game.html" onclick="playSnd('click')" style="color:#fff; font-size:20px;"><i class="fa-solid fa-chevron-left"></i></a>
         <div class="logo">DEPOSIT CENTER</div>
-        <div style="width:40px"></div>
+        <div id="display-saldo" style="font-size:12px; font-weight:800; color:var(--cyan);">IDR 0</div>
     </div>
 
     <div class="container">
         <div class="method-grid">
             <div class="method-item active" id="m-qris" onclick="selectMethod('QRIS')">
                 <i class="fa-solid fa-qrcode" style="color:var(--cyan)"></i>
-                <span class="label">QRIS ALL</span>
+                <div style="font-size:11px; font-weight:800;">QRIS ALL</div>
             </div>
             <div class="method-item" id="m-usdt" onclick="selectMethod('USDT')">
                 <i class="fa-brands fa-ethereum" style="color:var(--yellow)"></i>
-                <span class="label">USDT TRC20</span>
+                <div style="font-size:11px; font-weight:800;">USDT TRC20</div>
             </div>
         </div>
 
         <div class="form-box">
-            <label id="label-input">Nominal Rupiah (IDR)</label>
-            <input type="number" id="input-amount" placeholder="0" oninput="calculateNet()">
-
-            <div class="amount-quick" id="quick-area">
-                <button class="amt-btn" onclick="setAmt(20000)">20K</button>
-                <button class="amt-btn" onclick="setAmt(50000)">50K</button>
-                <button class="amt-btn" onclick="setAmt(100000)">100K</button>
-            </div>
-
-            <div class="pay-info" id="pay-display">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=MAYA_DEPOSIT_NEON" class="qris-img">
-                <p style="font-size:10px; color:var(--cyan); font-weight:700; margin-top:10px;">SCAN QRIS DI ATAS</p>
-            </div>
+            <label id="input-label">Nominal Rupiah (Min 20rb)</label>
+            <input type="number" id="amount-val" placeholder="0" oninput="calculate()">
 
             <div class="calc-card">
-                <div class="calc-row"><span>Kurs Rate:</span> <span id="info-rate">1 : 1</span></div>
-                <div class="calc-row net-total">
-                    <span>Terima Saldo:</span>
-                    <span id="info-net">IDR 0</span>
+                <div class="calc-row"><span>Kurs Rate:</span> <span id="rate-text">1 : 1</span></div>
+                <div class="calc-row" id="fee-row" style="display:none;"><span>Network Fee:</span> <span>$2.00</span></div>
+                <div class="calc-row net-receive">
+                    <span>Saldo Diterima:</span>
+                    <span id="net-text">IDR 0</span>
                 </div>
             </div>
 
-            <button class="btn-main" id="btn-submit" onclick="prosesDeposit()">KONFIRMASI DEPOSIT</button>
+            <div id="qr-display" style="text-align:center; margin-bottom:20px;">
+                <img id="img-qris" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=MAYA_DEPOSIT_NEON" style="width:180px; border-radius:15px; border:2px solid #fff;">
+                <p style="font-size:10px; color:var(--cyan); margin-top:10px; font-weight:700;">SILAHKAN SCAN & BAYAR SESUAI NOMINAL</p>
+            </div>
+
+            <button class="btn-main" id="btn-konfirmasi" onclick="submitDeposit()">KONFIRMASI PEMBAYARAN</button>
         </div>
 
-        <div class="history-sec">
-            <label>Riwayat Deposit</label>
-            <div id="depo-history">
-                <div style="text-align:center; padding:20px; opacity:0.3; font-size:12px;">Memuat data server...</div>
-            </div>
+        <div style="margin-top:30px;">
+            <label>Riwayat Terakhir</label>
+            <div id="history-list"></div>
         </div>
     </div>
 
     <div id="modal-overlay">
         <div class="modal-box">
-            <h3 id="m-title" style="color:var(--pink); font-family:'Cinzel Decorative';">INFO</h3>
-            <p id="m-msg" style="margin:20px 0; font-size:14px; color:#ccc;"></p>
-            <button class="btn-main" onclick="closeModal()">OKE</button>
+            <h3 id="modal-title" style="font-family:'Cinzel Decorative'; color:var(--pink);">NOTIFIKASI</h3>
+            <p id="modal-msg" style="margin:20px 0; font-size:14px; color:#ccc;"></p>
+            <button class="btn-main" onclick="closeModal()">MENGERTI</button>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // CONFIG
-        const _URL = "https://bgffnmwrviyqpeevzjsn.supabase.co";
-        const _KEY = "sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani";
-        const _sb = supabase.createClient(_URL, _KEY);
+        let curMethod = 'QRIS';
+        const KURS = 16800; // Sesuai config.js Master
+        const FEE_USDT = 2; // Biaya $2
 
-        let currentMethod = 'QRIS';
-        const KURS_USDT = 16500;
-
-        // Ambil User Tanpa Mental (Jika kosong, tampilkan Guest)
-        const user = localStorage.getItem('neon_user') || "GUEST";
+        function playSnd(type) {
+            const s = document.getElementById('snd-' + type);
+            if(s) { s.currentTime = 0; s.play(); }
+        }
 
         function selectMethod(m) {
-            currentMethod = m;
+            playSnd('click');
+            curMethod = m;
             document.getElementById('m-qris').classList.toggle('active', m === 'QRIS');
             document.getElementById('m-usdt').classList.toggle('active', m === 'USDT');
-            document.getElementById('quick-area').style.display = (m === 'QRIS') ? 'grid' : 'none';
-            document.getElementById('label-input').innerText = (m === 'QRIS') ? "Nominal Rupiah (IDR)" : "Jumlah USDT ($)";
             
-            if(m === 'USDT') {
-                document.getElementById('pay-display').innerHTML = '<p style="font-size:12px; padding:10px;">Hubungi Admin untuk Alamat USDT TRC20</p><a href="https://wa.me/6289510249551" style="color:var(--cyan); text-decoration:none; font-weight:800;">CHAT ADMIN</a>';
-            } else {
-                document.getElementById('pay-display').innerHTML = '<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=MAYA_DEPOSIT_NEON" class="qris-img"><p style="font-size:10px; color:var(--cyan); font-weight:700; margin-top:10px;">SCAN QRIS DI ATAS</p>';
-            }
-            calculateNet();
+            document.getElementById('input-label').innerText = (m === 'QRIS') ? "Nominal Rupiah (Min 20rb)" : "Jumlah USDT (Min $10)";
+            document.getElementById('fee-row').style.display = (m === 'USDT') ? 'flex' : 'none';
+            document.getElementById('qr-display').style.display = (m === 'QRIS') ? 'block' : 'none';
+            
+            calculate();
         }
 
-        function setAmt(v) {
-            document.getElementById('input-amount').value = v;
-            calculateNet();
-        }
-
-        function calculateNet() {
-            const val = parseFloat(document.getElementById('input-amount').value) || 0;
+        function calculate() {
+            const input = parseFloat(document.getElementById('amount-val').value) || 0;
             let net = 0;
-            if (currentMethod === 'QRIS') {
-                net = val;
-                document.getElementById('info-rate').innerText = "1 : 1";
+
+            if(curMethod === 'QRIS') {
+                document.getElementById('rate-text').innerText = "1 : 1";
+                net = input;
             } else {
-                net = val * KURS_USDT;
-                document.getElementById('info-rate').innerText = "IDR " + KURS_USDT.toLocaleString();
+                document.getElementById('rate-text').innerText = "IDR " + KURS.toLocaleString();
+                // Hitung USDT: (Input - Fee $2) * Kurs
+                if(input > FEE_USDT) {
+                    net = (input - FEE_USDT) * KURS;
+                } else {
+                    net = 0;
+                }
             }
-            document.getElementById('info-net').innerText = "IDR " + net.toLocaleString('id-ID');
+            document.getElementById('net-text').innerText = "IDR " + Math.floor(net).toLocaleString('id-ID');
             return net;
         }
 
-        async function prosesDeposit() {
-            const amt = parseFloat(document.getElementById('input-amount').value);
-            const net = calculateNet();
-            if (user === "GUEST") return showModal("GAGAL", "Anda belum login!");
-            if (!amt || amt <= 0) return showModal("GAGAL", "Isi nominal!");
+        async function submitDeposit() {
+            const amount = parseFloat(document.getElementById('amount-val').value) || 0;
+            const net = calculate();
+            const user = getUsername();
 
-            document.getElementById('btn-submit').innerText = "PROSES...";
-            
-            const { error } = await _sb.from('deposits').insert([{ 
-                username: user, amount: amt, method: currentMethod, net_receive: net, status: 'PROSES' 
+            // VALIDASI MINIMUM (TANPA KIRIM KE SERVER JIKA GAGAL)
+            if(curMethod === 'QRIS' && amount < 20000) {
+                playSnd('error');
+                return showModal("GAGAL", "Minimal deposit QRIS adalah IDR 20.000");
+            }
+            if(curMethod === 'USDT' && amount < 10) {
+                playSnd('error');
+                return showModal("GAGAL", "Minimal deposit USDT adalah $10.00");
+            }
+
+            document.getElementById('btn-konfirmasi').innerText = "MENYAMBUNG SERVER...";
+            document.getElementById('btn-konfirmasi').disabled = true;
+
+            const { error } = await _supabase.from('deposits').insert([{
+                username: user,
+                amount: amount,
+                method: curMethod,
+                net_receive: net,
+                status: 'PROSES'
             }]);
 
-            if (!error) {
-                showModal("SUKSES", "Permintaan terkirim ke server.");
-                document.getElementById('input-amount').value = "";
+            if(!error) {
+                playSnd('success');
+                showModal("BERHASIL", "Permintaan deposit sedang diproses admin. Saldo akan masuk otomatis.");
+                document.getElementById('amount-val').value = "";
                 loadHistory();
             } else {
+                playSnd('error');
                 showModal("ERROR", error.message);
             }
-            document.getElementById('btn-submit').innerText = "KONFIRMASI DEPOSIT";
+            document.getElementById('btn-konfirmasi').innerText = "KONFIRMASI PEMBAYARAN";
+            document.getElementById('btn-konfirmasi').disabled = false;
         }
 
         async function loadHistory() {
-            // Ambil langsung dari server berdasarkan user yang sedang aktif
-            const { data, error } = await _sb
-                .from('deposits')
-                .select('*')
-                .eq('username', user)
-                .order('created_at', { ascending: false })
-                .limit(5);
-
+            const user = getUsername();
+            const { data } = await _supabase.from('deposits').select('*').eq('username', user).order('created_at', {ascending:false}).limit(5);
+            
             let html = "";
-            if (data && data.length > 0) {
+            if(data && data.length > 0) {
                 data.forEach(d => {
-                    const sColor = d.status === 'SUKSES' ? '#00ff88' : (d.status === 'PROSES' ? '#f5e642' : '#ff3131');
+                    const color = d.status === 'SUKSES' ? '#00ff88' : (d.status === 'PROSES' ? '#f5e642' : '#ff3131');
                     html += `
-                        <div class="history-item" style="border-left-color: ${sColor}">
-                            <div style="display:flex; justify-content:space-between; font-size:11px;">
-                                <span style="color:var(--cyan); font-weight:800">${d.method}</span>
-                                <span style="color:${sColor}; font-weight:800">${d.status}</span>
+                        <div class="history-item" style="border-left-color:${color}">
+                            <div>
+                                <div style="font-size:10px; font-weight:800; color:var(--cyan)">${d.method}</div>
+                                <div style="font-size:16px; font-weight:900;">Rp ${d.amount.toLocaleString()}</div>
                             </div>
-                            <div style="font-size:18px; font-weight:900; margin:5px 0;">Rp ${d.amount.toLocaleString('id-ID')}</div>
-                            <div style="font-size:10px; opacity:0.5;">${new Date(d.created_at).toLocaleString('id-ID')}</div>
+                            <div style="font-size:11px; font-weight:800; color:${color}">${d.status}</div>
                         </div>`;
                 });
             } else {
-                html = '<p style="text-align:center; opacity:0.3; font-size:12px;">Belum ada riwayat.</p>';
+                html = "<p style='text-align:center; opacity:0.3; font-size:12px;'>Belum ada transaksi</p>";
             }
-            document.getElementById('depo-history').innerHTML = html;
+            document.getElementById('history-list').innerHTML = html;
         }
 
         function showModal(t, m) {
-            document.getElementById('m-title').innerText = t;
-            document.getElementById('m-msg').innerText = m;
+            document.getElementById('modal-title').innerText = t;
+            document.getElementById('modal-msg').innerText = m;
             document.getElementById('modal-overlay').style.display = 'flex';
         }
-        function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+        function closeModal() { playSnd('click'); document.getElementById('modal-overlay').style.display = 'none'; }
 
         window.onload = loadHistory;
     </script>
