@@ -1,7 +1,6 @@
 /**
  * ============================================================
- * NEON PLINKO VIP — ALL-IN-ONE CENTRAL ENGINE
- * Gabungan Global.js & Config.js
+ * NEON PLINKO VIP — CENTRAL ENGINE (STABLE VERSION)
  * ============================================================
  */
 
@@ -17,9 +16,12 @@ const NEON_CONFIG = {
     MIN_WD: 50000
 };
 
-// 3. SESSION MANAGEMENT
+// 3. SESSION MANAGEMENT (DIPERKUAT)
 function getUsername() {
-    return localStorage.getItem('user_neon') || localStorage.getItem('username');
+    // Mengecek semua kemungkinan nama kunci yang mungkin Master gunakan
+    return localStorage.getItem('user_neon') || 
+           localStorage.getItem('username') || 
+           localStorage.getItem('neon_user');
 }
 
 // 4. FORMATTER
@@ -27,7 +29,7 @@ function formatIDR(amount) {
     return "IDR " + Math.floor(amount || 0).toLocaleString('id-ID');
 }
 
-// 5. CORE SYNC ENGINE (Mengisi Saldo & Data User Otomatis)
+// 5. CORE SYNC ENGINE
 async function syncNeonData() {
     const user = getUsername();
     if (!user) return;
@@ -40,19 +42,17 @@ async function syncNeonData() {
             .single();
             
         if (data && !error) {
-            // Simpan saldo angka murni untuk kebutuhan Game (tanpa teks IDR)
             localStorage.setItem('cached_saldo', data.saldo);
             localStorage.setItem('cached_winrate', data.winrate || 50);
 
-            // Daftar ID elemen HTML yang akan diisi otomatis jika ditemukan di halaman
             const uiElements = {
-                'saldo-text': formatIDR(data.saldo),      // Untuk di Game
-                'display-saldo': formatIDR(data.saldo),   // Untuk di Navbar
-                'profile-saldo': formatIDR(data.saldo),   // Untuk di Profil
-                'wd-saldo': formatIDR(data.saldo),        // Untuk di Withdraw
-                'display-username': data.username,        // Nama user
-                'header-username': data.username,         // Nama user di header
-                'user-winrate': (data.winrate || 50) + "%" // Winrate di profil
+                'saldo-text': formatIDR(data.saldo),
+                'display-saldo': formatIDR(data.saldo),
+                'profile-saldo': formatIDR(data.saldo),
+                'wd-saldo': formatIDR(data.saldo),
+                'display-username': data.username,
+                'header-username': data.username,
+                'user-winrate': (data.winrate || 50) + "%"
             };
 
             for (const [id, value] of Object.entries(uiElements)) {
@@ -62,16 +62,23 @@ async function syncNeonData() {
                     else el.textContent = value;
                 }
             }
+            
+            // Pemicu otomatis untuk update riwayat jika ada di halaman deposit
+            if (typeof loadHistory === "function") {
+                loadHistory(); 
+            }
         }
     } catch (err) {
-        console.error("Sync Error:", err.message);
+        console.warn("Syncing..."); // Dikurangi agar console tidak kotor
     }
 }
 
-// 6. TRANSACTION FUNCTIONS (Untuk Deposit & Withdraw)
+// 6. TRANSACTION FUNCTIONS
 const NeonTransaksi = {
     async kirimDeposit(amount, method, netReceive) {
         const user = getUsername();
+        if(!user) return { error: { message: "Sesi Habis, Silahkan Login" } };
+        
         return await _supabase.from('deposits').insert([{
             username: user,
             amount: parseFloat(amount),
@@ -83,6 +90,8 @@ const NeonTransaksi = {
 
     async kirimWithdraw(amount) {
         const user = getUsername();
+        if(!user) return { error: { message: "Sesi Habis, Silahkan Login" } };
+
         return await _supabase.from('withdrawals').insert([{
             username: user,
             amount: parseFloat(amount),
@@ -91,22 +100,22 @@ const NeonTransaksi = {
     }
 };
 
-// 7. AUTO INITIALIZATION (Berjalan otomatis di setiap halaman)
+// 7. AUTO INITIALIZATION (FIXED REDIRECT)
 document.addEventListener('DOMContentLoaded', () => {
     const user = getUsername();
-    const isIndex = window.location.href.includes('index.html');
+    const path = window.location.pathname;
+    const isAuthPage = path.includes('index.html') || path === '/' || path.includes('login') || path.includes('register');
 
-    // Proteksi: Jika bukan halaman login dan tidak ada user, balikkan ke login
-    if (!user && !isIndex) {
+    // Jika user tidak ada dan BUKAN di halaman login/register, tendang ke index
+    if (!user && !isAuthPage) {
+        console.log("No Session, redirecting...");
         window.location.href = 'index.html';
         return;
     }
 
-    // Jalankan Sinkronisasi Pertama
     syncNeonData();
-
-    // Jalankan Sinkronisasi Otomatis setiap 3 detik (Real-time)
-    setInterval(syncNeonData, 3000);
+    // Sinkronisasi data setiap 5 detik agar tidak membebani database
+    setInterval(syncNeonData, 5000);
 });
 
 // 8. LOGOUT
