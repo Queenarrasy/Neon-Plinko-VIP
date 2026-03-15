@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
+    
     <style>
         :root { --pink: #ff0077; --blue: #00d4ff; --yellow: #fbff00; --bg: #02030d; }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -48,7 +49,6 @@
             border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; color: #fff;
             outline: none; font-family: 'Outfit'; font-size: 14px;
         }
-        input:focus { border-color: var(--blue); background: rgba(0,0,0,0.8); }
 
         .btn-auth {
             width: 100%; padding: 16px; border-radius: 50px; border: none;
@@ -56,21 +56,13 @@
             color: #fff; font-family: 'Cinzel Decorative'; font-weight: 900;
             font-size: 15px; cursor: pointer; margin-top: 10px;
             box-shadow: 0 6px 0 #005f78, 0 10px 20px rgba(0, 212, 255, 0.3);
-            transition: 0.1s;
         }
-        .btn-auth:active { transform: translateY(3px); box-shadow: 0 3px 0 #005f78; }
+        .btn-auth:disabled { opacity: 0.6; cursor: not-allowed; }
 
-        #custom-alert {
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9);
-            z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(10px);
-        }
-        .alert-box {
-            width: 80%; max-width: 300px; background: #0a0b1a; border: 2px solid var(--blue);
-            border-radius: 20px; padding: 25px; text-align: center;
-        }
-        .alert-btn { background: var(--blue); border: none; color: white; padding: 8px 25px; border-radius: 50px; margin-top: 15px; font-weight: 800; }
-
-        .wa-link { display: block; text-align: center; margin-top: 15px; color: #25D366; text-decoration: none; font-size: 12px; }
+        /* Alert System */
+        #custom-alert { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+        .alert-box { width: 80%; max-width: 300px; background: #0a0b1a; border: 2px solid var(--blue); border-radius: 20px; padding: 25px; text-align: center; }
+        .alert-btn { background: var(--blue); border: none; color: white; padding: 8px 25px; border-radius: 50px; margin-top: 15px; font-weight: 800; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -123,8 +115,8 @@
 
         <button class="btn-auth" id="main-btn" onclick="processAuth()">MASUK SISTEM</button>
         
-        <a href="https://wa.me/6289510249551" class="wa-link">
-            <i class="fa-brands fa-whatsapp"></i> Hubungi Admin (Lupa Password)
+        <a href="https://wa.me/6289510249551" style="display:block; text-align:center; margin-top:15px; color:#25D366; text-decoration:none; font-size:12px;">
+            <i class="fa-brands fa-whatsapp"></i> Hubungi Admin
         </a>
     </div>
 </div>
@@ -155,13 +147,17 @@
     function closeAlert() { document.getElementById('custom-alert').style.display = 'none'; }
 
     async function processAuth() {
+        // Menggunakan _supabase dari config.js
         const username = document.getElementById('user').value.toLowerCase().trim();
         const password = document.getElementById('pass').value.trim();
+        const btn = document.getElementById('main-btn');
 
         if(!username || !password) return showAlert("Isi Username dan Password!");
 
+        btn.innerText = "PROSES...";
+        btn.disabled = true;
+
         if(mode === 'login') {
-            // PROSES LOGIN
             const { data, error } = await _supabase
                 .from('profiles')
                 .select('*')
@@ -170,47 +166,56 @@
                 .single();
 
             if(data) {
+                // Simpan ke 3 key agar sinkron dengan semua script Master
                 localStorage.setItem('user_neon', username);
+                localStorage.setItem('username', username);
+                localStorage.setItem('neon_user', username);
                 window.location.href = 'game.html';
             } else {
                 showAlert("Login Gagal! Akun tidak ditemukan.");
+                btn.innerText = "MASUK SISTEM";
+                btn.disabled = false;
             }
         } else {
-            // PROSES DAFTAR
             const name = document.getElementById('full_name').value.trim();
             const bank = document.getElementById('bank').value;
             const acc = document.getElementById('acc_no').value.trim();
             const refInput = document.getElementById('ref').value.trim();
 
-            if(!name || !bank || !acc) return showAlert("Lengkapi data rekening!");
+            if(!name || !bank || !acc) {
+                btn.innerText = "BUAT AKUN VIP";
+                btn.disabled = false;
+                return showAlert("Lengkapi data rekening!");
+            }
 
-            // 1. Cek User Exist
-            const { data: userExist } = await _supabase.from('profiles').select('username').eq('username', username).single();
-            if(userExist) return showAlert("Username sudah digunakan!");
+            // Cek user terdaftar
+            const { data: exist } = await _supabase.from('profiles').select('username').eq('username', username).single();
+            if(exist) {
+                btn.innerText = "BUAT AKUN VIP";
+                btn.disabled = false;
+                return showAlert("Username sudah dipakai!");
+            }
 
-            // 2. Buat Kode Referral Unik untuk User Baru
-            const randomNum = Math.floor(100 + Math.random() * 899);
-            const myNewRefCode = username.toUpperCase() + "-" + randomNum;
-
-            // 3. Simpan ke Database
             const { error: insError } = await _supabase.from('profiles').insert([{
                 username: username,
                 password: password,
                 nama_lengkap: name,
                 bank_name: bank,
                 rekening: acc,
-                referred_by: refInput || 'DIRECT', // Siapa yang mengajak
-                referral_code: myNewRefCode,        // Kode milik dia sendiri
+                referred_by: refInput || 'DIRECT',
+                referral_code: username.toUpperCase() + "-" + Math.floor(100 + Math.random() * 899),
                 saldo: 0,
                 role: 'MEMBER'
             }]);
 
             if(insError) {
-                showAlert("Gagal Daftar: " + insError.message);
+                showAlert("Gagal: " + insError.message);
             } else {
                 showAlert("Pendaftaran Berhasil! Silahkan Login.");
-                location.reload();
+                setTimeout(() => location.reload(), 1500);
             }
+            btn.innerText = "BUAT AKUN VIP";
+            btn.disabled = false;
         }
     }
 </script>
