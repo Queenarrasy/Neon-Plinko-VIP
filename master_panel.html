@@ -10,63 +10,87 @@
     <style>
         :root { 
             --pink-neon: #ff0077; --blue-neon: #00d4ff; --deepblue-neon: #0044ff;
-            --yellow-neon: #f5e642; --bg: #030510; --red-alert: #ff3131; 
+            --yellow-neon: #f5e642; --bg: #030510; --red-alert: #ff3131; --green-neon: #00ff88;
+            --gp: 0 0 15px rgba(255, 0, 119, 0.4);
+            --gb: 0 0 15px rgba(0, 212, 255, 0.4);
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
         body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; min-height: 100vh; overflow-x: hidden; }
-        #gate-keeper { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
-        .gate-card { width: 90%; max-width: 380px; padding: 40px 30px; border-radius: 30px; background: rgba(255,255,255,0.02); border: 2px solid var(--blue-neon); text-align: center; }
+        
+        /* Gate Keeper */
+        #gate-keeper { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; background-image: radial-gradient(circle at center, #111 0%, #000 100%); }
+        .gate-card { width: 90%; max-width: 380px; padding: 40px 30px; border-radius: 30px; background: rgba(255,255,255,0.02); border: 2px solid var(--blue-neon); text-align: center; box-shadow: var(--gb); }
+        
         #main-app { display: none; }
-        .nav-top { background: rgba(5,6,20,0.95); padding: 15px 20px; border-bottom: 1px solid rgba(0,212,255,0.2); position: sticky; top: 0; z-index: 100; display: flex; flex-direction: column; gap: 8px; }
-        .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 70px; background: #050614; border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-around; align-items: center; padding-bottom: env(safe-area-inset-bottom); }
-        .nav-btn { color: rgba(255,255,255,0.3); font-size: 20px; cursor: pointer; text-align: center; flex: 1; }
+
+        /* UI Components */
+        .nav-top { background: rgba(5,6,20,0.95); padding: 15px 20px; border-bottom: 1px solid rgba(0,212,255,0.2); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
+        .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 75px; background: #050614; border-top: 1px solid rgba(0,212,255,0.3); display: flex; justify-content: space-around; align-items: center; padding-bottom: env(safe-area-inset-bottom); z-index: 1000; }
+        .nav-btn { color: rgba(255,255,255,0.3); font-size: 20px; cursor: pointer; text-align: center; flex: 1; transition: 0.3s; }
         .nav-btn span { display: block; font-size: 8px; margin-top: 4px; font-weight: 800; text-transform: uppercase; }
-        .nav-btn.active { color: var(--blue-neon); text-shadow: 0 0 10px var(--blue-neon); }
-        .content { padding: 20px; padding-bottom: 100px; }
-        .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 20px; padding: 20px; margin-bottom: 15px; }
-        .profit { color: var(--pink-neon); text-shadow: 0 0 8px var(--pink-neon); }
-        .loss { color: var(--deepblue-neon); text-shadow: 0 0 8px var(--deepblue-neon); }
-        .panic-btn { background: var(--red-alert); color: #fff; font-weight: 900; padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-size: 11px; }
-        .input-mini { background: #000; border: 1px solid #333; color: var(--yellow-neon); padding: 5px; border-radius: 5px; width: 65px; text-align: center; }
-        .save-btn { background: var(--blue-neon); color: #000; padding: 10px 15px; border-radius: 8px; font-size: 11px; font-weight: 900; border: none; width: 100%; cursor: pointer; }
+        .nav-btn.active { color: var(--blue-neon); text-shadow: var(--gb); }
+
+        .content { padding: 20px; padding-bottom: 100px; max-width: 600px; margin: auto; }
+        .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; margin-bottom: 15px; position: relative; overflow: hidden; }
+        .card-label { font-size: 10px; color: var(--blue-neon); font-weight: 800; text-transform: uppercase; margin-bottom: 10px; display: block; }
+
+        .profit { color: var(--green-neon); text-shadow: 0 0 8px rgba(0,255,136,0.3); }
+        .loss { color: var(--pink-neon); text-shadow: 0 0 8px rgba(255,0,119,0.3); }
+
+        /* Inputs & Buttons */
+        input { width: 100%; padding: 12px; background: #000; border: 1px solid #333; color: #fff; border-radius: 10px; margin-bottom: 10px; font-family: 'Outfit'; }
+        input:focus { border-color: var(--blue-neon); box-shadow: var(--gb); }
+        .input-mini { width: 70px; text-align: center; margin: 0; display: inline-block; padding: 5px; color: var(--yellow-neon); }
+
+        .save-btn { background: linear-gradient(90deg, var(--blue-neon), var(--deepblue-neon)); color: #000; padding: 12px; border-radius: 10px; font-size: 12px; font-weight: 900; border: none; width: 100%; cursor: pointer; text-transform: uppercase; transition: 0.2s; }
+        .save-btn:active { transform: scale(0.96); }
+        .btn-approve { background: var(--green-neon); color: #000; }
+        .btn-reject { background: var(--pink-neon); color: #fff; }
+
+        .badge { font-size: 9px; padding: 2px 8px; border-radius: 4px; background: rgba(255,255,255,0.1); margin-left: 5px; }
     </style>
 </head>
 <body>
 
     <div id="gate-keeper">
         <div class="gate-card">
-            <h1 style="font-family:'Cinzel Decorative'; color:var(--blue-neon); font-size:1.5rem;">ACCESS GATE</h1>
-            <input type="text" id="master-user" style="width:100%; padding:15px; border-radius:10px; background:#000; border:1px solid #333; color:#fff; margin:20px 0 10px;" placeholder="Username">
-            <input type="password" id="master-pass" style="width:100%; padding:15px; border-radius:10px; background:#000; border:1px solid #333; color:#fff; margin-bottom:20px;" placeholder="Password">
-            <button onclick="checkAccess()" style="width:100%; padding:15px; border-radius:10px; border:none; background:var(--blue-neon); color:#000; font-weight:900;">DECRYPT</button>
+            <h1 style="font-family:'Cinzel Decorative'; color:var(--blue-neon); font-size:1.5rem; letter-spacing:3px;">SYSTEM ADMIN</h1>
+            <p style="font-size:10px; opacity:0.5; margin-bottom:25px;">RESTRICTED AREA - NEON PLINKO</p>
+            <input type="text" id="master-user" placeholder="Admin Username">
+            <input type="password" id="master-pass" placeholder="Master Password">
+            <button onclick="checkAccess()" class="save-btn" style="margin-top:10px;">DECRYPT ACCESS</button>
         </div>
     </div>
 
     <div id="main-app">
         <div class="nav-top">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div style="font-family:'Cinzel Decorative'; font-weight:900; color:var(--pink-neon);">NEON MASTER</div>
-                <button id="panic-btn-global" class="panic-btn" onclick="togglePanicMode()">PANIC MODE</button>
+                <div style="font-family:'Cinzel Decorative'; font-weight:900; color:var(--pink-neon); text-shadow:var(--gp);">NEON COMMAND</div>
+                <div id="online-count" style="font-size:10px; font-weight:800; color:var(--yellow-neon);"><i class="fa-solid fa-circle-dot"></i> LIVE SYSTEM</div>
             </div>
-            <div id="panic-timer" style="display:none; text-align:center; color:var(--red-alert); font-weight:900; font-size:10px;">MODE KURAS: <span id="timer-val">05:00</span></div>
-            <div id="online-stats" style="font-size:10px; font-weight:800; color:var(--yellow-neon);">SYNCING...</div>
         </div>
 
         <div class="content">
             <div id="tab-finance" class="page">
-                <h2 style="font-size:14px; margin-bottom:15px; color:var(--blue-neon);">PENDING TX</h2>
-                <div id="finance-list">Memuat...</div>
+                <h2 style="font-size:14px; margin-bottom:15px; color:var(--blue-neon);"><i class="fa-solid fa-receipt"></i> PENDING REQUESTS</h2>
+                <div id="finance-list">Memuat transaksi...</div>
             </div>
+
             <div id="tab-users" class="page" style="display:none">
-                <input type="text" id="user-search" style="width:100%; padding:15px; border-radius:12px; background:#000; border:1px solid var(--blue-neon); color:#fff; margin-bottom:15px;" placeholder="Cari User..." onkeyup="filterUsers()">
-                <div id="user-list"></div>
+                <div style="position:sticky; top:80px; z-index:50; background:var(--bg); padding-bottom:10px;">
+                    <input type="text" id="user-search" placeholder="Cari Username Pemain..." onkeyup="filterUsers()" style="border-color:var(--blue-neon); box-shadow:var(--gb);">
+                </div>
+                <div id="user-list">Memuat data pemain...</div>
             </div>
+
             <div id="tab-reward" class="page" style="display:none">
-                <h2 style="font-size:14px; margin-bottom:15px; color:var(--blue-neon);">GIFT SYSTEM</h2>
+                <h2 style="font-size:14px; margin-bottom:15px; color:var(--blue-neon);"><i class="fa-solid fa-gift"></i> GIFT & NOTIFICATION SYSTEM</h2>
                 <div class="card">
-                    <input type="text" id="gift-target" style="width:100%; padding:12px; background:#000; border:1px solid #333; color:#fff; margin-bottom:10px;" placeholder="Target Username">
-                    <input type="number" id="gift-amt" style="width:100%; padding:12px; background:#000; border:1px solid #333; color:#fff; margin-bottom:10px;" placeholder="Nominal">
-                    <button class="save-btn" onclick="sendGift()">KIRIM HADIAH</button>
+                    <span class="card-label">Kirim Saldo & Pesan Inbox</span>
+                    <input type="text" id="gift-target" placeholder="Username Target (Contoh: ara_rian)">
+                    <input type="number" id="gift-amt" placeholder="Nominal Hadiah (IDR)">
+                    <textarea id="gift-msg" style="width:100%; background:#000; border:1px solid #333; color:#fff; border-radius:10px; padding:12px; height:80px; margin-bottom:15px; font-family:'Outfit';" placeholder="Pesan untuk Pemain..."></textarea>
+                    <button class="save-btn" id="btn-gift" onclick="sendGift()">KIRIM HADIAH SEKARANG</button>
                 </div>
             </div>
         </div>
@@ -80,63 +104,123 @@
     </div>
 
 <script>
+    // Config Supabase Master (Gunakan Key Master Master)
     const sb_url = "https://bgffnmwrviyqpeevzjsn.supabase.co"; 
-    const sb_key = "sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani";
+    const sb_key = "sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani"; // Pastikan ini Service Role Key jika ingin bypass RLS
     const _supabase = supabase.createClient(sb_url, sb_key);
 
     const MASTER_KEY = { u: "admin_neon", p: "master777" };
     let usersData = [];
 
     function checkAccess() {
-        if(document.getElementById('master-user').value === MASTER_KEY.u && document.getElementById('master-pass').value === MASTER_KEY.p) {
+        const u = document.getElementById('master-user').value;
+        const p = document.getElementById('master-pass').value;
+        if(u === MASTER_KEY.u && p === MASTER_KEY.p) {
             sessionStorage.setItem('master_auth', 'true');
             document.getElementById('gate-keeper').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
             initDashboard();
-        } else { alert("DENIED"); }
+        } else { alert("ACCESS DENIED: WRONG CREDENTIALS"); }
     }
 
     async function initDashboard() {
-        loadFinance(); loadUsers();
-        setInterval(() => { loadFinance(); loadUsers(); }, 10000);
+        loadFinance();
+        loadUsers();
+        // Auto Refresh tiap 15 detik
+        setInterval(() => { 
+            if(document.getElementById('tab-finance').style.display !== 'none') loadFinance();
+        }, 15000);
     }
 
+    // --- LOGIKA KASIR (DEPO/WD) ---
     async function loadFinance() {
-        const { data: depo } = await _supabase.from('deposits').select('*').eq('status', 'PROSES');
-        const { data: wd } = await _supabase.from('withdrawals').select('*').eq('status', 'PROSES');
+        const { data: depo } = await _supabase.from('deposits').select('*').eq('status', 'PROSES').order('created_at', {ascending: false});
+        const { data: wd } = await _supabase.from('withdrawals').select('*').eq('status', 'PROSES').order('created_at', {ascending: false});
+        
         let html = '';
-        if(depo) depo.forEach(d => {
-            html += `<div class="card"><b>${d.username}</b> <span class="profit">+${d.net_receive}</span><br>
-            <button class="save-btn" style="margin-top:10px" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive})">APPROVE</button></div>`;
-        });
-        document.getElementById('finance-list').innerHTML = html || 'Bersih';
+        
+        // Render Depo
+        if(depo && depo.length > 0) {
+            depo.forEach(d => {
+                html += `
+                <div class="card" style="border-left:4px solid var(--green-neon)">
+                    <span class="card-label">DEPOSIT REQUEST</span>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div><b>${d.username}</b><br><small style="opacity:0.5">${d.method}</small></div>
+                        <div class="profit" style="font-weight:900; font-size:1.1rem;">+${(d.net_receive || 0).toLocaleString()}</div>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:15px;">
+                        <button class="save-btn btn-approve" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive})">APPROVE</button>
+                        <button class="save-btn btn-reject" onclick="rejectTx('deposits','${d.id}')">REJECT</button>
+                    </div>
+                </div>`;
+            });
+        }
+
+        // Render WD
+        if(wd && wd.length > 0) {
+            wd.forEach(w => {
+                html += `
+                <div class="card" style="border-left:4px solid var(--pink-neon)">
+                    <span class="card-label">WITHDRAWAL REQUEST</span>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div><b>${w.username}</b><br><small style="opacity:0.5">${w.bank_name} - ${w.rekening}</small></div>
+                        <div class="loss" style="font-weight:900; font-size:1.1rem;">-${(w.amount || 0).toLocaleString()}</div>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:15px;">
+                        <button class="save-btn btn-approve" style="background:var(--blue-neon)" onclick="approveWD('${w.id}')">SUCCESS</button>
+                        <button class="save-btn btn-reject" onclick="rejectTx('withdrawals','${w.id}')">CANCEL</button>
+                    </div>
+                </div>`;
+            });
+        }
+
+        document.getElementById('finance-list').innerHTML = html || '<div style="text-align:center; padding:50px; opacity:0.3;">Antrean Kosong</div>';
     }
 
     async function approveDepo(id, user, amt) {
-        const { data: profile } = await _supabase.from('profiles').select('saldo').eq('username', user).single();
-        const saldoBaru = (profile.saldo || 0) + amt;
-        await _supabase.from('profiles').update({ saldo: saldoBaru }).eq('username', user);
-        await _supabase.from('deposits').update({ status: 'SUKSES' }).eq('id', id);
-        alert("BERHASIL!"); loadFinance();
+        if(!confirm(`Konfirmasi saldo +${amt} untuk ${user}?`)) return;
+        try {
+            const { data: profile } = await _supabase.from('profiles').select('saldo').eq('username', user).single();
+            const saldoBaru = (profile.saldo || 0) + amt;
+            await _supabase.from('profiles').update({ saldo: saldoBaru }).eq('username', user);
+            await _supabase.from('deposits').update({ status: 'SUKSES' }).eq('id', id);
+            alert("DEPOSIT BERHASIL DISETUJUI!"); loadFinance();
+        } catch(e) { alert("Error: " + e.message); }
     }
 
+    async function approveWD(id) {
+        if(!confirm("Tandai WD ini sudah ditransfer?")) return;
+        await _supabase.from('withdrawals').update({ status: 'SUKSES' }).eq('id', id);
+        alert("WD BERHASIL!"); loadFinance();
+    }
+
+    async function rejectTx(table, id) {
+        if(!confirm("Tolak transaksi ini?")) return;
+        await _supabase.from(table).update({ status: 'GAGAL' }).eq('id', id);
+        loadFinance();
+    }
+
+    // --- LOGIKA PEMAIN ---
     async function loadUsers() {
-        const { data } = await _supabase.from('profiles').select('*');
+        const { data } = await _supabase.from('profiles').select('*').order('username', {ascending: true});
         if(data) { usersData = data; renderUsers(data); }
     }
 
     function renderUsers(list) {
         document.getElementById('user-list').innerHTML = list.map(u => {
             const saldo = u.saldo || 0;
-            const modal = u.modal_awal || 0;
-            const sClass = saldo > modal ? 'profit' : (saldo < modal ? 'loss' : '');
-            return `<div class="card">
-                <div style="display:flex; justify-content:space-between;"><b>${u.username}</b><span class="${sClass}">Rp ${saldo.toLocaleString()}</span></div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
-                    <div>WR: <input type="number" class="input-mini" id="wr-${u.id}" value="${u.winrate || 0}">%</div>
-                    <div>MAX: <input type="number" class="input-mini" style="width:75px" id="mx-${u.id}" value="${u.max_win_limit || 0}"></div>
+            return `
+            <div class="card user-item" data-name="${u.username.toLowerCase()}">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div><b>${u.username.toUpperCase()}</b> <span class="badge">${u.role || 'MEMBER'}</span></div>
+                    <div class="profit">Rp ${saldo.toLocaleString()}</div>
                 </div>
-                <button class="save-btn" style="margin-top:10px; background:transparent; border:1px solid var(--blue-neon); color:var(--blue-neon);" onclick="updateSetting('${u.id}')">SIMPAN</button>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px; border-top:1px solid rgba(255,255,255,0.05); padding-top:10px;">
+                    <div><small>Winrate (%)</small><br><input type="number" class="input-mini" id="wr-${u.id}" value="${u.winrate || 0}"></div>
+                    <div><small>Max Win (IDR)</small><br><input type="number" class="input-mini" style="width:100%" id="mx-${u.id}" value="${u.max_win_limit || 0}"></div>
+                </div>
+                <button class="save-btn" style="margin-top:10px; background:transparent; border:1px solid var(--blue-neon); color:var(--blue-neon);" onclick="updateSetting('${u.id}')">SAVE SETTINGS</button>
             </div>`;
         }).join('');
     }
@@ -144,10 +228,71 @@
     async function updateSetting(id) {
         const wr = document.getElementById(`wr-${id}`).value;
         const mx = document.getElementById(`mx-${id}`).value;
-        await _supabase.from('profiles').update({ winrate: parseInt(wr), max_win_limit: parseInt(mx) }).eq('id', id);
-        alert("UPDATED!");
+        const { error } = await _supabase.from('profiles').update({ winrate: parseInt(wr), max_win_limit: parseInt(mx) }).eq('id', id);
+        if(!error) alert("SETTING SAVED!"); else alert("FAILED!");
     }
 
+    function filterUsers() {
+        const val = document.getElementById('user-search').value.toLowerCase();
+        document.querySelectorAll('.user-item').forEach(item => {
+            item.style.display = item.getAttribute('data-name').includes(val) ? 'block' : 'none';
+        });
+    }
+
+    // --- LOGIKA REWARD (GIFT) ---
+    async function sendGift() {
+        const target = document.getElementById('gift-target').value.trim();
+        const amount = parseFloat(document.getElementById('gift-amt').value);
+        const message = document.getElementById('gift-msg').value.trim();
+        const btn = document.getElementById('btn-gift');
+
+        if(!target || isNaN(amount)) return alert("Isi Username dan Nominal!");
+
+        btn.disabled = true;
+        btn.innerText = "PROCESSING...";
+
+        try {
+            // 1. Cek User & Ambil Saldo
+            const { data: user, error: userErr } = await _supabase.from('profiles').select('saldo').eq('username', target).single();
+            if(!user) throw new Error("User tidak ditemukan!");
+
+            const newSaldo = (user.saldo || 0) + amount;
+
+            // 2. Update Saldo User
+            await _supabase.from('profiles').update({ saldo: newSaldo }).eq('username', target);
+
+            // 3. Masukkan ke Riwayat (Deposits) agar tercatat
+            await _supabase.from('deposits').insert([{
+                username: target,
+                amount: amount,
+                net_receive: amount,
+                method: 'REWARD',
+                status: 'SUKSES',
+                keterangan: 'ADMIN_GIFT'
+            }]);
+
+            // 4. Kirim Pesan ke Inbox (Agar player tahu dia dapat hadiah)
+            await _supabase.from('inbox').insert([{
+                username: target,
+                pesan: message || "Selamat! Anda menerima hadiah saldo dari Admin.",
+                nominal: amount,
+                status: 'UNCLAIMED'
+            }]);
+
+            alert(`BERHASIL! Hadiah Rp ${amount.toLocaleString()} terkirim ke ${target}`);
+            
+            // Reset Form
+            document.getElementById('gift-amt').value = '';
+            document.getElementById('gift-msg').value = '';
+        } catch(e) {
+            alert("GAGAL: " + e.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "KIRIM HADIAH SEKARANG";
+        }
+    }
+
+    // Navigation Logic
     function switchNav(tab, el) {
         document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
         document.getElementById('tab-' + tab).style.display = 'block';
@@ -157,7 +302,13 @@
 
     function logout() { sessionStorage.clear(); window.location.reload(); }
     
-    window.onload = () => { if(sessionStorage.getItem('master_auth') === 'true') { document.getElementById('gate-keeper').style.display = 'none'; document.getElementById('main-app').style.display = 'block'; initDashboard(); } };
+    window.onload = () => { 
+        if(sessionStorage.getItem('master_auth') === 'true') { 
+            document.getElementById('gate-keeper').style.display = 'none'; 
+            document.getElementById('main-app').style.display = 'block'; 
+            initDashboard(); 
+        } 
+    };
 </script>
 </body>
 </html>
