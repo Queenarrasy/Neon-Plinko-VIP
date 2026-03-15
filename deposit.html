@@ -2,103 +2,292 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
     <title>DEPOSIT - NEON PLINKO VIP</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@400;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --pink: #ff0077; --blue: #0055ff; --cyan: #00f2ff; --bg: #02030d; }
-        body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; margin: 0; padding-bottom: 30px; }
-        .header { height: 65px; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--blue); background: rgba(2,3,13,0.9); position: sticky; top: 0; z-index: 100; }
+        :root {
+          --pink: #ff0077; --blue: #0055ff; --cyan: #00f2ff; --yellow: #f5e642; --bg: #02030d;
+          --gp: 0 0 10px rgba(255, 0, 119, 0.5), 0 0 20px rgba(255, 0, 119, 0.2);
+          --gb: 0 0 10px rgba(0, 85, 255, 0.5), 0 0 20px rgba(0, 85, 255, 0.2);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+          background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; min-height: 100vh;
+          background-image: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(0,85,255,0.08) 0%, transparent 70%);
+          padding-bottom: 30px;
+        }
+
+        /* Header Premium */
+        .header { 
+            height: 65px; padding: 0 20px; display: flex; justify-content: space-between; 
+            align-items: center; background: rgba(2, 3, 13, 0.95); border-bottom: 1px solid var(--blue); 
+            position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px);
+        }
+        .btn-back { color: #fff; font-size: 20px; text-decoration: none; width: 40px; }
+        .logo { font-family: 'Cinzel Decorative'; color: var(--pink); font-size: 14px; text-shadow: var(--gp); font-weight: 900; }
+
         .container { padding: 20px; max-width: 500px; margin: auto; }
-        .form-box { background: rgba(5,6,20,0.8); border: 1px solid rgba(255,255,255,0.05); padding: 20px; border-radius: 20px; margin-bottom: 20px; }
-        input { width: 100%; padding: 15px; background: #000; border: 1px solid var(--blue); border-radius: 12px; color: #fff; font-size: 18px; font-weight: 800; margin-bottom: 15px; outline: none; }
-        .btn-main { width: 100%; padding: 16px; border-radius: 50px; border: none; background: linear-gradient(90deg, var(--pink), #b400dc); color: #fff; font-weight: 900; cursor: pointer; }
-        .history-item { background: rgba(255,255,255,0.02); padding: 15px; border-radius: 15px; margin-bottom: 10px; border-left: 3px solid var(--blue); }
-        .amt-btn { background: rgba(0,85,255,0.1); border: 1px solid var(--blue); color: #fff; padding: 10px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; }
+
+        /* Method Selection */
+        .method-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        .method-item { 
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(0,85,255,0.2); 
+            padding: 15px; border-radius: 15px; text-align: center; cursor: pointer; transition: 0.3s;
+        }
+        .method-item.active { border-color: var(--pink); background: rgba(255,0,119,0.1); box-shadow: var(--gp); }
+        .method-item i { font-size: 24px; margin-bottom: 8px; display: block; }
+        .method-item .label { font-size: 12px; font-weight: 800; }
+
+        /* Form Area */
+        .form-box { 
+            background: rgba(5,6,20,0.8); border: 1px solid rgba(255,255,255,0.05); 
+            padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        label { display: block; font-size: 11px; font-weight: 600; color: var(--blue); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .input-group { position: relative; margin-bottom: 15px; }
+        input[type=number] { 
+            width: 100%; padding: 15px; background: #000; border: 1px solid var(--blue); 
+            border-radius: 12px; color: #fff; font-size: 18px; font-weight: 800; outline: none;
+        }
+        
+        .amount-quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
+        .amt-btn { 
+            background: rgba(0,85,255,0.1); border: 1px solid var(--blue); color: #fff; 
+            padding: 10px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer;
+        }
+
+        .calc-card { background: rgba(255,255,255,0.02); padding: 15px; border-radius: 15px; margin-bottom: 20px; border-left: 3px solid var(--yellow); }
+        .calc-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
+        .net-total { font-size: 16px; font-weight: 900; color: var(--yellow); margin-top: 5px; padding-top: 5px; border-top: 1px dashed rgba(255,255,255,0.1); }
+
+        /* QR & Wallet Display */
+        .pay-info { text-align: center; margin-bottom: 20px; padding: 15px; border: 1px dashed rgba(0,212,255,0.3); border-radius: 15px; }
+        .qris-img { width: 180px; height: 180px; border-radius: 10px; margin-bottom: 10px; border: 2px solid #fff; }
+        .btn-wa { 
+            display: inline-flex; align-items: center; gap: 8px; background: #25d366; 
+            color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 50px; font-size: 12px; font-weight: 700;
+        }
+
+        .btn-main { 
+            width: 100%; padding: 16px; border-radius: 50px; border: none; 
+            background: linear-gradient(90deg, var(--pink), #b400dc); 
+            color: #fff; font-family: 'Cinzel Decorative'; font-weight: 900; font-size: 16px; 
+            box-shadow: var(--gp); cursor: pointer;
+        }
+        .btn-main:disabled { opacity: 0.5; filter: grayscale(1); }
+
+        /* History */
+        .history-sec { margin-top: 30px; }
+        .history-item { 
+            background: rgba(255,255,255,0.02); padding: 15px; border-radius: 15px; 
+            margin-bottom: 10px; border-left: 3px solid var(--blue);
+        }
+
+        /* Modal */
+        #modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .modal-box { background: #0a0b1e; border: 2px solid var(--pink); border-radius: 25px; padding: 30px; width: 85%; max-width: 320px; text-align: center; box-shadow: var(--gp); }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <a href="game.html" style="color:#fff;"><i class="fa-solid fa-arrow-left"></i></a>
-        <div style="font-family:'Cinzel Decorative'; color:var(--pink); font-size:14px;">DEPOSIT CENTER</div>
-        <div style="width:20px"></div>
+        <a href="game.html" class="btn-back"><i class="fa-solid fa-arrow-left"></i></a>
+        <div class="logo">DEPOSIT CENTER</div>
+        <div style="width:40px"></div>
     </div>
 
     <div class="container">
-        <div class="form-box">
-            <label style="font-size:11px; color:var(--blue); display:block; margin-bottom:10px;">NOMINAL DEPOSIT (IDR)</label>
-            <input type="number" id="input-amount" placeholder="Min 20.000">
-            
-            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:20px;">
-                <button class="amt-btn" onclick="document.getElementById('input-amount').value=20000">20K</button>
-                <button class="amt-btn" onclick="document.getElementById('input-amount').value=50000">50K</button>
-                <button class="amt-btn" onclick="document.getElementById('input-amount').value=100000">100K</button>
+        <div class="method-grid">
+            <div class="method-item active" id="m-qris" onclick="selectMethod('QRIS')">
+                <i class="fa-solid fa-qrcode" style="color:var(--cyan)"></i>
+                <span class="label">QRIS ALL</span>
             </div>
-
-            <div style="text-align:center; margin-bottom:20px;">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=DEPOSIT_NEON" style="width:150px; border:2px solid #fff; border-radius:10px;">
-                <p style="font-size:10px; color:var(--cyan); margin-top:10px;">SILAHKAN SCAN & KONFIRMASI</p>
+            <div class="method-item" id="m-usdt" onclick="selectMethod('USDT')">
+                <i class="fa-brands fa-ethereum" style="color:var(--yellow)"></i>
+                <span class="label">USDT TRC20</span>
             </div>
-
-            <button class="btn-main" id="btn-submit" onclick="prosesDeposit()">KONFIRMASI SEKARANG</button>
         </div>
 
-        <h4 style="font-size:12px; color:var(--blue); margin-bottom:10px;">RIWAYAT TERAKHIR</h4>
-        <div id="depo-history"></div>
+        <div class="form-box">
+            <label id="label-input">Nominal Rupiah (IDR)</label>
+            <div class="input-group">
+                <input type="number" id="input-amount" placeholder="0" oninput="calculateNet()">
+            </div>
+
+            <div class="amount-quick" id="quick-idr">
+                <button class="amt-btn" onclick="setAmt(20000)">20K</button>
+                <button class="amt-btn" onclick="setAmt(50000)">50K</button>
+                <button class="amt-btn" onclick="setAmt(100000)">100K</button>
+            </div>
+
+            <div class="pay-info" id="qris-area">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=MAYA_DEPOSIT_NEON" class="qris-img">
+                <div style="font-size:10px; color:var(--cyan); font-weight:700;">SCAN QRIS DI ATAS</div>
+            </div>
+
+            <div class="pay-info" id="usdt-area" style="display:none;">
+                <div style="font-size:12px; margin-bottom:10px;">Mohon chat admin untuk mendapatkan alamat dompet USDT terbaru.</div>
+                <a href="https://wa.me/6289510249551" class="btn-wa"><i class="fa-brands fa-whatsapp"></i> HUBUNGI ADMIN</a>
+            </div>
+
+            <div class="calc-card">
+                <div class="calc-row"><span>Rate Kurs:</span> <span id="info-rate">1:1</span></div>
+                <div class="calc-row"><span>Fee Layanan:</span> <span id="info-fee">IDR 0</span></div>
+                <div class="calc-row net-total">
+                    <span>Terima Saldo:</span>
+                    <span id="info-net">IDR 0</span>
+                </div>
+            </div>
+
+            <button class="btn-main" id="btn-submit" onclick="prosesDeposit()">KONFIRMASI DEPOSIT</button>
+        </div>
+
+        <div class="history-sec">
+            <label>Riwayat Deposit</label>
+            <div id="depo-history">
+                <div style="text-align:center; padding:20px; opacity:0.3; font-size:12px;">Memuat riwayat...</div>
+            </div>
+        </div>
     </div>
 
-<script>
-    const sb_url = "https://bgffnmwrviyqpeevzjsn.supabase.co"; 
-    const sb_key = "sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani";
-    const _supabase = supabase.createClient(sb_url, sb_key);
+    <div id="modal-overlay">
+        <div class="modal-box">
+            <h3 id="m-title" style="color:var(--pink); font-family:'Cinzel Decorative'; font-size:18px">INFO</h3>
+            <p id="m-msg" style="margin:20px 0; font-size:14px; color:#ccc; line-height:1.5;"></p>
+            <button class="btn-main" onclick="closeModal()" style="font-size:14px; padding:12px;">OKE</button>
+        </div>
+    </div>
 
-    async function prosesDeposit() {
-        const user = localStorage.getItem('neon_user');
-        const amt = parseFloat(document.getElementById('input-amount').value);
-        if(!user) return alert("Silahkan login kembali");
-        if(!amt || amt < 20000) return alert("Minimal deposit IDR 20.000");
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script>
+        let currentMethod = 'QRIS';
+        const KURS_USDT = 16800;
 
-        document.getElementById('btn-submit').innerText = "MENGIRIM...";
-
-        const { error } = await _supabase.from('deposits').insert([{ 
-            username: user, amount: amt, method: 'QRIS', net_receive: amt, status: 'PROSES' 
-        }]);
-
-        if(!error) {
-            alert("Deposit Berhasil Dikirim!");
-            document.getElementById('input-amount').value = "";
-            loadHistory();
+        // Fungsi Helper Ambil User
+        function getUsername() {
+            return localStorage.getItem('neon_user');
         }
-        document.getElementById('btn-submit').innerText = "KONFIRMASI SEKARANG";
-    }
 
-    async function loadHistory() {
-        const user = localStorage.getItem('neon_user');
-        if(!user) return;
+        // Fungsi Helper Format Rupiah
+        function formatIDR(val) {
+            return "IDR " + val.toLocaleString('id-ID');
+        }
 
-        const { data, error } = await _supabase.from('deposits').select('*').eq('username', user).order('created_at', {ascending: false}).limit(5);
-        
-        let html = "";
-        if(data && data.length > 0) {
-            data.forEach(i => {
-                const sColor = i.status === 'SUKSES' ? '#00ff88' : (i.status === 'PROSES' ? '#f5e642' : '#ff3131');
-                html += `
-                    <div class="history-item" style="border-left-color: ${sColor}">
-                        <div style="display:flex; justify-content:space-between; font-size:11px;">
-                            <span style="color:var(--cyan)">${i.method}</span>
-                            <span style="color:${sColor}; font-weight:800">${i.status}</span>
+        function selectMethod(m) {
+            currentMethod = m;
+            document.getElementById('m-qris').classList.toggle('active', m === 'QRIS');
+            document.getElementById('m-usdt').classList.toggle('active', m === 'USDT');
+            document.getElementById('qris-area').style.display = (m === 'QRIS') ? 'block' : 'none';
+            document.getElementById('usdt-area').style.display = (m === 'USDT') ? 'block' : 'none';
+            document.getElementById('quick-idr').style.display = (m === 'QRIS') ? 'grid' : 'none';
+            document.getElementById('label-input').innerText = (m === 'QRIS') ? "Nominal Rupiah (IDR)" : "Jumlah USDT ($)";
+            document.getElementById('input-amount').value = "";
+            calculateNet();
+        }
+
+        function setAmt(v) {
+            document.getElementById('input-amount').value = v;
+            calculateNet();
+        }
+
+        function calculateNet() {
+            const val = parseFloat(document.getElementById('input-amount').value) || 0;
+            let net = 0;
+            if (currentMethod === 'QRIS') {
+                net = val;
+                document.getElementById('info-rate').innerText = "1:1";
+                document.getElementById('info-fee').innerText = "IDR 0";
+            } else {
+                net = val * KURS_USDT;
+                document.getElementById('info-rate').innerText = "IDR " + KURS_USDT.toLocaleString();
+                document.getElementById('info-fee').innerText = "Potongan Network";
+            }
+            document.getElementById('info-net').innerText = formatIDR(net);
+            return net;
+        }
+
+        async function prosesDeposit() {
+            const amt = parseFloat(document.getElementById('input-amount').value);
+            const net = calculateNet();
+            const btn = document.getElementById('btn-submit');
+            const user = getUsername();
+
+            if (!user) return showModal("ERROR", "Sesi berakhir. Silahkan login ulang.");
+            if (!amt || amt <= 0) return showModal("GAGAL", "Masukkan nominal deposit yang valid.");
+            if (currentMethod === 'QRIS' && amt < 20000) return showModal("MINIMAL", "Deposit QRIS minimal IDR 20.000");
+            if (currentMethod === 'USDT' && amt < 10) return showModal("MINIMAL", "Deposit USDT minimal $10");
+
+            btn.disabled = true;
+            btn.innerText = "MEMPROSES...";
+
+            // Memanggil fungsi dari config.js
+            const { error } = await NeonTransaksi.kirimDeposit(amt, currentMethod, net);
+
+            if (error) {
+                showModal("ERROR", error.message);
+            } else {
+                showModal("BERHASIL", "Permintaan deposit dikirim! Saldo akan masuk otomatis setelah admin melakukan verifikasi.");
+                document.getElementById('input-amount').value = "";
+                loadHistory();
+            }
+            btn.disabled = false;
+            btn.innerText = "KONFIRMASI DEPOSIT";
+        }
+
+        async function loadHistory() {
+            const user = getUsername();
+            if(!user) return;
+
+            // Memanggil langsung dari supabase (pastikan _supabase didefinisikan di config.js atau di sini)
+            const { data, error } = await _supabase
+                .from('deposits')
+                .select('*')
+                .eq('username', user)
+                .order('created_at', { ascending: false })
+                .limit(5);
+            
+            if (error) {
+                console.error("Gagal muat riwayat:", error);
+                document.getElementById('depo-history').innerHTML = '<div style="text-align:center; padding:20px; color:red; font-size:12px;">Gagal memuat riwayat</div>';
+                return;
+            }
+
+            let html = "";
+            if (data && data.length > 0) {
+                data.forEach(i => {
+                    const statusColor = i.status === 'SUKSES' ? '#00ff00' : (i.status === 'GAGAL' ? '#ff0000' : 'var(--yellow)');
+                    html += `
+                        <div class="history-item">
+                            <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:5px;">
+                                <span style="font-weight:800; color:var(--cyan)">${i.method}</span>
+                                <span style="color:${statusColor}; font-weight:800">${i.status}</span>
+                            </div>
+                            <div style="font-size:16px; font-weight:900;">${i.method === 'QRIS' ? 'IDR' : '$'} ${i.amount.toLocaleString()}</div>
+                            <div style="font-size:10px; opacity:0.5; margin-top:3px;">Terima: IDR ${i.net_receive.toLocaleString()}</div>
                         </div>
-                        <div style="font-size:16px; font-weight:800; margin-top:5px;">Rp ${i.amount.toLocaleString()}</div>
-                    </div>`;
-            });
-        } else { html = "<p style='opacity:0.3; font-size:12px; text-align:center;'>Belum ada transaksi</p>"; }
-        document.getElementById('depo-history').innerHTML = html;
-    }
+                    `;
+                });
+            } else {
+                html = '<div style="text-align:center; padding:20px; opacity:0.3; font-size:12px;">Belum ada transaksi</div>';
+            }
+            document.getElementById('depo-history').innerHTML = html;
+        }
 
-    window.onload = loadHistory;
-</script>
+        function showModal(t, m) {
+            document.getElementById('m-title').innerText = t;
+            document.getElementById('m-msg').innerText = m;
+            document.getElementById('modal-overlay').style.display = 'flex';
+        }
+
+        function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+
+        // Jalankan saat load
+        window.onload = loadHistory;
+    </script>
 </body>
 </html>
