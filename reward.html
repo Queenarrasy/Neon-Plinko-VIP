@@ -6,6 +6,8 @@
     <title>REWARDS & MAIL - NEON PLINKO</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
     <style>
         :root {
           --pink: #ff0077; --blue: #00d4ff; --yellow: #fbff00; --green: #00ff88; --bg: #02030d;
@@ -55,7 +57,10 @@
           background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
           border: 1px solid rgba(255, 0, 119, 0.2); border-radius: 15px; padding: 15px;
           display: flex; flex-direction: column; gap: 10px; position: relative;
+          animation: slideIn 0.4s ease-out;
         }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+
         .mail-header { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--pink); font-weight: 700; }
         .mail-body { font-size: 0.85rem; line-height: 1.4; color: #ddd; }
         .mail-amount { color: var(--green); font-weight: 800; font-size: 1rem; }
@@ -66,6 +71,7 @@
           color: #fff; font-weight: 800; font-size: 0.85rem; cursor: pointer; text-transform: uppercase;
           box-shadow: var(--gb); transition: 0.3s;
         }
+        .btn-claim:active { transform: scale(0.95); }
         .btn-claim:disabled { opacity: 0.4; filter: grayscale(1); cursor: not-allowed; }
         .btn-mail-claim { background: linear-gradient(90deg, var(--pink), #b400dc); box-shadow: var(--gp); margin-top: 5px; }
 
@@ -77,10 +83,13 @@
 
         /* Modal */
         #modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
-        .modal { background: #0a0b1a; border: 2px solid var(--blue); border-radius: 20px; padding: 25px; width: 85%; max-width: 300px; text-align: center; }
+        .modal { background: #0a0b1a; border: 2px solid var(--blue); border-radius: 20px; padding: 25px; width: 85%; max-width: 300px; text-align: center; box-shadow: var(--gb); }
     </style>
 </head>
 <body>
+
+<audio id="snd-click" src="https://cdn.pixabay.com/audio/2022/03/15/audio_c8b417f73c.mp3"></audio>
+<audio id="snd-success" src="https://cdn.pixabay.com/audio/2021/08/04/audio_062564a02d.mp3"></audio>
 
 <div class="header">
   <h1>MISSIONS & REWARDS</h1>
@@ -108,8 +117,7 @@
 
     <div class="mailbox-title"><i class="fas fa-envelope-open-text"></i> KOTAK HADIAH (INBOX)</div>
     <div id="mail-list" class="mail-list">
-        <div style="text-align:center; padding:20px; opacity:0.3; font-size:12px;">Memuat pesan...</div>
-    </div>
+        </div>
 </div>
 
 <div id="modal-overlay">
@@ -127,116 +135,125 @@
     <a href="profil.html" class="nav-item"><i class="fas fa-user-shield"></i>PROFIL</a>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js"></script>
 <script>
 const user = getUsername();
+
+function playSnd(type) {
+    const s = document.getElementById('snd-' + type);
+    if(s) { s.currentTime = 0; s.play(); }
+}
 
 async function initReward() {
     if (!user) return;
 
-    // 1. BUAT KODE REFERRAL UNIK (Username + 3 Angka Unik)
-    // Kita simpan di localStorage agar angkanya tidak berubah-ubah saat refresh
-    let uniqueRef = localStorage.getItem('user_unique_ref');
-    if (!uniqueRef) {
-        const randomNum = Math.floor(100 + Math.random() * 899); // Angka 100-999
-        uniqueRef = user.toUpperCase() + "-" + randomNum;
-        localStorage.setItem('user_unique_ref', uniqueRef);
-    }
-    document.getElementById('ref-code').innerText = uniqueRef;
+    // Load Referral dari DB via config.js data
+    const { data: prof } = await _supabase.from('profiles').select('referral_code').eq('username', user).single();
+    document.getElementById('ref-code').innerText = prof?.referral_code || "NEON-USER";
 
     checkTodayClaim();
     loadInbox();
 }
 
+// --- FIX CORE: LOAD INBOX ---
 async function loadInbox() {
-    // Mengambil pesan hadiah dari tabel 'inbox' yang statusnya 'UNCLAIMED'
-    const { data, error } = await _supabase
-        .from('inbox')
-        .select('*')
-        .eq('username', user)
-        .eq('status', 'UNCLAIMED')
-        .order('created_at', { ascending: false });
-
     const mailContainer = document.getElementById('mail-list');
-    
-    if (data && data.length > 0) {
-        let html = "";
-        data.forEach(item => {
-            html += `
-                <div class="mail-item" id="mail-${item.id}">
-                    <div class="mail-header">
-                        <span>HADIAH ADMIN</span>
-                        <span>${new Date(item.created_at).toLocaleDateString()}</span>
+    mailContainer.innerHTML = '<div style="text-align:center; padding:20px; opacity:0.3; font-size:12px;">Mencari hadiah...</div>';
+
+    try {
+        // Kita gunakan .or untuk menangkap status 'UNCLAIMED' atau yang masih NULL (kosong)
+        const { data, error } = await _supabase
+            .from('inbox')
+            .select('*')
+            .eq('username', user)
+            .or('status.eq.UNCLAIMED,status.is.null') 
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            let html = "";
+            data.forEach(item => {
+                html += `
+                    <div class="mail-item" id="mail-${item.id}">
+                        <div class="mail-header">
+                            <span>FROM: ADMIN NEON</span>
+                            <span>${new Date(item.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <div class="mail-body">${item.pesan || 'Hadiah Spesial Untukmu!'}</div>
+                        <div class="mail-amount">IDR ${(item.nominal || 0).toLocaleString()}</div>
+                        <button class="btn-claim btn-mail-claim" onclick="claimMail(${item.id}, ${item.nominal})">KLAIM SEKARANG</button>
                     </div>
-                    <div class="mail-body">${item.pesan}</div>
-                    <div class="mail-amount">IDR ${item.nominal.toLocaleString()}</div>
-                    <button class="btn-claim btn-mail-claim" onclick="claimMail(${item.id}, ${item.nominal})">KLAIM KE SALDO</button>
-                </div>
-            `;
-        });
-        mailContainer.innerHTML = html;
-    } else {
-        mailContainer.innerHTML = '<div style="text-align:center; padding:30px; opacity:0.3; font-size:12px;">Kotak surat kosong. Belum ada hadiah untukmu.</div>';
+                `;
+            });
+            mailContainer.innerHTML = html;
+        } else {
+            mailContainer.innerHTML = '<div style="text-align:center; padding:40px; opacity:0.3; font-size:12px;"><i class="fas fa-box-open" style="font-size:30px; display:block; margin-bottom:10px;"></i>Kotak hadiah kosong.</div>';
+        }
+    } catch (err) {
+        mailContainer.innerHTML = '<div style="text-align:center; color:red; font-size:12px;">Gagal memuat data inbox.</div>';
     }
 }
 
 async function claimMail(mailId, amount) {
+    playSnd('click');
     const btn = document.querySelector(`#mail-${mailId} button`);
     btn.disabled = true;
-    btn.innerText = "MENGKLAIM...";
+    btn.innerText = "PROCESSING...";
 
     try {
-        const currentSaldo = parseFloat(localStorage.getItem('cached_saldo')) || 0;
-        const newSaldo = currentSaldo + amount;
+        // Ambil saldo terbaru dari DB (Jangan pakai localStorage agar akurat)
+        const { data: p } = await _supabase.from('profiles').select('saldo').eq('username', user).single();
+        const newSaldo = (p.saldo || 0) + amount;
 
-        // 1. Update Saldo Pemain
+        // 1. Update Saldo
         await _supabase.from('profiles').update({ saldo: newSaldo }).eq('username', user);
         
         // 2. Tandai Pesan sebagai CLAIMED
         await _supabase.from('inbox').update({ status: 'CLAIMED' }).eq('id', mailId);
 
-        // 3. Catat di riwayat (deposits) agar masuk histori
+        // 3. Masukkan ke Riwayat agar pemain tidak bingung saldo nambah dari mana
         await _supabase.from('deposits').insert([{
             username: user,
-            net_receive: amount,
+            amount: amount,
             method: 'REWARD',
             status: 'SUKSES',
-            keterangan: 'CLAIM INBOX'
+            net_receive: amount
         }]);
 
-        showModal("SUKSES!", `Hadiah Rp ${amount.toLocaleString()} telah masuk ke saldo utama Anda.`);
-        syncNeonData(); 
-        loadInbox(); // Refresh list
+        playSnd('success');
+        showModal("HADIAH DITERIMA", `Selamat! Saldo Rp ${amount.toLocaleString()} telah ditambahkan ke akun Master.`);
+        
+        syncNeonData(); // Update display saldo di header jika ada
+        loadInbox(); // Refresh list agar yang sudah diklaim hilang
 
     } catch (err) {
-        console.error(err);
         btn.disabled = false;
-        btn.innerText = "KLAIM KE SALDO";
+        btn.innerText = "KLAIM ULANG";
+        showModal("GAGAL", "Terjadi gangguan koneksi.");
     }
 }
 
 async function handleDailyClaim() {
+    playSnd('click');
     const btn = document.getElementById('btn-daily');
-    const today = new Date().toISOString().split('T')[0];
-
     btn.disabled = true;
-    btn.innerText = "PROSES...";
 
     try {
-        const currentSaldo = parseFloat(localStorage.getItem('cached_saldo')) || 0;
+        const { data: p } = await _supabase.from('profiles').select('saldo').eq('username', user).single();
         const bonus = 1000;
 
-        await _supabase.from('profiles').update({ saldo: currentSaldo + bonus }).eq( 'username', user);
+        await _supabase.from('profiles').update({ saldo: (p.saldo || 0) + bonus }).eq('username', user);
         await _supabase.from('deposits').insert([{
             username: user,
-            net_receive: bonus,
+            amount: bonus,
             method: 'SYSTEM',
             status: 'SUKSES',
+            net_receive: bonus,
             keterangan: 'DAILY_BONUS'
         }]);
 
-        showModal("BERHASIL", "Bonus harian Rp 1.000 telah ditambahkan!");
+        playSnd('success');
+        showModal("CHECK-IN BERHASIL", "Bonus harian Rp 1.000 masuk ke saldo!");
         syncNeonData();
         checkTodayClaim();
     } catch (e) { btn.disabled = false; }
@@ -244,18 +261,24 @@ async function handleDailyClaim() {
 
 async function checkTodayClaim() {
     const today = new Date().toISOString().split('T')[0];
-    const { data } = await _supabase.from('deposits').select('id').eq('username', user).eq('keterangan', 'DAILY_BONUS').filter('created_at', 'gte', today + ' 00:00:00');
+    const { data } = await _supabase.from('deposits')
+        .select('id')
+        .eq('username', user)
+        .eq('keterangan', 'DAILY_BONUS')
+        .filter('created_at', 'gte', today + ' 00:00:00');
+        
     if (data && data.length > 0) {
         const btn = document.getElementById('btn-daily');
         btn.disabled = true;
-        btn.innerText = "SUDAH DIKLAIM HARI INI";
+        btn.innerText = "SUDAH KLAIM HARI INI";
     }
 }
 
 function copyRef() {
+    playSnd('click');
     const code = document.getElementById('ref-code').innerText;
     navigator.clipboard.writeText(code);
-    showModal("KODE DISALIN", "Kode unik " + code + " berhasil disalin ke clipboard.");
+    showModal("COPY SUCCESS", "Kode referral Master berhasil disalin.");
 }
 
 function showModal(t, m) {
@@ -264,7 +287,7 @@ function showModal(t, m) {
     document.getElementById('modal-overlay').style.display = 'flex';
 }
 
-function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+function closeModal() { playSnd('click'); document.getElementById('modal-overlay').style.display = 'none'; }
 
 window.onload = initReward;
 </script>
