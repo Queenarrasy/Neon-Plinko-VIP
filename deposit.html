@@ -13,26 +13,22 @@
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; min-height: 100vh; overflow-x: hidden; }
         
-        /* Neon Header */
         .header { height: 65px; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(2, 3, 13, 0.95); border-bottom: 1px solid var(--blue); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
         .logo { font-family: 'Cinzel Decorative'; color: var(--pink); font-size: 14px; font-weight: 900; text-shadow: 0 0 10px var(--pink); }
 
         .container { padding: 20px; max-width: 500px; margin: auto; }
 
-        /* Tabs Method */
         .method-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
         .method-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(0,85,255,0.2); padding: 15px; border-radius: 20px; text-align: center; cursor: pointer; transition: 0.3s; }
         .method-item.active { border-color: var(--pink); background: rgba(255,0,119,0.15); box-shadow: 0 0 15px rgba(255,0,119,0.4); transform: scale(1.02); }
         .method-item i { font-size: 24px; margin-bottom: 5px; display: block; }
 
-        /* Form Card */
         .form-box { background: rgba(5,6,20,0.8); border: 1px solid rgba(255,255,255,0.05); padding: 25px; border-radius: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
         label { font-size: 10px; font-weight: 800; color: var(--cyan); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; display: block; }
         
         input[type=number] { width: 100%; padding: 18px; background: #000; border: 2px solid var(--blue); border-radius: 15px; color: #fff; font-size: 22px; font-weight: 800; outline: none; margin-bottom: 20px; text-align: center; }
         input:focus { border-color: var(--pink); box-shadow: 0 0 10px rgba(255,0,119,0.3); }
 
-        /* Calc Card */
         .calc-card { background: rgba(0,0,0,0.4); padding: 15px; border-radius: 15px; border-left: 4px solid var(--yellow); margin-bottom: 20px; }
         .calc-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; font-weight: 600; }
         .calc-row span:last-child { color: var(--yellow); }
@@ -40,13 +36,12 @@
 
         .btn-main { width: 100%; padding: 18px; border-radius: 50px; border: none; background: linear-gradient(90deg, var(--pink), #b400dc); color: #fff; font-family: 'Cinzel Decorative'; font-weight: 900; font-size: 15px; cursor: pointer; box-shadow: 0 5px 20px rgba(255,0,119,0.4); transition: 0.2s; }
         .btn-main:active { transform: scale(0.96); }
+        .btn-main:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
 
-        /* History */
         .history-item { background: rgba(255,255,255,0.02); padding: 15px; border-radius: 15px; margin-bottom: 12px; border-left: 4px solid var(--blue); display: flex; justify-content: space-between; align-items: center; }
 
-        /* Custom Alert */
         #modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
-        .modal-box { width: 85%; max-width: 320px; background: #0a0b1e; border: 2px solid var(--pink); border-radius: 30px; padding: 30px; text-align: center; box-shadow: 0 0 30px rgba(255,0,119,0.3); }
+        .modal-box { width: 85%; max-width: 320px; background: #0a0b1e; border: 2px solid var(--pink); border-radius: 30px; padding: 30px; text-align: center; }
     </style>
 </head>
 <body>
@@ -94,7 +89,7 @@
             <button class="btn-main" id="btn-konfirmasi" onclick="submitDeposit()">KONFIRMASI PEMBAYARAN</button>
         </div>
 
-        <div style="margin-top:30px;">
+        <div style="margin-top:30px; margin-bottom: 50px;">
             <label>Riwayat Terakhir</label>
             <div id="history-list"></div>
         </div>
@@ -110,8 +105,9 @@
 
     <script>
         let curMethod = 'QRIS';
-        const KURS = 16800; // Sesuai config.js Master
-        const FEE_USDT = 2; // Biaya $2
+        const KURS = 16800; 
+        const FEE_USDT = 2; 
+        let isSubmitting = false; // LOCK SYSTEM
 
         function playSnd(type) {
             const s = document.getElementById('snd-' + type);
@@ -119,6 +115,7 @@
         }
 
         function selectMethod(m) {
+            if(isSubmitting) return;
             playSnd('click');
             curMethod = m;
             document.getElementById('m-qris').classList.toggle('active', m === 'QRIS');
@@ -140,23 +137,23 @@
                 net = input;
             } else {
                 document.getElementById('rate-text').innerText = "IDR " + KURS.toLocaleString();
-                // Hitung USDT: (Input - Fee $2) * Kurs
                 if(input > FEE_USDT) {
                     net = (input - FEE_USDT) * KURS;
-                } else {
-                    net = 0;
-                }
+                } else { net = 0; }
             }
             document.getElementById('net-text').innerText = "IDR " + Math.floor(net).toLocaleString('id-ID');
-            return net;
+            return Math.floor(net);
         }
 
         async function submitDeposit() {
+            if(isSubmitting) return;
+
             const amount = parseFloat(document.getElementById('amount-val').value) || 0;
             const net = calculate();
             const user = getUsername();
 
-            // VALIDASI MINIMUM (TANPA KIRIM KE SERVER JIKA GAGAL)
+            if(!user) return showModal("ERROR", "Sesi login hilang. Harap login kembali.");
+
             if(curMethod === 'QRIS' && amount < 20000) {
                 playSnd('error');
                 return showModal("GAGAL", "Minimal deposit QRIS adalah IDR 20.000");
@@ -166,32 +163,41 @@
                 return showModal("GAGAL", "Minimal deposit USDT adalah $10.00");
             }
 
-            document.getElementById('btn-konfirmasi').innerText = "MENYAMBUNG SERVER...";
-            document.getElementById('btn-konfirmasi').disabled = true;
+            // LOCK BUTTON & START PROCESS
+            isSubmitting = true;
+            const btn = document.getElementById('btn-konfirmasi');
+            btn.innerText = "MEMPROSES DATA...";
+            btn.disabled = true;
 
-            const { error } = await _supabase.from('deposits').insert([{
-                username: user,
-                amount: amount,
-                method: curMethod,
-                net_receive: net,
-                status: 'PROSES'
-            }]);
+            try {
+                const { error } = await _supabase.from('deposits').insert([{
+                    username: user,
+                    amount: amount,
+                    method: curMethod,
+                    net_receive: net,
+                    status: 'PROSES'
+                }]);
 
-            if(!error) {
+                if(error) throw error;
+
                 playSnd('success');
-                showModal("BERHASIL", "Permintaan deposit sedang diproses admin. Saldo akan masuk otomatis.");
+                showModal("BERHASIL", "Permintaan deposit terkirim! Silakan tunggu konfirmasi admin.");
                 document.getElementById('amount-val').value = "";
                 loadHistory();
-            } else {
+
+            } catch (err) {
                 playSnd('error');
-                showModal("ERROR", error.message);
+                showModal("ERROR", "Gagal: " + err.message);
+                // Buka kunci jika gagal agar user bisa coba lagi
+                isSubmitting = false;
+                btn.disabled = false;
+                btn.innerText = "KONFIRMASI PEMBAYARAN";
             }
-            document.getElementById('btn-konfirmasi').innerText = "KONFIRMASI PEMBAYARAN";
-            document.getElementById('btn-konfirmasi').disabled = false;
         }
 
         async function loadHistory() {
             const user = getUsername();
+            if(!user) return;
             const { data } = await _supabase.from('deposits').select('*').eq('username', user).order('created_at', {ascending:false}).limit(5);
             
             let html = "";
@@ -218,9 +224,24 @@
             document.getElementById('modal-msg').innerText = m;
             document.getElementById('modal-overlay').style.display = 'flex';
         }
-        function closeModal() { playSnd('click'); document.getElementById('modal-overlay').style.display = 'none'; }
+        
+        function closeModal() { 
+            playSnd('click'); 
+            document.getElementById('modal-overlay').style.display = 'none'; 
+            // Reset state tombol jika transaksi sukses sudah selesai
+            const btn = document.getElementById('btn-konfirmasi');
+            if(btn.innerText === "MEMPROSES DATA...") {
+                isSubmitting = false;
+                btn.disabled = false;
+                btn.innerText = "KONFIRMASI PEMBAYARAN";
+            }
+        }
 
-        window.onload = loadHistory;
+        window.onload = () => {
+            loadHistory();
+            // Sync saldo awal
+            if (typeof syncNeonData === "function") syncNeonData();
+        };
     </script>
 </body>
 </html>
