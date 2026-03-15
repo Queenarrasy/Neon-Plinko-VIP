@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { 
-            --pink: #ff0077; --blue: #0022ff; --yellow: #fbff00; --bg: #02030d; --gold: #f5a623; --emerald: #00ffcc;
+            --pink: #ff0077; --blue: #0022ff; --yellow: #fbff00; --bg: #02030d; --deep-blue: #0011bb;
             --gp: 0 0 20px rgba(255, 0, 119, 0.8);
             --gy: 0 0 15px rgba(251, 255, 0, 0.6);
             --gb: 0 0 15px rgba(0, 34, 255, 0.6);
@@ -29,80 +29,85 @@
 
         /* HEADER */
         .header { 
-            height: 80px; padding: 0 15px; display: flex; align-items: center; justify-content: space-between;
+            height: 85px; padding: 0 15px; display: flex; align-items: center; justify-content: space-between;
             background: rgba(5, 6, 20, 0.95); border-bottom: 2px solid var(--blue); z-index: 100;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.8);
         }
         .header-left { flex: 1; display: flex; flex-direction: column; align-items: flex-start; cursor: pointer; }
-        .header-left i { font-size: 26px; color: var(--pink); filter: drop-shadow(var(--gp)); }
+        .header-left i { font-size: 24px; color: var(--pink); filter: drop-shadow(var(--gp)); }
         .header-left span { font-size: 8px; font-weight: 800; color: var(--pink); margin-top: 3px; letter-spacing: 1px; }
 
-        .header-center { flex: 2; display: flex; justify-content: center; }
+        .header-center { flex: 1.5; display: flex; justify-content: center; }
         .balance-box { 
             background: #000; border: 2px solid var(--yellow); 
-            padding: 4px 12px; border-radius: 12px; box-shadow: var(--gy); text-align: center; min-width: 140px;
+            padding: 4px 10px; border-radius: 12px; box-shadow: var(--gy); text-align: center; min-width: 120px;
         }
-        .balance-label { display: block; font-size: 7px; font-weight: 800; color: var(--yellow); opacity: 0.8; letter-spacing: 1px; }
-        #saldo-text { color: var(--yellow); font-weight: 900; font-size: 15px; text-shadow: var(--gy); }
+        .balance-label { display: block; font-size: 7px; font-weight: 800; color: var(--yellow); opacity: 0.8; }
+        #saldo-text { color: var(--yellow); font-weight: 900; font-size: 14px; text-shadow: var(--gy); }
 
-        .header-right { flex: 1; display: flex; flex-direction: column; align-items: flex-end; }
-        .logo-main { font-family: 'Cinzel Decorative'; color: #fff; font-size: 9px; font-weight: 900; line-height: 1; text-align: right; }
-        .logo-main span { color: var(--blue); text-shadow: var(--gb); font-size: 12px; }
-        .vip-tag { font-size: 13px; color: var(--pink); text-shadow: var(--gp); margin-left: 2px; }
+        .header-right { flex: 2; display: flex; justify-content: flex-end; align-items: center; }
+        .logo-main { font-family: 'Cinzel Decorative'; font-weight: 900; line-height: 1.1; text-align: right; font-size: 14px; color: #fff; }
+        .logo-main .n-text { color: var(--pink); text-shadow: var(--gp); }
+        .logo-main .p-text { color: var(--blue); text-shadow: var(--gb); }
+        .logo-main .v-tag { color: var(--yellow); text-shadow: var(--gy); font-size: 16px; margin-left: 2px; }
 
         /* GAME AREA */
-        #game-area { flex: 1; position: relative; display: flex; justify-content: center; overflow: hidden; padding-top: 10px; }
+        #game-area { flex: 1; position: relative; display: flex; justify-content: center; overflow: hidden; }
         #board-wrapper { position: relative; width: 100%; max-width: 400px; height: 100%; display: flex; flex-direction: column; align-items: center; }
         canvas { max-height: 70%; width: 100%; z-index: 5; }
 
-        /* MULTIPLIER SLOTS */
-        .m-bar { width: 95%; display: flex; justify-content: center; gap: 4px; padding-bottom: 15px; }
+        .m-bar { width: 95%; display: flex; justify-content: center; gap: 4px; padding-bottom: 10px; }
         .m-slot { 
-            flex: 1; height: 32px; border-radius: 6px; font-size: 9px; font-weight: 900; 
+            flex: 1; height: 30px; border-radius: 6px; font-size: 9px; font-weight: 900; 
             display: flex; align-items: center; justify-content: center; color: #fff; 
             border: 1px solid rgba(255,255,255,0.2); transition: all 0.2s;
         }
-        .m-slot.hit-win { transform: scale(1.4) translateY(-8px); filter: brightness(1.8); box-shadow: 0 0 25px var(--yellow); z-index: 10; border-color: #fff; }
+        .m-slot.hit-win { transform: scale(1.4) translateY(-8px); filter: brightness(1.8); box-shadow: 0 0 25px var(--yellow); z-index: 10; }
         .m-slot.hit-lose { transform: scale(1.1); filter: brightness(1.2); box-shadow: 0 0 10px var(--blue); }
 
-        /* PREMIUM WIN PANEL */
+        /* WIN PANEL - SMALLER & LOWER */
         #win-panel {
-            width: 85%; height: 55px; background: rgba(0, 5, 20, 0.8); 
-            border: 2px solid var(--blue); border-top: 2px solid var(--pink);
-            border-radius: 15px; margin-bottom: 12px; display: flex; align-items: center; justify-content: center;
-            font-family: 'Cinzel Decorative'; box-shadow: inset 0 0 15px rgba(0, 34, 255, 0.3), 0 5px 15px rgba(0,0,0,0.5);
+            width: 80%; height: 45px; background: rgba(0, 5, 20, 0.8); 
+            border: 1.5px solid var(--blue); border-top: 1.5px solid var(--pink);
+            border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; justify-content: center;
+            font-family: 'Cinzel Decorative'; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
         }
-        #win-display { font-size: 22px; font-weight: 900; letter-spacing: 1px; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); color: rgba(255,255,255,0.1); }
-        #win-display.active { transform: scale(1.05); text-shadow: 0 0 20px currentColor; }
+        #win-display { font-size: 18px; font-weight: 900; letter-spacing: 1px; transition: all 0.3s; color: rgba(255,255,255,0.1); }
+        #win-display.active { transform: scale(1.05); text-shadow: 0 0 15px currentColor; }
 
         /* CONTROLLERS */
         .controls { 
             background: #050614; padding: 15px 20px 20px; border-top: 2px solid var(--blue); 
-            border-radius: 30px 30px 0 0; z-index: 100; box-shadow: 0 -10px 30px rgba(0,0,0,0.9);
+            border-radius: 30px 30px 0 0; z-index: 100;
         }
-        .bet-row { display: flex; justify-content: center; align-items: center; margin-bottom: 15px; gap: 25px; }
-        .bet-val { font-size: 26px; font-weight: 900; color: var(--yellow); font-family: 'Cinzel Decorative'; min-width: 100px; text-align: center; text-shadow: var(--gy); }
-        .bet-btn-circ { width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--blue); display: flex; align-items: center; justify-content: center; color: var(--blue); box-shadow: var(--gb); background: #000; font-size: 20px; cursor: pointer; }
+        .bet-row { display: flex; justify-content: center; align-items: center; margin-bottom: 12px; gap: 20px; }
+        .bet-val { font-size: 20px; font-weight: 900; color: var(--yellow); font-family: 'Cinzel Decorative'; min-width: 80px; text-align: center; text-shadow: var(--gy); }
+        .bet-btn-circ { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--blue); display: flex; align-items: center; justify-content: center; color: var(--blue); box-shadow: var(--gb); background: #000; font-size: 16px; cursor: pointer; }
 
-        .mode-row { display: flex; gap: 10px; margin-bottom: 15px; }
-        .mode-btn { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid rgba(0, 34, 255, 0.4); background: transparent; color: #fff; font-size: 11px; font-weight: 800; letter-spacing: 1px; }
+        .mode-row { display: flex; gap: 8px; margin-bottom: 12px; }
+        .mode-btn { flex: 1; padding: 10px; border-radius: 12px; border: 1px solid rgba(0, 34, 255, 0.4); background: transparent; color: #fff; font-size: 10px; font-weight: 800; }
         .mode-btn.active { background: var(--blue); box-shadow: var(--gb); border-color: #fff; }
         .mode-btn.auto-active { background: var(--pink); border-color: #fff; animation: glow-p 1s infinite alternate; }
 
-        .btn-drop { width: 100%; padding: 18px; border-radius: 40px; border: none; background: linear-gradient(90deg, var(--blue), var(--pink)); color: #fff; font-family: 'Cinzel Decorative'; font-weight: 900; font-size: 20px; box-shadow: var(--gp); cursor: pointer; text-transform: uppercase; letter-spacing: 3px; }
+        .btn-drop { width: 100%; padding: 16px; border-radius: 40px; border: none; background: linear-gradient(90deg, var(--blue), var(--pink)); color: #fff; font-family: 'Cinzel Decorative'; font-weight: 900; font-size: 18px; box-shadow: var(--gp); cursor: pointer; text-transform: uppercase; letter-spacing: 2px; }
         .btn-drop.stop-mode { background: #ff0000; box-shadow: 0 0 20px #ff0000; }
 
         /* NAV BAR */
-        .nav-bar { height: 80px; background: #000; display: flex; justify-content: space-around; align-items: center; border-top: 2px solid rgba(0,34,255,0.4); padding: 0 10px; }
-        .nav-item { text-decoration: none; display: flex; flex-direction: column; align-items: center; gap: 5px; flex: 1; }
-        .nav-item i { font-size: 26px; filter: drop-shadow(0 0 8px currentColor); }
-        .nav-item span { font-size: 10px; font-weight: 900; letter-spacing: 1px; }
+        .nav-bar { height: 75px; background: #000; display: flex; justify-content: space-around; align-items: center; border-top: 2px solid rgba(0,34,255,0.4); }
+        .nav-item { text-decoration: none; display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
+        .nav-item i { font-size: 22px; filter: drop-shadow(0 0 5px currentColor); }
+        .nav-item span { font-size: 9px; font-weight: 900; letter-spacing: 1px; }
         
-        .nav-depo { color: var(--gold); }
+        .nav-depo { color: var(--yellow); }
         .nav-wd { color: var(--pink); }
-        .nav-reward { color: var(--emerald); }
+        .nav-reward { color: var(--blue); }
 
-        @keyframes glow-p { from { box-shadow: 0 0 8px var(--pink); } to { box-shadow: 0 0 20px var(--pink); } }
+        /* POPUP THEME */
+        #custom-alert { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(5px); }
+        .alert-box { width:270px; background:#050614; border:2px solid var(--blue); border-bottom: 4px solid var(--pink); border-radius:20px; padding:25px; text-align:center; box-shadow: var(--gb); }
+        #a-msg { color:var(--yellow); font-size:14px; font-weight:800; margin-bottom:20px; text-shadow: var(--gy); text-transform: uppercase; }
+        .alert-btn { width:100%; background:var(--pink); border:none; color:#fff; padding:12px; border-radius:50px; font-weight:900; box-shadow: var(--gp); cursor:pointer; }
+
+        @keyframes glow-p { from { box-shadow: 0 0 5px var(--pink); } to { box-shadow: 0 0 15px var(--pink); } }
     </style>
 </head>
 <body>
@@ -111,26 +116,29 @@
     <audio id="snd-drop" src="https://cdn.pixabay.com/audio/2022/03/10/audio_5072782f94.mp3"></audio>
     <audio id="snd-win" src="https://cdn.pixabay.com/audio/2021/08/04/audio_0625c1539c.mp3"></audio>
 
-    <div id="custom-alert" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(8px);">
-        <div class="alert-box" style="width:280px; background:#050614; border:2px solid var(--pink); border-radius:20px; padding:30px; text-align:center;">
-            <div id="a-msg" style="color:#fff; font-size:15px; font-weight:700; margin-bottom:25px;"></div>
-            <button class="alert-btn" onclick="closeAlert()" style="width:100%; background:var(--blue); border:none; color:#fff; padding:15px; border-radius:50px; font-weight:900; cursor:pointer;">OK</button>
+    <div id="custom-alert">
+        <div class="alert-box">
+            <div id="a-msg">NOTIFICATION</div>
+            <button class="alert-btn" onclick="closeAlert()">CLOSE</button>
         </div>
     </div>
 
     <div class="header">
         <div class="header-left" onclick="location.href='profil.html'">
-            <i class="fas fa-user-circle"></i>
-            <span>MY PROFILE</span>
+            <i class="fas fa-user-astronaut"></i>
+            <span>PROFIL</span>
         </div>
         <div class="header-center">
             <div class="balance-box">
-                <span class="balance-label">MAIN BALANCE</span>
+                <span class="balance-label">SALDO</span>
                 <span id="saldo-text">IDR 0</span>
             </div>
         </div>
         <div class="header-right">
-            <div class="logo-main">NEON<br><span>PLINKO</span><b class="vip-tag">VIP</b></div>
+            <div class="logo-main">
+                <span class="n-text">NEON</span> <span class="p-text">PLINKO</span><br>
+                <span class="v-tag">VIP</span>
+            </div>
         </div>
     </div>
 
@@ -169,7 +177,7 @@
             <span>WITHDRAW</span>
         </a>
         <a href="reward.html" class="nav-item nav-reward">
-            <i class="fas fa-gift"></i>
+            <i class="fas fa-gem"></i>
             <span>HADIAH</span>
         </a>
     </div>
@@ -273,7 +281,6 @@
         winDisp.classList.remove('active');
         void winDisp.offsetWidth; 
         
-        // Output Minimalis: (xM) AMT
         winDisp.innerText = `(x${m}) ${win.toLocaleString()}`;
         winDisp.style.color = m >= 1 ? 'var(--yellow)' : 'var(--pink)';
         winDisp.classList.add('active');
