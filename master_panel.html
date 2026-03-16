@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>NEON COMMAND — SUPREME ADMIN V10.5</title>
+    <title>NEON COMMAND — SUPREME ADMIN V10.7</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -31,7 +31,7 @@
         .stat-box { background: rgba(0,0,0,0.9); border: 1px solid var(--blue); padding: 15px; border-radius: 15px; text-align: center; box-shadow: inset 0 0 15px rgba(0,34,255,0.3); }
         .stat-box small { font-size: 9px; color: var(--pink); display: block; margin-bottom: 5px; font-weight: 800; }
         .stat-box span { font-size: 16px; font-weight: 900; color: var(--yellow); text-shadow: var(--gy); }
-        .card { background: rgba(0,0,0,0.85); border: 1px solid var(--blue); border-radius: 20px; padding: 20px; margin-bottom: 15px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .card { background: rgba(0,0,0,0.85); border: 1px solid var(--blue); border-radius: 20px; padding: 20px; margin-bottom: 15px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: 0.3s; }
         .card-label { font-size: 10px; color: var(--cyan); font-weight: 800; text-transform: uppercase; margin-bottom: 12px; display: block; }
         input, select, textarea { width: 100%; padding: 12px; background: rgba(5, 6, 25, 0.8); border: 1px solid var(--blue); color: var(--yellow); border-radius: 10px; margin-bottom: 10px; font-family: 'Outfit'; font-size: 13px; outline: none; }
         input:focus { border-color: var(--pink); box-shadow: var(--gp); }
@@ -68,7 +68,7 @@
                     <span style="font-family:'Cinzel Decorative'; font-weight:900; color:var(--pink); font-size:18px;">SUPREME</span>
                     <span id="live-indicator" style="font-size:8px; color:var(--cyan); display:block; font-weight:800;"><i class="fas fa-circle fa-fade"></i> SIGNAL STABLE</span>
                 </div>
-                <div id="sync-status" style="font-size:10px; color:var(--yellow); font-weight:800;">V10.5 MASTER</div>
+                <div id="sync-status" style="font-size:10px; color:var(--yellow); font-weight:800;">V10.7 MASTER</div>
             </div>
         </div>
 
@@ -121,7 +121,7 @@
 
     const AUTH = { u: "admin_neon", p: "master777" };
     let autoRefresh;
-    let isEditing = false;
+    let focusedInputId = null; // Melacak input mana yang sedang diketik agar tidak ditimpa render
 
     function login() {
         if(document.getElementById('adm-user').value === AUTH.u && document.getElementById('adm-pass').value === AUTH.p) {
@@ -136,22 +136,21 @@
     async function initEngine() {
         refreshAll();
         
-        // REALTIME SUBSCRIPTION
-        _supa.channel('custom-all-channel')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload) => {
-            if(!isEditing) refreshAll();
-        })
-        .subscribe();
+        // REALTIME: Dengarkan perubahan tabel secara instan
+        _supa.channel('any-db-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+            if(!focusedInputId) refreshAll();
+        }).subscribe();
 
-        // FALLBACK POLLING (Setiap 2 detik untuk update saldo mulus)
+        // POLLING: Backup sinkronisasi setiap 2 detik
         if(autoRefresh) clearInterval(autoRefresh);
         autoRefresh = setInterval(() => {
-            if(!isEditing) refreshAll();
+            if(!focusedInputId) refreshAll();
         }, 2000);
     }
 
     async function refreshAll() {
-        const { data: profiles, error } = await _supa.from('profiles').select('*').order('username');
+        const { data: profiles } = await _supa.from('profiles').select('*').order('username');
         if(profiles) {
             let total = profiles.reduce((a, b) => a + (b.saldo || 0), 0);
             document.getElementById('stat-total-saldo').innerText = total.toLocaleString();
@@ -163,20 +162,20 @@
     }
 
     function renderUsers(data) {
-        if(isEditing) return;
+        if(focusedInputId) return; // JANGAN render jika admin sedang mengetik
         const container = document.getElementById('list-user');
         container.innerHTML = data.map(u => {
             const isLimit = u.saldo >= u.maxwin_limit;
             return `
-            <div class="card" style="${isLimit ? 'border:2px solid var(--pink); box-shadow:var(--gp); animation:blink 1.5s infinite;' : ''}">
+            <div class="card" id="card-${u.id}" style="${isLimit ? 'border:2px solid var(--pink); box-shadow:var(--gp);' : ''}">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <b style="color:${isLimit ? 'var(--yellow)' : 'var(--cyan)'};">${isLimit ? '⚠️ ' : ''}${u.username.toUpperCase()}</b>
                     <span style="color:var(--yellow); font-size:18px; font-weight:900;">${Number(u.saldo).toLocaleString()}</span>
                 </div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; margin-top:15px;">
-                    <div><small>WINRATE %</small><input type="number" id="wr-${u.id}" value="${u.winrate}" onfocus="isEditing=true" onblur="isEditing=false"></div>
-                    <div><small>MAXWIN</small><input type="number" id="mw-${u.id}" value="${u.maxwin_limit}" onfocus="isEditing=true" onblur="isEditing=false"></div>
-                    <div><small>MINUTES</small><input type="number" id="tm-${u.id}" value="${u.session_minutes}" onfocus="isEditing=true" onblur="isEditing=false"></div>
+                    <div><small>WINRATE %</small><input type="number" id="wr-${u.id}" value="${u.winrate}" onfocus="focusedInputId='${u.id}'" onblur="focusedInputId=null"></div>
+                    <div><small>MAXWIN</small><input type="number" id="mw-${u.id}" value="${u.maxwin_limit}" onfocus="focusedInputId='${u.id}'" onblur="focusedInputId=null"></div>
+                    <div><small>SESSION</small><input type="number" id="tm-${u.id}" value="${u.session_minutes}" onfocus="focusedInputId='${u.id}'" onblur="focusedInputId=null"></div>
                 </div>
                 <button class="btn-main" style="height:35px; margin-top:10px; font-size:9px;" onclick="saveUser('${u.id}')">FORCE SYNC NODE</button>
             </div>`;
@@ -184,25 +183,29 @@
     }
 
     async function saveUser(id) {
-        const wr = parseInt(document.getElementById('wr-'+id).value);
-        const mw = parseInt(document.getElementById('mw-'+id).value);
-        const tm = parseInt(document.getElementById('tm-'+id).value);
+        const wrValue = parseInt(document.getElementById('wr-'+id).value);
+        const mwValue = parseInt(document.getElementById('mw-'+id).value);
+        const tmValue = parseInt(document.getElementById('tm-'+id).value);
 
-        // Paksa Update ke Database
+        // Langsung tampilkan status loading pada tombol
+        const btn = event.target;
+        const originalText = btn.innerText;
+        btn.innerText = "UPLOADING...";
+
         const { error } = await _supa.from('profiles').update({
-            winrate: wr,
-            maxwin_limit: mw,
-            session_minutes: tm,
-            // Menambahkan timestamp agar game di sisi pemain mendeteksi perubahan data terbaru
-            updated_at: new Date().toISOString() 
+            winrate: wrValue,
+            maxwin_limit: mwValue,
+            session_minutes: tmValue,
+            updated_at: new Date().toISOString() // Paksa update timestamp agar game pemain merespon
         }).eq('id', id);
 
         if(!error) {
-            showAlert("SYNC SUCCESS: CONFIG LOCKED");
-            isEditing = false;
+            showAlert("SYNC SUCCESS: NODE UPDATED");
+            focusedInputId = null; // Melepas kunci agar bisa refresh
             refreshAll();
         } else {
-            showAlert("SYNC ERROR: CONNECTION TIMEOUT");
+            showAlert("CONNECTION ERROR");
+            btn.innerText = originalText;
         }
     }
 
@@ -210,7 +213,7 @@
         const { data } = await _supa.from('deposits').select('*').eq('status', 'PROSES');
         const cont = document.getElementById('list-kasir');
         if(!data || data.length === 0) {
-            cont.innerHTML = '<p style="text-align:center; font-size:10px; opacity:0.5; letter-spacing:2px;">WAITING FOR UPLINK...</p>';
+            cont.innerHTML = '<p style="text-align:center; font-size:10px; opacity:0.5; letter-spacing:2px;">WAITING FOR SIGNALS...</p>';
             return;
         }
         cont.innerHTML = data.map(d => `
@@ -218,7 +221,7 @@
                 <small>INCOMING DEPOSIT</small>
                 <h3>${d.username}</h3>
                 <h2 style="color:var(--yellow)">IDR ${d.net_receive.toLocaleString()}</h2>
-                <button class="btn-main" style="margin-top:10px;" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive})">AUTHORIZE</button>
+                <button class="btn-main" style="margin-top:10px;" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive})">APPROVE</button>
             </div>
         `).join('');
     }
@@ -227,8 +230,8 @@
         await _supa.from('deposits').update({ status: 'SUKSES' }).eq('id', id);
         const { data } = await _supa.from('profiles').select('saldo').eq('username', user).single();
         await _supa.from('profiles').update({ 
-            saldo: (data.saldo || 0) + amt, 
-            session_start: new Date().toISOString() 
+            saldo: (data.saldo || 0) + amt,
+            session_start: new Date().toISOString()
         }).eq('username', user);
         refreshAll();
     }
@@ -237,8 +240,8 @@
         const t = document.getElementById('gift-target').value;
         const a = document.getElementById('gift-amount').value;
         if(!t || !a) return;
-        await _supa.from('inbox').insert([{ username: t, nominal: Number(a), pesan: document.getElementById('gift-msg').value || "SYS_GIFT", status: 'UNCLAIMED' }]);
-        showAlert("GIFT DATA TRANSMITTED");
+        await _supa.from('inbox').insert([{ username: t, nominal: Number(a), pesan: document.getElementById('gift-msg').value || "SYSTEM_GIFT", status: 'UNCLAIMED' }]);
+        showAlert("GIFT TRANSMITTED");
         document.getElementById('gift-amount').value = "";
     }
 
@@ -254,8 +257,7 @@
         const next = !data.panic_mode;
         await _supa.from('system_config').update({ panic_mode: next }).eq('id', 1);
         await _supa.from('profiles').update({ panic_mode: next });
-        showAlert("PANIC MODE: " + (next ? "ACTIVATED" : "DEACTIVATED"));
-        refreshAll();
+        showAlert("PANIC MODE: " + (next ? "ON" : "OFF"));
     }
 
     function switchTab(t, el) {
