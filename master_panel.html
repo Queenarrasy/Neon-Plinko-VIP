@@ -23,10 +23,8 @@
         }
 
         #canvas-bg { position: fixed; inset: 0; z-index: 0; }
-        /* Overlay dibuat sedikit lebih transparan di tengah agar partikel terlihat tajam */
         .overlay { position: fixed; inset: 0; background: radial-gradient(circle at center, transparent, var(--bg) 90%); z-index: 1; pointer-events: none; }
 
-        /* Gate Access Control */
         #gate-keeper { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
         .gate-card { 
             width: 90%; max-width: 380px; padding: 40px; border-radius: 30px; 
@@ -72,7 +70,6 @@
             color: var(--yellow); border-radius: 10px; margin-bottom: 10px; 
             font-family: 'Outfit'; font-size: 13px; transition: 0.3s;
         }
-        input:focus { border-color: var(--pink); box-shadow: var(--gp); }
 
         .btn-main { 
             background: linear-gradient(90deg, var(--blue), #001188); color: #fff; 
@@ -80,7 +77,6 @@
             width: 100%; cursor: pointer; text-transform: uppercase; font-size: 11px; 
             letter-spacing: 2px; box-shadow: var(--gb); transition: 0.2s;
         }
-        .btn-main:active { transform: scale(0.95); filter: brightness(1.2); }
         .btn-panic { background: var(--pink) !important; border: 1px solid var(--yellow); box-shadow: var(--gp) !important; color: #fff; }
         
         .nav-bottom { 
@@ -94,11 +90,7 @@
         .nav-btn.active { color: var(--yellow); text-shadow: var(--gy); transform: translateY(-3px); }
 
         #alert-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:10000; align-items:center; justify-content:center; backdrop-filter:blur(15px); }
-        .alert-box { 
-            width:300px; background:#000; border:2px solid var(--pink); border-radius:25px; 
-            padding:30px; text-align:center; box-shadow: var(--gp); 
-        }
-        #alert-msg { font-weight:800; color:var(--yellow); margin-bottom:20px; text-transform: uppercase; font-size: 12px; letter-spacing: 1px; }
+        .alert-box { width:300px; background:#000; border:2px solid var(--pink); border-radius:25px; padding:30px; text-align:center; box-shadow: var(--gp); }
 
         ::-webkit-scrollbar { width: 0; }
     </style>
@@ -118,14 +110,14 @@
     </div>
 
     <div id="main-app">
-        <div id="panic-alert" class="panic-bar">ENC_PROTOCOL: GLOBAL_DRAIN_ACTIVE (WR 5%)</div>
+        <div id="panic-alert" class="panic-bar">ENC_PROTOCOL: GLOBAL_DRAIN_ACTIVE</div>
         <div class="nav-top">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <div>
                     <span style="font-family:'Cinzel Decorative'; font-weight:900; color:var(--pink); font-size:18px; text-shadow: var(--gp);">SUPREME</span>
                     <span style="font-size:8px; color:var(--cyan); display:block; letter-spacing:3px; font-weight:800;">VAULT MONITOR</span>
                 </div>
-                <div id="sync-status" style="font-size:9px; color:var(--yellow); font-weight:800; text-shadow: var(--gy);"><i class="fas fa-bolt fa-fade"></i> SYNCED</div>
+                <div id="sync-status" style="font-size:9px; color:var(--yellow); font-weight:800; text-shadow: var(--gy);"><i class="fas fa-bolt fa-fade"></i> LIVE STREAM</div>
             </div>
         </div>
 
@@ -154,9 +146,7 @@
             <div id="tab-gift" class="page" style="display:none">
                 <div class="card" style="border-color:var(--pink);">
                     <span class="card-label" style="color:var(--yellow)">INTERNAL TRANSFER</span>
-                    <select id="gift-target">
-                        <option value="">-- SELECT TARGET NODE --</option>
-                    </select>
+                    <select id="gift-target"><option value="">-- SELECT TARGET NODE --</option></select>
                     <input type="number" id="gift-amount" placeholder="Value">
                     <textarea id="gift-msg" placeholder="System Note..."></textarea>
                     <button class="btn-main" style="background:var(--blue); border-color:var(--pink);" onclick="sendGift()">TRANSMIT DATA</button>
@@ -187,8 +177,8 @@
 
     const AUTH = { u: "admin_neon", p: "master777" };
     let isPanic = false;
-    let lastUserHash = ""; 
 
+    // AUDIO FEEDBACK
     const aCtx = new (window.AudioContext || window.webkitAudioContext)();
     function beep(f, d, v=0.08) {
         try {
@@ -206,9 +196,30 @@
             document.getElementById('gate-keeper').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
             drawStars();
+            initRealtime(); // AKTIFKAN PEMANTAUAN LIVE
             refreshAll();
-            setInterval(refreshAll, 6000); 
-        } else { beep(150, 0.4); showAlert("INVALID CREDENTIALS - IP LOGGED"); }
+        } else { beep(150, 0.4); showAlert("INVALID CREDENTIALS"); }
+    }
+
+    // --- FUNGSI REALTIME (SOLUSI SALDO TIDAK BERJALAN) ---
+    function initRealtime() {
+        // Pantau perubahan pada tabel profiles (saldo, winrate, dll)
+        _supa.channel('any')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload) => {
+            console.log('Realtime Change Detected:', payload);
+            updateStats(); // Langsung update total liquidity
+            loadUserSmart(); // Langsung update list user di dashboard
+            beep(400, 0.05, 0.02); // Suara notifikasi halus saat ada aktivitas
+        })
+        .subscribe();
+
+        // Pantau deposit baru
+        _supa.channel('deposits')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'deposits' }, () => {
+            loadKasir();
+            beep(1200, 0.1);
+        })
+        .subscribe();
     }
 
     async function refreshAll() {
@@ -216,120 +227,62 @@
         loadKasir();
         loadUserSmart(); 
         checkPanicStatus();
-        // Hanya muat target gift jika sedang berada di tab gift
-        if(document.getElementById('tab-gift').style.display !== 'none') {
-            loadGiftTarget();
-        }
-    }
-
-    async function loadGiftTarget() {
-        const select = document.getElementById('gift-target');
-        const { data } = await _supa.from('profiles').select('username').order('username', {ascending:true});
-        if(data) {
-            let current = select.value;
-            let html = '<option value="">-- SELECT TARGET NODE --</option>';
-            data.forEach(u => {
-                html += `<option value="${u.username}">${u.username.toUpperCase()}</option>`;
-            });
-            select.innerHTML = html;
-            select.value = current;
-        }
-    }
-
-    async function sendGift() {
-        const target = document.getElementById('gift-target').value;
-        const amount = document.getElementById('gift-amount').value;
-        const msg = document.getElementById('gift-msg').value;
-        if(!target || !amount) return showAlert("DATA INCOMPLETE");
-        
-        beep(1400, 0.2);
-        const { error } = await _supa.from('inbox').insert([{ 
-            username: target, nominal: Number(amount), pesan: msg || "SYSTEM_BONUS", status: 'UNCLAIMED'
-        }]);
-
-        if(!error) {
-            showAlert("TRANSMISSION SUCCESS");
-            document.getElementById('gift-amount').value = "";
-            document.getElementById('gift-msg').value = "";
-        } else showAlert("TRANSMIT ERROR");
     }
 
     async function updateStats() {
         const { data } = await _supa.from('profiles').select('saldo');
         if(data) {
             let total = data.reduce((acc, curr) => acc + (curr.saldo || 0), 0);
-            document.getElementById('stat-total-saldo').innerText = total.toLocaleString('id-ID', {style:'currency', currency:'IDR'}).replace('Rp', '').trim();
+            document.getElementById('stat-total-saldo').innerText = total.toLocaleString('id-ID');
             document.getElementById('stat-user-count').innerText = data.length;
         }
-    }
-
-    async function loadKasir() {
-        let html = '';
-        const { data: depo } = await _supa.from('deposits').select('*').eq('status', 'PROSES');
-        if(depo && depo.length > 0) beep(1200, 0.05, 0.02); 
-        
-        if(depo) depo.forEach(d => {
-            html += `<div class="card" style="border-left:4px solid var(--yellow)">
-                <span class="card-label">REQUEST_NODE: ${d.username}</span>
-                <b style="color:var(--yellow); font-size:16px; text-shadow:var(--gy);">VAL: ${Number(d.net_receive).toLocaleString()}</b>
-                <button class="btn-main" style="margin-top:10px; border-color:var(--yellow);" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive})">SYNC & AUTHORIZE</button>
-            </div>`;
-        });
-        document.getElementById('list-kasir').innerHTML = html || '<p style="text-align:center; opacity:0.2; font-size:10px; margin-top:20px; letter-spacing:2px;">NO PENDING SIGNALS</p>';
-    }
-
-    async function approveDepo(id, user, amt) {
-        beep(1500, 0.2);
-        await _supa.from('deposits').update({ status: 'SUKSES' }).eq('id', id);
-        const { data: p } = await _supa.from('profiles').select('saldo').eq('username', user).single();
-        const newSaldo = (p.saldo || 0) + amt;
-        
-        await _supa.from('profiles').update({ 
-            saldo: newSaldo,
-            winrate: 50,
-            maxwin_limit: 50000,
-            session_minutes: 2,
-            session_start: new Date().toISOString()
-        }).eq('username', user);
-        
-        showAlert(`NODE ${user} AUTHORIZED.`);
-        refreshAll();
     }
 
     async function loadUserSmart() {
         const { data } = await _supa.from('profiles').select('*').order('username', {ascending:true});
         if(!data) return;
         
-        const currentHash = JSON.stringify(data.map(u => [u.username, u.saldo, u.winrate]));
-        if(currentHash === lastUserHash) return; 
+        // Cek jika sedang mengetik, jangan refresh list agar input tidak hilang
         if(document.activeElement.tagName === "INPUT") return;
-        
-        lastUserHash = currentHash;
+
         document.getElementById('list-user').innerHTML = data.map(u => `
-            <div class="card">
+            <div class="card" style="${u.saldo > 0 ? 'border-color:var(--cyan)' : ''}">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <b style="color:var(--pink); letter-spacing:1px;">${u.username.toUpperCase()}</b>
-                    <span style="color:var(--yellow); font-weight:800;">${Number(u.saldo).toLocaleString()}</span>
+                    <b style="color:var(--pink);">${u.username.toUpperCase()}</b>
+                    <span style="color:var(--yellow); font-weight:800; text-shadow:var(--gy);">${Number(u.saldo).toLocaleString()}</span>
                 </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:15px;">
-                    <div>
-                        <small>WR_BIAS</small>
-                        <input type="number" id="wr-${u.id}" value="${u.winrate || 50}">
-                    </div>
-                    <div>
-                        <small>CAP_LMT</small>
-                        <input type="number" id="mw-${u.id}" value="${u.maxwin_limit || 50000}">
-                    </div>
-                    <div>
-                        <small>TTL_MIN</small>
-                        <input type="number" id="tm-${u.id}" value="${u.session_minutes || 2}">
-                    </div>
+                    <div><small>WR%</small><input type="number" id="wr-${u.id}" value="${u.winrate || 50}"></div>
+                    <div><small>LIMIT</small><input type="number" id="mw-${u.id}" value="${u.maxwin_limit || 50000}"></div>
+                    <div><small>MINS</small><input type="number" id="tm-${u.id}" value="${u.session_minutes || 2}"></div>
                 </div>
-                <div style="display:flex; gap:8px; margin-top:5px;">
-                    <button class="btn-main" style="flex:4; border-color:var(--blue);" onclick="saveUser('${u.id}')">COMMIT CHANGES</button>
-                    <button class="btn-main" style="flex:1; background:var(--pink); border:none;" onclick="resetSession('${u.id}')"><i class="fas fa-redo-alt"></i></button>
-                </div>
+                <button class="btn-main" style="margin-top:10px; font-size:9px;" onclick="saveUser('${u.id}')">UPDATE NODE</button>
             </div>`).join('');
+    }
+
+    async function loadKasir() {
+        const { data: depo } = await _supa.from('deposits').select('*').eq('status', 'PROSES');
+        let html = '';
+        if(depo) depo.forEach(d => {
+            html += `<div class="card" style="border-left:4px solid var(--yellow)">
+                <span class="card-label">REQ: ${d.username}</span>
+                <b style="color:var(--yellow);">IDR ${Number(d.net_receive).toLocaleString()}</b>
+                <button class="btn-main" style="margin-top:10px;" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive})">APPROVE</button>
+            </div>`;
+        });
+        document.getElementById('list-kasir').innerHTML = html || '<p style="text-align:center; opacity:0.3; font-size:10px;">WAITING FOR SIGNALS...</p>';
+    }
+
+    async function approveDepo(id, user, amt) {
+        beep(1500, 0.2);
+        await _supa.from('deposits').update({ status: 'SUKSES' }).eq('id', id);
+        const { data: p } = await _supa.from('profiles').select('saldo').eq('username', user).single();
+        await _supa.from('profiles').update({ 
+            saldo: (p.saldo || 0) + amt,
+            session_start: new Date().toISOString()
+        }).eq('username', user);
+        showAlert("DEPOSIT AUTHORIZED");
+        refreshAll();
     }
 
     async function saveUser(id) {
@@ -339,21 +292,22 @@
             maxwin_limit: parseInt(document.getElementById('mw-'+id).value),
             session_minutes: parseInt(document.getElementById('tm-'+id).value)
         }).eq('id', id);
-        showAlert("CONFIG COMMITTED.");
+        showAlert("NODE UPDATED");
     }
 
-    async function resetSession(id) {
-        beep(1300, 0.1);
-        await _supa.from('profiles').update({ session_start: new Date().toISOString() }).eq('id', id);
-        showAlert("TIMER RE-INITIALIZED.");
+    async function sendGift() {
+        const target = document.getElementById('gift-target').value;
+        const amount = document.getElementById('gift-amount').value;
+        if(!target || !amount) return showAlert("EMPTY DATA");
+        beep(1400, 0.2);
+        await _supa.from('inbox').insert([{ username: target, nominal: Number(amount), pesan: document.getElementById('gift-msg').value || "SYS_GIFT", status: 'UNCLAIMED' }]);
+        showAlert("CHIP SENT");
     }
 
     async function togglePanicMode() {
-        beep(isPanic ? 500 : 200, 0.4);
         const next = !isPanic;
         await _supa.from('system_config').update({ panic_mode: next }).eq('id', 1);
         await _supa.from('profiles').update({ panic_mode: next });
-        showAlert(next ? "PROTOCOL: DRAIN_ALL ENGAGED" : "PROTOCOL: STABLE_OPS RESTORED");
         checkPanicStatus();
     }
 
@@ -362,12 +316,11 @@
         if(data) {
             isPanic = data.panic_mode;
             document.getElementById('panic-alert').className = isPanic ? 'panic-bar panic-active' : 'panic-bar';
-            document.getElementById('panic-btn-ui').innerText = isPanic ? "ABORT GLOBAL DRAIN" : "EXECUTE GLOBAL DRAIN";
+            document.getElementById('panic-btn-ui').innerText = isPanic ? "STOP DRAIN" : "EXECUTE GLOBAL DRAIN";
         }
     }
 
     function switchTab(tab, el) {
-        beep(700, 0.05);
         document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
         document.getElementById('tab-' + tab).style.display = 'block';
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -375,59 +328,36 @@
         if(tab === 'gift') loadGiftTarget();
     }
 
-    function showAlert(m) { 
-        document.getElementById('alert-msg').innerText = m; 
-        document.getElementById('alert-modal').style.display = 'flex'; 
-    }
-    function closeAlert() { beep(400, 0.1); document.getElementById('alert-modal').style.display = 'none'; }
-    
-    function logout() { 
-        beep(200, 0.6); 
-        sessionStorage.clear(); 
-        window.location.reload(); 
+    async function loadGiftTarget() {
+        const { data } = await _supa.from('profiles').select('username');
+        if(data) {
+            document.getElementById('gift-target').innerHTML = '<option value="">-- TARGET --</option>' + 
+                data.map(u => `<option value="${u.username}">${u.username.toUpperCase()}</option>`).join('');
+        }
     }
 
-    // PARTIKEL LATAR BELAKANG TERANG & GLOW
+    function showAlert(m) { document.getElementById('alert-msg').innerText = m; document.getElementById('alert-modal').style.display = 'flex'; }
+    function closeAlert() { document.getElementById('alert-modal').style.display = 'none'; }
+    function logout() { sessionStorage.clear(); window.location.reload(); }
+
     function drawStars() {
-        const c = document.getElementById('canvas-bg'); if(!c) return;
-        const x = c.getContext('2d');
+        const c = document.getElementById('canvas-bg'); const x = c.getContext('2d');
         c.width = window.innerWidth; c.height = window.innerHeight;
         let s = [];
-        for(let i=0; i<85; i++) s.push({
-            x: Math.random()*c.width, 
-            y: Math.random()*c.height, 
-            r: Math.random()*2.2 + 0.5, 
-            sp: Math.random()*0.4+0.1,
-            o: Math.random()*0.6 + 0.4 // Opasitas minimal 0.4 agar tidak pudar
-        });
+        for(let i=0; i<85; i++) s.push({x:Math.random()*c.width, y:Math.random()*c.height, r:Math.random()*2+0.5, sp:Math.random()*0.4+0.1, o:Math.random()*0.6+0.4});
         function anim() {
             x.clearRect(0,0,c.width,c.height);
             s.forEach(p => { 
-                x.beginPath();
-                // Efek Neon Glow
-                x.shadowBlur = 8;
-                x.shadowColor = "rgba(0, 212, 255, 0.9)";
-                x.fillStyle = `rgba(0, 212, 255, ${p.o})`;
-                x.arc(p.x, p.y, p.r, 0, Math.PI*2);
-                x.fill(); 
-                // Reset shadow agar tidak berat ke elemen lain
-                x.shadowBlur = 0;
-                p.y += p.sp;
-                if(p.y > c.height) p.y = -5; 
+                x.beginPath(); x.shadowBlur = 8; x.shadowColor = "rgba(0, 212, 255, 0.9)";
+                x.fillStyle = `rgba(0, 212, 255, ${p.o})`; x.arc(p.x, p.y, p.r, 0, Math.PI*2); x.fill(); 
+                p.y += p.sp; if(p.y > c.height) p.y = -5; 
             });
             requestAnimationFrame(anim);
         }
         anim();
     }
 
-    window.onload = () => { 
-        if(sessionStorage.getItem('sec_lvl_10') === 'true') {
-            document.getElementById('gate-keeper').style.display = 'none';
-            document.getElementById('main-app').style.display = 'block';
-            drawStars();
-            refreshAll();
-        }
-    };
+    window.onload = () => { if(sessionStorage.getItem('sec_lvl_10') === 'true') login(); };
 </script>
 </body>
 </html>
