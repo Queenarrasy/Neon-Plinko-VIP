@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>NEON COMMAND — OMEGA V14.5</title>
+    <title>NEON COMMAND — OMEGA V14.6</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@300;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -14,45 +14,44 @@
         }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; overflow-x: hidden; min-height: 100vh; }
-        #canvas-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+        #canvas-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.6; }
         
-        /* Login Overlay */
+        /* Gatekeeper (Login) */
         #gate-keeper { position: fixed; inset: 0; background: radial-gradient(circle at center, #050a24, #000); z-index: 9999; display: flex; align-items: center; justify-content: center; }
         .login-card { width: 85%; max-width: 380px; padding: 50px 30px; border: 2px solid var(--pink); border-radius: 40px; background: rgba(1, 2, 8, 0.95); box-shadow: var(--gp); text-align: center; }
 
-        /* Navigation */
+        /* UI Shell */
         .nav-top { background: rgba(1,2,8,0.95); padding: 15px 20px; border-bottom: 2px solid var(--blue); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(15px); display: flex; justify-content: space-between; align-items: center; }
         .content { padding: 15px; padding-bottom: 120px; max-width: 700px; margin: auto; position: relative; z-index: 10; }
 
-        /* Report Widgets */
+        /* Widgets & Cards */
         .report-card { background: linear-gradient(135deg, #000, #050a24); border: 1.5px solid var(--cyan); border-radius: 20px; padding: 15px; margin-bottom: 20px; display: flex; gap: 15px; align-items: center; box-shadow: inset 0 0 15px rgba(0, 212, 255, 0.1); }
         .report-val { flex: 1; }
         .report-val small { font-size: 8px; color: var(--pink); font-weight: 800; text-transform: uppercase; display: block; }
         .report-val h3 { font-size: 14px; color: var(--yellow); text-shadow: var(--gy); }
 
-        /* Alpha Matrix Grid */
         .matrix-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 20px; }
-        .alpha-box { background: rgba(0, 34, 255, 0.1); border: 1px solid var(--blue); border-radius: 8px; padding: 10px 2px; text-align: center; cursor: pointer; transition: 0.2s; }
-        .alpha-box.active { background: var(--pink); border-color: var(--yellow); box-shadow: var(--gp); }
+        .alpha-box { background: rgba(0, 34, 255, 0.1); border: 1px solid var(--blue); border-radius: 8px; padding: 10px 2px; text-align: center; cursor: pointer; transition: 0.3s; }
+        .alpha-box.active { background: var(--pink); border-color: var(--yellow); box-shadow: var(--gp); transform: scale(1.05); }
         .alpha-box b { display: block; font-size: 14px; color: #fff; }
-        .alpha-box small { font-size: 8px; color: var(--cyan); font-weight: 800; }
-
-        /* Player & Action Cards */
-        .player-card { background: rgba(5,6,25,0.95); border: 1.5px solid var(--blue); border-radius: 20px; padding: 18px; margin-bottom: 15px; }
-        input, select, textarea { width: 100%; padding: 12px; background: #000; border: 1px solid var(--blue); color: var(--yellow); border-radius: 12px; font-size: 12px; outline: none; margin-top: 5px; font-family: 'Outfit'; }
         
-        .btn { background: linear-gradient(90deg, var(--blue), #000088); color: #fff; border: 1px solid var(--cyan); padding: 12px; border-radius: 50px; font-weight: 900; width: 100%; cursor: pointer; text-transform: uppercase; font-size: 10px; margin-top: 10px; box-shadow: var(--gb); }
-        .btn-pink { background: linear-gradient(90deg, var(--pink), #aa0044); border-color: var(--yellow); }
+        .player-card { background: rgba(5,6,25,0.95); border: 1.5px solid var(--blue); border-radius: 20px; padding: 18px; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        input, select, textarea { width: 100%; padding: 12px; background: #000; border: 1px solid var(--blue); color: var(--yellow); border-radius: 12px; font-size: 12px; outline: none; margin-top: 5px; transition: 0.3s; }
+        input:focus { border-color: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+        
+        .btn { background: linear-gradient(90deg, var(--blue), #000088); color: #fff; border: 1px solid var(--cyan); padding: 12px; border-radius: 50px; font-weight: 900; width: 100%; cursor: pointer; text-transform: uppercase; font-size: 10px; margin-top: 10px; box-shadow: var(--gb); transition: 0.3s; }
+        .btn:active { transform: scale(0.95); }
+        .btn-pink { background: linear-gradient(90deg, var(--pink), #aa0044); border-color: var(--yellow); box-shadow: var(--gp); }
 
-        /* Bottom Menu */
         .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 80px; background: #000; border-top: 2px solid var(--blue); display: flex; justify-content: space-around; align-items: center; z-index: 1000; padding-bottom: env(safe-area-inset-bottom); }
         .nav-btn { color: rgba(0,212,255,0.3); text-align: center; flex: 1; cursor: pointer; }
         .nav-btn.active { color: var(--yellow); text-shadow: var(--gy); }
         .nav-btn span { display: block; font-size: 7px; font-weight: 800; margin-top: 5px; }
 
-        /* Alert System */
-        #alert-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:10000; align-items:center; justify-content:center; }
-        .alert-box { width:280px; background:#050619; border:2px solid var(--pink); border-radius:25px; padding:30px; text-align:center; box-shadow: var(--gp); }
+        /* Neon Alert Pop-up */
+        #alert-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:10000; align-items:center; justify-content:center; backdrop-filter: blur(5px); }
+        .alert-box { width:280px; background:#050619; border:2px solid var(--pink); border-radius:25px; padding:30px; text-align:center; box-shadow: var(--gp); animation: neonPulse 1.5s infinite alternate; }
+        @keyframes neonPulse { from { box-shadow: 0 0 10px var(--pink); } to { box-shadow: 0 0 25px var(--pink); } }
     </style>
 </head>
 <body>
@@ -61,7 +60,7 @@
     <div id="gate-keeper">
         <div class="login-card">
             <h1 style="font-family:'Cinzel Decorative'; color:var(--pink); font-size:24px;">CHRONOS OMEGA</h1>
-            <p style="color:var(--cyan); font-size:8px; letter-spacing:4px; margin-bottom:25px;">MASTER CONTROL V14.5</p>
+            <p style="color:var(--cyan); font-size:8px; letter-spacing:4px; margin-bottom:25px;">MASTER CONTROL V14.6</p>
             <input type="password" id="adm-pass" placeholder="ACCESS KEY" style="text-align:center; border-radius:50px;">
             <button onclick="login()" class="btn">UNLOCK CORE</button>
         </div>
@@ -70,31 +69,24 @@
     <div id="main-app" style="display:none;">
         <div class="nav-top">
             <div><span style="font-family:'Cinzel Decorative'; color:var(--pink); font-size:18px;">SUPREME</span></div>
-            <div id="panic-ui" onclick="togglePanic()" style="padding:5px 12px; border:1px solid var(--pink); border-radius:15px; font-size:9px; font-weight:900; cursor:pointer;">PANIC MODE</div>
+            <div id="panic-ui" onclick="togglePanic()" style="padding:5px 12px; border:1px solid var(--pink); border-radius:15px; font-size:9px; font-weight:900; cursor:pointer; transition:0.3s;">PANIC MODE</div>
         </div>
 
         <div class="content">
             <div id="tab-kasir" class="page">
                 <div class="report-card">
-                    <div class="report-val"><small>Total Deposits</small><h3 id="stat-depo">0</h3></div>
-                    <div class="report-val"><small>Total Withdrawals</small><h3 id="stat-wd">0</h3></div>
+                    <div class="report-val"><small>Deposit Today</small><h3 id="stat-depo">0</h3></div>
+                    <div class="report-val"><small>Withdraw Today</small><h3 id="stat-wd">0</h3></div>
                 </div>
                 <div id="list-kasir"></div>
             </div>
 
             <div id="tab-user" class="page" style="display:none;">
-                <div class="report-card">
-                    <div class="report-val"><small>New Nodes (Today)</small><h3 id="stat-reg">0</h3></div>
-                    <div class="report-val"><small>Active Database</small><h3 id="stat-active">0</h3></div>
-                </div>
                 <div class="matrix-grid" id="alpha-grid"></div>
                 <div id="list-user"></div>
             </div>
 
             <div id="tab-gift" class="page" style="display:none;">
-                <div class="report-card">
-                    <div class="report-val"><small>Gift Liquidity Out</small><h3 id="stat-gift">0</h3></div>
-                </div>
                 <div class="player-card">
                     <h3 style="color:var(--pink); font-size:14px; margin-bottom:10px;">GIFT TRANSMITTER</h3>
                     <select id="gift-target"></select>
@@ -105,7 +97,6 @@
             </div>
 
             <div id="tab-stat" class="page" style="display:none;">
-                <h2 style="font-size:10px; color:var(--cyan); margin-bottom:15px; letter-spacing:2px;">MONTHLY E-STATEMENT</h2>
                 <div id="statement-list"></div>
             </div>
         </div>
@@ -119,7 +110,7 @@
         </nav>
     </div>
 
-    <div id="alert-modal"><div class="alert-box"><p id="alert-msg" style="color:var(--yellow); font-weight:800; font-size:13px;"></p><button onclick="closeAlert()" class="btn btn-pink">NOTED</button></div></div>
+    <div id="alert-modal"><div class="alert-box"><p id="alert-msg" style="color:var(--yellow); font-weight:800; font-size:13px;"></p><button onclick="closeAlert()" class="btn btn-pink">OK</button></div></div>
 
 <script>
     const SUPA_URL = "https://bgffnmwrviyqpeevzjsn.supabase.co"; 
@@ -128,7 +119,7 @@
 
     let allUsers = [];
     let focusedId = null;
-    let selectedLetter = null;
+    let selectedLetter = 'A';
 
     function login() {
         if(document.getElementById('adm-pass').value === "master777") {
@@ -140,7 +131,6 @@
 
     async function initEngine() {
         fetchData();
-        // Real-time listener
         _supa.channel('db').on('postgres_changes', {event:'*', schema:'public'}, () => fetchData()).subscribe();
     }
 
@@ -149,30 +139,20 @@
             const { data: p } = await _supa.from('profiles').select('*').order('username');
             const { data: d_all } = await _supa.from('deposits').select('*');
             const { data: w_all } = await _supa.from('withdrawals').select('*');
-            const { data: g_all } = await _supa.from('inbox').select('*');
             const { data: c } = await _supa.from('system_config').select('*').eq('id', 1).maybeSingle();
 
-            if(p) {
-                allUsers = p;
-                const today = new Date().toISOString().split('T')[0];
-                document.getElementById('stat-reg').innerText = p.filter(u => u.created_at?.startsWith(today)).length;
-                document.getElementById('stat-active').innerText = p.length;
-                renderAlphaGrid();
-                if(selectedLetter) renderUserList();
-            }
-
+            if(p) { allUsers = p; renderAlphaGrid(); renderUserList(); }
+            
             const totalD = d_all?.filter(x => x.status === 'SUKSES').reduce((a,b) => a + (Number(b.net_receive) || 0), 0) || 0;
             const totalW = w_all?.filter(x => x.status === 'SUKSES').reduce((a,b) => a + (Number(b.nominal) || 0), 0) || 0;
-            const totalG = g_all?.reduce((a,b) => a + (Number(b.nominal) || 0), 0) || 0;
 
             document.getElementById('stat-depo').innerText = "IDR " + totalD.toLocaleString();
             document.getElementById('stat-wd').innerText = "IDR " + totalW.toLocaleString();
-            document.getElementById('stat-gift').innerText = "IDR " + totalG.toLocaleString();
 
             renderKasir(d_all?.filter(x => x.status === 'PROSES'), w_all?.filter(x => x.status === 'PROSES'));
             renderStatement(totalD, totalW);
             if(c) updatePanicUI(c.panic_mode);
-        } catch(e) { console.error("Sync Error:", e); }
+        } catch(e) { console.error(e); }
     }
 
     function renderAlphaGrid() {
@@ -180,84 +160,52 @@
         const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split("");
         grid.innerHTML = chars.map(char => {
             const count = allUsers.filter(u => (u.username || "").toUpperCase().startsWith(char)).length;
-            return `<div class="alpha-box ${selectedLetter===char?'active':''}" onclick="selectLetter('${char}')">
-                <b>${char}</b><small>[${count}]</small></div>`;
+            return `<div class="alpha-box ${selectedLetter===char?'active':''}" onclick="selectedLetter='${char}'; renderUserList(); renderAlphaGrid();">
+                <b>${char}</b><small style="font-size:7px; color:var(--cyan)">${count}</small></div>`;
         }).join('');
-    }
-
-    function selectLetter(char) {
-        selectedLetter = char;
-        renderAlphaGrid();
-        renderUserList();
     }
 
     function renderUserList() {
         if(focusedId) return;
         const container = document.getElementById('list-user');
         const filtered = allUsers.filter(u => (u.username || "").toUpperCase().startsWith(selectedLetter));
-        if(filtered.length === 0) {
-            container.innerHTML = '<p style="text-align:center; opacity:0.5; font-size:10px; padding:20px;">NO PLAYERS FOUND</p>';
-            return;
-        }
         container.innerHTML = filtered.map(u => `
             <div class="player-card">
-                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                    <b style="color:var(--cyan)">${(u.username || 'UNKNOWN').toUpperCase()}</b>
-                    <span style="color:var(--yellow); font-weight:900;">IDR ${(u.saldo||0).toLocaleString()}</span>
+                <div style="display:flex; justify-content:space-between;">
+                    <b style="color:var(--cyan)">${(u.username || '').toUpperCase()}</b>
+                    <span style="color:var(--yellow)">IDR ${(u.saldo||0).toLocaleString()}</span>
                 </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px;">
-                    <div><small>WINRATE %</small><input type="number" id="wr-${u.id}" value="${u.winrate ?? 50}" onfocus="focusedId='${u.id}'" onblur="focusedId=null"></div>
-                    <div><small>LIMIT</small><input type="number" id="mw-${u.id}" value="${u.maxwin_limit ?? 1000000}" onfocus="focusedId='${u.id}'" onblur="focusedId=null"></div>
-                    <div><small>SESSION(M)</small><input type="number" id="tm-${u.id}" value="${u.session_timer ?? 0}" onfocus="focusedId='${u.id}'" onblur="focusedId=null"></div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px; margin-top:10px;">
+                    <div><small style="font-size:7px; color:var(--pink)">WINRATE%</small><input type="number" id="wr-${u.id}" value="${u.winrate ?? 50}" onfocus="focusedId='${u.id}'" onblur="focusedId=null"></div>
+                    <div><small style="font-size:7px; color:var(--pink)">MAXWIN</small><input type="number" id="mw-${u.id}" value="${u.maxwin_limit ?? 1000000}" onfocus="focusedId='${u.id}'" onblur="focusedId=null"></div>
+                    <div><small style="font-size:7px; color:var(--pink)">SESSION</small><input type="number" id="tm-${u.id}" value="${u.session_timer ?? 0}" onfocus="focusedId='${u.id}'" onblur="focusedId=null"></div>
                 </div>
-                <button class="btn" onclick="updateNode('${u.id}', this)">SYNC PLAYER</button>
+                <button class="btn" onclick="syncNode('${u.id}', this)">SYNC PLAYER</button>
             </div>
-        `).join('');
+        `).join('') || '<p style="text-align:center; opacity:0.3; padding:20px;">EMPTY NODE</p>';
     }
 
-    async function updateNode(id, btn) {
+    async function syncNode(id, btn) {
         btn.disabled = true;
-        const wrVal = parseInt(document.getElementById('wr-'+id).value) || 0;
-        const mwVal = parseInt(document.getElementById('mw-'+id).value) || 0;
-        const tmVal = parseInt(document.getElementById('tm-'+id).value) || 0;
-        
-        try {
-            const { error } = await _supa.from('profiles').update({ 
-                winrate: wrVal, 
-                maxwin_limit: mwVal, 
-                session_timer: tmVal
-            }).eq('id', id);
-
-            if(!error) showAlert("NODE SECURED: SESSION " + tmVal + " MIN");
-            else throw error;
-        } catch(err) {
-            console.error(err);
-            showAlert("DB ERROR: Jalankan SQL Reset di Supabase!");
-        } finally {
-            btn.disabled = false;
-        }
+        const wr = parseInt(document.getElementById('wr-'+id).value) || 0;
+        const mw = parseInt(document.getElementById('mw-'+id).value) || 0;
+        const tm = parseInt(document.getElementById('tm-'+id).value) || 0;
+        const { error } = await _supa.from('profiles').update({ winrate: wr, maxwin_limit: mw, session_timer: tm }).eq('id', id);
+        if(!error) showAlert("NODE SECURED: " + tm + " MIN ACTIVE");
+        else showAlert("DB ERROR: Check SQL!");
+        btn.disabled = false;
     }
 
     function renderKasir(deps, wds) {
         const cont = document.getElementById('list-kasir');
         let h = '';
-        deps?.forEach(d => h += `<div class="player-card" style="border-left:5px solid var(--cyan)"><small>DEPOSIT SIGNAL</small><h4>${d.username}</h4><h3>IDR ${(d.net_receive || 0).toLocaleString()}</h3><button class="btn" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive})">APPROVE</button></div>`);
-        wds?.forEach(w => h += `<div class="player-card" style="border-left:5px solid var(--pink)"><small>WITHDRAW SIGNAL</small><h4>${w.username}</h4><h3>IDR ${(w.nominal || 0).toLocaleString()}</h3><button class="btn btn-pink" onclick="approveWD('${w.id}')">COMPLETE</button></div>`);
-        cont.innerHTML = h || '<p style="text-align:center; opacity:0.3; margin-top:20px;">NO QUEUE</p>';
-    }
-
-    function renderStatement(td, tw) {
-        const months = ["JAN", "FEB", "MAR", "APR", "MEI", "JUN", "JUL", "AGU", "SEP", "OKT", "NOV", "DES"];
-        const curM = new Date().getMonth();
-        document.getElementById('statement-list').innerHTML = `
-            <div class="player-card" style="border:1px solid var(--yellow)">
-                <h3 style="color:var(--yellow)">BULAN: ${months[curM]} 2026</h3>
-                <hr style="opacity:0.2; margin:10px 0;">
-                <p style="font-size:13px;">Total Depo: <span style="color:var(--cyan)">IDR ${td.toLocaleString()}</span></p>
-                <p style="font-size:13px;">Total WD: <span style="color:var(--pink)">IDR ${tw.toLocaleString()}</span></p>
-                <h4 style="margin-top:10px; color:var(--yellow)">NET PROFIT: IDR ${(td-tw).toLocaleString()}</h4>
-            </div>
-        `;
+        deps?.forEach(d => h += `<div class="player-card" style="border-left:5px solid var(--cyan)">
+            <small>DEPOSIT SIGNAL</small><h4>${d.username}</h4><h3>IDR ${(d.net_receive || 0).toLocaleString()}</h3>
+            <button class="btn" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive})">APPROVE</button></div>`);
+        wds?.forEach(w => h += `<div class="player-card" style="border-left:5px solid var(--pink)">
+            <small>WITHDRAW SIGNAL</small><h4>${w.username}</h4><h3>IDR ${(w.nominal || 0).toLocaleString()}</h3>
+            <button class="btn btn-pink" onclick="approveWD('${w.id}')">COMPLETE</button></div>`);
+        cont.innerHTML = h || '<p style="text-align:center; opacity:0.3; padding-top:20px;">NO SIGNAL</p>';
     }
 
     async function approveDepo(id, user, amt) {
@@ -274,11 +222,23 @@
 
     async function sendGift() {
         const t = document.getElementById('gift-target').value;
-        const a = document.getElementById('gift-amt').value;
-        const m = document.getElementById('gift-msg').value;
+        const a = Number(document.getElementById('gift-amt').value);
         if(!a || !t) return;
-        await _supa.from('inbox').insert([{ username: t, nominal: Number(a), pesan: m || "Bonus System", status: 'UNCLAIMED' }]);
-        showAlert("GIFT TRANSMITTED TO " + t);
+        await _supa.from('inbox').insert([{ username: t, nominal: a, pesan: document.getElementById('gift-msg').value || "Bonus", status: 'UNCLAIMED' }]);
+        showAlert("GIFT SENT TO " + t);
+        document.getElementById('gift-amt').value = '';
+    }
+
+    function renderStatement(td, tw) {
+        document.getElementById('statement-list').innerHTML = `
+            <div class="player-card" style="border:1px solid var(--yellow)">
+                <h3 style="color:var(--yellow)">E-STATEMENT 2026</h3>
+                <hr style="opacity:0.1; margin:10px 0;">
+                <p>TOTAL DEPO: <span style="color:var(--cyan)">IDR ${td.toLocaleString()}</span></p>
+                <p>TOTAL WD: <span style="color:var(--pink)">IDR ${tw.toLocaleString()}</span></p>
+                <h2 style="margin-top:10px; color:var(--yellow); font-size:18px;">NET: IDR ${(td-tw).toLocaleString()}</h2>
+            </div>
+        `;
     }
 
     function switchTab(t, el) {
@@ -301,18 +261,18 @@
         const pBtn = document.getElementById('panic-ui');
         pBtn.style.background = isP ? "var(--pink)" : "transparent";
         pBtn.style.boxShadow = isP ? "var(--gp)" : "none";
-        pBtn.innerText = isP ? "PANIC ACTIVE" : "PANIC MODE";
+        pBtn.innerText = isP ? "PANIC ON" : "PANIC MODE";
     }
 
     function showAlert(m) { document.getElementById('alert-msg').innerText = m; document.getElementById('alert-modal').style.display = 'flex'; }
     function closeAlert() { document.getElementById('alert-modal').style.display = 'none'; fetchData(); }
 
-    // BG Star Animation
+    /* Partikel Latar Belakang Sempurna */
     const c = document.getElementById('canvas-bg'); const x = c.getContext('2d');
     c.width = window.innerWidth; c.height = window.innerHeight;
-    let stars = []; for(let i=0; i<60; i++) stars.push({x:Math.random()*c.width, y:Math.random()*c.height, r:Math.random()*1.2, sp:Math.random()*0.3+0.1});
+    let stars = []; for(let i=0; i<80; i++) stars.push({x:Math.random()*c.width, y:Math.random()*c.height, r:Math.random()*1.5, sp:Math.random()*0.5+0.2});
     function anim() {
-        x.clearRect(0,0,c.width,c.height); x.fillStyle = "rgba(0, 212, 255, 0.7)";
+        x.clearRect(0,0,c.width,c.height); x.fillStyle = "rgba(0, 212, 255, 0.8)";
         stars.forEach(s => { x.beginPath(); x.arc(s.x, s.y, s.r, 0, 7); x.fill(); s.y += s.sp; if(s.y > c.height) s.y = -5; });
         requestAnimationFrame(anim);
     } anim();
