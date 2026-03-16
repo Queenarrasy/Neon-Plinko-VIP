@@ -3,225 +3,223 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>SUPREME OMEGA V15.8 — FINAL ARCHITECT</title>
+    <title>MASTER PANEL OMEGA V16.1</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@300;600;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --pink: #ff0077; --blue: #0022ff; --yellow: #fbff00; --bg: #000005; --gp: 0 0 10px #ff0077; --gb: 0 0 10px #0022ff; }
+        :root { --pink: #ff0077; --blue: #0022ff; --yellow: #fbff00; --bg: #000005; --gp: 0 0 15px #ff0077; --gb: 0 0 15px #0022ff; }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg); color: var(--yellow); font-family: 'Outfit', sans-serif; overflow: hidden; height: 100vh; }
-        #canvas-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.3; }
-        .header { background: rgba(0,0,10,0.95); padding: 12px 15px; border-bottom: 2px solid var(--blue); position: relative; z-index: 100; display: flex; justify-content: space-between; align-items: center; }
-        .panic-btn { background: var(--pink); color: #fff; border: none; padding: 8px 12px; border-radius: 6px; font-weight: 900; font-size: 10px; cursor: pointer; box-shadow: var(--gp); animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        .context-stats { background: rgba(0,0,30,0.9); padding: 10px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; border-bottom: 1px solid rgba(0,34,255,0.3); position: relative; z-index: 90; }
-        .stat-card { background: rgba(0,0,0,0.5); padding: 8px; border: 1px solid rgba(251,255,0,0.1); border-radius: 6px; text-align: center; }
-        .stat-card small { display: block; font-size: 7px; color: var(--pink); font-weight: 900; text-transform: uppercase; }
-        .stat-card b { font-size: 11px; color: #fff; }
-        .alpha-nav { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; padding: 10px; background: rgba(0,0,10,0.95); border-bottom: 1px solid var(--blue); position: relative; z-index: 90; max-height: 110px; overflow-y: auto; }
-        .alpha-btn { background: #000; border: 1px solid rgba(0,34,255,0.4); color: #fff; font-size: 10px; padding: 5px 0; text-align: center; cursor: pointer; border-radius: 4px; }
-        .alpha-btn span { display: block; font-size: 7px; color: var(--yellow); }
-        .alpha-btn.active { border-color: var(--pink); color: var(--pink); box-shadow: var(--gp); }
-        .content { height: calc(100vh - 285px); overflow-y: auto; padding: 15px; position: relative; z-index: 10; padding-bottom: 100px; }
-        .card { background: rgba(0,0,40,0.7); border: 1px solid var(--blue); border-radius: 12px; padding: 12px; margin-bottom: 15px; box-shadow: var(--gb); }
-        .lbl { font-size: 8px; color: var(--pink); font-weight: 900; margin-bottom: 4px; display: block; text-transform: uppercase; }
-        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-        .in-box { background: rgba(0,0,0,0.6); border: 1px solid rgba(0,34,255,0.4); padding: 6px; border-radius: 6px; }
-        input { width: 100%; background: transparent; border: none; color: #fff; font-size: 12px; font-weight: 600; outline: none; text-align: center; }
+        body { background: var(--bg); color: var(--yellow); font-family: 'Outfit', sans-serif; height: 100vh; overflow: hidden; }
+        
+        .header { background: rgba(0,0,20,0.95); padding: 15px; border-bottom: 2px solid var(--blue); display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 100; }
+        .panic-btn { background: var(--pink); color: #fff; border: none; padding: 8px 15px; border-radius: 6px; font-weight: 900; font-size: 10px; cursor: pointer; box-shadow: var(--gp); }
+
+        /* Report Bar */
+        .report-grid { background: rgba(0,0,40,0.8); display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 10px; border-bottom: 1px solid var(--blue); position: relative; z-index: 90; }
+        .stat-card { background: #000; border: 1px solid rgba(0,34,255,0.3); border-radius: 8px; text-align: center; padding: 8px; }
+        .stat-card span { display: block; font-size: 7px; color: var(--pink); font-weight: 900; text-transform: uppercase; }
+        .stat-card b { font-size: 11px; color: #fff; text-shadow: 0 0 5px var(--blue); }
+
+        /* Navigation Abjad */
+        .alpha-nav { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; padding: 10px; background: #000; overflow-y: auto; max-height: 100px; border-bottom: 1px solid var(--blue); }
+        .alpha-item { background: #050515; border: 1px solid rgba(0,34,255,0.3); color: #fff; border-radius: 4px; padding: 6px 0; text-align: center; font-size: 10px; cursor: pointer; }
+        .alpha-item span { display: block; font-size: 7px; color: var(--yellow); }
+        .alpha-item.active { border-color: var(--pink); color: var(--pink); box-shadow: var(--gp); }
+
+        /* Main Content */
+        .viewport { height: calc(100vh - 290px); overflow-y: auto; padding: 15px; padding-bottom: 100px; position: relative; z-index: 10; }
+        .card { background: rgba(0,0,50,0.7); border: 1px solid var(--blue); border-radius: 12px; padding: 12px; margin-bottom: 15px; box-shadow: var(--gb); }
+        .lbl { font-size: 8px; color: var(--pink); font-weight: 900; text-transform: uppercase; margin-bottom: 4px; display: block; }
+        
+        .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .field { background: #000; border: 1px solid rgba(0,34,255,0.4); border-radius: 6px; padding: 6px; }
+        input { width: 100%; background: transparent; border: none; color: #fff; font-size: 12px; text-align: center; outline: none; font-weight: 600; }
+        
         .btn { background: var(--blue); color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: 900; cursor: pointer; font-size: 10px; width: 100%; margin-top: 10px; text-transform: uppercase; }
-        .btn-yellow { background: var(--yellow); color: #000; }
-        .footer { position: fixed; bottom: 0; width: 100%; height: 75px; background: #000; border-top: 1px solid var(--blue); display: flex; justify-content: space-around; align-items: center; z-index: 100; }
-        .nav-item { color: rgba(255,255,255,0.3); text-align: center; flex: 1; cursor: pointer; }
-        .nav-item.active { color: var(--pink); text-shadow: var(--gp); }
-        .nav-item i { font-size: 18px; }
-        .nav-item p { font-size: 8px; margin-top: 5px; font-weight: 900; }
-        ::-webkit-scrollbar { width: 3px; }
-        ::-webkit-scrollbar-thumb { background: var(--pink); }
+        .btn-update { background: var(--yellow); color: #000; margin-top: 10px; }
+        .btn-gift { background: var(--pink); box-shadow: var(--gp); }
+
+        .footer { position: fixed; bottom: 0; width: 100%; height: 75px; background: #000; border-top: 2px solid var(--blue); display: flex; justify-content: space-around; align-items: center; z-index: 100; }
+        .nav-link { color: #444; text-align: center; flex: 1; cursor: pointer; }
+        .nav-link.active { color: var(--pink); text-shadow: var(--gp); }
+        .nav-link i { font-size: 20px; }
+        .nav-link p { font-size: 8px; font-weight: 900; margin-top: 5px; }
+
+        #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--pink); color: #fff; padding: 10px 25px; border-radius: 50px; font-weight: 900; z-index: 1000; display: none; box-shadow: var(--gp); font-size: 12px; }
     </style>
 </head>
 <body>
-    <canvas id="canvas-bg"></canvas>
+    <div id="toast">SYSTEM UPDATED</div>
     <div class="header">
-        <span style="font-family:'Cinzel Decorative'; color:var(--pink); font-size:18px;">OMEGA <span style="color:var(--yellow)">V15.8</span></span>
-        <button class="panic-btn" onclick="triggerPanic()">PANIC BUTTON</button>
+        <h1 style="font-family:'Cinzel Decorative'; font-size:20px; color:var(--pink);">OMEGA <span style="color:var(--yellow)">V16.1</span></h1>
+        <button class="panic-btn" onclick="triggerPanic()">PANIC MODE</button>
     </div>
-    <div id="report-header" class="context-stats"></div>
-    <div id="alpha-nav-container" class="alpha-nav"></div>
-    <div class="content" id="main-content">
-        <div id="tab-user" class="page"></div>
-        <div id="tab-kasir" class="page" style="display:none;"></div>
+
+    <div id="dynamic-report" class="report-grid"></div>
+    <div id="alpha-nav" class="alpha-nav"></div>
+
+    <div class="viewport">
+        <div id="tab-players" class="page"></div>
+        <div id="tab-cashier" class="page" style="display:none;"></div>
         <div id="tab-gift" class="page" style="display:none;"></div>
-        <div id="tab-stat" class="page" style="display:none;"></div>
+        <div id="tab-report" class="page" style="display:none;"></div>
     </div>
+
     <nav class="footer">
-        <div class="nav-item active" onclick="switchTab('user', this)"><i class="fas fa-users"></i><p>PLAYERS</p></div>
-        <div class="nav-item" onclick="switchTab('kasir', this)"><i class="fas fa-cash-register"></i><p>CASHIER</p></div>
-        <div class="nav-item" onclick="switchTab('gift', this)"><i class="fas fa-gift"></i><p>GIFT</p></div>
-        <div class="nav-item" onclick="switchTab('stat', this)"><i class="fas fa-chart-line"></i><p>REPORT</p></div>
+        <div class="nav-link active" onclick="changeTab('players', this)"><i class="fas fa-users"></i><p>PLAYERS</p></div>
+        <div class="nav-link" onclick="changeTab('cashier', this)"><i class="fas fa-cash-register"></i><p>CASHIER</p></div>
+        <div class="nav-link" onclick="changeTab('gift', this)"><i class="fas fa-gift"></i><p>GIFT</p></div>
+        <div class="nav-link" onclick="changeTab('report', this)"><i class="fas fa-chart-line"></i><p>REPORT</p></div>
     </nav>
 
 <script>
-    const SUPA_URL = "https://bgffnmwrviyqpeevzjsn.supabase.co"; 
-    const SUPA_KEY = "sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani"; 
-    const _supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+    const SB_URL = "https://bgffnmwrviyqpeevzjsn.supabase.co"; 
+    const SB_KEY = "sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani"; 
+    const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
-    let activeTab = 'user';
-    let currentLetter = 'A';
-    let players = [], deposits = [], withdrawals = [];
+    let activeTab = 'players', currentLetter = 'A', allPlayers = [], allDepo = [], allWd = [];
 
-    async function pullData() {
-        const { data: p } = await _supa.from('profiles').select('*');
-        const { data: d } = await _supa.from('deposits').select('*');
-        const { data: w } = await _supa.from('withdrawals').select('*');
-        players = p || []; deposits = d || []; withdrawals = w || [];
-        renderAlphaNav();
-        refreshUI();
+    async function syncData() {
+        const { data: p } = await _supabase.from('profiles').select('*');
+        const { data: d } = await _supabase.from('deposits').select('*');
+        const { data: w } = await _supabase.from('withdrawals').select('*');
+        allPlayers = p || []; allDepo = d || []; allWd = w || [];
+        renderAlpha();
+        renderUI();
     }
 
-    function renderAlphaNav() {
+    function renderAlpha() {
         const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split("");
-        document.getElementById('alpha-nav-container').innerHTML = chars.map(c => {
-            const count = players.filter(u => (u.username||"").toUpperCase().startsWith(c)).length;
-            return `<div class="alpha-btn ${c===currentLetter?'active':''}" onclick="filterLetter('${c}', this)">${c} <span>${count}</span></div>`;
+        document.getElementById('alpha-nav').innerHTML = chars.map(c => {
+            const count = allPlayers.filter(u => (u.username||"").toUpperCase().startsWith(c)).length;
+            return `<div class="alpha-item ${c==currentLetter?'active':''}" onclick="filterByLetter('${c}')">${c} <span>${count}</span></div>`;
         }).join('');
     }
 
-    function filterLetter(l, el) {
-        currentLetter = l;
-        document.querySelectorAll('.alpha-btn').forEach(b => b.classList.remove('active'));
-        el.classList.add('active');
-        refreshUI();
-    }
+    function filterByLetter(l) { currentLetter = l; syncData(); }
 
-    function refreshUI() {
-        renderTopReport();
-        if(activeTab === 'user') renderTabUser();
-        if(activeTab === 'kasir') renderTabKasir();
-        if(activeTab === 'gift') renderTabGift();
-        if(activeTab === 'stat') renderTabReport();
-    }
-
-    function renderTopReport() {
+    function renderUI() {
         const today = new Date().toISOString().split('T')[0];
         const month = new Date().toISOString().slice(0, 7);
         const sum = (arr, date) => arr.filter(x => x.status === 'SUKSES' && x.created_at.startsWith(date)).reduce((a,b) => a + (Number(b.amount||b.net_receive||b.nominal)||0), 0);
-        
-        let h = '';
-        if(activeTab === 'user') {
-            h = `<div class="stat-card"><small>Pemain Baru (Hari)</small><b>${players.filter(x=>x.created_at.startsWith(today)).length}</b></div>
-                 <div class="stat-card"><small>Total Mendaftar (Bulan)</small><b>${players.filter(x=>x.created_at.startsWith(month)).length}</b></div>`;
-        } else if(activeTab === 'kasir') {
-            h = `<div class="stat-card"><small>Total Depo (H/B)</small><b>${sum(deposits, today).toLocaleString()} / ${sum(deposits, month).toLocaleString()}</b></div>
-                 <div class="stat-card"><small>Total WD (H/B)</small><b>${sum(withdrawals, today).toLocaleString()} / ${sum(withdrawals, month).toLocaleString()}</b></div>`;
+
+        let reportHtml = '';
+        if(activeTab === 'players') {
+            reportHtml = `<div class="stat-card"><span>NEW TODAY</span><b>${allPlayers.filter(x=>x.created_at?.startsWith(today)).length}</b></div>
+                          <div class="stat-card"><span>TOTAL MONTHLY</span><b>${allPlayers.filter(x=>x.created_at?.startsWith(month)).length}</b></div>`;
+        } else if(activeTab === 'cashier') {
+            reportHtml = `<div class="stat-card"><span>DEPO (H/B)</span><b>${sum(allDepo,today).toLocaleString()} / ${sum(allDepo,month).toLocaleString()}</b></div>
+                          <div class="stat-card"><span>WD (H/B)</span><b>${sum(allWd,today).toLocaleString()} / ${sum(allWd,month).toLocaleString()}</b></div>`;
         } else if(activeTab === 'gift') {
-            // Kalkulasi pengeluaran gift dari saldo yang ditambahkan manual (asumsi logic gift)
-            h = `<div class="stat-card"><small>Gift Keluar (Hari)</small><b>IDR 0</b></div>
-                 <div class="stat-card"><small>Gift Keluar (Bulan)</small><b>IDR 0</b></div>`;
+            reportHtml = `<div class="stat-card"><span>GIFT OUT TODAY</span><b>0</b></div>
+                          <div class="stat-card"><span>GIFT OUT MONTH</span><b>0</b></div>`;
         } else {
-            h = `<div class="stat-card" style="grid-column:span 2"><small>System Status</small><b>Operational</b></div>`;
+            reportHtml = `<div class="stat-card" style="grid-column:span 2"><span>SYSTEM STATUS</span><b>ENCRYPTED ONLINE</b></div>`;
         }
-        document.getElementById('report-header').innerHTML = h;
+        document.getElementById('dynamic-report').innerHTML = reportHtml;
+
+        if(activeTab === 'players') renderPlayersTab();
+        if(activeTab === 'cashier') renderCashierTab();
+        if(activeTab === 'gift') renderGiftTab();
+        if(activeTab === 'report') renderReportTab();
     }
 
-    function renderTabUser() {
-        const filtered = players.filter(u => (u.username||"").toUpperCase().startsWith(currentLetter));
-        document.getElementById('tab-user').innerHTML = filtered.map(u => {
-            const uD = deposits.filter(x => x.username === u.username && x.status === 'SUKSES').reduce((a,b)=>a+(Number(b.amount||b.net_receive)||0),0);
-            const uW = withdrawals.filter(x => x.username === u.username && x.status === 'SUKSES').reduce((a,b)=>a+(Number(b.nominal||b.amount)||0),0);
-            return `
+    function renderPlayersTab() {
+        const filtered = allPlayers.filter(u => (u.username||"").toUpperCase().startsWith(currentLetter));
+        document.getElementById('tab-players').innerHTML = filtered.map(u => `
             <div class="card">
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(0,34,255,0.2); padding-bottom:8px; margin-bottom:10px;">
-                    <div><b style="color:var(--yellow); font-size:14px;">${u.username}</b><p style="font-size:9px; color:#aaa;">PNL: <span style="color:${(uD-uW)<0?'#0f0':'#f00'}">${(uD-uW).toLocaleString()}</span></p></div>
-                    <div style="text-align:right"><small class="lbl">Saldo</small><b style="color:#fff">${(u.saldo||0).toLocaleString()}</b></div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(0,34,255,0.2); padding-bottom:8px;">
+                    <div><b style="color:var(--yellow)">${u.username}</b></div>
+                    <div style="text-align:right"><small class="lbl">SALDO</small><b>${(u.saldo||0).toLocaleString()}</b></div>
                 </div>
-                <div class="input-grid">
-                    <div class="in-box"><small class="lbl">Winrate %</small><input type="number" id="wr-${u.id}" value="${u.winrate||10}"></div>
-                    <div class="in-box"><small class="lbl">Maxwin Limit</small><input type="number" id="mx-${u.id}" value="${u.maxwin_limit||1000000}"></div>
-                    <div class="in-box"><small class="lbl">Session Min</small><input type="number" id="sm-${u.id}" value="${u.session_minutes||0}"></div>
-                    <button class="btn btn-yellow" style="margin-top:0" onclick="updatePlayer('${u.id}')">Sync</button>
+                <div class="input-row">
+                    <div class="field"><small class="lbl">WINRATE %</small><input type="number" id="wr-${u.id}" value="${u.winrate||10}"></div>
+                    <div class="field"><small class="lbl">MAXWIN</small><input type="number" id="mx-${u.id}" value="${u.maxwin_limit||1000000}"></div>
+                    <div class="field" style="grid-column:span 2"><small class="lbl">SESSION (MINUTES)</small><input type="number" id="sm-${u.id}" value="${u.session_minutes||0}"></div>
                 </div>
-            </div>`;
-        }).join('') || `<p style="text-align:center; opacity:0.5; font-size:10px; margin-top:20px;">Kosong di ${currentLetter}</p>`;
+                <button class="btn btn-update" onclick="updatePlayer('${u.id}')">SAVE CHANGES</button>
+            </div>`).join('') || `<p style="text-align:center; opacity:0.3; margin-top:50px;">TIDAK ADA PEMAIN DI ABJAD "${currentLetter}"</p>`;
     }
 
     async function updatePlayer(id) {
         const wr = document.getElementById('wr-'+id).value;
         const mx = document.getElementById('mx-'+id).value;
         const sm = document.getElementById('sm-'+id).value;
-        await _supa.from('profiles').update({ winrate: wr, maxwin_limit: mx, session_minutes: sm }).eq('id', id);
-        alert("Data Player Diperbarui"); pullData();
+        const { error } = await _supabase.from('profiles').update({ winrate: wr, maxwin_limit: mx, session_minutes: sm }).eq('id', id);
+        if(!error) { showMsg("DATA UPDATED"); syncData(); }
     }
 
-    async function triggerPanic() {
-        if(!confirm("Aktifkan Mode Panic? Semua winrate diset ke 1%!")) return;
-        await _supa.from('profiles').update({ winrate: 1, panic_mode: true });
-        alert("Panic Mode Aktif!"); pullData();
-    }
-
-    function renderTabKasir() {
-        const ds = deposits.filter(x => x.status === 'PROSES');
-        const ws = withdrawals.filter(x => x.status === 'PROSES');
-        let h = '<h3 style="font-size:12px; margin-bottom:10px;">Antrean Pending</h3>';
-        ds.forEach(x => h += `<div class="card" style="border-left:4px solid var(--blue)"><b>${x.username}</b><p>Depo: +${(x.net_receive||x.amount).toLocaleString()}</p><button class="btn" onclick="actD('${x.id}','${x.username}',${x.net_receive||x.amount})">Approve</button></div>`);
-        ws.forEach(x => h += `<div class="card" style="border-left:4px solid var(--pink)"><b>${x.username}</b><p>WD: -${(x.nominal||x.amount).toLocaleString()}</p><button class="btn btn-pink" onclick="actW('${x.id}')">Cairkan</button></div>`);
-        document.getElementById('tab-kasir').innerHTML = h || '<p style="text-align:center; opacity:0.3;">Kosong</p>';
-    }
-
-    async function actD(id, user, amt) {
-        await _supa.from('deposits').update({status:'SUKSES'}).eq('id', id);
-        const { data } = await _supa.from('profiles').select('saldo').eq('username', user).single();
-        await _supa.from('profiles').update({saldo: (data.saldo||0) + amt}).eq('username', user);
-        pullData();
-    }
-
-    async function actW(id) { await _supa.from('withdrawals').update({status:'SUKSES'}).eq('id', id); pullData(); }
-
-    function renderTabGift() {
-        const filtered = players.filter(u => (u.username||"").toUpperCase().startsWith(currentLetter));
-        let h = `<div class="card" style="border:1px solid var(--pink)"><small class="lbl">Mass Gift</small><input type="number" id="mass-amt" placeholder="Nominal" style="background:#000; padding:10px; margin-bottom:10px; border-radius:5px;"><button class="btn btn-pink" onclick="giftAll()">Kirim Semua</button></div>`;
-        h += filtered.map(u => `<div class="card"><b>${u.username}</b><div class="input-grid"><div class="in-box"><small class="lbl">Nominal</small><input type="number" id="g-${u.id}"></div><div class="in-box"><small class="lbl">Pesan</small><input type="text" id="m-${u.id}"></div></div><button class="btn btn-yellow" onclick="sendGift('${u.id}')">Kirim Hadiah</button></div>`).join('');
-        document.getElementById('tab-gift').innerHTML = h;
+    function renderGiftTab() {
+        const filtered = allPlayers.filter(u => (u.username||"").toUpperCase().startsWith(currentLetter));
+        let html = `<div class="card" style="border:1px solid var(--pink)"><small class="lbl">MASS GIFT (ALL PLAYERS)</small><input type="number" id="mass-amt" placeholder="NOMINAL"><button class="btn btn-gift" onclick="massGift()">KIRIM SEMUA</button></div>`;
+        html += filtered.map(u => `
+            <div class="card">
+                <b>${u.username}</b>
+                <div class="input-row">
+                    <div class="field"><small class="lbl">AMOUNT</small><input type="number" id="ga-${u.id}"></div>
+                    <div class="field"><small class="lbl">PESAN</small><input type="text" id="gm-${u.id}" placeholder="Opsional"></div>
+                </div>
+                <button class="btn btn-gift" onclick="sendGift('${u.id}')">KIRIM GIFT</button>
+            </div>`).join('');
+        document.getElementById('tab-gift').innerHTML = html;
     }
 
     async function sendGift(id) {
-        const amt = parseInt(document.getElementById('g-'+id).value);
-        const msg = document.getElementById('m-'+id).value;
-        if(!amt) return;
-        const { data } = await _supa.from('profiles').select('saldo').eq('id', id).single();
-        await _supa.from('profiles').update({saldo: (data.saldo||0) + amt}).eq('id', id);
-        alert(`Gift Terkirim ke ${id} dengan pesan: ${msg}`); pullData();
+        const amt = parseInt(document.getElementById('ga-'+id).value);
+        if(!amt) return alert("Isi Nominal!");
+        const { data } = await _supabase.from('profiles').select('saldo').eq('id', id).single();
+        await _supabase.from('profiles').update({ saldo: (data.saldo||0) + amt }).eq('id', id);
+        showMsg("GIFT BERHASIL TERKIRIM"); syncData();
     }
 
-    async function giftAll() {
-        const amt = parseInt(document.getElementById('mass-amt').value);
-        if(!amt) return;
-        for(let u of players) { await _supa.from('profiles').update({saldo: (u.saldo||0) + amt}).eq('id', u.id); }
-        alert("Mass Gift Selesai"); pullData();
+    function renderCashierTab() {
+        const pD = allDepo.filter(x => x.status === 'PROSES');
+        const pW = allWd.filter(x => x.status === 'PROSES');
+        let html = '<h3 style="font-size:12px; margin-bottom:15px; text-transform:uppercase;">Pending Queue</h3>';
+        pD.forEach(x => html += `<div class="card" style="border-left:4px solid var(--blue)"><b>${x.username}</b><p>DEPO: +${(x.net_receive||x.amount).toLocaleString()}</p><button class="btn" onclick="approveD('${x.id}','${x.username}',${x.net_receive||x.amount})">APPROVE</button></div>`);
+        pW.forEach(x => html += `<div class="card" style="border-left:4px solid var(--pink)"><b>${x.username}</b><p>WD: -${(x.nominal||x.amount).toLocaleString()}</p><button class="btn btn-gift" onclick="approveW('${x.id}')">CAIRKAN</button></div>`);
+        document.getElementById('tab-cashier').innerHTML = html || '<p style="text-align:center; opacity:0.3; margin-top:50px;">QUEUE CLEAR</p>';
     }
 
-    function renderTabReport() {
-        const month = new Date().toISOString().slice(0, 7);
-        const sum = (arr) => arr.filter(x => x.status === 'SUKSES' && x.created_at.startsWith(month)).reduce((a,b) => a + (Number(b.amount||b.net_receive||b.nominal)||0), 0);
-        const n = sum(deposits) - sum(withdrawals);
-        document.getElementById('tab-stat').innerHTML = `<div class="card" style="text-align:center; padding:30px 15px;"><small class="lbl">Net Revenue (Bulan Ini)</small><h1 style="font-size:32px; color:${n>=0?'var(--yellow)':'var(--pink)'};">IDR ${n.toLocaleString()}</h1></div>`;
+    async function approveD(id, user, amt) {
+        await _supabase.from('deposits').update({status:'SUKSES'}).eq('id', id);
+        const { data } = await _supabase.from('profiles').select('saldo').eq('username', user).single();
+        await _supabase.from('profiles').update({saldo: (data.saldo||0) + amt}).eq('username', user);
+        showMsg("DEPOSIT APPROVED"); syncData();
     }
 
-    function switchTab(t, el) {
+    async function approveW(id) { await _supabase.from('withdrawals').update({status:'SUKSES'}).eq('id', id); showMsg("WD RELEASED"); syncData(); }
+
+    function renderReportTab() {
+        const m = new Date().toISOString().slice(0, 7);
+        const sum = (arr) => arr.filter(x => x.status === 'SUKSES' && x.created_at.startsWith(m)).reduce((a,b) => a + (Number(b.amount||b.net_receive||b.nominal)||0), 0);
+        const net = sum(allDepo) - sum(allWd);
+        document.getElementById('tab-report').innerHTML = `
+            <div class="card" style="text-align:center; padding:40px 10px;">
+                <small class="lbl">MONTHLY NET REVENUE</small>
+                <h1 style="font-size:35px; color:${net>=0?'var(--yellow)':'var(--pink)'};">IDR ${net.toLocaleString()}</h1>
+                <div style="display:flex; justify-content:space-around; margin-top:30px;">
+                    <div><small>DEPO</small><b style="color:#fff">${sum(allDepo).toLocaleString()}</b></div>
+                    <div><small>WD</small><b style="color:#fff">${sum(allWd).toLocaleString()}</b></div>
+                </div>
+            </div>`;
+    }
+
+    function changeTab(t, el) {
         activeTab = t;
         document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
         document.getElementById('tab-'+t).style.display = 'block';
-        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        document.querySelectorAll('.nav-link').forEach(i => i.classList.remove('active'));
         el.classList.add('active');
-        document.getElementById('alpha-nav-container').style.display = (t==='user' || t==='gift') ? 'grid' : 'none';
-        refreshUI();
+        document.getElementById('alpha-nav').style.display = (t=='players'||t=='gift') ? 'grid' : 'none';
+        renderUI();
     }
 
-    const c = document.getElementById('canvas-bg'); const x = c.getContext('2d');
-    c.width = window.innerWidth; c.height = window.innerHeight;
-    let parts = []; for(let i=0; i<30; i++) parts.push({x:Math.random()*c.width, y:Math.random()*c.height, r:Math.random()*1.5, s:Math.random()*0.3});
-    function animate() { x.clearRect(0,0,c.width,c.height); parts.forEach(p => { x.beginPath(); x.arc(p.x, p.y, p.r, 0, Math.PI*2); x.fillStyle = 'rgba(0, 34, 255, 0.4)'; x.fill(); p.y -= p.s; if(p.y < 0) p.y = c.height; }); requestAnimationFrame(animate); } animate();
-    pullData(); setInterval(pullData, 20000);
+    function showMsg(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.display = 'block'; setTimeout(()=>t.style.display='none', 2000); }
+    async function triggerPanic() { if(confirm("PANIC MODE? SEMUA WINRATE 1%")) { await _supabase.from('profiles').update({winrate:1, panic_mode:true}); showMsg("PANIC ACTIVE"); syncData(); } }
+
+    syncData(); setInterval(syncData, 30000);
 </script>
 </body>
 </html>
