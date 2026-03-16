@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>NEON COMMAND — OMEGA V14.3</title>
+    <title>NEON COMMAND — OMEGA V14.4</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@300;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -53,7 +53,7 @@
     <div id="gate-keeper">
         <div class="login-card">
             <h1 style="font-family:'Cinzel Decorative'; color:var(--pink); font-size:24px;">CHRONOS OMEGA</h1>
-            <p style="color:var(--cyan); font-size:8px; letter-spacing:4px; margin-bottom:25px;">MASTER CONTROL V14.3</p>
+            <p style="color:var(--cyan); font-size:8px; letter-spacing:4px; margin-bottom:25px;">MASTER CONTROL V14.4</p>
             <input type="password" id="adm-pass" placeholder="ACCESS KEY" style="text-align:center; border-radius:50px;">
             <button onclick="login()" class="btn">UNLOCK CORE</button>
         </div>
@@ -133,7 +133,6 @@
     async function initEngine() {
         fetchData();
         _supa.channel('db').on('postgres_changes', {event:'*', schema:'public'}, () => fetchData()).subscribe();
-        setInterval(() => { if(!focusedId) fetchData(); }, 10000); 
     }
 
     async function fetchData() {
@@ -209,23 +208,25 @@
 
     async function updateNode(id, btn) {
         btn.disabled = true;
-        const wrVal = document.getElementById('wr-'+id).value;
-        const mwVal = document.getElementById('mw-'+id).value;
-        const tmVal = document.getElementById('tm-'+id).value;
+        const wr = parseInt(document.getElementById('wr-'+id).value) || 50;
+        const mw = parseInt(document.getElementById('mw-'+id).value) || 1000000;
+        const tm = parseInt(document.getElementById('tm-'+id).value) || 0;
         
         try {
-            // PERBAIKAN: Gunakan nama kolom lowercase sesuai standar Supabase
             const { error } = await _supa.from('profiles').update({ 
-                winrate: parseInt(wrVal), 
-                maxwin_limit: parseInt(mwVal), 
-                session_timer: parseInt(tmVal)
+                winrate: wr, 
+                maxwin_limit: mw, 
+                session_timer: tm 
             }).eq('id', id);
 
-            if(!error) showAlert("NODE SECURED: SESSION ACTIVE");
-            else throw error;
+            if(!error) {
+                showAlert("NODE SECURED: SESSION ACTIVE (" + tm + " MIN)");
+            } else {
+                throw error;
+            }
         } catch(err) {
-            console.error(err);
-            showAlert("DB ERROR: Check SQL Columns");
+            console.error("Update Error:", err);
+            showAlert("DB ERROR: Jalankan SQL Perbaikan di Supabase!");
         } finally {
             btn.disabled = false;
         }
@@ -244,11 +245,11 @@
         const curM = new Date().getMonth();
         document.getElementById('statement-list').innerHTML = `
             <div class="player-card" style="border:1px solid var(--yellow)">
-                <h3 style="color:var(--yellow)">BULAN: ${months[curM]} 2026</h3>
-                <hr style="opacity:0.2; margin:10px 0;">
-                <p style="font-size:13px;">Total Depo: <span style="color:var(--cyan)">IDR ${td.toLocaleString()}</span></p>
-                <p style="font-size:13px;">Total WD: <span style="color:var(--pink)">IDR ${tw.toLocaleString()}</span></p>
-                <h4 style="margin-top:10px; color:var(--yellow)">NET PROFIT: IDR ${(td-tw).toLocaleString()}</h4>
+                <h3 style="color:var(--yellow)">LAPORAN: ${months[curM]} 2026</h3>
+                <hr style="opacity:0.1; margin:10px 0;">
+                <p>Total Depo: <span style="color:var(--cyan)">IDR ${td.toLocaleString()}</span></p>
+                <p>Total WD: <span style="color:var(--pink)">IDR ${tw.toLocaleString()}</span></p>
+                <h4 style="margin-top:10px; color:var(--yellow)">PROFIT: IDR ${(td-tw).toLocaleString()}</h4>
             </div>
         `;
     }
@@ -272,6 +273,7 @@
         if(!a || !t) return;
         await _supa.from('inbox').insert([{ username: t, nominal: Number(a), pesan: m || "Bonus System", status: 'UNCLAIMED' }]);
         showAlert("GIFT SENT TO " + t);
+        document.getElementById('gift-amt').value = '';
     }
 
     function switchTab(t, el) {
@@ -294,11 +296,13 @@
         const pBtn = document.getElementById('panic-ui');
         pBtn.style.background = isP ? "var(--pink)" : "transparent";
         pBtn.style.boxShadow = isP ? "var(--gp)" : "none";
+        pBtn.innerText = isP ? "PANIC ACTIVE" : "PANIC MODE";
     }
 
     function showAlert(m) { document.getElementById('alert-msg').innerText = m; document.getElementById('alert-modal').style.display = 'flex'; }
     function closeAlert() { document.getElementById('alert-modal').style.display = 'none'; fetchData(); }
 
+    // Efek BG Bintang
     const c = document.getElementById('canvas-bg'); const x = c.getContext('2d');
     c.width = window.innerWidth; c.height = window.innerHeight;
     let stars = []; for(let i=0; i<60; i++) stars.push({x:Math.random()*c.width, y:Math.random()*c.height, r:Math.random()*1.2, sp:Math.random()*0.3+0.1});
