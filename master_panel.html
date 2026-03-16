@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>NEON COMMAND — SUPREME ADMIN V10.7</title>
+    <title>NEON COMMAND — SUPREME ADMIN V10.8 MASTER</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -31,12 +31,13 @@
         .stat-box { background: rgba(0,0,0,0.9); border: 1px solid var(--blue); padding: 15px; border-radius: 15px; text-align: center; box-shadow: inset 0 0 15px rgba(0,34,255,0.3); }
         .stat-box small { font-size: 9px; color: var(--pink); display: block; margin-bottom: 5px; font-weight: 800; }
         .stat-box span { font-size: 16px; font-weight: 900; color: var(--yellow); text-shadow: var(--gy); }
-        .card { background: rgba(0,0,0,0.85); border: 1px solid var(--blue); border-radius: 20px; padding: 20px; margin-bottom: 15px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: 0.3s; }
+        .card { background: rgba(0,0,0,0.85); border: 1px solid var(--blue); border-radius: 20px; padding: 20px; margin-bottom: 15px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .card-label { font-size: 10px; color: var(--cyan); font-weight: 800; text-transform: uppercase; margin-bottom: 12px; display: block; }
         input, select, textarea { width: 100%; padding: 12px; background: rgba(5, 6, 25, 0.8); border: 1px solid var(--blue); color: var(--yellow); border-radius: 10px; margin-bottom: 10px; font-family: 'Outfit'; font-size: 13px; outline: none; }
         input:focus { border-color: var(--pink); box-shadow: var(--gp); }
         .btn-main { background: linear-gradient(90deg, var(--blue), #001188); color: #fff; padding: 14px; border-radius: 50px; font-weight: 900; border: 1px solid var(--cyan); width: 100%; cursor: pointer; text-transform: uppercase; font-size: 11px; letter-spacing: 2px; box-shadow: var(--gb); transition: 0.2s; }
         .btn-main:active { transform: scale(0.95); opacity: 0.8; }
+        .btn-main:disabled { opacity: 0.5; cursor: wait; }
         .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 80px; background: #000; border-top: 2px solid var(--blue); display: flex; justify-content: space-around; align-items: center; z-index: 1000; padding-bottom: env(safe-area-inset-bottom); }
         .nav-btn { color: rgba(0, 212, 255, 0.3); font-size: 20px; text-align: center; flex: 1; cursor: pointer; }
         .nav-btn span { display: block; font-size: 8px; margin-top: 5px; font-weight: 800; }
@@ -66,9 +67,9 @@
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <div>
                     <span style="font-family:'Cinzel Decorative'; font-weight:900; color:var(--pink); font-size:18px;">SUPREME</span>
-                    <span id="live-indicator" style="font-size:8px; color:var(--cyan); display:block; font-weight:800;"><i class="fas fa-circle fa-fade"></i> SIGNAL STABLE</span>
+                    <span id="live-indicator" style="font-size:8px; color:var(--cyan); display:block; font-weight:800;"><i class="fas fa-circle"></i> SIGNAL STABLE</span>
                 </div>
-                <div id="sync-status" style="font-size:10px; color:var(--yellow); font-weight:800;">V10.7 MASTER</div>
+                <div id="sync-status" style="font-size:10px; color:var(--yellow); font-weight:800;">V10.8 MASTER</div>
             </div>
         </div>
 
@@ -117,11 +118,16 @@
 <script>
     const SUPA_URL = "https://bgffnmwrviyqpeevzjsn.supabase.co"; 
     const SUPA_KEY = "sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani"; 
-    const _supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+    
+    // Inisialisasi client dengan konfigurasi tahan timeout
+    const _supa = supabase.createClient(SUPA_URL, SUPA_KEY, {
+        db: { schema: 'public' },
+        global: { headers: { 'x-application-name': 'neon-command-master' } }
+    });
 
     const AUTH = { u: "admin_neon", p: "master777" };
     let autoRefresh;
-    let focusedInputId = null; // Melacak input mana yang sedang diketik agar tidak ditimpa render
+    let focusedInputId = null; 
 
     function login() {
         if(document.getElementById('adm-user').value === AUTH.u && document.getElementById('adm-pass').value === AUTH.p) {
@@ -134,86 +140,112 @@
     }
 
     async function initEngine() {
-        refreshAll();
-        
-        // REALTIME: Dengarkan perubahan tabel secara instan
-        _supa.channel('any-db-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-            if(!focusedInputId) refreshAll();
-        }).subscribe();
+        try {
+            await refreshAll();
+            
+            // REALTIME - Hanya refresh jika admin tidak sedang fokus mengetik
+            _supa.channel('db-changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+                if(!focusedInputId) refreshAll();
+            })
+            .subscribe((status) => {
+                const ind = document.getElementById('live-indicator');
+                if(status === 'SUBSCRIBED') {
+                    ind.style.color = 'var(--cyan)';
+                    ind.innerHTML = '<i class="fas fa-circle fa-fade"></i> SIGNAL ACTIVE';
+                } else {
+                    ind.style.color = 'var(--pink)';
+                    ind.innerHTML = '<i class="fas fa-circle"></i> RECONNECTING...';
+                }
+            });
 
-        // POLLING: Backup sinkronisasi setiap 2 detik
-        if(autoRefresh) clearInterval(autoRefresh);
-        autoRefresh = setInterval(() => {
-            if(!focusedInputId) refreshAll();
-        }, 2000);
+            // POLLING FALLBACK - Interval 3 detik agar tidak membebani koneksi
+            if(autoRefresh) clearInterval(autoRefresh);
+            autoRefresh = setInterval(() => {
+                if(!focusedInputId) refreshAll();
+            }, 3500);
+
+        } catch (e) {
+            console.error("Engine Error:", e);
+            setTimeout(initEngine, 5000);
+        }
     }
 
     async function refreshAll() {
-        const { data: profiles } = await _supa.from('profiles').select('*').order('username');
-        if(profiles) {
-            let total = profiles.reduce((a, b) => a + (b.saldo || 0), 0);
-            document.getElementById('stat-total-saldo').innerText = total.toLocaleString();
-            document.getElementById('stat-user-count').innerText = profiles.length;
-            renderUsers(profiles);
+        try {
+            const { data: profiles, error } = await _supa.from('profiles').select('*').order('username');
+            if(profiles) {
+                let total = profiles.reduce((a, b) => a + (b.saldo || 0), 0);
+                document.getElementById('stat-total-saldo').innerText = total.toLocaleString();
+                document.getElementById('stat-user-count').innerText = profiles.length;
+                renderUsers(profiles);
+            }
+            loadKasir();
+            checkPanic();
+        } catch (err) {
+            console.log("Refresh failed, retrying...");
         }
-        loadKasir();
-        checkPanic();
     }
 
     function renderUsers(data) {
-        if(focusedInputId) return; // JANGAN render jika admin sedang mengetik
+        if(focusedInputId) return; 
         const container = document.getElementById('list-user');
         container.innerHTML = data.map(u => {
             const isLimit = u.saldo >= u.maxwin_limit;
             return `
-            <div class="card" id="card-${u.id}" style="${isLimit ? 'border:2px solid var(--pink); box-shadow:var(--gp);' : ''}">
+            <div class="card" style="${isLimit ? 'border:2px solid var(--pink); box-shadow:var(--gp);' : ''}">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <b style="color:${isLimit ? 'var(--yellow)' : 'var(--cyan)'};">${isLimit ? '⚠️ ' : ''}${u.username.toUpperCase()}</b>
                     <span style="color:var(--yellow); font-size:18px; font-weight:900;">${Number(u.saldo).toLocaleString()}</span>
                 </div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; margin-top:15px;">
-                    <div><small>WINRATE %</small><input type="number" id="wr-${u.id}" value="${u.winrate}" onfocus="focusedInputId='${u.id}'" onblur="focusedInputId=null"></div>
-                    <div><small>MAXWIN</small><input type="number" id="mw-${u.id}" value="${u.maxwin_limit}" onfocus="focusedInputId='${u.id}'" onblur="focusedInputId=null"></div>
-                    <div><small>SESSION</small><input type="number" id="tm-${u.id}" value="${u.session_minutes}" onfocus="focusedInputId='${u.id}'" onblur="focusedInputId=null"></div>
+                    <div><small>WIN %</small><input type="number" id="wr-${u.id}" value="${u.winrate}" onfocus="focusedInputId='${u.id}'" onblur="focusedInputId=null"></div>
+                    <div><small>LIMIT</small><input type="number" id="mw-${u.id}" value="${u.maxwin_limit}" onfocus="focusedInputId='${u.id}'" onblur="focusedInputId=null"></div>
+                    <div><small>MINS</small><input type="number" id="tm-${u.id}" value="${u.session_minutes}" onfocus="focusedInputId='${u.id}'" onblur="focusedInputId=null"></div>
                 </div>
-                <button class="btn-main" style="height:35px; margin-top:10px; font-size:9px;" onclick="saveUser('${u.id}')">FORCE SYNC NODE</button>
+                <button class="btn-main" style="height:35px; margin-top:10px; font-size:9px;" onclick="saveUser('${u.id}', this)">FORCE SYNC NODE</button>
             </div>`;
         }).join('');
     }
 
-    async function saveUser(id) {
-        const wrValue = parseInt(document.getElementById('wr-'+id).value);
-        const mwValue = parseInt(document.getElementById('mw-'+id).value);
-        const tmValue = parseInt(document.getElementById('tm-'+id).value);
+    async function saveUser(id, btn) {
+        const wrVal = parseInt(document.getElementById('wr-'+id).value);
+        const mwVal = parseInt(document.getElementById('mw-'+id).value);
+        const tmVal = parseInt(document.getElementById('tm-'+id).value);
 
-        // Langsung tampilkan status loading pada tombol
-        const btn = event.target;
-        const originalText = btn.innerText;
-        btn.innerText = "UPLOADING...";
+        btn.disabled = true;
+        btn.innerText = "UPLINKING...";
 
-        const { error } = await _supa.from('profiles').update({
-            winrate: wrValue,
-            maxwin_limit: mwValue,
-            session_minutes: tmValue,
-            updated_at: new Date().toISOString() // Paksa update timestamp agar game pemain merespon
-        }).eq('id', id);
+        // RETRY LOGIC (3 Kali Percobaan jika Timeout)
+        let success = false;
+        for (let i = 0; i < 3; i++) {
+            const { error } = await _supa.from('profiles').update({
+                winrate: wrVal,
+                maxwin_limit: mwVal,
+                session_minutes: tmVal,
+                updated_at: new Date().toISOString()
+            }).eq('id', id);
 
-        if(!error) {
-            showAlert("SYNC SUCCESS: NODE UPDATED");
-            focusedInputId = null; // Melepas kunci agar bisa refresh
+            if(!error) { success = true; break; }
+            console.warn(`Retry attempt ${i+1}...`);
+        }
+
+        if(success) {
+            showAlert("SYNC SUCCESS");
+            focusedInputId = null;
             refreshAll();
         } else {
-            showAlert("CONNECTION ERROR");
-            btn.innerText = originalText;
+            showAlert("SYNC FAILED: CHECK CONNECTION");
         }
+        btn.disabled = false;
+        btn.innerText = "FORCE SYNC NODE";
     }
 
     async function loadKasir() {
         const { data } = await _supa.from('deposits').select('*').eq('status', 'PROSES');
         const cont = document.getElementById('list-kasir');
         if(!data || data.length === 0) {
-            cont.innerHTML = '<p style="text-align:center; font-size:10px; opacity:0.5; letter-spacing:2px;">WAITING FOR SIGNALS...</p>';
+            cont.innerHTML = '<p style="text-align:center; font-size:10px; opacity:0.5; letter-spacing:2px;">WAITING FOR DATA...</p>';
             return;
         }
         cont.innerHTML = data.map(d => `
@@ -221,7 +253,7 @@
                 <small>INCOMING DEPOSIT</small>
                 <h3>${d.username}</h3>
                 <h2 style="color:var(--yellow)">IDR ${d.net_receive.toLocaleString()}</h2>
-                <button class="btn-main" style="margin-top:10px;" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive})">APPROVE</button>
+                <button class="btn-main" style="margin-top:10px;" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive})">AUTHORIZE</button>
             </div>
         `).join('');
     }
@@ -230,8 +262,9 @@
         await _supa.from('deposits').update({ status: 'SUKSES' }).eq('id', id);
         const { data } = await _supa.from('profiles').select('saldo').eq('username', user).single();
         await _supa.from('profiles').update({ 
-            saldo: (data.saldo || 0) + amt,
-            session_start: new Date().toISOString()
+            saldo: (data.saldo || 0) + amt, 
+            session_start: new Date().toISOString(),
+            updated_at: new Date().toISOString()
         }).eq('username', user);
         refreshAll();
     }
@@ -240,7 +273,7 @@
         const t = document.getElementById('gift-target').value;
         const a = document.getElementById('gift-amount').value;
         if(!t || !a) return;
-        await _supa.from('inbox').insert([{ username: t, nominal: Number(a), pesan: document.getElementById('gift-msg').value || "SYSTEM_GIFT", status: 'UNCLAIMED' }]);
+        await _supa.from('inbox').insert([{ username: t, nominal: Number(a), pesan: document.getElementById('gift-msg').value || "SYSTEM_TRANSMISSION", status: 'UNCLAIMED' }]);
         showAlert("GIFT TRANSMITTED");
         document.getElementById('gift-amount').value = "";
     }
@@ -258,6 +291,7 @@
         await _supa.from('system_config').update({ panic_mode: next }).eq('id', 1);
         await _supa.from('profiles').update({ panic_mode: next });
         showAlert("PANIC MODE: " + (next ? "ON" : "OFF"));
+        refreshAll();
     }
 
     function switchTab(t, el) {
