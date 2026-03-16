@@ -3,278 +3,314 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>SUPREME OMEGA V15.2 — DEFINITIVE</title>
+    <title>SUPREME OMEGA V15.3 — ARCHITECT</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@400;600;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@300;600;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { 
-            --pink: #ff0077; --blue: #0022ff; --yellow: #fbff00; --bg: #000003;
-            --gp: 0 0 8px #ff0077; --gb: 0 0 10px #0022ff; --gy: 0 0 8px #fbff00;
+            --pink: #ff0077; --blue: #0022ff; --yellow: #fbff00; --bg: #000002;
+            --gp: 0 0 10px #ff0077; --gb: 0 0 10px #0022ff; --gy: 0 0 10px #fbff00;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg); color: var(--yellow); font-family: 'Outfit', sans-serif; overflow-x: hidden; min-height: 100vh; }
-        #canvas-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.6; }
+        body { background: var(--bg); color: var(--yellow); font-family: 'Outfit', sans-serif; overflow: hidden; height: 100vh; }
         
-        .gif-header { width: 100%; height: 100px; background: url('https://i.pinimg.com/originals/18/d9/43/18d94340a6b579177114b09c5dbd1b54.gif') center/cover; position: relative; border-bottom: 2px solid var(--pink); box-shadow: var(--gp); z-index: 10; }
-        .gif-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0) 0%, var(--bg) 100%); }
-
-        .nav-top { background: rgba(0,0,5,0.9); padding: 12px 15px; border-bottom: 1px solid var(--blue); position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(10px); }
-        .content { padding: 15px; padding-bottom: 110px; max-width: 600px; margin: auto; position: relative; z-index: 10; }
-
-        .report-card { background: rgba(0, 34, 255, 0.03); border: 1px solid var(--blue); border-radius: 12px; padding: 12px; margin-bottom: 15px; display: flex; gap: 10px; box-shadow: var(--gb); }
-        .report-val { flex: 1; text-align: center; border-right: 1px solid rgba(0,34,255,0.3); }
-        .report-val:last-child { border-right: none; }
-        .report-val small { font-size: 8px; color: var(--pink); font-weight: 900; letter-spacing: 1px; text-shadow: var(--gp); }
-        .report-val h3 { font-size: 14px; color: var(--yellow); margin-top: 4px; font-family: 'Cinzel Decorative'; }
-
-        .matrix-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 15px; }
-        .alpha-box { background: rgba(0, 34, 255, 0.05); border: 1px solid var(--blue); border-radius: 6px; padding: 10px 0; text-align: center; cursor: pointer; transition: 0.2s; }
-        .alpha-box.active { background: rgba(255,0,119,0.15); border-color: var(--pink); box-shadow: var(--gp); }
-        .alpha-box b { color: #fff; font-size: 13px; }
-
-        .player-card { background: rgba(0,0,20,0.8); border: 1px solid var(--blue); border-radius: 12px; padding: 15px; margin-bottom: 12px; position: relative; box-shadow: var(--gb); }
-        .player-card::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--pink); }
+        /* Particle Background */
+        #canvas-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.4; }
         
-        .input-group { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; margin:12px 0; }
-        .input-box { background: rgba(0,0,0,0.4); border: 1px solid rgba(0,34,255,0.4); border-radius: 8px; padding: 6px; text-align: center; }
-        .input-box small { font-size: 7px; color: var(--pink); display: block; margin-bottom: 3px; font-weight: 900; }
-        input { width: 100%; background: transparent; border: none; color: var(--yellow); font-size: 14px; text-align: center; font-weight: 900; outline: none; }
-        
-        .btn { background: var(--blue); color: #fff; border: 1px solid var(--blue); padding: 12px; border-radius: 10px; font-weight: 900; width: 100%; cursor: pointer; text-transform: uppercase; font-size: 10px; letter-spacing: 1px; box-shadow: var(--gb); }
-        .btn-pink { background: var(--pink); border-color: var(--pink); box-shadow: var(--gp); }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        /* Header & Nav */
+        .nav-top { background: rgba(0,0,5,0.95); padding: 15px; border-bottom: 1px solid var(--blue); position: relative; z-index: 100; display: flex; justify-content: space-between; align-items: center; }
+        .panic-timer { font-size: 10px; color: var(--pink); font-weight: 900; text-shadow: var(--gp); }
 
-        .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 75px; background: rgba(0,0,5,0.95); border-top: 1px solid var(--blue); display: flex; justify-content: space-around; align-items: center; z-index: 1000; padding-bottom: env(safe-area-inset-bottom); }
-        .nav-btn { color: rgba(0,34,255,0.5); text-align: center; flex: 1; cursor: pointer; }
-        .nav-btn.active { color: var(--pink); text-shadow: var(--gp); }
-        .nav-btn i { font-size: 18px; }
-        .nav-btn p { font-size: 8px; font-weight: 900; margin-top: 4px; }
+        /* App Container */
+        .main-scroll { height: calc(100vh - 140px); overflow-y: auto; padding: 15px; position: relative; z-index: 10; }
+        .section-box { background: rgba(0,34,255,0.03); border: 1px solid rgba(0,34,255,0.3); border-radius: 12px; margin-bottom: 20px; padding: 15px; height: 300px; display: flex; flex-direction: column; }
+        .section-box h2 { font-size: 12px; letter-spacing: 2px; color: var(--pink); margin-bottom: 10px; border-bottom: 1px solid var(--blue); padding-bottom: 5px; }
+        .inner-scroll { flex: 1; overflow-y: auto; padding-right: 5px; }
 
-        #alert-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:10000; align-items:center; justify-content:center; }
-        .alert-box { width:280px; background: #000; border: 2px solid var(--pink); border-radius:15px; padding:25px; text-align:center; box-shadow: var(--gp); }
+        /* UI Components */
+        .card { background: rgba(0,0,20,0.6); border: 1px solid var(--blue); padding: 12px; border-radius: 10px; margin-bottom: 10px; box-shadow: var(--gb); }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .stat-min { text-align: center; background: rgba(0,0,0,0.4); padding: 8px; border-radius: 8px; border: 1px solid rgba(251,255,0,0.2); }
+        .stat-min small { display: block; font-size: 7px; color: var(--pink); font-weight: 900; }
+        .stat-min b { font-size: 12px; color: #fff; }
+
+        /* Inputs & Buttons */
+        .input-dark { width: 100%; background: #000; border: 1px solid var(--blue); color: var(--yellow); padding: 8px; border-radius: 6px; font-size: 12px; outline: none; text-align: center; }
+        .btn { background: var(--blue); color: #fff; border: none; padding: 10px; border-radius: 6px; font-weight: 900; cursor: pointer; font-size: 10px; width: 100%; text-shadow: var(--gb); }
+        .btn-pink { background: var(--pink); box-shadow: var(--gp); }
+        .btn-yellow { background: var(--yellow); color: #000; }
+
+        /* Navigation Bottom */
+        .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 70px; background: #000; border-top: 1px solid var(--blue); display: flex; justify-content: space-around; align-items: center; z-index: 100; }
+        .nav-item { color: rgba(0,34,255,0.4); text-align: center; font-size: 20px; transition: 0.3s; }
+        .nav-item.active { color: var(--pink); transform: translateY(-5px); text-shadow: var(--gp); }
+        .nav-item p { font-size: 8px; margin-top: 5px; font-weight: 900; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 3px; }
+        ::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 10px; }
     </style>
 </head>
 <body>
     <canvas id="canvas-bg"></canvas>
-    <div class="gif-header"><div class="gif-overlay"></div></div>
 
-    <div id="main-app">
-        <div class="nav-top">
-            <span style="font-family:'Cinzel Decorative'; color:var(--pink); font-size:18px; text-shadow:var(--gp);">SUPREME <span style="color:var(--yellow);">V15.2</span></span>
-            <div id="panic-ui" onclick="togglePanic()" style="padding:8px 12px; border:1px solid var(--pink); border-radius:50px; font-size:9px; font-weight:900; cursor:pointer; transition:0.3s; color:var(--pink);">PANIC MODE</div>
+    <div class="nav-top">
+        <div>
+            <span style="font-family:'Cinzel Decorative'; color:var(--pink); font-size:16px;">OMEGA V15.3</span>
+            <div id="p-status" class="panic-timer">SYSTEM NORMAL</div>
         </div>
+        <div style="display:flex; gap:5px;">
+            <select id="p-duration" class="input-dark" style="width:70px; height:30px; font-size:9px;">
+                <option value="5">5 MIN</option>
+                <option value="10">10 MIN</option>
+                <option value="60">1 HOUR</option>
+            </select>
+            <button id="p-btn" onclick="triggerPanic()" class="btn btn-pink" style="width:80px; height:30px;">PANIC</button>
+        </div>
+    </div>
 
-        <div class="content">
-            <div id="tab-kasir" class="page">
-                <div class="report-card">
-                    <div class="report-val"><small>TOTAL DEPO</small><h3 id="stat-depo">IDR 0</h3></div>
-                    <div class="report-val"><small>TOTAL WD</small><h3 id="stat-wd">IDR 0</h3></div>
+    <div class="main-scroll" id="page-container">
+        <div id="tab-kasir" class="page">
+            <div class="section-box" style="height:auto;">
+                <h2>FINANCE DASHBOARD</h2>
+                <div class="grid-2">
+                    <div class="stat-min"><small>TODAY DEPO</small><b id="d-day">IDR 0</b></div>
+                    <div class="stat-min"><small>TODAY WD</small><b id="w-day">IDR 0</b></div>
+                    <div class="stat-min"><small>TOTAL DEPO</small><b id="d-all">IDR 0</b></div>
+                    <div class="stat-min"><small>TOTAL WD</small><b id="w-all">IDR 0</b></div>
                 </div>
-                <div id="list-kasir"></div>
             </div>
-
-            <div id="tab-user" class="page" style="display:none;">
-                <div class="matrix-grid" id="alpha-grid"></div>
-                <div id="list-user"></div>
-            </div>
-
-            <div id="tab-stat" class="page" style="display:none;">
-                <div id="statement-list"></div>
+            <div class="section-box">
+                <h2>PENDING QUEUE</h2>
+                <div class="inner-scroll" id="queue-list"></div>
             </div>
         </div>
 
-        <nav class="nav-bottom">
-            <div class="nav-btn active" onclick="switchTab('kasir', this)"><i class="fas fa-bolt"></i><p>KASIR</p></div>
-            <div class="nav-btn" onclick="switchTab('user', this)"><i class="fas fa-users"></i><p>PLAYERS</p></div>
-            <div class="nav-btn" onclick="switchTab('stat', this)"><i class="fas fa-chart-line"></i><p>REPORT</p></div>
-            <div class="nav-btn" onclick="location.reload()"><i class="fas fa-sync"></i><p>REFRESH</p></div>
-        </nav>
-    </div>
+        <div id="tab-user" class="page" style="display:none;">
+            <div class="section-box">
+                <h2>PLAYER DATABASE</h2>
+                <div class="inner-scroll" id="user-list"></div>
+            </div>
+            <div class="section-box">
+                <h2>GROWTH STATS</h2>
+                <div class="inner-scroll">
+                    <div class="card"><small>New Players (Today):</small><h3 id="u-day">0</h3></div>
+                    <div class="card"><small>New Players (Month):</small><h3 id="u-month">0</h3></div>
+                </div>
+            </div>
+        </div>
 
-    <div id="alert-modal">
-        <div class="alert-box">
-            <i class="fas fa-biohazard" style="font-size:30px; color:var(--pink); margin-bottom:15px;"></i>
-            <p id="alert-msg" style="font-size:13px; font-weight:600;"></p>
-            <button onclick="closeAlert()" class="btn btn-pink" style="margin-top:20px;">DISMISS</button>
+        <div id="tab-gift" class="page" style="display:none;">
+            <div class="section-box" style="height:auto;">
+                <h2>MASS GIFT SYSTEM</h2>
+                <input type="number" id="mass-amt" class="input-dark" placeholder="ENTER AMOUNT">
+                <button class="btn btn-yellow" onclick="giftAll()" style="margin-top:10px;">SEND TO ALL PLAYERS</button>
+            </div>
+            <div class="section-box">
+                <h2>GIFT EXPENDITURE</h2>
+                <div class="inner-scroll" id="gift-log">
+                    <div class="card" style="text-align:center;">
+                        <small>TOTAL GIFT SENT</small>
+                        <h2 id="total-gift" style="color:var(--yellow)">IDR 0</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-stat" class="page" style="display:none;">
+            <div class="section-box" style="height:450px;">
+                <h2>MONTHLY LEDGER</h2>
+                <div class="inner-scroll" id="ledger-list"></div>
+            </div>
         </div>
     </div>
+
+    <nav class="nav-bottom">
+        <div class="nav-item active" onclick="showTab('kasir', this)"><i class="fas fa-wallet"></i><p>CASHIER</p></div>
+        <div class="nav-item" onclick="showTab('user', this)"><i class="fas fa-users"></i><p>PLAYERS</p></div>
+        <div class="nav-item" onclick="showTab('gift', this)"><i class="fas fa-gift"></i><p>GIFT</p></div>
+        <div class="nav-item" onclick="showTab('stat', this)"><i class="fas fa-file-invoice"></i><p>REPORT</p></div>
+    </nav>
 
 <script>
     const SUPA_URL = "https://bgffnmwrviyqpeevzjsn.supabase.co"; 
     const SUPA_KEY = "sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani"; 
     const _supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 
-    let allUsers = [];
-    let selectedLetter = 'A';
+    let originalWinrates = {};
+    let isPanic = false;
 
     async function fetchData() {
-        try {
-            const { data: p } = await _supa.from('profiles').select('*').order('username');
-            const { data: d_all } = await _supa.from('deposits').select('*');
-            const { data: w_all } = await _supa.from('withdrawals').select('*');
-            const { data: c } = await _supa.from('system_config').select('*').eq('id', 1).maybeSingle();
-
-            if(p) { allUsers = p; renderAlphaGrid(); renderUserList(); }
-            
-            const totalD = d_all?.filter(x => x.status === 'SUKSES').reduce((acc, curr) => acc + (Number(curr.net_receive) || Number(curr.amount) || 0), 0) || 0;
-            const totalW = w_all?.filter(x => x.status === 'SUKSES').reduce((acc, curr) => acc + (Number(curr.nominal) || Number(curr.amount) || 0), 0) || 0;
-
-            // Daily Logic
-            const today = new Date().toISOString().split('T')[0];
-            const dailyD = d_all?.filter(x => x.status === 'SUKSES' && x.created_at?.startsWith(today)).reduce((acc, curr) => acc + (Number(curr.net_receive) || Number(curr.amount) || 0), 0) || 0;
-            const dailyW = w_all?.filter(x => x.status === 'SUKSES' && x.created_at?.startsWith(today)).reduce((acc, curr) => acc + (Number(curr.nominal) || Number(curr.amount) || 0), 0) || 0;
-
-            document.getElementById('stat-depo').innerText = "IDR " + totalD.toLocaleString();
-            document.getElementById('stat-wd').innerText = "IDR " + totalW.toLocaleString();
-
-            renderKasir(d_all?.filter(x => x.status === 'PROSES'), w_all?.filter(x => x.status === 'PROSES'));
-            renderStatement(totalD, totalW, dailyD, dailyW);
-            if(c) updatePanicUI(c.panic_mode);
-        } catch(e) { console.error(e); }
-    }
-
-    function renderAlphaGrid() {
-        const grid = document.getElementById('alpha-grid');
-        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split("");
-        grid.innerHTML = chars.map(char => {
-            const count = allUsers.filter(u => (u.username || "").toUpperCase().startsWith(char)).length;
-            return `<div class="alpha-box ${selectedLetter===char?'active':''}" onclick="selectedLetter='${char}'; renderUserList(); renderAlphaGrid();">
-                <b>${char}</b><br><span style="font-size:7px; color:var(--blue);">${count}</span></div>`;
-        }).join('');
-    }
-
-    function renderUserList() {
-        const container = document.getElementById('list-user');
-        const filtered = allUsers.filter(u => (u.username || "").toUpperCase().startsWith(selectedLetter));
-        container.innerHTML = filtered.map(u => `
-            <div class="player-card">
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(0,34,255,0.2); padding-bottom:8px;">
-                    <b style="color:var(--pink); font-size:14px;">${u.username}</b>
-                    <span style="font-size:11px; color:var(--yellow);">IDR ${(u.saldo||0).toLocaleString()}</span>
-                </div>
-                <div class="input-group">
-                    <div class="input-box"><small>WINRATE %</small><input type="number" id="wr-${u.id}" value="${u.winrate ?? 10}"></div>
-                    <div class="input-box"><small>MAXWIN</small><input type="number" id="mw-${u.id}" value="${u.maxwin_limit ?? 1000000}"></div>
-                    <div class="input-box"><small>SESSION</small><input type="number" id="tm-${u.id}" value="${u.session_timer ?? 0}"></div>
-                </div>
-                <button class="btn" id="btn-${u.id}" onclick="syncNode('${u.id}')"><i class="fas fa-satellite-dish"></i> SYNC PLAYER</button>
-            </div>
-        `).join('') || '<p style="text-align:center; padding:20px; font-size:10px;">EMPTY SECTOR</p>';
-    }
-
-    async function syncNode(id) {
-        const btn = document.getElementById('btn-'+id);
-        btn.disabled = true;
-        btn.innerText = "UPLOADING...";
-
-        const wr = parseInt(document.getElementById('wr-'+id).value);
-        const mw = parseInt(document.getElementById('mw-'+id).value);
-        const tm = parseInt(document.getElementById('tm-'+id).value);
+        const { data: p } = await _supa.from('profiles').select('*').order('created_at', {ascending: false});
+        const { data: d } = await _supa.from('deposits').select('*');
+        const { data: w } = await _supa.from('withdrawals').select('*');
         
-        const { error } = await _supa.from('profiles').update({ winrate: wr, maxwin_limit: mw, session_timer: tm }).eq('id', id);
+        const now = new Date();
+        const todayStr = now.toISOString().split('T')[0];
+        const monthStr = now.toISOString().slice(0, 7);
 
-        if(!error) {
-            let idx = allUsers.findIndex(u => u.id === id);
-            if(idx !== -1) { allUsers[idx].winrate = wr; allUsers[idx].maxwin_limit = mw; allUsers[idx].session_timer = tm; }
-            showAlert("NODE UPDATED SUCCESSFULLY");
-        }
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-satellite-dish"></i> SYNC PLAYER';
+        // Finance Logic
+        const filterSum = (arr, status, date) => arr?.filter(x => x.status === status && (date ? x.created_at.startsWith(date) : true)).reduce((a,b) => a + (Number(b.amount) || Number(b.net_receive) || Number(b.nominal) || 0), 0) || 0;
+
+        const tdD = filterSum(d, 'SUKSES', todayStr);
+        const tdW = filterSum(w, 'SUKSES', todayStr);
+        const allD = filterSum(d, 'SUKSES');
+        const allW = filterSum(w, 'SUKSES');
+
+        document.getElementById('d-day').innerText = "IDR " + tdD.toLocaleString();
+        document.getElementById('w-day').innerText = "IDR " + tdW.toLocaleString();
+        document.getElementById('d-all').innerText = "IDR " + allD.toLocaleString();
+        document.getElementById('w-all').innerText = "IDR " + allW.toLocaleString();
+
+        // User Logic
+        document.getElementById('u-day').innerText = p?.filter(x => x.created_at.startsWith(todayStr)).length || 0;
+        document.getElementById('u-month').innerText = p?.filter(x => x.created_at.startsWith(monthStr)).length || 0;
+
+        renderQueue(d.filter(x => x.status === 'PROSES'), w.filter(x => x.status === 'PROSES'));
+        renderUsers(p);
+        renderLedger(tdD, tdW, allD, allW);
     }
 
-    function renderKasir(deps, wds) {
-        const cont = document.getElementById('list-kasir');
+    function renderQueue(ds, ws) {
         let h = '';
-        deps?.forEach(d => h += `<div class="player-card" style="border-left:3px solid var(--blue)">
-            <small style="color:var(--blue)">DEPO REQUEST</small><h3 style="color:#fff;">${d.username}</h3><h2 style="color:var(--yellow);">IDR ${Number(d.net_receive || d.amount).toLocaleString()}</h2>
-            <button class="btn btn-pink" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive || d.amount})" style="margin-top:10px;">APPROVE</button></div>`);
-        wds?.forEach(w => h += `<div class="player-card" style="border-left:3px solid var(--pink)">
-            <small style="color:var(--pink)">WD REQUEST</small><h3 style="color:#fff;">${w.username}</h3><h2 style="color:var(--yellow);">IDR ${Number(w.nominal || w.amount).toLocaleString()}</h2>
-            <button class="btn" onclick="approveWD('${w.id}')" style="margin-top:10px;">RELEASE WD</button></div>`);
-        cont.innerHTML = h || '<p style="text-align:center; padding:30px; font-size:10px; opacity:0.5;">NO PENDING ORDERS</p>';
+        ds.forEach(x => h += `<div class="card"><b>${x.username}</b> <span style="color:var(--blue)">+${(x.net_receive||x.amount).toLocaleString()}</span><button class="btn" onclick="approveD('${x.id}','${x.username}',${x.net_receive||x.amount})" style="margin-top:5px">APPROVE</button></div>`);
+        ws.forEach(x => h += `<div class="card"><b>${x.username}</b> <span style="color:var(--pink)">-${(x.nominal||x.amount).toLocaleString()}</span><button class="btn btn-pink" onclick="approveW('${x.id}')" style="margin-top:5px">RELEASE</button></div>`);
+        document.getElementById('queue-list').innerHTML = h || '<p style="font-size:10px; opacity:0.5; text-align:center;">EMPTY</p>';
     }
 
-    async function approveDepo(id, user, amt) {
-        await _supa.from('deposits').update({status:'SUKSES'}).eq('id', id);
-        const { data } = await _supa.from('profiles').select('saldo').eq('username', user).maybeSingle();
-        await _supa.from('profiles').update({saldo: (data?.saldo||0) + amt}).eq('username', user);
+    function renderUsers(users) {
+        document.getElementById('user-list').innerHTML = users.map(u => `
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                    <b style="color:var(--pink)">${u.username}</b>
+                    <span style="font-size:10px; color:var(--yellow)">IDR ${(u.saldo||0).toLocaleString()}</span>
+                </div>
+                <div class="grid-2">
+                    <input type="number" id="wr-${u.id}" class="input-dark" value="${u.winrate}">
+                    <button class="btn" onclick="updateWR('${u.id}')">SYNC</button>
+                </div>
+                <div class="grid-2" style="margin-top:5px;">
+                    <input type="number" id="gt-${u.id}" class="input-dark" placeholder="GIFT">
+                    <button class="btn btn-yellow" onclick="sendGift('${u.id}', '${u.username}')">GIFT</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function updateWR(id) {
+        const val = document.getElementById('wr-'+id).value;
+        await _supa.from('profiles').update({winrate: val}).eq('id', id);
         fetchData();
     }
 
-    async function approveWD(id) {
-        await _supa.from('withdrawals').update({status:'SUKSES'}).eq('id', id);
+    async function sendGift(id, user) {
+        const amt = parseInt(document.getElementById('gt-'+id).value);
+        if(!amt) return;
+        const { data } = await _supa.from('profiles').select('saldo').eq('id', id).single();
+        await _supa.from('profiles').update({saldo: data.saldo + amt}).eq('id', id);
+        alert(`GIFT IDR ${amt} SENT TO ${user}`);
         fetchData();
     }
 
-    function renderStatement(td, tw, dd, dw) {
-        const netTotal = td - tw;
-        const netDaily = dd - dw;
-        document.getElementById('statement-list').innerHTML = `
-            <div class="player-card" style="border:1px solid var(--yellow); text-align:center;">
-                <h2 style="font-family:'Cinzel Decorative'; font-size:18px; margin-bottom:15px;">LEDGER OVERRIDE</h2>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                    <div class="input-box"><small>DAILY NET</small><p style="color:var(--pink)">IDR ${netDaily.toLocaleString()}</p></div>
-                    <div class="input-box"><small>TOTAL NET</small><p style="color:var(--blue)">IDR ${netTotal.toLocaleString()}</p></div>
-                </div>
-                <div style="margin-top:15px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:10px;">
-                    <small style="color:#555">ACCUMULATED REVENUE</small>
-                    <h1 style="font-size:24px; color:${netTotal>=0?'var(--yellow)':'var(--pink)'}">IDR ${netTotal.toLocaleString()}</h1>
-                </div>
+    async function giftAll() {
+        const amt = parseInt(document.getElementById('mass-amt').value);
+        if(!amt) return;
+        const { data } = await _supa.from('profiles').select('id, saldo');
+        for(let u of data) {
+            await _supa.from('profiles').update({saldo: u.saldo + amt}).eq('id', u.id);
+        }
+        alert("MASS GIFT SUCCESSFUL");
+        fetchData();
+    }
+
+    async function triggerPanic() {
+        if(isPanic) return;
+        isPanic = true;
+        const dur = parseInt(document.getElementById('p-duration').value);
+        const { data: users } = await _supa.from('profiles').select('id, winrate');
+        
+        // Simpan winrate asli
+        users.forEach(u => originalWinrates[u.id] = u.winrate);
+        
+        // Set All to 10%
+        await _supa.from('profiles').update({winrate: 10});
+        
+        let sec = dur * 60;
+        const timer = setInterval(() => {
+            sec--;
+            document.getElementById('p-status').innerText = `PANIC ACTIVE: ${Math.floor(sec/60)}m ${sec%60}s`;
+            if(sec <= 0) {
+                clearInterval(timer);
+                revertPanic();
+            }
+        }, 1000);
+
+        document.getElementById('p-btn').disabled = true;
+        fetchData();
+    }
+
+    async function revertPanic() {
+        for(let id in originalWinrates) {
+            await _supa.from('profiles').update({winrate: originalWinrates[id]}).eq('id', id);
+        }
+        isPanic = false;
+        document.getElementById('p-status').innerText = `SYSTEM NORMAL`;
+        document.getElementById('p-btn').disabled = false;
+        alert("PANIC DURATION ENDED. WINRATES REVERTED.");
+        fetchData();
+    }
+
+    function renderLedger(tdD, tdW, allD, allW) {
+        const netD = tdD - tdW;
+        const netA = allD - allW;
+        document.getElementById('ledger-list').innerHTML = `
+            <div class="card">
+                <small>TODAY NET PROFIT</small>
+                <h2 style="color:${netD>=0?'var(--yellow)':'var(--pink)'}">IDR ${netD.toLocaleString()}</h2>
+            </div>
+            <div class="card">
+                <small>TOTAL NET PROFIT (ALL TIME)</small>
+                <h2 style="color:${netA>=0?'var(--yellow)':'var(--pink)'}">IDR ${netA.toLocaleString()}</h2>
             </div>
         `;
     }
 
-    async function togglePanic() {
-        const { data } = await _supa.from('system_config').select('panic_mode').eq('id', 1).maybeSingle();
-        const next = !data?.panic_mode;
-        
-        // Update Config
-        await _supa.from('system_config').update({panic_mode: next}).eq('id', 1);
-        
-        // EFFECT: If Panic is ON, Set all players winrate to 10%
-        if(next) {
-            await _supa.from('profiles').update({ winrate: 10 });
-            showAlert("CRITICAL: PANIC ENGAGED.<br>ALL PLAYERS RESET TO 10%");
-        } else {
-            showAlert("PANIC DISENGAGED.<br>MANUAL CONTROL RESTORED");
-        }
+    async function approveD(id, user, amt) {
+        await _supa.from('deposits').update({status:'SUKSES'}).eq('id', id);
+        const { data } = await _supa.from('profiles').select('saldo').eq('username', user).single();
+        await _supa.from('profiles').update({saldo: data.saldo + amt}).eq('username', user);
         fetchData();
     }
 
-    function updatePanicUI(isP) {
-        const pBtn = document.getElementById('panic-ui');
-        pBtn.style.background = isP ? "var(--pink)" : "transparent";
-        pBtn.style.color = isP ? "#fff" : "var(--pink)";
-        pBtn.innerText = isP ? "SYSTEM LOCKED" : "PANIC MODE";
+    async function approveW(id) {
+        await _supa.from('withdrawals').update({status:'SUKSES'}).eq('id', id);
+        fetchData();
     }
 
-    function switchTab(t, el) {
+    function showTab(t, el) {
         document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
         document.getElementById('tab-'+t).style.display = 'block';
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
         el.classList.add('active');
     }
 
-    function showAlert(m) { document.getElementById('alert-msg').innerHTML = m; document.getElementById('alert-modal').style.display = 'flex'; }
-    function closeAlert() { document.getElementById('alert-modal').style.display = 'none'; }
-
-    // Particle Engine
+    // Particle Background
     const c = document.getElementById('canvas-bg'); const x = c.getContext('2d');
     c.width = window.innerWidth; c.height = window.innerHeight;
-    let stars = [];
-    for(let i=0; i<50; i++) stars.push({x:Math.random()*c.width, y:Math.random()*c.height, r:Math.random()*1.5, sp:Math.random()*0.5, color: Math.random()>0.5?'#ff0077':'#0022ff'});
-    function anim() {
+    let p = [];
+    for(let i=0; i<40; i++) p.push({x:Math.random()*c.width, y:Math.random()*c.height, r:Math.random()*2, s:Math.random()*0.5});
+    function draw() {
         x.clearRect(0,0,c.width,c.height);
-        stars.forEach(s => { 
-            x.beginPath(); x.arc(s.x, s.y, s.r, 0, 7); x.fillStyle = s.color; x.fill();
-            s.y -= s.sp; if(s.y < -5) s.y = c.height+5;
+        p.forEach(i => {
+            x.beginPath(); x.arc(i.x, i.y, i.r, 0, 7); x.fillStyle = '#0022ff'; x.fill();
+            i.y -= i.s; if(i.y < 0) i.y = c.height;
         });
-        requestAnimationFrame(anim);
-    } anim();
+        requestAnimationFrame(draw);
+    } draw();
 
     fetchData();
-    setInterval(fetchData, 10000);
+    setInterval(fetchData, 15000);
 </script>
 </body>
 </html>
