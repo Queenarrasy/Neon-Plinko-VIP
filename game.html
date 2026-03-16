@@ -95,14 +95,38 @@
         }
         .stop-btn { background: #ff0000 !important; box-shadow: 0 0 20px #ff0000 !important; }
 
-        .nav-bottom { height: 75px; background: #000; display: flex; border-top: 2px solid var(--deep-blue); padding-bottom: env(safe-area-inset-bottom); }
-        .nav-link { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-decoration: none; gap: 4px; transition: 0.3s; }
-        .nav-link i { font-size: 20px; margin-bottom: 2px; }
-        .nav-link span { font-size: 9px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; }
+        /* PERBAIKAN NAVIGASI BAWAH */
+        .nav-bottom { 
+            height: 75px; 
+            background: #000; 
+            display: flex; 
+            border-top: 2px solid var(--deep-blue); 
+            padding-bottom: env(safe-area-inset-bottom);
+            position: relative;
+            z-index: 1000; /* Memastikan di atas segalanya */
+        }
+        .nav-link { 
+            flex: 1; 
+            display: flex !important; /* Memastikan elemen link aktif */
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            text-decoration: none; 
+            gap: 4px; 
+            transition: 0.3s;
+            pointer-events: auto !important; /* Memastikan bisa dipencet */
+        }
+        .nav-link i { font-size: 22px; margin-bottom: 2px; filter: drop-shadow(0 0 5px currentColor); }
+        .nav-link span { font-size: 10px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; }
         
-        .n-depo { color: var(--yellow); } .n-depo:active { text-shadow: var(--gy); transform: translateY(-3px); }
-        .n-wd { color: var(--pink); } .n-wd:active { text-shadow: var(--gp); transform: translateY(-3px); }
-        .n-msg { color: var(--deep-blue); } .n-msg:active { text-shadow: var(--gdb); transform: translateY(-3px); }
+        .n-depo { color: var(--yellow); } 
+        .n-depo:active { text-shadow: var(--gy); transform: scale(1.1); }
+        
+        .n-wd { color: var(--pink); } 
+        .n-wd:active { text-shadow: var(--gp); transform: scale(1.1); }
+        
+        .n-msg { color: var(--deep-blue); } 
+        .n-msg:active { text-shadow: var(--gdb); transform: scale(1.1); }
 
         #alert-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(5px); }
         .alert-box { width:280px; background:#050614; border:2px solid var(--pink); border-radius:25px; padding:30px; text-align:center; box-shadow: var(--gp); }
@@ -156,9 +180,18 @@
     </div>
 
     <div class="nav-bottom">
-        <a href="deposit.html" class="nav-link n-depo"><i class="fas fa-wallet"></i><span>DEPOSIT</span></a>
-        <a href="withdraw.html" class="nav-link n-wd"><i class="fas fa-money-bill-transfer"></i><span>WITHDRAW</span></a>
-        <a href="inbox.html" class="nav-link n-msg"><i class="fas fa-gift"></i><span>REWARD</span></a>
+        <a href="deposit.html" class="nav-link n-depo">
+            <i class="fas fa-wallet"></i>
+            <span>DEPOSIT</span>
+        </a>
+        <a href="withdraw.html" class="nav-link n-wd">
+            <i class="fas fa-money-bill-transfer"></i>
+            <span>WITHDRAW</span>
+        </a>
+        <a href="reward.html" class="nav-link n-msg">
+            <i class="fas fa-gift"></i>
+            <span>REWARD</span>
+        </a>
     </div>
 
     <div id="alert-modal">
@@ -204,11 +237,13 @@
     }
 
     function refreshUI() { 
-        document.getElementById('saldo-text').innerText = "IDR " + Math.floor(balance).toLocaleString(); 
+        const el = document.getElementById('saldo-text');
+        if(el) el.innerText = "IDR " + Math.floor(balance).toLocaleString(); 
     }
 
     function updateMultiplierLabels() {
         const bar = document.getElementById('m-bar');
+        if(!bar) return;
         bar.innerHTML = "";
         multis.forEach((v, i) => {
             const slot = document.createElement('div');
@@ -221,6 +256,7 @@
 
     function setupPlinko() {
         const cvs = document.getElementById('plinko-canvas');
+        if(!cvs) return;
         const render = Render.create({ canvas: cvs, engine: engine, options: { width: 400, height: 500, wireframes: false, background: 'transparent' } });
 
         for (let r = 0; r < 9; r++) {
@@ -290,13 +326,15 @@
         refreshUI();
 
         const disp = document.getElementById('win-display');
-        disp.innerText = `(X${m}) ${win.toLocaleString()}`;
-        disp.className = 'active';
+        if(disp) {
+            disp.innerText = `(X${m}) ${win.toLocaleString()}`;
+            disp.className = 'active';
+        }
         
         const s = document.getElementById('s-' + idx);
         if(s) {
             s.classList.add('hit-win');
-            setTimeout(() => { s.classList.remove('hit-win'); disp.className = ''; }, 600);
+            setTimeout(() => { s.classList.remove('hit-win'); if(disp) disp.className = ''; }, 600);
         }
 
         if(m >= 1) beep(1200, 0.2);
@@ -308,7 +346,8 @@
         if(autoMode) return; 
         beep(600, 0.05); 
         bIdx = Math.max(0, Math.min(BETS.length-1, bIdx+d)); 
-        document.getElementById('bet-amt').innerText = BETS[bIdx].toLocaleString(); 
+        const betEl = document.getElementById('bet-amt');
+        if(betEl) betEl.innerText = BETS[bIdx].toLocaleString(); 
     }
     
     function setSpeed(s) {
@@ -344,7 +383,8 @@
     function closeAlert() { document.getElementById('alert-modal').style.display = 'none'; }
 
     function drawStars() {
-        const c = document.getElementById('canvas-bg'); const x = c.getContext('2d');
+        const c = document.getElementById('canvas-bg'); if(!c) return;
+        const x = c.getContext('2d');
         c.width = window.innerWidth; c.height = window.innerHeight;
         let s = [];
         for(let i=0; i<100; i++) s.push({x:Math.random()*c.width, y:Math.random()*c.height, r:Math.random()*1.5});
