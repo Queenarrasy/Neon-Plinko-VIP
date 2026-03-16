@@ -3,94 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>REWARDS & MAIL - NEON PLINKO</title>
+    <title>NEON REWARDS — PLINKO VIP</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <style>
         :root {
-          --pink: #ff0077; --blue: #00d4ff; --yellow: #fbff00; --green: #00ff88; --bg: #02030d;
-          --gp: 0 0 15px rgba(255, 0, 119, 0.4);
-          --gb: 0 0 15px rgba(0, 212, 255, 0.4);
+          --pink: #ff0077; --blue: #0022ff; --cyan: #00d4ff;
+          --yellow: #fbff00; --green: #00ff88; --bg: #02030d;
+          --shadow-p: 0 0 20px rgba(255, 0, 119, 0.6);
+          --shadow-b: 0 0 20px rgba(0, 34, 255, 0.6);
+          --shadow-g: 0 0 20px rgba(0, 255, 136, 0.4);
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        
         body {
           margin: 0; background: var(--bg); color: #fff;
           font-family: 'Outfit', sans-serif; padding-bottom: 90px;
-          background-image: radial-gradient(circle at top, rgba(0,212,255,0.05) 0%, transparent 70%);
+          background-image: radial-gradient(circle at top right, #050a30 0%, var(--bg) 70%);
+          min-height: 100vh;
         }
 
         .header {
-          padding: 20px; text-align: center; border-bottom: 1px solid rgba(0, 212, 255, 0.2);
-          background: rgba(2, 3, 13, 0.95); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(15px);
+          padding: 20px; text-align: center; border-bottom: 2px solid var(--blue);
+          background: rgba(2, 3, 13, 0.9); position: sticky; top: 0; z-index: 100; 
+          backdrop-filter: blur(15px); box-shadow: var(--shadow-b);
         }
-        .header h1 { margin: 0; font-family: 'Cinzel Decorative'; font-size: 1.1rem; letter-spacing: 2px; color: var(--blue); text-shadow: var(--gb); }
+        .header h1 { 
+            margin: 0; font-family: 'Cinzel Decorative'; font-size: 1.2rem; 
+            letter-spacing: 3px; color: var(--pink); text-shadow: var(--shadow-p); 
+        }
 
         .container { padding: 20px; max-width: 500px; margin: 0 auto; }
 
-        /* Banner Design */
+        /* Banner Event */
         .promo-banner {
-            background: linear-gradient(45deg, #050614, #10122d);
-            border: 2px solid var(--pink); border-radius: 20px; padding: 20px;
-            text-align: center; margin-bottom: 25px; box-shadow: var(--gp);
-            position: relative; overflow: hidden;
+            background: rgba(5, 10, 48, 0.5);
+            border: 2px solid var(--pink); border-radius: 25px; padding: 25px;
+            text-align: center; margin-bottom: 25px; box-shadow: var(--shadow-p);
+            position: relative; overflow: hidden; backdrop-filter: blur(10px);
         }
-        .promo-banner::before { content: 'TOP EVENT'; position: absolute; top: 10px; left: -30px; background: var(--pink); color: #fff; font-size: 9px; font-weight: 900; padding: 5px 40px; transform: rotate(-45deg); }
-        .promo-title { font-family: 'Cinzel Decorative'; font-size: 1.2rem; color: var(--yellow); text-shadow: 0 0 10px rgba(251,255,0,0.5); }
-        .prizes { display: flex; justify-content: center; gap: 15px; margin-top: 15px; }
-        .prize-item { font-size: 10px; font-weight: 800; }
-        .prize-item b { display: block; font-size: 14px; color: var(--green); }
-
-        /* Reward Card */
-        .reward-card {
-          background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 20px; padding: 20px; text-align: center; margin-bottom: 20px;
+        .promo-banner::before { 
+            content: 'EXCLUSIVE'; position: absolute; top: 12px; left: -35px; 
+            background: var(--pink); color: #fff; font-size: 8px; font-weight: 900; 
+            padding: 5px 45px; transform: rotate(-45deg); box-shadow: 0 0 10px var(--pink);
         }
-        .reward-icon { font-size: 35px; color: var(--yellow); margin-bottom: 10px; }
+        .promo-title { font-family: 'Cinzel Decorative'; font-size: 1.3rem; color: var(--yellow); text-shadow: 0 0 15px var(--yellow); }
         
-        /* Referral Stats */
-        .ref-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
-        .stat-box { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 12px; border: 1px solid rgba(0,212,255,0.2); }
-        .stat-box small { display: block; font-size: 9px; opacity: 0.6; margin-bottom: 5px; }
-        .stat-box span { font-weight: 900; color: var(--blue); }
+        .prizes { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
+        .prize-item { font-size: 10px; font-weight: 800; color: var(--cyan); }
+        .prize-item b { display: block; font-size: 16px; color: var(--green); margin-top: 5px; }
+
+        /* Reward Cards */
+        .card {
+          background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(0, 34, 255, 0.2);
+          border-radius: 25px; padding: 25px; text-align: center; margin-bottom: 20px;
+          transition: 0.3s;
+        }
+        .card:hover { border-color: var(--blue); background: rgba(0, 34, 255, 0.05); }
+        .reward-icon { font-size: 40px; color: var(--yellow); margin-bottom: 15px; text-shadow: 0 0 15px var(--yellow); }
+        
+        .ref-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }
+        .stat-box { 
+            background: #000; padding: 15px; border-radius: 15px; 
+            border: 1px solid var(--blue); box-shadow: inset 0 0 10px rgba(0,34,255,0.2);
+        }
+        .stat-box small { display: block; font-size: 9px; color: var(--cyan); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+        .stat-box span { font-weight: 900; color: #fff; font-size: 1.1rem; }
 
         .ref-box {
-          background: rgba(0, 212, 255, 0.05); border: 1px dashed var(--blue);
+          background: rgba(0, 0, 0, 0.5); border: 1px dashed var(--cyan);
           border-radius: 15px; padding: 15px; margin-top: 10px;
         }
-        .ref-code-area { display: flex; justify-content: space-between; align-items: center; background: #000; padding: 10px 15px; border-radius: 10px; }
-        #ref-code { font-size: 1.1rem; font-weight: 900; color: var(--yellow); letter-spacing: 2px; }
+        .ref-code-area { display: flex; justify-content: space-between; align-items: center; }
+        #ref-code { font-size: 1.2rem; font-weight: 900; color: var(--yellow); letter-spacing: 3px; }
 
-        .mailbox-title { font-family: 'Cinzel Decorative'; font-size: 0.9rem; color: var(--pink); margin: 25px 0 15px; display: flex; align-items: center; gap: 10px; }
+        .mailbox-title { 
+            font-family: 'Cinzel Decorative'; font-size: 1rem; color: var(--pink); 
+            margin: 35px 0 20px; display: flex; align-items: center; gap: 15px; 
+            text-shadow: var(--shadow-p);
+        }
         
-        .mail-list { display: flex; flex-direction: column; gap: 12px; }
+        .mail-list { display: flex; flex-direction: column; gap: 15px; }
         .mail-item {
-          background: rgba(255,255,255,0.03); border: 1px solid rgba(255, 0, 119, 0.2); 
-          border-radius: 15px; padding: 15px; animation: slideIn 0.4s ease-out;
+          background: rgba(5, 10, 48, 0.5); border: 1px solid var(--pink); 
+          border-radius: 20px; padding: 20px; box-shadow: var(--shadow-p);
+          animation: slideUp 0.5s ease-out;
         }
 
-        .btn-claim {
-          width: 100%; padding: 14px; border: none; border-radius: 50px;
+        .btn-main {
+          width: 100%; padding: 16px; border: none; border-radius: 15px;
           background: linear-gradient(90deg, var(--blue), #0044ff);
-          color: #fff; font-weight: 900; font-size: 0.8rem; cursor: pointer; text-transform: uppercase;
-          box-shadow: var(--gb); transition: 0.3s;
+          color: #fff; font-weight: 900; font-size: 0.9rem; cursor: pointer; text-transform: uppercase;
+          box-shadow: var(--shadow-b); transition: 0.3s; letter-spacing: 1px;
         }
-        .btn-claim:disabled { opacity: 0.3 !important; filter: grayscale(1); cursor: not-allowed; background: #333 !important; box-shadow: none !important; }
-        .btn-sunday { background: linear-gradient(90deg, var(--green), #008844); margin-top: 10px; }
+        .btn-main:active { transform: scale(0.95); }
+        .btn-main:disabled { opacity: 0.4; cursor: not-allowed; filter: grayscale(1); }
+        
+        .btn-green { background: linear-gradient(90deg, var(--green), #008844); box-shadow: var(--shadow-g); }
 
-        /* Nav Bar */
-        .nav-bar { position: fixed; bottom: 0; width: 100%; height: 75px; background: rgba(5, 6, 20, 0.98); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid var(--blue); backdrop-filter: blur(20px); z-index: 1000; }
-        .nav-item { color: #444; text-decoration: none; text-align: center; font-size: 10px; font-weight: 700; flex:1; }
-        .nav-item.active { color: var(--blue); }
-        .nav-item i { font-size: 20px; display: block; margin-bottom: 5px; }
+        /* Modal / Alert Theme */
+        #modal-overlay { 
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); 
+            z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(10px); 
+        }
+        .modal { 
+            background: #050614; border: 2px solid var(--blue); border-radius: 30px; 
+            padding: 35px; width: 85%; max-width: 320px; text-align: center; box-shadow: var(--shadow-b); 
+        }
 
-        #modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
-        .modal { background: #0a0b1a; border: 2px solid var(--blue); border-radius: 30px; padding: 30px; width: 85%; max-width: 320px; text-align: center; box-shadow: var(--gb); }
+        /* Navbar */
+        .nav-bar { 
+            position: fixed; bottom: 0; width: 100%; height: 75px; 
+            background: rgba(2, 3, 13, 0.95); display: flex; justify-content: space-around; 
+            align-items: center; border-top: 2px solid var(--blue); backdrop-filter: blur(15px); z-index: 1000; 
+        }
+        .nav-item { color: rgba(255,255,255,0.3); text-decoration: none; text-align: center; font-size: 10px; font-weight: 800; flex:1; }
+        .nav-item.active { color: var(--cyan); text-shadow: var(--shadow-b); }
+        .nav-item i { font-size: 22px; display: block; margin-bottom: 5px; }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
+
+<audio id="snd-click" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3"></audio>
+<audio id="snd-success" src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3"></audio>
+<audio id="snd-open" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3"></audio>
 
 <div class="header"><h1>MISSIONS & REWARDS</h1></div>
 
@@ -98,37 +139,52 @@
     <div class="promo-banner">
         <div class="promo-title">BEST TOP REFERRAL</div>
         <div class="prizes">
-            <div class="prize-item">🥈 JUARA 2<b>$50</b></div>
-            <div class="prize-item" style="transform: scale(1.2); color:var(--yellow);">🥇 JUARA 1<b>$100</b></div>
-            <div class="prize-item">🥉 JUARA 3<b>$25</b></div>
+            <div class="prize-item">🥈 RANK 2<b>Rp 750K</b></div>
+            <div class="prize-item" style="transform: scale(1.15); color:var(--yellow);">🥇 RANK 1<b>Rp 1.5JT</b></div>
+            <div class="prize-item">🥉 RANK 3<b>Rp 350K</b></div>
         </div>
     </div>
 
-    <div class="reward-card">
-        <div class="reward-icon"><i class="fas fa-calendar-check"></i></div>
-        <h2 style="font-size:1rem; font-family:'Cinzel Decorative';">Daily Check-in</h2>
-        <p style="font-size:11px; opacity:0.6; margin-bottom:15px;">Klaim Rp 1.000 setiap hari.</p>
-        <button id="btn-daily" class="btn-claim" onclick="handleDailyClaim()">KLAIM Rp 1.000</button>
+    <div class="card">
+        <div class="reward-icon"><i class="fas fa-calendar-day"></i></div>
+        <h2 style="font-size:1.1rem; font-family:'Cinzel Decorative'; color:var(--cyan);">Daily Login</h2>
+        <p style="font-size:12px; opacity:0.7; margin-bottom:20px;">Ambil jatah Rp 1.000 Anda hari ini.</p>
+        <button id="btn-daily" class="btn-main" onclick="handleDailyClaim()">KLAIM SEKARANG</button>
     </div>
 
-    <div class="reward-card" style="border-color:var(--pink);">
-        <div class="reward-icon" style="color:var(--pink)"><i class="fas fa-users"></i></div>
-        <h2 style="font-size:1rem; font-family:'Cinzel Decorative';">Referral Balance</h2>
+    <div class="card" style="border-color: var(--pink);">
+        <div class="reward-icon" style="color:var(--pink)"><i class="fas fa-crown"></i></div>
+        <h2 style="font-size:1.1rem; font-family:'Cinzel Decorative'; color:var(--pink);">Referral VIP</h2>
+        <p style="font-size:10px; opacity:0.6;">Bonus Rp 5.000 jika teman deposit Min. Rp 20.000</p>
+        
         <div class="ref-stats">
             <div class="stat-box"><small>Teman Valid</small><span id="valid-ref">0</span></div>
-            <div class="stat-box"><small>Bonus</small><span id="bonus-ref">Rp 0</span></div>
+            <div class="stat-box"><small>Bonus Cair</small><span id="bonus-ref">Rp 0</span></div>
         </div>
+        
         <div class="ref-box">
-            <div class="ref-code-area"><span id="ref-code">---</span><button style="background:none; border:none; color:var(--blue);" onclick="copyRef()"><i class="far fa-copy"></i></button></div>
+            <div class="ref-code-area">
+                <span id="ref-code">LOADING...</span>
+                <button style="background:none; border:none; color:var(--cyan); cursor:pointer;" onclick="copyRef()">
+                    <i class="far fa-copy fa-lg"></i>
+                </button>
+            </div>
         </div>
-        <button id="btn-claim-ref" class="btn-claim btn-sunday" disabled onclick="processRefClaim()">KLAIM MINGGUAN</button>
+        <button id="btn-claim-ref" class="btn-main btn-green" style="margin-top:20px;" disabled onclick="processRefClaim()">KLAIM MINGGUAN (MINGGU)</button>
     </div>
 
-    <div class="mailbox-title"><i class="fas fa-envelope-open-text"></i> KOTAK HADIAH</div>
+    <div class="mailbox-title"><i class="fas fa-satellite-dish fa-fade"></i> INCOMING GIFTS</div>
     <div id="mail-list" class="mail-list"></div>
 </div>
 
-<div id="modal-overlay"><div class="modal"><h3 id="m-title" style="color:var(--blue);"></h3><p id="m-msg" style="margin:20px 0;"></p><button class="btn-claim" onclick="closeModal()">SAYA MENGERTI</button></div></div>
+<div id="modal-overlay">
+    <div class="modal">
+        <i class="fas fa-shield-halved" style="font-size:45px; color:var(--cyan); margin-bottom:20px;"></i>
+        <h3 id="m-title" style="color:#fff; font-family:'Cinzel Decorative';"></h3>
+        <p id="m-msg" style="margin:20px 0; color:rgba(255,255,255,0.8); font-size:14px; line-height:1.6;"></p>
+        <button class="btn-main" onclick="closeModal()">CONFIRM</button>
+    </div>
+</div>
 
 <div class="nav-bar">
     <a href="game.html" class="nav-item"><i class="fas fa-gamepad"></i>PLAY</a>
@@ -138,125 +194,166 @@
 </div>
 
 <script>
-const USERNAME = getUsername();
+const USERNAME = localStorage.getItem('neon_user');
 let validFriendCount = 0;
 
-async function init() {
-    if(!USERNAME) return;
-    const { data: profile } = await _supabase.from('profiles').select('*').eq('username', USERNAME).single();
-    if(profile) document.getElementById('ref-code').innerText = profile.referral_code || "NEON-" + USERNAME.toUpperCase();
-    
-    await checkDailyStatus(); // Kunci Tombol Daily
-    loadReferralStats();
-    loadInbox();
+// SFX Controller
+function playSnd(id) { 
+    const s = document.getElementById(id); 
+    if(s) { s.currentTime = 0; s.play().catch(()=>{}); } 
 }
 
-// --- LOGIKA DAILY CHECKIN (ANTI-REPEAT) ---
+async function init() {
+    if(!USERNAME) { window.location.href = 'index.html'; return; }
+    playSnd('snd-open');
+
+    // Load Profile & Ref Code
+    const { data: profile } = await _supabase.from('profiles').select('*').eq('username', USERNAME).single();
+    if(profile) {
+        document.getElementById('ref-code').innerText = profile.referral_code || "EMPTY";
+    }
+    
+    await checkDailyStatus();
+    await loadReferralStats();
+    await loadInbox();
+}
+
 async function checkDailyStatus() {
     const btn = document.getElementById('btn-daily');
     const today = new Date().toDateString();
 
-    // 1. Cek LocalStorage (Cepat)
-    if(localStorage.getItem('daily_' + USERNAME) === today) {
-        lockDailyBtn(btn);
+    if(localStorage.getItem('daily_done_' + USERNAME) === today) {
+        btn.disabled = true; btn.innerText = "SUDAH KLAIM";
         return;
     }
 
-    // 2. Cek Database (Akurat)
     const start = new Date(); start.setHours(0,0,0,0);
-    const { data } = await _supabase.from('deposits').select('id').eq('username', USERNAME).eq('keterangan', 'DAILY_BONUS').gte('created_at', start.toISOString());
+    const { data } = await _supabase.from('deposits')
+        .select('id').eq('username', USERNAME)
+        .eq('keterangan', 'DAILY_BONUS')
+        .gte('created_at', start.toISOString());
 
     if(data && data.length > 0) {
-        localStorage.setItem('daily_' + USERNAME, today);
-        lockDailyBtn(btn);
+        localStorage.setItem('daily_done_' + USERNAME, today);
+        btn.disabled = true; btn.innerText = "SUDAH KLAIM";
     }
 }
 
-function lockDailyBtn(btn) {
-    btn.disabled = true;
-    btn.innerText = "SUDAH KLAIM HARI INI";
-}
-
 async function handleDailyClaim() {
+    playSnd('snd-click');
     const btn = document.getElementById('btn-daily');
-    if(btn.disabled) return;
-    btn.disabled = true; btn.innerText = "PROSES...";
+    btn.disabled = true; btn.innerText = "PROCESSING...";
 
-    try {
-        const start = new Date(); start.setHours(0,0,0,0);
-        const { data: check } = await _supabase.from('deposits').select('id').eq('username', USERNAME).eq('keterangan', 'DAILY_BONUS').gte('created_at', start.toISOString());
+    const { data: p } = await _supabase.from('profiles').select('saldo').eq('username', USERNAME).single();
+    const bonus = 1000;
 
-        if(check && check.length > 0) {
-            lockDailyBtn(btn);
-            showModal("INFO", "Master sudah klaim hari ini.");
-            return;
-        }
+    await _supabase.from('profiles').update({ saldo: (p.saldo || 0) + bonus }).eq('username', USERNAME);
+    await _supabase.from('deposits').insert([{ 
+        username: USERNAME, amount: bonus, method: 'SYSTEM', 
+        status: 'SUKSES', net_receive: bonus, keterangan: 'DAILY_BONUS' 
+    }]);
 
-        const { data: p } = await _supabase.from('profiles').select('saldo').eq('username', USERNAME).single();
-        const bonus = 1000;
-
-        await _supabase.from('profiles').update({ saldo: (p.saldo || 0) + bonus }).eq('username', USERNAME);
-        await _supabase.from('deposits').insert([{ username: USERNAME, amount: bonus, method: 'SYSTEM', status: 'SUKSES', net_receive: bonus, keterangan: 'DAILY_BONUS' }]);
-
-        localStorage.setItem('daily_' + USERNAME, new Date().toDateString());
-        lockDailyBtn(btn);
-        showModal("BERHASIL", "Bonus Rp 1.000 masuk ke saldo!");
-    } catch (e) { btn.disabled = false; btn.innerText = "KLAIM Rp 1.000"; }
+    localStorage.setItem('daily_done_' + USERNAME, new Date().toDateString());
+    playSnd('snd-success');
+    showModal("SUCCESS", "Daily bonus Rp 1.000 ditambahkan!");
+    btn.innerText = "SUDAH KLAIM";
 }
 
-// --- REFERRAL & INBOX ---
 async function loadReferralStats() {
+    // 1. Ambil semua orang yang diundang oleh USERNAME ini
     const { data: friends } = await _supabase.from('profiles').select('username').eq('invited_by', USERNAME);
+    
     if(friends && friends.length > 0) {
-        const fList = friends.map(f => f.username);
-        const { data: vDepo } = await _supabase.from('deposits').select('username').in('username', fList).eq('status', 'SUKSES').gte('amount', 20000);
-        const uniqueV = [...new Set(vDepo.map(d => d.username))];
-        validFriendCount = uniqueV.length;
-        document.getElementById('valid-ref').innerText = validFriendCount;
-        const bonus = validFriendCount * 5000;
-        document.getElementById('bonus-ref').innerText = "Rp " + bonus.toLocaleString();
+        const friendUsernames = friends.map(f => f.username);
         
-        const isSun = new Date().getDay() === 0;
-        const b = document.getElementById('btn-claim-ref');
-        if(isSun && bonus > 0) { b.disabled = false; b.innerText = "KLAIM Rp " + bonus.toLocaleString(); }
-        else if(!isSun) { b.innerText = "BUKA HARI MINGGU"; }
+        // 2. Cek siapa saja dari teman tersebut yang sudah deposit >= 20.000
+        const { data: deposits } = await _supabase.from('deposits')
+            .select('username')
+            .in('username', friendUsernames)
+            .eq('status', 'SUKSES')
+            .gte('amount', 20000);
+
+        // Hitung unik user (valid friend)
+        const uniqueValids = [...new Set(deposits.map(d => d.username))];
+        validFriendCount = uniqueValids.length;
+        
+        document.getElementById('valid-ref').innerText = validFriendCount;
+        const totalBonus = validFriendCount * 5000;
+        document.getElementById('bonus-ref').innerText = "Rp " + totalBonus.toLocaleString();
+
+        // Tombol Klaim Mingguan hanya aktif di hari Minggu
+        const isSunday = new Date().getDay() === 0;
+        const claimBtn = document.getElementById('btn-claim-ref');
+        if(isSunday && totalBonus > 0) {
+            claimBtn.disabled = false;
+            claimBtn.innerText = "KLAIM Rp " + totalBonus.toLocaleString();
+        }
     }
 }
 
 async function processRefClaim() {
+    playSnd('snd-click');
+    // Implementasi klaim saldo referral ke saldo utama
     const bonus = validFriendCount * 5000;
     const { data: p } = await _supabase.from('profiles').select('saldo').eq('username', USERNAME).single();
+    
     await _supabase.from('profiles').update({ saldo: p.saldo + bonus }).eq('username', USERNAME);
-    await _supabase.from('deposits').insert([{ username: USERNAME, amount: bonus, method: 'REFERRAL', status: 'SUKSES', net_receive: bonus, keterangan: 'SUNDAY_REF_CLAIM' }]);
-    showModal("SUKSES", "Saldo referral dicairkan!");
+    await _supabase.from('deposits').insert([{ 
+        username: USERNAME, amount: bonus, method: 'REFERRAL', 
+        status: 'SUKSES', net_receive: bonus, keterangan: 'WEEKLY_REF_CLAIM' 
+    }]);
+
+    playSnd('snd-success');
+    showModal("REFERRAL PAID", "Bonus referral berhasil dicairkan ke saldo utama!");
     loadReferralStats();
 }
 
 async function loadInbox() {
     const list = document.getElementById('mail-list');
-    const { data } = await _supabase.from('inbox').select('*').eq('username', USERNAME).eq('status', 'UNCLAIMED').order('created_at', { ascending: false });
+    const { data } = await _supabase.from('inbox').select('*').eq('username', USERNAME).eq('status', 'UNCLAIMED');
+    
     if(data && data.length > 0) {
         list.innerHTML = data.map(m => `
             <div class="mail-item">
-                <div style="font-size:11px; color:var(--pink); margin-bottom:10px;">FROM: ADMIN NEON</div>
-                <div style="font-size:13px; margin-bottom:10px;">${m.pesan}</div>
-                <div style="color:var(--green); font-weight:900; margin-bottom:15px;">Rp ${m.nominal.toLocaleString()}</div>
-                <button class="btn-claim" onclick="claimMail(${m.id}, ${m.nominal})">KLAIM</button>
+                <div style="font-size:10px; color:var(--cyan); margin-bottom:5px; letter-spacing:1px;">CORE NOTIFICATION</div>
+                <div style="font-size:14px; margin-bottom:10px; color:#fff;">${m.pesan}</div>
+                <div style="color:var(--green); font-weight:900; font-size:18px; margin-bottom:15px;">+ Rp ${m.nominal.toLocaleString()}</div>
+                <button class="btn-main" onclick="claimMail(${m.id}, ${m.nominal})">REDEEM GIFT</button>
             </div>
         `).join('');
-    } else { list.innerHTML = '<div style="text-align:center; opacity:0.3; font-size:12px;">Kotak hadiah kosong</div>'; }
+    } else {
+        list.innerHTML = '<div style="text-align:center; opacity:0.3; padding:20px; font-size:12px;">No unread messages.</div>';
+    }
 }
 
 async function claimMail(id, amt) {
+    playSnd('snd-click');
     const { data: p } = await _supabase.from('profiles').select('saldo').eq('username', USERNAME).single();
     await _supabase.from('profiles').update({ saldo: p.saldo + amt }).eq('username', USERNAME);
     await _supabase.from('inbox').update({ status: 'CLAIMED' }).eq('id', id);
-    showModal("BONUS", "Hadiah diklaim!"); loadInbox();
+    playSnd('snd-success');
+    showModal("REDEEMED", "Hadiah Admin telah masuk ke saldo!");
+    loadInbox();
 }
 
-function copyRef() { const c = document.getElementById('ref-code').innerText; navigator.clipboard.writeText(c); showModal("COPIED", "Kode Referral disalin."); }
-function showModal(t, m) { document.getElementById('m-title').innerText = t; document.getElementById('m-msg').innerText = m; document.getElementById('modal-overlay').style.display = 'flex'; }
-function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+function copyRef() {
+    playSnd('snd-click');
+    const code = document.getElementById('ref-code').innerText;
+    navigator.clipboard.writeText(code);
+    showModal("COPIED", "Referral code berhasil disalin ke clipboard.");
+}
+
+function showModal(t, m) {
+    document.getElementById('m-title').innerText = t;
+    document.getElementById('m-msg').innerText = m;
+    document.getElementById('modal-overlay').style.display = 'flex';
+}
+
+function closeModal() {
+    playSnd('snd-click');
+    document.getElementById('modal-overlay').style.display = 'none';
+}
+
 window.onload = init;
 </script>
 </body>
