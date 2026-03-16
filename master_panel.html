@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>SUPREME OMEGA V15.5 — ARCHITECT</title>
+    <title>SUPREME OMEGA V15.6 — ARCHITECT</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@300;600;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -15,38 +15,41 @@
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body { background: var(--bg); color: var(--yellow); font-family: 'Outfit', sans-serif; overflow: hidden; height: 100vh; }
         
-        #canvas-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.4; }
+        #canvas-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.3; }
         
-        /* Header & Sticky Top */
+        /* Header & Panic */
         .header { background: rgba(0,0,10,0.95); padding: 12px 15px; border-bottom: 2px solid var(--blue); position: relative; z-index: 100; display: flex; justify-content: space-between; align-items: center; }
+        .panic-btn { background: var(--pink); color: #fff; border: none; padding: 8px 12px; border-radius: 6px; font-weight: 900; font-size: 10px; cursor: pointer; box-shadow: var(--gp); animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+
+        /* Report Sticky */
         .context-stats { background: rgba(0,0,30,0.9); padding: 10px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; border-bottom: 1px solid rgba(0,34,255,0.3); position: relative; z-index: 90; }
         .stat-card { background: rgba(0,0,0,0.5); padding: 8px; border: 1px solid rgba(251,255,0,0.1); border-radius: 6px; text-align: center; }
-        .stat-card small { display: block; font-size: 7px; color: var(--pink); font-weight: 900; letter-spacing: 1px; }
+        .stat-card small { display: block; font-size: 7px; color: var(--pink); font-weight: 900; }
         .stat-card b { font-size: 11px; color: #fff; }
 
-        /* Navigation A-Z */
-        .alpha-nav { display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; padding: 10px; background: rgba(0,0,10,0.95); border-bottom: 1px solid var(--blue); position: relative; z-index: 90; }
-        .alpha-btn { background: #000; border: 1px solid rgba(0,34,255,0.4); color: #fff; font-size: 10px; padding: 6px 0; text-align: center; cursor: pointer; border-radius: 4px; transition: 0.2s; }
-        .alpha-btn.active { border-color: var(--pink); color: var(--pink); box-shadow: var(--gp); font-weight: 900; }
+        /* Alpha Nav with Counter */
+        .alpha-nav { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; padding: 10px; background: rgba(0,0,10,0.95); border-bottom: 1px solid var(--blue); position: relative; z-index: 90; max-height: 120px; overflow-y: auto; }
+        .alpha-btn { background: #000; border: 1px solid rgba(0,34,255,0.4); color: #fff; font-size: 10px; padding: 4px 0; text-align: center; cursor: pointer; border-radius: 4px; position: relative; }
+        .alpha-btn span { display: block; font-size: 7px; color: var(--yellow); }
+        .alpha-btn.active { border-color: var(--pink); color: var(--pink); box-shadow: var(--gp); }
 
-        /* Main Content Scroll */
-        .content { height: calc(100vh - 240px); overflow-y: auto; padding: 15px; position: relative; z-index: 10; padding-bottom: 80px; }
+        /* Content */
+        .content { height: calc(100vh - 280px); overflow-y: auto; padding: 15px; position: relative; z-index: 10; padding-bottom: 100px; }
         .card { background: rgba(0,0,40,0.7); border: 1px solid var(--blue); border-radius: 12px; padding: 12px; margin-bottom: 15px; box-shadow: var(--gb); }
         
         .lbl { font-size: 8px; color: var(--pink); font-weight: 900; margin-bottom: 4px; display: block; }
-        .input-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
         .in-box { background: rgba(0,0,0,0.6); border: 1px solid rgba(0,34,255,0.4); padding: 6px; border-radius: 6px; }
         input { width: 100%; background: transparent; border: none; color: #fff; font-size: 12px; font-weight: 600; outline: none; text-align: center; }
         
-        .btn { background: var(--blue); color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: 900; cursor: pointer; font-size: 10px; letter-spacing: 1px; width: 100%; margin-top: 10px; text-transform: uppercase; }
-        .btn-pink { background: var(--pink); box-shadow: var(--gp); }
+        .btn { background: var(--blue); color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: 900; cursor: pointer; font-size: 10px; width: 100%; margin-top: 10px; }
         .btn-yellow { background: var(--yellow); color: #000; }
 
-        /* Footer Nav */
-        .footer { position: fixed; bottom: 0; width: 100%; height: 75px; background: #000; border-top: 1px solid var(--blue); display: flex; justify-content: space-around; align-items: center; z-index: 100; box-shadow: 0 -10px 20px rgba(0,0,0,0.8); }
-        .nav-item { color: rgba(255,255,255,0.3); text-align: center; transition: 0.3s; cursor: pointer; flex: 1; }
+        .footer { position: fixed; bottom: 0; width: 100%; height: 75px; background: #000; border-top: 1px solid var(--blue); display: flex; justify-content: space-around; align-items: center; z-index: 100; }
+        .nav-item { color: rgba(255,255,255,0.3); text-align: center; flex: 1; cursor: pointer; }
         .nav-item.active { color: var(--pink); text-shadow: var(--gp); }
-        .nav-item i { font-size: 20px; }
+        .nav-item i { font-size: 18px; }
         .nav-item p { font-size: 8px; margin-top: 5px; font-weight: 900; }
 
         ::-webkit-scrollbar { width: 3px; }
@@ -57,12 +60,11 @@
     <canvas id="canvas-bg"></canvas>
 
     <div class="header">
-        <span style="font-family:'Cinzel Decorative'; color:var(--pink); font-size:18px;">OMEGA <span style="color:var(--yellow)">V15.5</span></span>
-        <div id="sys-status" style="font-size:9px; font-weight:900; color:var(--pink)">ENCRYPTED SESSION</div>
+        <span style="font-family:'Cinzel Decorative'; color:var(--pink); font-size:18px;">OMEGA <span style="color:var(--yellow)">V15.6</span></span>
+        <button class="panic-btn" onclick="triggerPanic()">PANIC BUTTON</button>
     </div>
 
     <div id="report-header" class="context-stats"></div>
-
     <div id="alpha-nav-container" class="alpha-nav"></div>
 
     <div class="content" id="main-content">
@@ -86,28 +88,34 @@
 
     let activeTab = 'user';
     let currentLetter = 'A';
-    let players = [], deposits = [], withdrawals = [], gifts = [];
-
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split("");
-    document.getElementById('alpha-nav-container').innerHTML = chars.map(c => 
-        `<div class="alpha-btn ${c==='A'?'active':''}" onclick="filterLetter('${c}', this)">${c}</div>`
-    ).join('');
-
-    function filterLetter(l, el) {
-        currentLetter = l;
-        document.querySelectorAll('.alpha-btn').forEach(b => b.classList.remove('active'));
-        el.classList.add('active');
-        refreshUI();
-    }
+    let players = [], deposits = [], withdrawals = [];
 
     async function pullData() {
         const { data: p } = await _supa.from('profiles').select('*');
         const { data: d } = await _supa.from('deposits').select('*');
         const { data: w } = await _supa.from('withdrawals').select('*');
-        // Anggap tabel gift ada untuk histori, jika tidak kita kalkulasi dari history saldo
         players = p || [];
         deposits = d || [];
         withdrawals = w || [];
+        
+        renderAlphaNav();
+        refreshUI();
+    }
+
+    function renderAlphaNav() {
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split("");
+        document.getElementById('alpha-nav-container').innerHTML = chars.map(c => {
+            const count = players.filter(u => (u.username||"").toUpperCase().startsWith(c)).length;
+            return `<div class="alpha-btn ${c===currentLetter?'active':''}" onclick="filterLetter('${c}', this)">
+                ${c} <span>(${count})</span>
+            </div>`;
+        }).join('');
+    }
+
+    function filterLetter(l, el) {
+        currentLetter = l;
+        document.querySelectorAll('.alpha-btn').forEach(b => b.classList.remove('active'));
+        el.classList.add('active');
         refreshUI();
     }
 
@@ -122,73 +130,75 @@
     function renderTopReport() {
         const today = new Date().toISOString().split('T')[0];
         const month = new Date().toISOString().slice(0, 7);
-        let html = '';
-
+        const sum = (arr, date) => arr.filter(x => x.status === 'SUKSES' && x.created_at.startsWith(date)).reduce((a,b) => a + (Number(b.amount||b.net_receive||b.nominal)||0), 0);
+        
+        let h = '';
         if(activeTab === 'user') {
-            const pDay = players.filter(x => x.created_at.startsWith(today)).length;
-            const pMonth = players.filter(x => x.created_at.startsWith(month)).length;
-            html = `
-                <div class="stat-card"><small>NEW PLAYERS (TODAY)</small><b>${pDay} USERS</b></div>
-                <div class="stat-card"><small>NEW PLAYERS (MONTH)</small><b>${pMonth} USERS</b></div>
-            `;
+            h = `<div class="stat-card"><small>PLAYER BARU (HARI)</small><b>${players.filter(x=>x.created_at.startsWith(today)).length}</b></div>
+                 <div class="stat-card"><small>PLAYER BARU (BULAN)</small><b>${players.filter(x=>x.created_at.startsWith(month)).length}</b></div>`;
         } else if(activeTab === 'kasir') {
-            const sum = (arr, date) => arr.filter(x => x.status === 'SUKSES' && x.created_at.startsWith(date)).reduce((a,b) => a + (Number(b.amount||b.net_receive||b.nominal)||0), 0);
-            html = `
-                <div class="stat-card"><small>DEPO (HARI/BULAN)</small><b>${sum(deposits, today).toLocaleString()} / ${sum(deposits, month).toLocaleString()}</b></div>
-                <div class="stat-card"><small>WD (HARI/BULAN)</small><b>${sum(withdrawals, today).toLocaleString()} / ${sum(withdrawals, month).toLocaleString()}</b></div>
-            `;
-        } else if(activeTab === 'gift') {
-            // Simulasi data gift (total penambahan saldo manual)
-            html = `
-                <div class="stat-card"><small>GIFT NOMINAL (MONTH)</small><b>IDR 2.500.000</b></div>
-                <div class="stat-card"><small>GIFT RECIPIENTS (MONTH)</small><b>45 PLAYERS</b></div>
-            `;
+            h = `<div class="stat-card"><small>TOTAL DEPO (HARI)</small><b>${sum(deposits, today).toLocaleString()}</b></div>
+                 <div class="stat-card"><small>TOTAL WD (HARI)</small><b>${sum(withdrawals, today).toLocaleString()}</b></div>`;
         } else {
-            html = `<div class="stat-card" style="grid-column: span 2"><small>MASTER FINANCIAL CONTROL</small><b>ALL SYSTEMS OPERATIONAL</b></div>`;
+            h = `<div class="stat-card" style="grid-column:span 2"><small>STATUS SISTEM</small><b>READY - ${players.length} TOTAL MEMBERS</b></div>`;
         }
-        document.getElementById('report-header').innerHTML = html;
+        document.getElementById('report-header').innerHTML = h;
     }
 
     function renderTabUser() {
         const filtered = players.filter(u => (u.username||"").toUpperCase().startsWith(currentLetter));
-        document.getElementById('tab-user').innerHTML = filtered.map(u => `
+        document.getElementById('tab-user').innerHTML = filtered.map(u => {
+            const uD = deposits.filter(x => x.username === u.username && x.status === 'SUKSES').reduce((a,b)=>a+(Number(b.amount||b.net_receive)||0),0);
+            const uW = withdrawals.filter(x => x.username === u.username && x.status === 'SUKSES').reduce((a,b)=>a+(Number(b.nominal||b.amount)||0),0);
+            const pnl = uD - uW;
+
+            return `
             <div class="card">
-                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                    <b style="color:var(--yellow); font-size:15px;">${u.username}</b>
-                    <b style="color:#fff">IDR ${(u.saldo||0).toLocaleString()}</b>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(0,34,255,0.2); padding-bottom:8px; margin-bottom:10px;">
+                    <div>
+                        <b style="color:var(--yellow); font-size:14px;">${u.username}</b>
+                        <p style="font-size:9px; color:#aaa;">P/L: <span style="color:${pnl<0?'#0f0':'#f00'}">${pnl.toLocaleString()}</span></p>
+                    </div>
+                    <div style="text-align:right">
+                        <small class="lbl">SALDO LIVE</small>
+                        <b style="color:#fff">IDR ${(u.saldo||0).toLocaleString()}</b>
+                    </div>
                 </div>
-                <div class="input-group">
+                <div class="input-grid">
                     <div class="in-box"><small class="lbl">WINRATE %</small><input type="number" id="wr-${u.id}" value="${u.winrate||10}"></div>
                     <div class="in-box"><small class="lbl">MAXWIN LIMIT</small><input type="number" id="mx-${u.id}" value="${u.maxwin_limit||1000000}"></div>
+                    <div class="in-box"><small class="lbl">MINUTES (SET)</small><input type="number" id="tm-${u.id}" value="${u.session_timer||0}"></div>
+                    <button class="btn btn-yellow" style="margin-top:0" onclick="updatePlayer('${u.id}')">SYNC</button>
                 </div>
-                <button class="btn btn-yellow" onclick="updatePlayer('${u.id}')">UPDATE CONTROL</button>
-            </div>
-        `).join('') || `<p style="text-align:center; opacity:0.5; font-size:10px; margin-top:20px;">NO DATA FOR SECTION ${currentLetter}</p>`;
+            </div>`;
+        }).join('') || `<p style="text-align:center; opacity:0.5; font-size:10px; margin-top:20px;">KOSONG PADA ABJAD ${currentLetter}</p>`;
     }
 
     async function updatePlayer(id) {
         const wr = document.getElementById('wr-'+id).value;
         const mx = document.getElementById('mx-'+id).value;
-        await _supa.from('profiles').update({ winrate: wr, maxwin_limit: mx }).eq('id', id);
-        alert("SYNC SUCCESSFUL");
+        const tm = document.getElementById('tm-'+id).value;
+        await _supa.from('profiles').update({ winrate: wr, maxwin_limit: mx, session_timer: tm }).eq('id', id);
+        alert("PLAYER DATA UPDATED");
+        pullData();
+    }
+
+    async function triggerPanic() {
+        if(!confirm("AKTIFKAN MODE PANIC? SEMUA WINRATE AKAN DISET KE 1%!")) return;
+        for(let u of players) {
+            await _supa.from('profiles').update({ winrate: 1 }).eq('id', u.id);
+        }
+        alert("PANIC MODE ACTIVE: ALL WINRATES AT 1%");
         pullData();
     }
 
     function renderTabKasir() {
         const ds = deposits.filter(x => x.status === 'PROSES');
         const ws = withdrawals.filter(x => x.status === 'PROSES');
-        let h = '<h3 style="font-size:12px; margin-bottom:10px;">PENDING QUEUE</h3>';
-        ds.forEach(x => h += `
-            <div class="card" style="border-left:4px solid var(--blue)">
-                <b>${x.username}</b><p style="font-size:11px; color:var(--yellow)">DEPO: +${(x.net_receive||x.amount).toLocaleString()}</p>
-                <button class="btn" onclick="actD('${x.id}','${x.username}',${x.net_receive||x.amount})">APPROVE DEPO</button>
-            </div>`);
-        ws.forEach(x => h += `
-            <div class="card" style="border-left:4px solid var(--pink)">
-                <b>${x.username}</b><p style="font-size:11px; color:var(--pink)">WD: -${(x.nominal||x.amount).toLocaleString()}</p>
-                <button class="btn btn-pink" onclick="actW('${x.id}')">RELEASE WITHDRAW</button>
-            </div>`);
-        document.getElementById('tab-kasir').innerHTML = h || '<p style="text-align:center; opacity:0.3;">QUEUE EMPTY</p>';
+        let h = '<h3 style="font-size:12px; margin-bottom:10px;">ANTREAN TRANSAKSI</h3>';
+        ds.forEach(x => h += `<div class="card" style="border-left:4px solid var(--blue)"><b>${x.username}</b><p>DEPO: +${(x.net_receive||x.amount).toLocaleString()}</p><button class="btn" onclick="actD('${x.id}','${x.username}',${x.net_receive||x.amount})">APPROVE</button></div>`);
+        ws.forEach(x => h += `<div class="card" style="border-left:4px solid var(--pink)"><b>${x.username}</b><p>WD: -${(x.nominal||x.amount).toLocaleString()}</p><button class="btn btn-pink" onclick="actW('${x.id}')">RELEASE WD</button></div>`);
+        document.getElementById('tab-kasir').innerHTML = h || '<p style="text-align:center; opacity:0.3;">TIDAK ADA ANTREAN</p>';
     }
 
     async function actD(id, user, amt) {
@@ -207,20 +217,19 @@
         const filtered = players.filter(u => (u.username||"").toUpperCase().startsWith(currentLetter));
         let h = `
             <div class="card" style="border:1px solid var(--pink)">
-                <small class="lbl">BROADCAST GIFT (ALL USERS)</small>
-                <input type="number" id="mass-amt" placeholder="AMOUNT" style="background:#000; padding:10px; margin-bottom:10px; border-radius:5px;">
-                <button class="btn btn-pink" onclick="giftAll()">SEND TO ALL PLAYERS</button>
+                <small class="lbl">GIFT SEMUA PEMAIN</small>
+                <input type="number" id="mass-amt" placeholder="NOMINAL" style="background:#000; padding:10px; margin-bottom:10px; border-radius:5px;">
+                <button class="btn btn-pink" onclick="giftAll()">KIRIM KE SEMUA</button>
             </div>
-            <h3 style="font-size:12px; margin:15px 0 10px;">SELECT PLAYER (${currentLetter})</h3>
         `;
         h += filtered.map(u => `
             <div class="card">
                 <b>${u.username}</b>
-                <div class="input-group">
+                <div class="input-grid">
                     <input type="number" id="g-${u.id}" placeholder="NOMINAL">
-                    <input type="text" id="m-${u.id}" placeholder="MESSAGE">
+                    <input type="text" id="m-${u.id}" placeholder="PESAN">
                 </div>
-                <button class="btn btn-yellow" onclick="sendGift('${u.id}')">SEND GIFT</button>
+                <button class="btn btn-yellow" onclick="sendGift('${u.id}')">KIRIM HADIAH</button>
             </div>
         `).join('');
         document.getElementById('tab-gift').innerHTML = h;
@@ -231,7 +240,7 @@
         if(!amt) return;
         const { data } = await _supa.from('profiles').select('saldo').eq('id', id).single();
         await _supa.from('profiles').update({saldo: (data.saldo||0) + amt}).eq('id', id);
-        alert("GIFT DISPATCHED");
+        alert("GIFT TERKIRIM");
         pullData();
     }
 
@@ -241,31 +250,24 @@
         for(let u of players) {
             await _supa.from('profiles').update({saldo: (u.saldo||0) + amt}).eq('id', u.id);
         }
-        alert("MASS GIFT COMPLETED");
+        alert("MASS GIFT BERHASIL");
         pullData();
     }
 
     function renderTabReport() {
         const month = new Date().toISOString().slice(0, 7);
         const sum = (arr) => arr.filter(x => x.status === 'SUKSES' && x.created_at.startsWith(month)).reduce((a,b) => a + (Number(b.amount||b.net_receive||b.nominal)||0), 0);
-        
-        const totD = sum(deposits);
-        const totW = sum(withdrawals);
-        const net = totD - totW;
+        const tD = sum(deposits); const tW = sum(withdrawals); const net = tD - tW;
 
         document.getElementById('tab-stat').innerHTML = `
             <div class="card" style="text-align:center; padding:30px 15px;">
-                <small class="lbl">MONTHLY NET REVENUE</small>
-                <h1 style="font-size:32px; color:${net>=0?'var(--yellow)':'var(--pink)'}; text-shadow:var(--gy)">IDR ${net.toLocaleString()}</h1>
+                <small class="lbl">PENDAPATAN BERSIH BULAN INI</small>
+                <h1 style="font-size:32px; color:${net>=0?'var(--yellow)':'var(--pink)'};">IDR ${net.toLocaleString()}</h1>
                 <hr style="opacity:0.1; margin:15px 0;">
                 <div style="display:flex; justify-content:space-around">
-                    <div><small>TOTAL DEPO</small><b>${totD.toLocaleString()}</b></div>
-                    <div><small>TOTAL WD</small><b>${totW.toLocaleString()}</b></div>
+                    <div><small>DEPO</small><b>${tD.toLocaleString()}</b></div>
+                    <div><small>WD</small><b>${tW.toLocaleString()}</b></div>
                 </div>
-            </div>
-            <div class="card">
-                <small class="lbl">SYSTEM LOGS</small>
-                <p style="font-size:10px; color:#aaa;">Semua data disinkronkan langsung dengan server Supabase. Laporan ini bersifat final untuk bulan ${month}.</p>
             </div>
         `;
     }
@@ -280,23 +282,23 @@
         refreshUI();
     }
 
-    // PARTIKEL LOGIC: Membuat latar belakang terasa hidup dan futuristik
+    // Canvas Background
     const c = document.getElementById('canvas-bg'); const x = c.getContext('2d');
     c.width = window.innerWidth; c.height = window.innerHeight;
     let parts = [];
-    for(let i=0; i<40; i++) parts.push({x:Math.random()*c.width, y:Math.random()*c.height, r:Math.random()*1.5, s:Math.random()*0.4});
+    for(let i=0; i<30; i++) parts.push({x:Math.random()*c.width, y:Math.random()*c.height, r:Math.random()*1.5, s:Math.random()*0.3});
     function animate() {
         x.clearRect(0,0,c.width,c.height);
         parts.forEach(p => {
             x.beginPath(); x.arc(p.x, p.y, p.r, 0, Math.PI*2);
-            x.fillStyle = 'rgba(0, 34, 255, 0.5)'; x.fill();
+            x.fillStyle = 'rgba(0, 34, 255, 0.4)'; x.fill();
             p.y -= p.s; if(p.y < 0) p.y = c.height;
         });
         requestAnimationFrame(animate);
     } animate();
 
     pullData();
-    setInterval(pullData, 30000); // Auto refresh data setiap 30 detik
+    setInterval(pullData, 20000);
 </script>
 </body>
 </html>
