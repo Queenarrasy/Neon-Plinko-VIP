@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-    <title>NEON COMMAND — SUPREME ADMIN V7</title>
+    <title>NEON COMMAND — SUPREME ADMIN V9</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -16,7 +16,6 @@
         * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
         body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; min-height: 100vh; overflow-x: hidden; }
         
-        /* GATE KEEPER */
         #gate-keeper { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
         .gate-card { width: 90%; max-width: 380px; padding: 40px; border-radius: 30px; background: rgba(255,255,255,0.02); border: 2px solid var(--blue); text-align: center; box-shadow: var(--shadow-b); }
         
@@ -31,7 +30,7 @@
         .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 18px; margin-bottom: 15px; position: relative; }
         .card-label { font-size: 10px; color: var(--blue); font-weight: 800; text-transform: uppercase; margin-bottom: 10px; display: block; }
         
-        input, select, textarea { width: 100%; padding: 12px; background: #000; border: 1px solid #333; color: #fff; border-radius: 10px; margin-bottom: 10px; font-family: 'Outfit'; }
+        input, select, textarea { width: 100%; padding: 10px; background: #000; border: 1px solid #333; color: #00ff88; border-radius: 8px; margin-bottom: 8px; font-family: 'Outfit'; font-size: 12px; }
         .btn-main { background: linear-gradient(90deg, var(--blue), var(--deepblue)); color: #fff; padding: 14px; border-radius: 12px; font-weight: 900; border: none; width: 100%; cursor: pointer; text-transform: uppercase; font-size: 11px; }
         .btn-panic { background: #ff0000 !important; margin-bottom: 20px; box-shadow: 0 0 20px rgba(255,0,0,0.4); }
 
@@ -42,7 +41,8 @@
 
         .profit { color: var(--green); font-weight: 800; }
         .loss { color: var(--pink); font-weight: 800; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .session-info { font-size: 9px; background: #1a1b2e; padding: 5px 10px; border-radius: 5px; color: var(--yellow); margin-bottom: 10px; display: inline-block; }
     </style>
 </head>
 <body>
@@ -50,7 +50,6 @@
     <div id="gate-keeper">
         <div class="gate-card">
             <h1 style="font-family:'Cinzel Decorative'; color:var(--blue); font-size:1.5rem;">MASTER ACCESS</h1>
-            <p style="font-size:10px; opacity:0.5; margin-bottom:25px;">NEON PLINKO — SUPREME ADMIN</p>
             <input type="text" id="adm-user" placeholder="Admin ID">
             <input type="password" id="adm-pass" placeholder="Master Key">
             <button onclick="login()" class="btn-main">DECRYPT ACCESS</button>
@@ -62,29 +61,28 @@
         
         <div class="nav-top">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div style="font-family:'Cinzel Decorative'; font-weight:900; color:var(--pink);">NEON COMMAND</div>
-                <div id="sync-status" style="font-size:9px; color:var(--green);"><i class="fas fa-sync fa-spin"></i> LIVE SYNCING</div>
+                <div style="font-family:'Cinzel Decorative'; font-weight:900; color:var(--pink);">NEON COMMAND V9</div>
+                <div id="sync-status" style="font-size:9px; color:var(--green);"><i class="fas fa-sync fa-spin"></i> LIVE CONTROL</div>
             </div>
         </div>
 
         <div class="content">
             <div id="tab-kasir" class="page">
                 <button id="panic-btn-ui" class="btn-main btn-panic" onclick="togglePanicMode()">AKTIFKAN MODE KURAS (10%)</button>
-                <h2 style="font-size:12px; margin-bottom:15px; color:var(--blue); opacity:0.7;">PENDING TRANSACTIONS</h2>
                 <div id="list-kasir">Memuat data transaksi...</div>
             </div>
 
             <div id="tab-user" class="page" style="display:none">
-                <input type="text" id="search-user" placeholder="Cari Username Pemain..." onkeyup="filterUser()">
+                <input type="text" id="search-user" placeholder="Cari Nama Pemain..." onkeyup="filterUser()">
                 <div id="list-user">Memuat data pemain...</div>
             </div>
 
             <div id="tab-gift" class="page" style="display:none">
                 <div class="card" style="border-color:var(--pink)">
                     <span class="card-label" style="color:var(--pink)">Kirim Hadiah ke Inbox</span>
-                    <select id="gift-target"><option value="">Pilih Pemain...</option></select>
-                    <input type="number" id="gift-amount" placeholder="Nominal Saldo (Rp)">
-                    <textarea id="gift-msg" rows="3" placeholder="Pesan (Contoh: Bonus Spesial Plinko)"></textarea>
+                    <select id="gift-target"></select>
+                    <input type="number" id="gift-amount" placeholder="Nominal Rp">
+                    <textarea id="gift-msg" rows="3" placeholder="Pesan Bonus"></textarea>
                     <button class="btn-main" style="background:var(--pink)" onclick="sendGift()">KIRIM HADIAH</button>
                 </div>
             </div>
@@ -92,7 +90,7 @@
 
         <nav class="nav-bottom">
             <div class="nav-btn active" onclick="switchTab('kasir', this)"><i class="fas fa-cash-register"></i><span>KASIR</span></div>
-            <div class="nav-btn" onclick="switchTab('user', this)"><i class="fas fa-users-gear"></i><span>USERS</span></div>
+            <div class="nav-btn" onclick="switchTab('user', this)"><i class="fas fa-users-gear"></i><span>SESSIONS</span></div>
             <div class="nav-btn" onclick="switchTab('gift', this)"><i class="fas fa-gift"></i><span>GIFT</span></div>
             <div class="nav-btn" onclick="logout()"><i class="fas fa-power-off"></i><span>EXIT</span></div>
         </nav>
@@ -123,7 +121,6 @@
         checkPanicStatus();
     }
 
-    // --- KASIR (DEPO & WD) ---
     async function loadKasir() {
         let html = '';
         const { data: depo } = await _supa.from('deposits').select('*').eq('status', 'PROSES');
@@ -131,85 +128,95 @@
 
         if(depo) depo.forEach(d => {
             html += `<div class="card" style="border-left:4px solid var(--green)">
-                <span class="card-label">DEPOSIT REQUEST</span>
-                <b>${d.username.toUpperCase()}</b>
+                <span class="card-label">DEPO: ${d.username}</span>
                 <div class="profit">Rp ${Number(d.net_receive).toLocaleString()}</div>
-                <div class="grid-2" style="margin-top:10px;">
-                    <button class="btn-main" style="background:var(--green)" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive})">APPROVE</button>
-                    <button class="btn-main" style="background:#444" onclick="updateStatus('deposits','${d.id}','REJECTED')">REJECT</button>
-                </div>
+                <button class="btn-main" style="background:var(--green); margin-top:10px; height:30px; padding:0" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive})">APPROVE DEPO</button>
             </div>`;
         });
 
         if(wd) wd.forEach(w => {
             html += `<div class="card" style="border-left:4px solid var(--pink)">
-                <span class="card-label">WITHDRAW REQUEST</span>
-                <b>${w.username.toUpperCase()}</b>
+                <span class="card-label">WD: ${w.username}</span>
                 <div class="loss">Rp ${Number(w.amount).toLocaleString()}</div>
-                <div class="grid-2" style="margin-top:10px;">
-                    <button class="btn-main" style="background:var(--blue)" onclick="updateStatus('withdrawals','${w.id}','SUKSES')">APPROVE</button>
-                    <button class="btn-main" style="background:var(--pink)" onclick="rejectWD('${w.id}','${w.username}',${w.amount})">REJECT & REFUND</button>
-                </div>
+                <button class="btn-main" style="background:var(--blue); margin-top:10px; height:30px; padding:0" onclick="updateStatus('withdrawals','${w.id}','SUKSES')">APPROVE WD</button>
             </div>`;
         });
-        document.getElementById('list-kasir').innerHTML = html || '<p style="text-align:center; opacity:0.3; padding:20px;">Antrean Bersih</p>';
+        document.getElementById('list-kasir').innerHTML = html || '<p style="text-align:center; opacity:0.3; padding:20px; font-size:10px;">Antrean Transaksi Kosong</p>';
     }
 
-    // --- USER CONTROL (WINRATE & MAXWIN) ---
     async function loadUser() {
         const { data } = await _supa.from('profiles').select('*').order('username', {ascending:true});
         if(data) {
-            document.getElementById('list-user').innerHTML = data.map(u => `
+            document.getElementById('list-user').innerHTML = data.map(u => {
+                const sessionMins = Math.floor((new Date() - new Date(u.session_start || u.created_at)) / 60000);
+                return `
                 <div class="card user-item" data-name="${u.username.toLowerCase()}">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
                         <b>${u.username.toUpperCase()}</b>
                         <span class="profit">Rp ${Number(u.saldo).toLocaleString()}</span>
                     </div>
-                    <div class="grid-2">
-                        <div><small style="font-size:9px;">WINRATE %</small><input type="number" id="wr-${u.id}" value="${u.winrate || 50}" style="margin:0"></div>
-                        <div><small style="font-size:9px;">MAXWIN LIMIT</small><input type="number" id="mw-${u.id}" value="${u.maxwin_limit || 1000000}" style="margin:0"></div>
+                    <div class="session-info">
+                        <i class="fas fa-clock"></i> Aktif: ${sessionMins} Menit | Sesi: ${u.session_minutes || 2} Min
                     </div>
-                    <button class="btn-main" style="margin-top:10px; background:transparent; border:1px solid var(--blue); color:var(--blue); height:30px; padding:0;" onclick="saveUser('${u.id}')">UPDATE CONFIG</button>
+                    <div class="grid-3">
+                        <div><small style="font-size:8px;">WINRATE %</small><input type="number" id="wr-${u.id}" value="${u.winrate || 50}"></div>
+                        <div><small style="font-size:8px;">LIMIT RP</small><input type="number" id="mw-${u.id}" value="${u.maxwin_limit || 50000}"></div>
+                        <div><small style="font-size:8px;">DURASI MIN</small><input type="number" id="tm-${u.id}" value="${u.session_minutes || 2}"></div>
+                    </div>
+                    <div style="margin-top:5px">
+                        <small style="font-size:8px;">TOTAL DEPO SESI INI (DASAR % WIN)</small>
+                        <input type="number" id="dp-${u.id}" value="${u.total_deposit_current || 0}">
+                    </div>
+                    <div class="grid-2" style="margin-top:10px;">
+                        <button class="btn-main" style="background:var(--blue); height:30px; padding:0;" onclick="saveUser('${u.id}')">UPDATE CONFIG</button>
+                        <button class="btn-main" style="background:var(--pink); height:30px; padding:0;" onclick="resetSesi('${u.id}')">RESET SESI (0 MIN)</button>
+                    </div>
                 </div>
-            `).join('');
+            `;}).join('');
         }
     }
 
-    // --- PANIC MODE LOGIC ---
+    async function saveUser(id) {
+        const updateData = {
+            winrate: parseInt(document.getElementById('wr-'+id).value),
+            maxwin_limit: parseInt(document.getElementById('mw-'+id).value),
+            session_minutes: parseInt(document.getElementById('tm-'+id).value),
+            total_deposit_current: parseInt(document.getElementById('dp-'+id).value)
+        };
+        await _supa.from('profiles').update(updateData).eq('id', id);
+        alert("Konfigurasi Sesi Terupdate!");
+    }
+
+    async function resetSesi(id) {
+        await _supa.from('profiles').update({ session_start: new Date() }).eq('id', id);
+        alert("Waktu Sesi Diulang ke Menit 0!");
+        refreshAll();
+    }
+
     async function checkPanicStatus() {
         const { data } = await _supa.from('system_config').select('panic_mode').eq('id', 1).single();
-        isPanic = data.panic_mode;
-        document.getElementById('panic-alert').className = isPanic ? 'panic-bar panic-active' : 'panic-bar';
-        document.getElementById('panic-btn-ui').innerText = isPanic ? "MATIKAN MODE KURAS" : "AKTIFKAN MODE KURAS (10%)";
+        if(data) {
+            isPanic = data.panic_mode;
+            document.getElementById('panic-alert').className = isPanic ? 'panic-bar panic-active' : 'panic-bar';
+            document.getElementById('panic-btn-ui').innerText = isPanic ? "MATIKAN MODE KURAS" : "AKTIFKAN MODE KURAS (10%)";
+        }
     }
 
     async function togglePanicMode() {
         const nextState = !isPanic;
         await _supa.from('system_config').update({ panic_mode: nextState }).eq('id', 1);
-        await _supa.from('profiles').update({ panic_mode: nextState }); // Sinkron ke semua profil
-        alert("MODE KURAS: " + (nextState ? "AKTIF" : "MATI"));
-        checkPanicStatus();
-    }
-
-    // --- DATABASE ACTIONS ---
-    async function saveUser(id) {
-        const wr = document.getElementById('wr-'+id).value;
-        const mw = document.getElementById('mw-'+id).value;
-        await _supa.from('profiles').update({ winrate: parseInt(wr), maxwin_limit: parseInt(mw) }).eq('id', id);
-        alert("Pemain berhasil diatur!");
-    }
-
-    async function approveDepo(id, user, amt) {
-        const { data } = await _supa.from('profiles').select('saldo').eq('username', user).single();
-        await _supa.from('profiles').update({ saldo: data.saldo + amt }).eq('username', user);
-        await _supa.from('deposits').update({ status: 'SUKSES' }).eq('id', id);
+        await _supa.from('profiles').update({ panic_mode: nextState });
         refreshAll();
     }
 
-    async function rejectWD(id, user, amt) {
-        const { data } = await _supa.from('profiles').select('saldo').eq('username', user).single();
-        await _supa.from('profiles').update({ saldo: data.saldo + amt }).eq('username', user);
-        await _supa.from('withdrawals').update({ status: 'GAGAL' }).eq('id', id);
+    async function approveDepo(id, user, amt) {
+        const { data } = await _supa.from('profiles').select('saldo, total_deposit_current').eq('username', user).single();
+        await _supa.from('profiles').update({ 
+            saldo: data.saldo + amt,
+            total_deposit_current: (data.total_deposit_current || 0) + amt,
+            session_start: new Date() // Otomatis reset sesi tiap depo biar dia menang dulu
+        }).eq('username', user);
+        await _supa.from('deposits').update({ status: 'SUKSES' }).eq('id', id);
         refreshAll();
     }
 
@@ -222,19 +229,16 @@
         const target = document.getElementById('gift-target').value;
         const amount = document.getElementById('gift-amount').value;
         const msg = document.getElementById('gift-msg').value;
-        if(!target || !amount) return alert("Pilih User & Nominal!");
-        
+        if(!target || !amount) return alert("Lengkapi data hadiah!");
         await _supa.from('inbox').insert([{ username: target, nominal: parseInt(amount), pesan: msg, status: 'UNCLAIMED' }]);
-        alert("Bonus terkirim ke Inbox " + target);
-        document.getElementById('gift-amount').value = '';
+        alert("Hadiah terkirim!");
     }
 
     async function loadGiftTarget() {
         const { data } = await _supa.from('profiles').select('username');
-        if(data) document.getElementById('gift-target').innerHTML = '<option value="">Pilih Pemain...</option>' + data.map(u => `<option value="${u.username}">${u.username.toUpperCase()}</option>`).join('');
+        if(data) document.getElementById('gift-target').innerHTML = data.map(u => `<option value="${u.username}">${u.username}</option>`).join('');
     }
 
-    // --- UI TOOLS ---
     function switchTab(tab, el) {
         document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
         document.getElementById('tab-' + tab).style.display = 'block';
