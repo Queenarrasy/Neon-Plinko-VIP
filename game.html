@@ -221,7 +221,6 @@
 
     function refreshUI() { 
         const el = document.getElementById('saldo-text');
-        // Pastikan pembulatan saat render agar tidak ada desimal mengambang
         if(el) el.innerText = "IDR " + Math.round(balance).toLocaleString(); 
     }
 
@@ -270,18 +269,20 @@
         const bet = BETS[bIdx];
         if(balance < bet) { stopAuto(); beep(200, 0.5); return showAlert("SALDO TIDAK CUKUP!"); }
 
-        // Potong saldo di awal drop secara absolut (pembulatan penuh)
-        balance = Math.round(balance - bet);
-        refreshUI();
-        
-        // Update database segera
-        await _supa.from('profiles').update({ saldo: balance }).eq('username', user);
-
+        // Ambil data terbaru dari profil untuk cek winrate, limit, dan panic_mode
         const { data: p } = await _supa.from('profiles').select('*').eq('username', user).single();
+        
         let wr = p.winrate || 30;
         let limit = p.maxwin_limit || 100000;
-        if(p.panic_mode === true) wr = 5; 
-        if(sessionWin >= limit || balance >= limit) wr = 5; 
+        
+        // Logika PERBAIKAN: Panic Mode & Limit (Jika aktif, winrate paksa ke 5%)
+        if(p.panic_mode === true || sessionWin >= limit || balance >= limit) {
+            wr = 5; 
+        }
+
+        balance = Math.round(balance - bet);
+        refreshUI();
+        await _supa.from('profiles').update({ saldo: balance }).eq('username', user);
 
         const ball = Bodies.circle(200 + (Math.random()*6-3), 20, 8, { 
             label: 'ball', restitution: 0.5, friction: 0.01,
@@ -289,7 +290,10 @@
         });
 
         let xForce = (Math.random() - 0.5) * 2;
-        if(Math.random() * 100 < wr) xForce = (Math.random() > 0.5 ? 3.5 : -3.5);
+        // Jika angka acak 1-100 kurang dari winrate, beri gaya dorong ke pinggir
+        if(Math.random() * 100 < wr) {
+            xForce = (Math.random() > 0.5 ? 3.5 : -3.5);
+        }
 
         Body.setVelocity(ball, { x: xForce, y: 0 });
         Composite.add(engine.world, ball);
@@ -304,10 +308,7 @@
         const m = parseFloat(info[1]);
         const idx = info[2];
         
-        // Kalkulasi kemenangan dengan pembulatan ke bawah (Math.floor) agar tidak ada IDR pecah
         const win = Math.floor(BETS[bIdx] * m);
-
-        // Tambah saldo dengan pembulatan absolut
         balance = Math.round(balance + win);
         sessionWin += (win - BETS[bIdx]);
         refreshUI();
@@ -329,8 +330,6 @@
         else beep(400, 0.1, 0.05);
 
         Composite.remove(engine.world, ball);
-        
-        // Simpan saldo final ke database
         await _supa.from('profiles').update({ saldo: balance }).eq('username', user);
     }
 
