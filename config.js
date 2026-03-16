@@ -1,6 +1,6 @@
 /**
  * ============================================================
- * NEON PLINKO VIP — CENTRAL ENGINE (PERMANENT REF SYSTEM)
+ * NEON PLINKO VIP — CENTRAL ENGINE (LOCKED REF SYSTEM)
  * ============================================================
  */
 
@@ -18,7 +18,6 @@ const NEON_CONFIG = {
 
 /**
  * Mengambil username dari storage.
- * Prioritas utama pada 'neon_user' agar sinkron dengan reward.html
  */
 function getUsername() {
     return localStorage.getItem('neon_user') || 
@@ -35,7 +34,7 @@ function formatIDR(amount) {
 
 /**
  * Sinkronisasi Data User & UI secara Real-time
- * Fungsi ini memastikan referral permanen dan saldo sinkron.
+ * FIX: Mengunci kode referral agar tidak berubah-ubah.
  */
 async function syncNeonData() {
     const user = getUsername();
@@ -49,27 +48,35 @@ async function syncNeonData() {
             .single();
             
         if (data && !error) {
-            // Simpan saldo di cache untuk akses cepat
             localStorage.setItem('cached_saldo', data.saldo);
             
-            // --- LOGIKA REFERRAL PERMANEN ---
-            // Cek kode di database (seperti SAPI123)
-            let finalRef = data.referral_code || data.ref_code;
+            // --- LOGIKA PENGUNCI REFERRAL ---
+            // Cek apakah kolom referral_code di DB sudah ada isinya (misal: SAPI123)
+            let currentRef = data.referral_code;
 
-            // Jika di database benar-benar kosong (Pendaftar baru), buatkan otomatis
-            if (!finalRef || finalRef === "" || finalRef === "BELUM_SET") {
-                const newRef = "NEON" + Math.random().toString(36).substring(2, 7).toUpperCase();
+            // HANYA generate jika di database benar-benar kosong/null
+            if (!currentRef || currentRef === "" || currentRef === "BELUM_SET") {
+                // Cek apakah kita sudah punya kode sementara di localStorage agar tidak berubah tiap 5 detik
+                let tempRef = localStorage.getItem('temp_ref_lock');
                 
-                // Simpan secara permanen ke database agar terekam di event
+                if (!tempRef) {
+                    tempRef = "NEON" + Math.random().toString(36).substring(2, 7).toUpperCase();
+                    localStorage.setItem('temp_ref_lock', tempRef);
+                }
+
+                // Coba simpan ke database secara permanen
                 await _supabase
                     .from('profiles')
-                    .update({ referral_code: newRef })
+                    .update({ referral_code: tempRef })
                     .eq('username', user);
                 
-                finalRef = newRef;
+                currentRef = tempRef;
+            } else {
+                // Jika sudah ada di DB (seperti SAPI123), hapus kunci sementara
+                localStorage.removeItem('temp_ref_lock');
             }
             
-            // Pemetaan Data ke ID HTML (Otomatis Update UI)
+            // Pemetaan Data ke ID HTML
             const uiElements = {
                 'saldo-text': formatIDR(data.saldo),
                 'display-saldo': formatIDR(data.saldo),
@@ -77,37 +84,31 @@ async function syncNeonData() {
                 'wd-saldo': formatIDR(data.saldo),
                 'display-username': data.username,
                 'header-username': data.username,
-                'ref-code': finalRef // Kode SAPI123 Anda akan tampil di sini
+                'ref-code': currentRef // Menampilkan kode permanen
             };
 
             for (const [id, value] of Object.entries(uiElements)) {
                 const el = document.getElementById(id);
                 if (el) {
-                    if (el.tagName === 'INPUT') {
-                        el.value = value;
-                    } else {
-                        el.textContent = value;
-                    }
+                    if (el.tagName === 'INPUT') el.value = value;
+                    else el.textContent = value;
                 }
             }
 
-            // Jalankan fungsi loadHistory atau loadInbox jika ada di halaman tersebut
             if (typeof loadHistory === "function") loadHistory();
             if (typeof loadInbox === "function") loadInbox();
         }
     } catch (err) { 
-        console.warn("Connection lost. Retrying sync..."); 
+        console.warn("Syncing..."); 
     }
 }
 
 /**
- * Proteksi Halaman: Mencegah user masuk tanpa login
+ * Proteksi Halaman
  */
 document.addEventListener('DOMContentLoaded', () => {
     const user = getUsername();
     const currentPath = window.location.pathname.split("/").pop();
-    
-    // Daftar halaman yang boleh dibuka tanpa login
     const publicPages = ['index.html', 'login.html', 'register.html', '']; 
     const isPublic = publicPages.includes(currentPath);
 
@@ -117,17 +118,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (user) {
-        // Sinkron pertama kali saat halaman terbuka
         syncNeonData();
-        
-        // Loop sinkronisasi setiap 5 detik agar saldo & referral selalu update
         setInterval(syncNeonData, 5000);
     }
 });
 
-/**
- * Fungsi Logout Global
- */
 function logout() {
     localStorage.clear();
     window.location.href = 'index.html';
