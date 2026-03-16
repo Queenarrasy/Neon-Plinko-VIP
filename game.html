@@ -10,115 +10,57 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { 
-            --pink: #ff0077; 
-            --blue: #0022ff; 
-            --deep-blue: #0044ff; 
-            --yellow: #fbff00; 
-            --bg: #02030d;
+            --pink: #ff0077; --blue: #0022ff; --deep-blue: #0044ff; 
+            --yellow: #fbff00; --bg: #02030d;
             --gp: 0 0 20px rgba(255, 0, 119, 0.8);
             --gb: 0 0 25px rgba(0, 34, 255, 0.9);
             --gy: 0 0 20px rgba(251, 255, 0, 0.8);
             --gdb: 0 0 20px rgba(0, 68, 255, 0.8);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        
-        body { 
-            background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif;
-            height: 100vh; overflow: hidden; display: flex; flex-direction: column;
-        }
-
+        body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
         #canvas-bg { position: absolute; inset: 0; z-index: 0; }
         .overlay { position: absolute; inset: 0; background: radial-gradient(circle at center, transparent, var(--bg) 95%); z-index: 1; }
-
-        .header { 
-            height: 80px; padding: 0 15px; display: flex; align-items: center; justify-content: space-between;
-            background: rgba(5, 6, 25, 0.85); backdrop-filter: blur(15px);
-            border-bottom: 2px solid var(--deep-blue); z-index: 100; box-shadow: var(--gb);
-        }
-        
+        .header { height: 80px; padding: 0 15px; display: flex; align-items: center; justify-content: space-between; background: rgba(5, 6, 25, 0.85); backdrop-filter: blur(15px); border-bottom: 2px solid var(--deep-blue); z-index: 100; box-shadow: var(--gb); }
         .header-left { display: flex; flex-direction: column; align-items: center; cursor: pointer; min-width: 60px; }
         .header-left i { font-size: 24px; color: var(--deep-blue); filter: drop-shadow(var(--gdb)); }
         .header-left span { font-size: 8px; font-weight: 900; color: var(--deep-blue); margin-top: 4px; letter-spacing: 1px; text-transform: uppercase; text-shadow: var(--gdb); }
-
-        .balance-box { 
-            background: rgba(0,0,0,0.8); border: 1px solid var(--yellow); 
-            padding: 5px 12px; border-radius: 50px; box-shadow: var(--gy); text-align: center;
-        }
+        .balance-box { background: rgba(0,0,0,0.8); border: 1px solid var(--yellow); padding: 5px 12px; border-radius: 50px; box-shadow: var(--gy); text-align: center; }
         .balance-label { display: block; font-size: 7px; font-weight: 900; color: var(--yellow); letter-spacing: 1px; }
         #saldo-text { color: #fff; font-weight: 800; font-size: 13px; text-shadow: 0 0 5px #fff; }
-
         .logo-area-mini { text-align: right; }
         .logo-area-mini h1 { font-family: 'Cinzel Decorative'; font-size: 14px; margin: 0; line-height: 1; display: flex; flex-direction: column; }
         .logo-area-mini .n1 { color: var(--pink); text-shadow: var(--gp); }
         .logo-area-mini .n2 { color: var(--yellow); text-shadow: var(--gy); font-size: 10px; }
         .logo-area-mini .n3 { color: var(--deep-blue); text-shadow: var(--gdb); font-size: 8px; }
-
         #game-area { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 5; }
         canvas#plinko-canvas { max-height: 52vh; width: 100%; filter: drop-shadow(0 0 15px rgba(0, 34, 255, 0.2)); }
-
         .multiplier-bar { width: 98%; display: flex; gap: 2px; margin-top: 5px; }
-        .m-slot { 
-            flex: 1; height: 35px; border-radius: 4px; font-size: 10px; font-weight: 900; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            color: #fff; border: 1px solid rgba(255,255,255,0.1); transition: 0.2s;
-        }
+        .m-slot { flex: 1; height: 35px; border-radius: 4px; font-size: 10px; font-weight: 900; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; border: 1px solid rgba(255,255,255,0.1); transition: 0.2s; }
         .hit-win { transform: scale(1.2) translateY(-5px); filter: brightness(1.5); box-shadow: var(--gy); z-index: 10; border: 1px solid #fff; }
-
-        .win-notif { 
-            margin: 10px 0; height: 40px; width: 85%;
-            background: rgba(0,0,0,0.7); border: 1px solid var(--deep-blue); border-radius: 50px;
-            display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 10px var(--deep-blue);
-        }
+        .win-notif { margin: 10px 0; height: 40px; width: 85%; background: rgba(0,0,0,0.7); border: 1px solid var(--deep-blue); border-radius: 50px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 10px var(--deep-blue); }
         #win-display { font-size: 16px; font-weight: 900; color: rgba(255,255,255,0.1); transition: 0.2s; letter-spacing: 1px; }
         #win-display.active { color: var(--yellow); text-shadow: var(--gy); transform: scale(1.05); }
-
-        .controls { 
-            background: rgba(5, 6, 25, 0.95); padding: 15px 20px; border-top: 2px solid var(--deep-blue); 
-            border-radius: 25px 25px 0 0; z-index: 100; width: 100%; box-shadow: 0 -10px 40px rgba(0,0,0,0.8);
-        }
+        .controls { background: rgba(5, 6, 25, 0.95); padding: 15px 20px; border-top: 2px solid var(--deep-blue); border-radius: 25px 25px 0 0; z-index: 100; width: 100%; box-shadow: 0 -10px 40px rgba(0,0,0,0.8); }
         .bet-control { display: flex; justify-content: center; align-items: center; gap: 20px; margin-bottom: 12px; }
         .bet-btn { width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--deep-blue); background: #000; color: var(--deep-blue); cursor: pointer; box-shadow: var(--gdb); display: flex; align-items: center; justify-content: center; font-size: 16px; transition: 0.2s; }
-        .bet-btn:active { background: var(--deep-blue); color: #fff; }
         .bet-display { font-size: 18px; font-weight: 900; color: var(--yellow); min-width: 110px; text-align: center; text-shadow: var(--gy); }
-
         .mode-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
         .m-btn { padding: 10px; border-radius: 10px; border: 1px solid #1a1b3a; background: #000; color: #fff; font-size: 9px; font-weight: 800; cursor: pointer; text-transform: uppercase; }
         .m-btn.active { border-color: var(--deep-blue); color: var(--deep-blue); box-shadow: inset 0 0 10px rgba(0, 68, 255, 0.3); }
         .m-btn.auto-on { background: var(--pink); border-color: #fff; box-shadow: var(--gp); animation: pulse 1s infinite; }
-        
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(0.97); } 100% { transform: scale(1); } }
-
-        .drop-btn { 
-            width: 100%; padding: 16px; border-radius: 50px; border: none;
-            background: linear-gradient(90deg, var(--deep-blue), var(--pink));
-            color: #fff; font-weight: 900; font-size: 15px; cursor: pointer;
-            text-transform: uppercase; letter-spacing: 2px; box-shadow: var(--gp);
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-        }
+        .drop-btn { width: 100%; padding: 16px; border-radius: 50px; border: none; background: linear-gradient(90deg, var(--deep-blue), var(--pink)); color: #fff; font-weight: 900; font-size: 15px; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; box-shadow: var(--gp); }
         .stop-btn { background: var(--pink) !important; box-shadow: var(--gp) !important; border: 1px solid #fff !important; }
-
-        .nav-bottom { 
-            height: 75px; background: #000; display: flex; border-top: 2px solid var(--deep-blue); 
-            padding-bottom: env(safe-area-inset-bottom); position: relative; z-index: 1000;
-        }
+        .nav-bottom { height: 75px; background: #000; display: flex; border-top: 2px solid var(--deep-blue); padding-bottom: env(safe-area-inset-bottom); position: relative; z-index: 1000; }
         .nav-link { flex: 1; display: flex !important; flex-direction: column; align-items: center; justify-content: center; text-decoration: none; gap: 4px; transition: 0.3s; }
         .nav-link i { font-size: 22px; margin-bottom: 2px; }
         .nav-link span { font-size: 10px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; }
-        
-        .n-depo { color: var(--yellow); } .n-depo:active { text-shadow: var(--gy); transform: scale(1.1); }
-        .n-wd { color: var(--pink); } .n-wd:active { text-shadow: var(--gp); transform: scale(1.1); }
-        .n-msg { color: var(--deep-blue); } .n-msg:active { text-shadow: var(--gdb); transform: scale(1.1); }
-
+        .n-depo { color: var(--yellow); } .n-wd { color: var(--pink); } .n-msg { color: var(--deep-blue); }
         #alert-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(10px); }
-        .alert-box { 
-            width:280px; background:#050614; border:2px solid var(--yellow); border-radius:25px; 
-            padding:30px; text-align:center; box-shadow: var(--gy); 
-        }
+        .alert-box { width:280px; background:#050614; border:2px solid var(--yellow); border-radius:25px; padding:30px; text-align:center; box-shadow: var(--gy); }
         #alert-msg { font-weight:800; color:var(--yellow); margin-bottom:20px; text-transform: uppercase; font-size: 14px; }
-        .alert-btn { 
-            width:100%; padding:12px; background:var(--deep-blue); border:none; color:#fff; 
-            border-radius:50px; font-weight:900; box-shadow: var(--gdb); cursor: pointer;
-        }
+        .alert-btn { width:100%; padding:12px; background:var(--deep-blue); border:none; color:#fff; border-radius:50px; font-weight:900; box-shadow: var(--gdb); cursor: pointer; }
     </style>
 </head>
 <body>
@@ -192,7 +134,7 @@
     const engine = Engine.create({ gravity: { y: 1.5 } });
     const BETS = [400, 800, 1000, 1200, 1600, 1800, 2000, 4000, 6000, 8000, 10000, 12000, 16000, 18000, 20000];
     
-    let bIdx = 0, balance = 0, sessionWin = 0;
+    let bIdx = 0, balance = 0;
     let autoMode = false, turboMode = false, timer = null;
 
     const multis = [10, 5, 2, 0.5, 0.2, 0.2, 0.5, 2, 5, 10];
@@ -218,7 +160,6 @@
     }
 
     function navTo(url) { beep(1000, 0.1); setTimeout(() => location.href = url, 150); }
-
     function refreshUI() { 
         const el = document.getElementById('saldo-text');
         if(el) el.innerText = "IDR " + Math.round(balance).toLocaleString(); 
@@ -238,7 +179,6 @@
         const cvs = document.getElementById('plinko-canvas');
         if(!cvs) return;
         const render = Render.create({ canvas: cvs, engine: engine, options: { width: 400, height: 500, wireframes: false, background: 'transparent' } });
-
         for (let r = 0; r < 9; r++) {
             let pCount = r + 3;
             for (let c = 0; c < pCount; c++) {
@@ -247,15 +187,12 @@
                 Composite.add(engine.world, Bodies.circle(x, y, 3.5, { isStatic: true, render: { fillStyle: '#fff' }, label: 'pin' }));
             }
         }
-
         multis.forEach((v, i) => {
             const sensor = Bodies.rectangle(38 + i * 36, 485, 30, 40, { isStatic: true, isSensor: true, label: `win_${v}_${i}`, render: { visible: false } });
             Composite.add(engine.world, sensor);
         });
-
         Render.run(render);
         Runner.run(Runner.create(), engine);
-
         Events.on(engine, 'collisionStart', (e) => {
             e.pairs.forEach(p => {
                 if(p.bodyA.label === 'pin' || p.bodyB.label === 'pin') beep(600, 0.05, 0.05);
@@ -265,40 +202,73 @@
         });
     }
 
+    // --- ENGINE LOGIKA SESSION & WINRATE (PERBAIKAN UTAMA) ---
     async function dropBall() {
         const bet = BETS[bIdx];
         if(balance < bet) { stopAuto(); beep(200, 0.5); return showAlert("SALDO TIDAK CUKUP!"); }
 
-        // Ambil data terbaru dari profil untuk cek winrate, limit, dan panic_mode
+        // AMBIL DATA REALTIME DARI DB
         const { data: p } = await _supa.from('profiles').select('*').eq('username', user).single();
         
-        let wr = p.winrate || 30;
-        let limit = p.maxwin_limit || 100000;
-        
-        // Logika PERBAIKAN: Panic Mode & Limit (Jika aktif, winrate paksa ke 5%)
-        if(p.panic_mode === true || sessionWin >= limit || balance >= limit) {
-            wr = 5; 
+        let finalWR = p.winrate || 50;
+        let finalLimit = p.maxwin_limit || 50000;
+        let sessionMins = p.session_minutes || 2;
+        let startTime = new Date(p.session_start || p.created_at);
+        let now = new Date();
+        let playedMins = (now - startTime) / 60000;
+
+        // 1. LOGIKA DEGRADASI PER MENIT (JIKA WAKTU HABIS)
+        if (playedMins > sessionMins) {
+            let extraMins = Math.floor(playedMins - sessionMins);
+            if (p.winrate >= 80) finalWR -= (extraMins * 5); // Mode Gacor turun 5%
+            else finalWR -= (extraMins * 10); // Mode lain turun 10%
+            if (finalWR < 5) finalWR = 5;
         }
 
+        // 2. LOGIKA MODE KURAS (10-40%)
+        if (p.winrate <= 40) {
+            let maxKuras = (p.last_deposit_amount || 200000) * 1.05;
+            if (balance >= maxKuras) finalWR = 1; // Paksa habis
+        }
+
+        // 3. LOGIKA MODE NORMAL (50-70%)
+        if (p.winrate >= 50 && p.winrate <= 70) {
+            let profitPrc = p.winrate === 50 ? 0.10 : (p.winrate === 60 ? 0.15 : 0.20);
+            let maxNormal = (p.last_deposit_amount || 200000) * (1 + profitPrc);
+            if (balance >= maxNormal) finalWR = 5; // Kunci profit
+        }
+
+        // 4. PANIC MODE & GLOBAL LIMIT
+        if (p.panic_mode === true || balance >= finalLimit) {
+            finalWR = 2; // Kunci Mati
+        }
+
+        // EKSEKUSI PEMBAYARAN SALDO
         balance = Math.round(balance - bet);
         refreshUI();
         await _supa.from('profiles').update({ saldo: balance }).eq('username', user);
 
+        // VISUALISASI BOLA
         const ball = Bodies.circle(200 + (Math.random()*6-3), 20, 8, { 
             label: 'ball', restitution: 0.5, friction: 0.01,
             render: { fillStyle: '#ff0077', strokeStyle: '#fff', lineWidth: 2 } 
         });
 
-        let xForce = (Math.random() - 0.5) * 2;
-        // Jika angka acak 1-100 kurang dari winrate, beri gaya dorong ke pinggir
-        if(Math.random() * 100 < wr) {
-            xForce = (Math.random() > 0.5 ? 3.5 : -3.5);
+        // PENENTUAN ARAH (MANIPULASI WINRATE)
+        let forceX = (Math.random() - 0.5) * 2;
+        let isHoki = (Math.random() * 100) < finalWR;
+
+        if (isHoki) {
+            // Arahkan ke samping (X10 atau X5)
+            forceX = (Math.random() > 0.5 ? 3.8 : -3.8);
+        } else {
+            // Arahkan ke tengah (X0.2 atau X0.5)
+            forceX = (Math.random() > 0.5 ? 0.5 : -0.5);
         }
 
-        Body.setVelocity(ball, { x: xForce, y: 0 });
+        Body.setVelocity(ball, { x: forceX, y: 0 });
         Composite.add(engine.world, ball);
         beep(800, 0.1);
-
         setTimeout(() => { if(Composite.allBodies(engine.world).includes(ball)) Composite.remove(engine.world, ball); }, 7000);
     }
 
@@ -307,10 +277,9 @@
         const info = label.split('_');
         const m = parseFloat(info[1]);
         const idx = info[2];
-        
         const win = Math.floor(BETS[bIdx] * m);
+        
         balance = Math.round(balance + win);
-        sessionWin += (win - BETS[bIdx]);
         refreshUI();
 
         const disp = document.getElementById('win-display');
@@ -318,13 +287,11 @@
             disp.innerText = `(X${m}) ${win.toLocaleString()}`;
             disp.className = 'active';
         }
-        
         const s = document.getElementById('s-' + idx);
         if(s) {
             s.classList.add('hit-win');
             setTimeout(() => { s.classList.remove('hit-win'); if(disp) disp.className = ''; }, 600);
         }
-
         if(m >= 2) beep(1200, 0.3, 0.2);
         else if(m >= 1) beep(900, 0.2, 0.1);
         else beep(400, 0.1, 0.05);
@@ -333,60 +300,14 @@
         await _supa.from('profiles').update({ saldo: balance }).eq('username', user);
     }
 
-    function adjustBet(d) { 
-        if(autoMode) return; 
-        beep(500, 0.05); 
-        bIdx = Math.max(0, Math.min(BETS.length-1, bIdx+d)); 
-        const betEl = document.getElementById('bet-amt');
-        if(betEl) betEl.innerText = BETS[bIdx].toLocaleString(); 
-    }
-    
-    function setSpeed(s) {
-        beep(700, 0.05);
-        turboMode = (s === 'turbo');
-        document.getElementById('m-norm').classList.toggle('active', s === 'normal');
-        document.getElementById('m-turbo').classList.toggle('active', s === 'turbo');
-        if(autoMode) { clearInterval(timer); timer = setInterval(dropBall, turboMode ? 400 : 1000); }
-    }
-
-    function toggleAuto() {
-        autoMode = !autoMode;
-        beep(autoMode ? 1000 : 400, 0.1);
-        const btn = document.getElementById('m-auto');
-        const main = document.getElementById('main-action');
-        if(autoMode) {
-            btn.classList.add('auto-on');
-            main.innerText = "STOP AUTO DROP";
-            main.classList.add('stop-btn');
-            timer = setInterval(dropBall, turboMode ? 400 : 1000);
-        } else stopAuto();
-    }
-
-    function stopAuto() {
-        autoMode = false; clearInterval(timer);
-        document.getElementById('m-auto').classList.remove('auto-on');
-        document.getElementById('main-action').innerText = "DROP NEON BALL";
-        document.getElementById('main-action').classList.remove('stop-btn');
-    }
-
+    function adjustBet(d) { if(autoMode) return; beep(500, 0.05); bIdx = Math.max(0, Math.min(BETS.length-1, bIdx+d)); document.getElementById('bet-amt').innerText = BETS[bIdx].toLocaleString(); }
+    function setSpeed(s) { beep(700, 0.05); turboMode = (s === 'turbo'); document.getElementById('m-norm').classList.toggle('active', s === 'normal'); document.getElementById('m-turbo').classList.toggle('active', s === 'turbo'); if(autoMode) { clearInterval(timer); timer = setInterval(dropBall, turboMode ? 400 : 1000); } }
+    function toggleAuto() { autoMode = !autoMode; beep(autoMode ? 1000 : 400, 0.1); const btn = document.getElementById('m-auto'); const main = document.getElementById('main-action'); if(autoMode) { btn.classList.add('auto-on'); main.innerText = "STOP AUTO DROP"; main.classList.add('stop-btn'); timer = setInterval(dropBall, turboMode ? 400 : 1000); } else stopAuto(); }
+    function stopAuto() { autoMode = false; clearInterval(timer); document.getElementById('m-auto').classList.remove('auto-on'); document.getElementById('main-action').innerText = "DROP NEON BALL"; document.getElementById('main-action').classList.remove('stop-btn'); }
     function handleMainAction() { if(autoMode) stopAuto(); else dropBall(); }
     function showAlert(m) { beep(300, 0.3); document.getElementById('alert-msg').innerText = m; document.getElementById('alert-modal').style.display = 'flex'; }
     function closeAlert() { beep(600, 0.1); document.getElementById('alert-modal').style.display = 'none'; }
-
-    function drawStars() {
-        const c = document.getElementById('canvas-bg'); if(!c) return;
-        const x = c.getContext('2d');
-        c.width = window.innerWidth; c.height = window.innerHeight;
-        let s = [];
-        for(let i=0; i<100; i++) s.push({x:Math.random()*c.width, y:Math.random()*c.height, r:Math.random()*1.5});
-        function anim() {
-            x.clearRect(0,0,c.width,c.height); x.fillStyle="#fff";
-            s.forEach(p => { x.beginPath(); x.arc(p.x, p.y, p.r, 0, Math.PI*2); x.fill(); p.y+=0.5; if(p.y>c.height) p.y=0; });
-            requestAnimationFrame(anim);
-        }
-        anim();
-    }
-
+    function drawStars() { const c = document.getElementById('canvas-bg'); if(!c) return; const x = c.getContext('2d'); c.width = window.innerWidth; c.height = window.innerHeight; let s = []; for(let i=0; i<100; i++) s.push({x:Math.random()*c.width, y:Math.random()*c.height, r:Math.random()*1.5}); function anim() { x.clearRect(0,0,c.width,c.height); x.fillStyle="#fff"; s.forEach(p => { x.beginPath(); x.arc(p.x, p.y, p.r, 0, Math.PI*2); x.fill(); p.y+=0.5; if(p.y>c.height) p.y=0; }); requestAnimationFrame(anim); } anim(); }
     window.onload = init;
 </script>
 </body>
