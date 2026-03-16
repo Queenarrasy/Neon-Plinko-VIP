@@ -3,270 +3,239 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>NEON COMMAND — SUPREME ADMIN V10.9</title>
+    <title>NEON COMMAND — V10.99 ULTIMATE</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@300;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { 
-            --pink: #ff0077; --blue: #0022ff; --cyan: #00d4ff;
-            --yellow: #fbff00; --bg: #02030d;
-            --gp: 0 0 20px rgba(255, 0, 119, 0.8);
-            --gb: 0 0 25px rgba(0, 34, 255, 0.9);
-            --gy: 0 0 20px rgba(251, 255, 0, 0.8);
-        }
+        :root { --pink: #ff0077; --blue: #0022ff; --cyan: #00d4ff; --yellow: #fbff00; --bg: #02030d; }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; min-height: 100vh; overflow-x: hidden; display: flex; flex-direction: column; }
-        #canvas-bg { position: fixed; inset: 0; z-index: 0; }
-        .overlay { position: fixed; inset: 0; background: radial-gradient(circle at center, transparent, var(--bg) 90%); z-index: 1; pointer-events: none; }
+        body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; overflow-x: hidden; }
+        #canvas-bg { position: fixed; inset: 0; z-index: 0; opacity: 0.5; }
+        
+        /* UI Components */
+        .nav-top { background: rgba(2,3,13,0.95); padding: 15px 20px; border-bottom: 2px solid var(--blue); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(15px); display: flex; justify-content: space-between; align-items: center; }
+        .content { padding: 15px; padding-bottom: 120px; max-width: 650px; margin: auto; position: relative; z-index: 10; }
+        
+        /* Dashboard Stats */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .stat-box { background: rgba(0,0,0,0.8); border: 1px solid var(--blue); padding: 12px; border-radius: 15px; text-align: center; }
+        .stat-box small { font-size: 9px; color: var(--pink); text-transform: uppercase; font-weight: 800; }
+        .stat-box span { font-size: 16px; font-weight: 900; color: var(--yellow); display: block; }
+
+        /* Card System */
+        .card { background: rgba(5,6,25,0.9); border: 1px solid var(--blue); border-radius: 18px; padding: 18px; margin-bottom: 12px; transition: 0.3s; }
+        .card:hover { border-color: var(--cyan); }
+        .card h3 { font-size: 14px; color: var(--cyan); margin-bottom: 10px; }
+        
+        /* Inputs */
+        input { width: 100%; padding: 12px; background: #000; border: 1px solid var(--blue); color: var(--yellow); border-radius: 10px; font-size: 13px; outline: none; margin-top: 5px; }
+        input:focus { border-color: var(--pink); box-shadow: 0 0 10px rgba(255,0,119,0.5); }
+        
+        /* Buttons */
+        .btn { background: linear-gradient(90deg, var(--blue), #0000aa); color: #fff; border: none; padding: 12px; border-radius: 12px; font-weight: 800; width: 100%; cursor: pointer; text-transform: uppercase; font-size: 10px; letter-spacing: 1px; margin-top: 10px; }
+        .btn-pink { background: linear-gradient(90deg, var(--pink), #aa0044); }
+        .btn:active { transform: scale(0.98); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* Navigation */
+        .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 75px; background: #000; border-top: 2px solid var(--blue); display: flex; justify-content: space-around; align-items: center; z-index: 1000; padding-bottom: env(safe-area-inset-bottom); }
+        .nav-btn { color: rgba(0,212,255,0.3); font-size: 18px; text-align: center; cursor: pointer; flex: 1; transition: 0.3s; }
+        .nav-btn.active { color: var(--yellow); text-shadow: 0 0 10px var(--yellow); }
+        .nav-btn span { display: block; font-size: 8px; font-weight: 800; margin-top: 4px; }
+
+        /* Modals */
         #gate-keeper { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
-        .gate-card { width: 90%; max-width: 380px; padding: 40px; border-radius: 30px; background: rgba(2, 3, 13, 0.95); border: 2px solid var(--blue); text-align: center; box-shadow: var(--gb); backdrop-filter: blur(20px); }
-        #main-app { display: none; position: relative; z-index: 10; flex: 1; }
-        .nav-top { background: rgba(2, 3, 13, 0.9); padding: 15px 20px; border-bottom: 2px solid var(--blue); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(15px); }
-        .panic-bar { background: var(--pink); padding: 8px; text-align: center; display: none; font-weight: 900; color: #fff; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; box-shadow: var(--gp); border-bottom: 2px solid var(--yellow); }
-        .panic-active { display: block !important; animation: blink 0.8s infinite; }
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-        .content { padding: 20px; padding-bottom: 120px; max-width: 600px; margin: auto; width: 100%; }
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-        .stat-box { background: rgba(0,0,0,0.9); border: 1px solid var(--blue); padding: 15px; border-radius: 15px; text-align: center; box-shadow: inset 0 0 15px rgba(0,34,255,0.3); }
-        .stat-box small { font-size: 9px; color: var(--pink); display: block; margin-bottom: 5px; font-weight: 800; }
-        .stat-box span { font-size: 16px; font-weight: 900; color: var(--yellow); text-shadow: var(--gy); }
-        .card { background: rgba(0,0,0,0.85); border: 1px solid var(--blue); border-radius: 20px; padding: 20px; margin-bottom: 15px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .card-label { font-size: 10px; color: var(--cyan); font-weight: 800; text-transform: uppercase; margin-bottom: 12px; display: block; }
-        input, select, textarea { width: 100%; padding: 12px; background: rgba(5, 6, 25, 0.8); border: 1px solid var(--blue); color: var(--yellow); border-radius: 10px; margin-bottom: 10px; font-family: 'Outfit'; font-size: 13px; outline: none; }
-        input:focus { border-color: var(--pink); box-shadow: var(--gp); }
-        .btn-main { background: linear-gradient(90deg, var(--blue), #001188); color: #fff; padding: 14px; border-radius: 50px; font-weight: 900; border: 1px solid var(--cyan); width: 100%; cursor: pointer; text-transform: uppercase; font-size: 11px; letter-spacing: 2px; box-shadow: var(--gb); transition: 0.2s; }
-        .btn-main:active { transform: scale(0.95); opacity: 0.8; }
-        .btn-main:disabled { opacity: 0.5; filter: grayscale(1); }
-        .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 80px; background: #000; border-top: 2px solid var(--blue); display: flex; justify-content: space-around; align-items: center; z-index: 1000; padding-bottom: env(safe-area-inset-bottom); }
-        .nav-btn { color: rgba(0, 212, 255, 0.3); font-size: 20px; text-align: center; flex: 1; cursor: pointer; }
-        .nav-btn span { display: block; font-size: 8px; margin-top: 5px; font-weight: 800; }
-        .nav-btn.active { color: var(--yellow); text-shadow: var(--gy); }
-        #alert-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:10000; align-items:center; justify-content:center; backdrop-filter:blur(15px); }
-        .alert-box { width:300px; background:#000; border:2px solid var(--pink); border-radius:25px; padding:30px; text-align:center; box-shadow: var(--gp); }
-        ::-webkit-scrollbar { width: 0; }
+        #alert-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:10000; align-items:center; justify-content:center; }
+        .alert-box { width:280px; background:#050619; border:2px solid var(--pink); border-radius:20px; padding:25px; text-align:center; }
+        
+        .panic-active { background: var(--pink) !important; animation: blink 0.5s infinite; color: white !important; font-weight: 900; }
+        @keyframes blink { 0% {opacity:1} 50% {opacity:0.5} 100% {opacity:1} }
     </style>
 </head>
-<body oncontextmenu="return false;"> 
+<body>
     <canvas id="canvas-bg"></canvas>
-    <div class="overlay"></div>
 
     <div id="gate-keeper">
-        <div class="gate-card">
-            <div style="font-family:'Cinzel Decorative'; color:var(--pink); font-size:26px; text-shadow: var(--gp);">NEON COMMAND</div>
-            <p style="font-size:8px; color:var(--blue); letter-spacing:5px; margin-bottom:30px; font-weight:800;">MASTER ACCESS</p>
-            <input type="text" id="adm-user" placeholder="SECURED ID">
-            <input type="password" id="adm-pass" placeholder="ENCRYPTED KEY">
-            <button onclick="login()" class="btn-main">INITIALIZE UPLINK</button>
+        <div style="text-align:center; width: 80%;">
+            <h1 style="font-family:'Cinzel Decorative'; color:var(--pink); margin-bottom:20px;">NEON COMMAND</h1>
+            <input type="password" id="adm-pass" placeholder="MASTER KEY" style="text-align:center;">
+            <button onclick="login()" class="btn" style="margin-top:15px;">BOOT SYSTEM</button>
         </div>
     </div>
 
-    <div id="main-app">
-        <div id="panic-alert" class="panic-bar">ENC_PROTOCOL: GLOBAL_DRAIN_ACTIVE</div>
+    <div id="main-app" style="display:none;">
         <div class="nav-top">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div>
-                    <span style="font-family:'Cinzel Decorative'; font-weight:900; color:var(--pink); font-size:18px;">SUPREME</span>
-                    <span id="live-indicator" style="font-size:8px; color:var(--cyan); display:block; font-weight:800;"><i class="fas fa-circle fa-fade"></i> SIGNAL STABLE</span>
-                </div>
-                <div id="sync-status" style="font-size:10px; color:var(--yellow); font-weight:800;">V10.9 MASTER</div>
+            <div>
+                <span style="font-family:'Cinzel Decorative'; color:var(--pink); font-size:16px;">V10.99</span>
+                <small id="signal" style="display:block; font-size:8px; color:var(--cyan);"><i class="fas fa-circle"></i> SYNCED</small>
             </div>
+            <div id="panic-btn" onclick="togglePanic()" style="padding:5px 15px; border:1px solid var(--pink); border-radius:20px; font-size:10px; cursor:pointer;">PANIC MODE</div>
         </div>
 
         <div class="content">
             <div class="stats-grid">
-                <div class="stat-box">
-                    <small>LIQUIDITY</small>
-                    <span id="stat-total-saldo">0</span>
-                </div>
-                <div class="stat-box">
-                    <small>NODES</small>
-                    <span id="stat-user-count">0</span>
-                </div>
+                <div class="stat-box"><small>TOTAL SALDO</small><span id="total-saldo">0</span></div>
+                <div class="stat-box"><small>TOTAL NODES</small><span id="total-users">0</span></div>
             </div>
 
             <div id="tab-kasir" class="page">
-                <button class="btn-main" style="background:var(--pink); border-color:var(--yellow); margin-bottom:15px;" onclick="togglePanicMode()">PANIC MODE TOGGLE</button>
-                <h3 style="font-size:10px; color:var(--cyan); margin-bottom:10px; letter-spacing:2px;">DEPOSIT & WITHDRAW</h3>
+                <h2 style="font-size:12px; color:var(--cyan); margin-bottom:15px; letter-spacing:2px;">INCOMING SIGNALS</h2>
                 <div id="list-kasir"></div>
             </div>
 
-            <div id="tab-user" class="page" style="display:none">
+            <div id="tab-user" class="page" style="display:none;">
+                <input type="text" id="user-search" placeholder="SEARCH USERNAME..." oninput="renderUsers()" style="margin-bottom:15px; border-color:var(--cyan);">
                 <div id="list-user"></div>
             </div>
 
-            <div id="tab-gift" class="page" style="display:none">
+            <div id="tab-gift" class="page" style="display:none;">
                 <div class="card">
-                    <span class="card-label">INTERNAL TRANSFER</span>
-                    <select id="gift-target"></select>
-                    <input type="number" id="gift-amount" placeholder="Nominal">
-                    <textarea id="gift-msg" placeholder="System Message..."></textarea>
-                    <button class="btn-main" onclick="sendGift()">TRANSMIT</button>
+                    <h3>GIFT / INJECT BALANCE</h3>
+                    <select id="gift-target" style="width:100%; padding:10px; background:#000; color:#fff; border:1px solid var(--blue); border-radius:10px;"></select>
+                    <input type="number" id="gift-amt" placeholder="NOMINAL IDR">
+                    <button onclick="sendGift()" class="btn">TRANSMIT BALANCE</button>
                 </div>
             </div>
         </div>
 
         <nav class="nav-bottom">
-            <div class="nav-btn active" onclick="switchTab('kasir', this)"><i class="fas fa-bolt"></i><span>KASIR</span></div>
-            <div class="nav-btn" onclick="switchTab('user', this)"><i class="fas fa-users-cog"></i><span>PLAYERS</span></div>
+            <div class="nav-btn active" onclick="switchTab('kasir', this)"><i class="fas fa-university"></i><span>KASIR</span></div>
+            <div class="nav-btn" onclick="switchTab('user', this)"><i class="fas fa-user-gear"></i><span>PLAYERS</span></div>
             <div class="nav-btn" onclick="switchTab('gift', this)"><i class="fas fa-gift"></i><span>GIFT</span></div>
-            <div class="nav-btn" onclick="logout()"><i class="fas fa-power-off"></i><span>EXIT</span></div>
+            <div class="nav-btn" onclick="location.reload()"><i class="fas fa-power-off"></i><span>EXIT</span></div>
         </nav>
     </div>
 
-    <div id="alert-modal"><div class="alert-box"><p id="alert-msg"></p><button class="btn-main" onclick="closeAlert()" style="margin-top:20px; background:var(--pink);">OK</button></div></div>
+    <div id="alert-modal"><div class="alert-box"><p id="alert-msg"></p><button onclick="closeAlert()" class="btn btn-pink">CLOSE</button></div></div>
 
 <script>
     const SUPA_URL = "https://bgffnmwrviyqpeevzjsn.supabase.co"; 
     const SUPA_KEY = "sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani"; 
     const _supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 
-    const AUTH = { u: "admin_neon", p: "master777" };
+    let allUsers = [];
+    let focusedId = null;
     let autoRefresh;
-    let focusedInputId = null;
 
     function login() {
-        if(document.getElementById('adm-user').value === AUTH.u && document.getElementById('adm-pass').value === AUTH.p) {
-            sessionStorage.setItem('access', 'granted');
+        if(document.getElementById('adm-pass').value === "master777") {
             document.getElementById('gate-keeper').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
-            drawStars();
-            initEngine(); 
-        } else { alert("WRONG KEY"); }
+            initEngine();
+        } else { alert("ACCESS DENIED"); }
     }
 
     async function initEngine() {
-        refreshAll();
-        
-        // REALTIME MONITOR
-        _supa.channel('room-sync')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-            if(!focusedInputId) refreshAll();
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'deposits' }, () => refreshAll())
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'withdrawals' }, () => refreshAll())
-        .subscribe();
-
-        // POLLING RELIABILITY (4 detik agar tidak timeout)
-        if(autoRefresh) clearInterval(autoRefresh);
-        autoRefresh = setInterval(() => {
-            if(!focusedInputId) refreshAll();
-        }, 4000);
+        fetchData();
+        // REALTIME SUBSCRIPTION
+        _supa.channel('any').on('postgres_changes', {event:'*', schema:'public'}, () => fetchData()).subscribe();
+        // AUTO REFRESH SETIAP 5 DETIK (Aman untuk traffic tinggi)
+        autoRefresh = setInterval(() => { if(!focusedId) fetchData(); }, 5000);
     }
 
-    async function refreshAll() {
-        try {
-            const { data: profiles } = await _supa.from('profiles').select('*').order('username');
-            if(profiles) {
-                document.getElementById('stat-total-saldo').innerText = profiles.reduce((a, b) => a + (b.saldo || 0), 0).toLocaleString();
-                document.getElementById('stat-user-count').innerText = profiles.length;
-                renderUsers(profiles);
-            }
-            loadKasir();
-            checkPanic();
-        } catch (e) { console.error("Sync Loss"); }
-    }
-
-    function renderUsers(data) {
-        if(focusedInputId) return;
-        const container = document.getElementById('list-user');
-        container.innerHTML = data.map(u => {
-            const isLimit = u.saldo >= u.maxwin_limit;
-            return `
-            <div class="card" style="${isLimit ? 'border:2px solid var(--pink);' : ''}">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <b style="color:var(--cyan);">${u.username.toUpperCase()}</b>
-                    <span style="color:var(--yellow); font-size:18px; font-weight:900;">${Number(u.saldo).toLocaleString()}</span>
-                </div>
-                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; margin-top:15px;">
-                    <div><small>WR %</small><input type="number" id="wr-${u.id}" value="${u.winrate}" onfocus="focusedInputId='${u.id}'" onblur="focusedInputId=null"></div>
-                    <div><small>LIMIT</small><input type="number" id="mw-${u.id}" value="${u.maxwin_limit}" onfocus="focusedInputId='${u.id}'" onblur="focusedInputId=null"></div>
-                    <div><small>MINS</small><input type="number" id="tm-${u.id}" value="${u.session_minutes}" onfocus="focusedInputId='${u.id}'" onblur="focusedInputId=null"></div>
-                </div>
-                <button class="btn-main" style="height:35px; margin-top:10px; font-size:9px;" onclick="saveUser('${u.id}', this)">FORCE SYNC NODE</button>
-            </div>`;
-        }).join('');
-    }
-
-    async function saveUser(id, btn) {
-        const wr = parseInt(document.getElementById('wr-'+id).value);
-        const mw = parseInt(document.getElementById('mw-'+id).value);
-        const tm = parseInt(document.getElementById('tm-'+id).value);
-        
-        btn.disabled = true;
-        btn.innerText = "UPLINKING...";
-
-        const { error } = await _supa.from('profiles').update({
-            winrate: wr, maxwin_limit: mw, session_minutes: tm, updated_at: new Date().toISOString()
-        }).eq('id', id);
-
-        if(!error) {
-            showAlert("SYNC SUCCESS");
-            focusedInputId = null;
-            refreshAll();
-        } else {
-            showAlert("CONNECTION TIMEOUT - RETRYING...");
-            setTimeout(() => saveUser(id, btn), 2000);
-        }
-        btn.disabled = false;
-        btn.innerText = "FORCE SYNC NODE";
-    }
-
-    async function loadKasir() {
+    async function fetchData() {
+        const { data: profiles } = await _supa.from('profiles').select('*').order('username');
         const { data: deps } = await _supa.from('deposits').select('*').eq('status', 'PROSES');
         const { data: wds } = await _supa.from('withdrawals').select('*').eq('status', 'PROSES');
-        const cont = document.getElementById('list-kasir');
+        const { data: conf } = await _supa.from('system_config').select('*').eq('id', 1).single();
+
+        if(profiles) {
+            allUsers = profiles;
+            document.getElementById('total-saldo').innerText = profiles.reduce((a,b)=>a+(b.saldo||0),0).toLocaleString();
+            document.getElementById('total-users').innerText = profiles.length;
+            renderUsers();
+        }
+        renderKasir(deps, wds);
+        updatePanicUI(conf.panic_mode);
+    }
+
+    function renderUsers() {
+        if(focusedId) return;
+        const search = document.getElementById('user-search').value.toLowerCase();
+        const container = document.getElementById('list-user');
+        const filtered = allUsers.filter(u => u.username.toLowerCase().includes(search));
         
+        container.innerHTML = filtered.map(u => `
+            <div class="card" style="${u.saldo >= u.maxwin_limit ? 'border-color:var(--pink);' : ''}">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <b>${u.username.toUpperCase()}</b>
+                    <span style="color:var(--yellow); font-weight:900;">${(u.saldo||0).toLocaleString()}</span>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:15px;">
+                    <div><small>WINRATE %</small><input type="number" id="wr-${u.id}" value="${u.winrate}" onfocus="focusedId='${u.id}'" onblur="focusedId=null"></div>
+                    <div><small>MAXWIN LIMIT</small><input type="number" id="mw-${u.id}" value="${u.maxwin_limit}" onfocus="focusedId='${u.id}'" onblur="focusedId=null"></div>
+                </div>
+                <button class="btn" onclick="updateNode('${u.id}', this)">SYNC PLAYER NODE</button>
+            </div>
+        `).join('');
+    }
+
+    async function updateNode(id, btn) {
+        btn.disabled = true; btn.innerText = "SYNCING...";
+        const wr = document.getElementById('wr-'+id).value;
+        const mw = document.getElementById('mw-'+id).value;
+        
+        const { error } = await _supa.from('profiles').update({ 
+            winrate: wr, maxwin_limit: mw, updated_at: new Date() 
+        }).eq('id', id);
+
+        if(!error) { showAlert("SYNC SUCCESS"); fetchData(); }
+        else { showAlert("CONNECTION ERROR"); }
+        btn.disabled = false; btn.innerText = "SYNC PLAYER NODE";
+    }
+
+    function renderKasir(deps, wds) {
+        const cont = document.getElementById('list-kasir');
         let html = '';
-        if(deps) html += deps.map(d => `
-            <div class="card" style="border-left:5px solid var(--cyan);">
-                <small style="color:var(--cyan)">INCOMING DEPO</small>
+        
+        if(deps) deps.forEach(d => {
+            html += `<div class="card" style="border-left:5px solid var(--cyan);">
+                <small style="color:var(--cyan)">DEPOSIT REQUEST</small>
                 <h3>${d.username}</h3>
                 <h2 style="color:var(--yellow)">IDR ${d.net_receive.toLocaleString()}</h2>
-                <button class="btn-main" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive})">APPROVE</button>
-            </div>`).join('');
-            
-        if(wds) html += wds.map(w => `
-            <div class="card" style="border-left:5px solid var(--pink);">
-                <small style="color:var(--pink)">OUTGOING WITHDRAW</small>
+                <button class="btn" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive})">APPROVE DEPO</button>
+            </div>`;
+        });
+
+        if(wds) wds.forEach(w => {
+            html += `<div class="card" style="border-left:5px solid var(--pink);">
+                <small style="color:var(--pink)">WITHDRAWAL REQUEST</small>
                 <h3>${w.username}</h3>
                 <h2 style="color:var(--yellow)">IDR ${w.nominal.toLocaleString()}</h2>
-                <div style="font-size:10px; margin-bottom:10px;">${w.bank_name} - ${w.acc_number}</div>
-                <button class="btn-main" style="background:var(--pink)" onclick="approveWD('${w.id}')">COMPLETE WD</button>
-            </div>`).join('');
+                <p style="font-size:10px; margin:5px 0;">${w.bank_name} - ${w.acc_number}</p>
+                <button class="btn btn-pink" onclick="approveWD('${w.id}')">COMPLETE WD</button>
+            </div>`;
+        });
 
-        cont.innerHTML = html || '<p style="text-align:center; opacity:0.3; font-size:10px;">NO ACTIVE SIGNALS</p>';
+        cont.innerHTML = html || '<p style="text-align:center; opacity:0.3; font-size:10px;">NO ACTIVE REQUESTS</p>';
     }
 
     async function approveDepo(id, user, amt) {
-        await _supa.from('deposits').update({ status: 'SUKSES' }).eq('id', id);
+        await _supa.from('deposits').update({status:'SUKSES'}).eq('id', id);
         const { data } = await _supa.from('profiles').select('saldo').eq('username', user).single();
-        await _supa.from('profiles').update({ saldo: (data.saldo || 0) + amt, updated_at: new Date().toISOString() }).eq('username', user);
-        refreshAll();
+        await _supa.from('profiles').update({saldo: (data.saldo||0) + amt}).eq('username', user);
+        fetchData();
     }
 
     async function approveWD(id) {
-        await _supa.from('withdrawals').update({ status: 'SUKSES' }).eq('id', id);
-        showAlert("WITHDRAWAL COMPLETED");
-        refreshAll();
+        await _supa.from('withdrawals').update({status:'SUKSES'}).eq('id', id);
+        showAlert("WD PROCESSED");
+        fetchData();
     }
 
-    async function sendGift() {
-        const t = document.getElementById('gift-target').value;
-        const a = document.getElementById('gift-amount').value;
-        if(!t || !a) return;
-        await _supa.from('inbox').insert([{ username: t, nominal: Number(a), pesan: document.getElementById('gift-msg').value || "SYS_TRANS", status: 'UNCLAIMED' }]);
-        showAlert("GIFT SENT");
-        document.getElementById('gift-amount').value = "";
-    }
-
-    async function togglePanicMode() {
+    async function togglePanic() {
         const { data } = await _supa.from('system_config').select('panic_mode').eq('id', 1).single();
         const next = !data.panic_mode;
-        await _supa.from('system_config').update({ panic_mode: next }).eq('id', 1);
-        await _supa.from('profiles').update({ panic_mode: next });
-        showAlert("PANIC MODE: " + (next ? "ON" : "OFF"));
-        refreshAll();
+        await _supa.from('system_config').update({panic_mode: next}).eq('id', 1);
+        await _supa.from('profiles').update({panic_mode: next});
+        fetchData();
+    }
+
+    function updatePanicUI(isPanic) {
+        const btn = document.getElementById('panic-btn');
+        if(isPanic) { btn.innerText = "PANIC ON"; btn.classList.add('panic-active'); }
+        else { btn.innerText = "PANIC OFF"; btn.classList.remove('panic-active'); }
     }
 
     function switchTab(t, el) {
@@ -274,38 +243,30 @@
         document.getElementById('tab-'+t).style.display = 'block';
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         el.classList.add('active');
-        if(t === 'gift') loadGiftOptions();
+        if(t === 'gift') {
+            document.getElementById('gift-target').innerHTML = allUsers.map(u => `<option value="${u.username}">${u.username}</option>`).join('');
+        }
     }
 
-    async function loadGiftOptions() {
-        const { data } = await _supa.from('profiles').select('username');
-        if(data) document.getElementById('gift-target').innerHTML = data.map(u => `<option value="${u.username}">${u.username.toUpperCase()}</option>`).join('');
-    }
-
-    function checkPanic() {
-        _supa.from('system_config').select('panic_mode').eq('id', 1).single().then(({data}) => {
-            if(data) document.getElementById('panic-alert').className = data.panic_mode ? 'panic-bar panic-active' : 'panic-bar';
-        });
+    async function sendGift() {
+        const t = document.getElementById('gift-target').value;
+        const a = document.getElementById('gift-amt').value;
+        await _supa.from('inbox').insert([{ username: t, nominal: Number(a), pesan: "SYSTEM GIFT", status: 'UNCLAIMED' }]);
+        showAlert("GIFT TRANSMITTED");
     }
 
     function showAlert(m) { document.getElementById('alert-msg').innerText = m; document.getElementById('alert-modal').style.display = 'flex'; }
     function closeAlert() { document.getElementById('alert-modal').style.display = 'none'; }
-    function logout() { sessionStorage.clear(); location.reload(); }
-
-    function drawStars() {
-        const c = document.getElementById('canvas-bg'); const x = c.getContext('2d');
-        c.width = window.innerWidth; c.height = window.innerHeight;
-        let s = [];
-        for(let i=0; i<85; i++) s.push({x:Math.random()*c.width, y:Math.random()*c.height, r:Math.random()*1.5, sp:Math.random()*0.3+0.1});
-        function anim() {
-            x.clearRect(0,0,c.width,c.height);
-            x.fillStyle = "rgba(0, 212, 255, 0.6)";
-            s.forEach(p => { x.beginPath(); x.arc(p.x, p.y, p.r, 0, 7); x.fill(); p.y += p.sp; if(p.y > c.height) p.y = -5; });
-            requestAnimationFrame(anim);
-        }
-        anim();
-    }
-    window.onload = () => { if(sessionStorage.getItem('access')) login(); };
+    
+    // Background Animation
+    const c = document.getElementById('canvas-bg'); const x = c.getContext('2d');
+    c.width = window.innerWidth; c.height = window.innerHeight;
+    let s = []; for(let i=0; i<50; i++) s.push({x:Math.random()*c.width, y:Math.random()*c.height, r:Math.random()*1, sp:Math.random()*0.5});
+    function anim() {
+        x.clearRect(0,0,c.width,c.height); x.fillStyle = "#00d4ff";
+        s.forEach(p => { x.beginPath(); x.arc(p.x, p.y, p.r, 0, 7); x.fill(); p.y += p.sp; if(p.y > c.height) p.y = -5; });
+        requestAnimationFrame(anim);
+    } anim();
 </script>
 </body>
 </html>
