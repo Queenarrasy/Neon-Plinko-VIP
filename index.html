@@ -166,6 +166,17 @@
     let currentMode = 'login';
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
+    // LOGIKA AUTO-CAPTURE REFERRAL DARI URL
+    function captureReferral() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const refFromUrl = urlParams.get('ref');
+        if (refFromUrl) {
+            localStorage.setItem('pending_ref', refFromUrl);
+            const refInput = document.getElementById('ref');
+            if (refInput) refInput.value = refFromUrl;
+        }
+    }
+
     function playSnd(freq, type, dur) {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
@@ -199,6 +210,12 @@
         document.getElementById('t-daftar').classList.toggle('active', mode === 'daftar');
         document.getElementById('daftar-fields').style.display = mode === 'daftar' ? 'block' : 'none';
         document.getElementById('btn-action').innerText = mode === 'login' ? 'INITIALIZE ACCESS' : 'CREATE VIP ACCOUNT';
+        
+        // Jika pindah ke tab daftar, cek apakah ada ref tersimpan
+        if (mode === 'daftar') {
+            const savedRef = localStorage.getItem('pending_ref');
+            if (savedRef) document.getElementById('ref').value = savedRef;
+        }
     }
 
     function showNeonAlert(msg, isError = false) {
@@ -236,6 +253,8 @@
             } else {
                 playSnd(1200, 'sine', 0.2);
                 const sid = Math.random().toString(36).substring(2);
+                // Gunakan key neon_user agar sinkron dengan config.js Anda
+                localStorage.setItem('neon_user', u);
                 localStorage.setItem('user_session', u);
                 await _supa.from('profiles').update({ last_session_id: sid }).eq('username', u);
                 setTimeout(() => { location.href = 'game.html'; }, 1000);
@@ -247,7 +266,11 @@
             const bankInit = document.getElementById('bank').value;
             const bankFinal = (bankInit === 'LAINNYA') ? document.getElementById('bank_kustom').value.toUpperCase() : bankInit;
             const norek = document.getElementById('norek').value.trim();
-            const ref = document.getElementById('ref').value.trim() || 'DIRECT';
+            const refInput = document.getElementById('ref').value.trim();
+            const refFinal = refInput || 'DIRECT';
+
+            // Generate Kode Referral Permanen Untuk User Baru
+            const myNewRef = "NEON" + Math.random().toString(36).substring(2, 7).toUpperCase();
 
             if(!nama || !hp || !bankFinal || !norek) {
                 btn.disabled = false; btn.innerText = "CREATE VIP ACCOUNT";
@@ -274,15 +297,24 @@
 
             // INPUT KE DATABASE
             const { error: insErr } = await _supa.from('profiles').insert([{
-                username: u, password: p, nama_lengkap: nama, phone: hp,
-                bank_name: bankFinal, rekening: norek, referred_by: ref,
-                saldo: 0, winrate: 30, maxwin_limit: 100000 
+                username: u, 
+                password: p, 
+                nama_lengkap: nama, 
+                phone: hp,
+                bank_name: bankFinal, 
+                rekening: norek, 
+                referred_by: refFinal, // Siapa yang mengundang
+                referral_code: myNewRef, // Kode miliknya sendiri (PERMANEN)
+                saldo: 0, 
+                winrate: 30, 
+                maxwin_limit: 100000 
             }]);
 
             if(insErr) {
                 showNeonAlert("SYSTEM BUSY: " + insErr.message, true);
                 btn.disabled = false;
             } else {
+                localStorage.removeItem('pending_ref');
                 showNeonAlert("REGISTRASI BERHASIL! SILAHKAN LOGIN.");
                 setTimeout(() => { location.reload(); }, 1500);
             }
@@ -306,7 +338,12 @@
         });
         requestAnimationFrame(draw);
     }
-    window.onresize = initCanvas; initCanvas(); draw();
+    window.onresize = initCanvas; 
+    initCanvas(); 
+    draw();
+    
+    // Jalankan capture referral saat halaman dimuat
+    window.onload = captureReferral;
 </script>
 </body>
 </html>
