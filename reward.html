@@ -27,7 +27,7 @@
           min-height: 100vh; overflow-x: hidden;
         }
 
-        /* Latar belakang partikel agar tembus kotak transparan */
+        /* Latar belakang partikel menembus kotak transparan */
         #bg-canvas {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 1; opacity: 0.5; pointer-events: none;
@@ -62,19 +62,14 @@
         .prize-item { font-size: 10px; font-weight: 800; color: #fff; }
         .prize-item b { display: block; font-size: 20px; color: var(--yellow); margin-top: 5px; text-shadow: var(--shadow-y); }
 
-        /* BINGKAI INCOMING GIFT - TEBAL & KUNING NEON */
+        /* BINGKAI INCOMING GIFT TEBAL KUNING NEON */
         .mail-list { display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px; }
         .mail-item {
-          background: rgba(251, 255, 0, 0.07); 
-          border: 3px solid var(--yellow); 
+          background: rgba(251, 255, 0, 0.05); 
+          border: 4px solid var(--yellow); /* TEBAL */
           border-radius: 20px; padding: 18px; 
-          box-shadow: var(--shadow-y);
+          box-shadow: var(--shadow-y), inset 0 0 15px rgba(251, 255, 0, 0.1);
           backdrop-filter: blur(6px);
-          animation: glowYellow 2s infinite alternate;
-        }
-        @keyframes glowYellow {
-            from { box-shadow: 0 0 10px rgba(251, 255, 0, 0.4); }
-            to { box-shadow: 0 0 20px rgba(251, 255, 0, 0.7); }
         }
 
         /* Card Styles */
@@ -174,7 +169,7 @@
 
     <div class="section-title"><i class="fas fa-gift fa-fade"></i> INCOMING GIFTS</div>
     <div id="mail-list" class="mail-list">
-        <div style="text-align:center; opacity:0.5; padding:20px; color:var(--yellow); font-size:12px;">Checking Inbox...</div>
+        <div style="text-align:center; opacity:0.5; padding:20px; color:var(--yellow);">Checking Gifts...</div>
     </div>
 
     <div class="card" style="border-color: var(--pink); box-shadow: var(--shadow-p);">
@@ -205,7 +200,7 @@
     <div class="modal">
         <i class="fas fa-bolt" style="font-size:45px; color:var(--yellow); margin-bottom:20px;"></i>
         <h3 id="m-title" style="color:var(--pink); font-family:'Cinzel Decorative';"></h3>
-        <p id="m-msg" style="margin:20px 0; font-size:15px; color:#fff; line-height:1.5;"></p>
+        <p id="m-msg" style="margin:20px 0; font-size:15px; color:#fff;"></p>
         <button class="btn-main" onclick="closeModal()">OK</button>
     </div>
 </div>
@@ -218,10 +213,10 @@
 </nav>
 
 <script>
-// Ambil username dari localStorage
-const USERNAME = localStorage.getItem('neon_user');
+// Mengambil username yang konsisten dengan config.js
+const USERNAME = getUsername();
 
-// --- BACKGROUND PARTICLES ---
+// --- ANIMASI BACKGROUND ---
 const canvas = document.getElementById('bg-canvas');
 const ctx = canvas.getContext('2d');
 let particles = [];
@@ -260,39 +255,11 @@ function playSnd(id) {
     if(s) { s.currentTime = 0; s.play().catch(()=>{}); } 
 }
 
-// --- CORE SYSTEM (FIXED REFERRAL) ---
-async function init() {
-    if(!USERNAME) { 
-        window.location.href = 'index.html'; 
-        return; 
-    }
-    
-    // Tunggu Supabase Instance Ready
-    if (typeof _supabase === 'undefined') {
-        setTimeout(init, 500); // Retry jika Supabase belum load
-        return;
-    }
+// --- FUNGSI REWARD (INTEGRASI SUPABASE) ---
+async function initReward() {
+    if(!USERNAME) return;
 
-    try {
-        // Fetch User Profile untuk kode referral
-        const { data: profile, error } = await _supabase
-            .from('profiles')
-            .select('referral_code')
-            .eq('username', USERNAME)
-            .single();
-
-        if(error) throw error;
-
-        if(profile && profile.referral_code) {
-            document.getElementById('ref-code').innerText = profile.referral_code;
-        } else {
-            document.getElementById('ref-code').innerText = "NO_CODE";
-        }
-    } catch (e) {
-        console.error("Referral Fetch Error:", e);
-        document.getElementById('ref-code').innerText = "ERROR_DB";
-    }
-    
+    // Load Data Referal & Inbox
     loadReferralStats();
     loadInbox();
 }
@@ -300,32 +267,22 @@ async function init() {
 async function loadReferralStats() {
     const histContainer = document.getElementById('history-list');
     try {
-        const { data: friends } = await _supabase
-            .from('profiles')
-            .select('username, created_at')
-            .eq('invited_by', USERNAME)
-            .order('created_at', { ascending: false });
+        const { data: friends } = await _supabase.from('profiles').select('username, created_at').eq('invited_by', USERNAME).order('created_at', { ascending: false });
         
         if(!friends || friends.length === 0) {
-            histContainer.innerHTML = '<div style="text-align:center; opacity:0.4; padding:20px; font-size:12px; color:var(--yellow);">No referrals yet</div>';
+            histContainer.innerHTML = '<div style="text-align:center; opacity:0.4; padding:20px; color:var(--yellow);">No referrals yet</div>';
             return;
         }
 
         const uNames = friends.map(f => f.username);
-        const { data: vDepo } = await _supabase
-            .from('deposits')
-            .select('username')
-            .in('username', uNames)
-            .eq('status', 'SUKSES')
-            .gte('amount', 20000);
-
+        const { data: vDepo } = await _supabase.from('deposits').select('username').in('username', uNames).eq('status', 'SUKSES').gte('amount', 20000);
         const valids = new Set(vDepo.map(d => d.username));
 
         document.getElementById('valid-ref').innerText = valids.size;
         const bonus = valids.size * 5000;
         document.getElementById('bonus-ref').innerText = "Rp " + bonus.toLocaleString();
 
-        // Aktifkan klaim hanya di hari Minggu (0)
+        // Klaim Mingguan Aktif di Hari Minggu
         if(new Date().getDay() === 0 && bonus > 0) {
             const b = document.getElementById('btn-claim-ref');
             b.disabled = false; 
@@ -343,35 +300,26 @@ async function loadReferralStats() {
                 </div>
             `;
         }).join('');
-    } catch (err) {
-        histContainer.innerHTML = '<div style="text-align:center; color:red; padding:20px;">Load Error</div>';
-    }
+    } catch (e) { console.error(e); }
 }
 
 async function loadInbox() {
     const list = document.getElementById('mail-list');
     try {
-        const { data } = await _supabase
-            .from('inbox')
-            .select('*')
-            .eq('username', USERNAME)
-            .eq('status', 'UNCLAIMED');
-
+        const { data } = await _supabase.from('inbox').select('*').eq('username', USERNAME).eq('status', 'UNCLAIMED');
         if(data && data.length > 0) {
             list.innerHTML = data.map(m => `
                 <div class="mail-item">
-                    <div style="font-size:11px; color:var(--pink); margin-bottom:6px; font-weight:900; letter-spacing:1px;">NEON VIP GIFT</div>
-                    <div style="font-size:14px; margin-bottom:12px; color:#fff; opacity:0.9;">${m.pesan}</div>
+                    <div style="font-size:11px; color:var(--pink); margin-bottom:6px; font-weight:900;">VIP NEON GIFT</div>
+                    <div style="font-size:14px; margin-bottom:12px; color:#fff;">${m.pesan}</div>
                     <div style="color:var(--yellow); font-weight:900; font-size:20px; margin-bottom:15px; text-shadow:var(--shadow-y);">Rp ${m.nominal.toLocaleString()}</div>
-                    <button class="btn-main" onclick="claimMail(${m.id}, ${m.nominal})">REDEEM GIFT</button>
+                    <button class="btn-main" onclick="claimMail(${m.id}, ${m.nominal})">REDEEM NOW</button>
                 </div>
             `).join('');
         } else {
-            list.innerHTML = '<div style="text-align:center; opacity:0.4; padding:25px; font-size:12px; border:2px dashed var(--yellow); border-radius:20px; color:var(--yellow);">Inbox Empty</div>';
+            list.innerHTML = '<div style="text-align:center; opacity:0.4; padding:25px; font-size:12px; border:2px dashed var(--yellow); border-radius:20px; color:var(--yellow);">Inbox Kosong</div>';
         }
-    } catch (err) {
-        list.innerHTML = 'Error Loading Gifts';
-    }
+    } catch (e) { console.error(e); }
 }
 
 async function claimMail(id, amt) {
@@ -381,9 +329,10 @@ async function claimMail(id, amt) {
         await _supabase.from('profiles').update({ saldo: p.saldo + amt }).eq('username', USERNAME);
         await _supabase.from('inbox').update({ status: 'CLAIMED' }).eq('id', id);
         playSnd('snd-success');
-        showModal("REDEEMED", "Bonus masuk ke saldo utama!");
+        showModal("REDEEMED", "Bonus Rp " + amt.toLocaleString() + " telah ditambahkan ke saldo!");
+        syncNeonData(); // Sinkron ulang saldo
         loadInbox();
-    } catch (e) { alert("Claim Failed"); }
+    } catch (e) { alert("Redeem Gagal"); }
 }
 
 async function processRefClaim() {
@@ -393,43 +342,33 @@ async function processRefClaim() {
         const uList = friends.map(f => f.username);
         const { data: vDepo } = await _supabase.from('deposits').select('username').in('username', uList).eq('status', 'SUKSES').gte('amount', 20000);
         const validCount = [...new Set(vDepo.map(d => d.username))].length;
-        
         const bonus = validCount * 5000;
-        const { data: p } = await _supabase.from('profiles').select('saldo').eq('username', USERNAME).single();
         
+        const { data: p } = await _supabase.from('profiles').select('saldo').eq('username', USERNAME).single();
         await _supabase.from('profiles').update({ saldo: p.saldo + bonus }).eq('username', USERNAME);
-        await _supabase.from('deposits').insert([{ 
-            username: USERNAME, amount: bonus, method: 'REFERRAL', 
-            status: 'SUKSES', net_receive: bonus, keterangan: 'REF_WEEKLY' 
-        }]);
+        await _supabase.from('deposits').insert([{ username: USERNAME, amount: bonus, method: 'REFERRAL', status: 'SUKSES', net_receive: bonus, keterangan: 'REF_WEEKLY' }]);
         
         playSnd('snd-success');
-        showModal("SUCCESS", "Bonus mingguan berhasil dicairkan!");
+        showModal("SUCCESS", "Bonus Referral Mingguan Rp " + bonus.toLocaleString() + " Berhasil Dicairkan!");
+        syncNeonData();
         loadReferralStats();
-    } catch (e) { alert("Claim Weekly Failed"); }
+    } catch (e) { alert("Klaim Gagal"); }
 }
 
 function copyRef() { 
     playSnd('snd-click'); 
     const code = document.getElementById('ref-code').innerText;
-    if(code !== "REFRESHING..." && code !== "ERROR_DB") {
+    if(code !== "REFRESHING...") {
         navigator.clipboard.writeText(code); 
-        showModal("COPIED", "Kode Referral disalin!"); 
+        showModal("COPIED", "Kode Referral disalin ke clipboard!"); 
     }
 }
 
-function showModal(t, m) { 
-    document.getElementById('m-title').innerText = t; 
-    document.getElementById('m-msg').innerText = m; 
-    document.getElementById('modal-overlay').style.display = 'flex'; 
-}
-function closeModal() { 
-    playSnd('snd-click'); 
-    document.getElementById('modal-overlay').style.display = 'none'; 
-}
+function showModal(t, m) { document.getElementById('m-title').innerText = t; document.getElementById('m-msg').innerText = m; document.getElementById('modal-overlay').style.display = 'flex'; }
+function closeModal() { playSnd('snd-click'); document.getElementById('modal-overlay').style.display = 'none'; }
 
-// Jalankan sistem saat window siap
-window.onload = init;
+// Jalankan inisialisasi reward
+window.addEventListener('load', initReward);
 </script>
 </body>
 </html>
