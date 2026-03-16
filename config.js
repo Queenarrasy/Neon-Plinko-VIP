@@ -1,6 +1,6 @@
 /**
  * ============================================================
- * NEON PLINKO VIP — CENTRAL ENGINE (STABILIZED)
+ * NEON PLINKO VIP — CENTRAL ENGINE (STABILIZED & REINFORCED)
  * ============================================================
  */
 
@@ -18,7 +18,6 @@ const NEON_CONFIG = {
 
 /**
  * Mengambil username dari storage.
- * Prioritas utama pada 'neon_user' agar sinkron dengan reward.html
  */
 function getUsername() {
     return localStorage.getItem('neon_user') || 
@@ -35,7 +34,7 @@ function formatIDR(amount) {
 
 /**
  * Sinkronisasi Data User & UI secara Real-time
- * Fungsi ini akan otomatis mencari elemen ID di HTML dan mengisinya
+ * DIPERKUAT: Menangani kasus kolom kosong atau data lambat
  */
 async function syncNeonData() {
     const user = getUsername();
@@ -49,10 +48,14 @@ async function syncNeonData() {
             .single();
             
         if (data && !error) {
-            // Simpan saldo di cache untuk akses cepat
+            // Simpan saldo di cache
             localStorage.setItem('cached_saldo', data.saldo);
             
-            // Pemetaan Data ke ID HTML (Otomatis Update UI)
+            // --- LOGIKA REINFORCED UNTUK REFERRAL ---
+            // Cek semua kemungkinan nama kolom jika referral_code null
+            const validRef = data.referral_code || data.ref_code || data.kode_referral;
+            
+            // Pemetaan Data ke ID HTML
             const uiElements = {
                 'saldo-text': formatIDR(data.saldo),
                 'display-saldo': formatIDR(data.saldo),
@@ -60,7 +63,8 @@ async function syncNeonData() {
                 'wd-saldo': formatIDR(data.saldo),
                 'display-username': data.username,
                 'header-username': data.username,
-                'ref-code': data.referral_code || "BELUM_SET"
+                // Jika masih kosong di DB, gunakan username sebagai kode (Fallback)
+                'ref-code': validRef || user.toUpperCase()
             };
 
             for (const [id, value] of Object.entries(uiElements)) {
@@ -69,14 +73,19 @@ async function syncNeonData() {
                     if (el.tagName === 'INPUT') {
                         el.value = value;
                     } else {
+                        // Tambahkan efek kilau jika data baru masuk
+                        if(el.textContent === "REFRESHING..." || el.textContent === "BELUM_SET") {
+                            el.style.color = "#fbff00"; 
+                        }
                         el.textContent = value;
                     }
                 }
             }
 
-            // Jalankan fungsi loadHistory atau loadInbox jika ada di halaman tersebut
             if (typeof loadHistory === "function") loadHistory();
             if (typeof loadInbox === "function") loadInbox();
+        } else if (error) {
+            console.error("Supabase Error:", error.message);
         }
     } catch (err) { 
         console.warn("Connection lost. Retrying sync..."); 
@@ -84,34 +93,29 @@ async function syncNeonData() {
 }
 
 /**
- * Proteksi Halaman: Mencegah user masuk tanpa login
+ * Proteksi Halaman & Auto Init
  */
 document.addEventListener('DOMContentLoaded', () => {
     const user = getUsername();
     const currentPath = window.location.pathname.split("/").pop();
     
-    // Daftar halaman yang boleh dibuka tanpa login
     const publicPages = ['index.html', 'login.html', 'register.html', '']; 
     const isPublic = publicPages.includes(currentPath);
 
     if (!user && !isPublic) {
-        // Jika tidak ada user dan bukan halaman publik, tendang ke login
         window.location.href = 'index.html';
         return;
     }
 
     if (user) {
-        // Sinkron pertama kali saat halaman terbuka
+        // Jalankan sinkron segera
         syncNeonData();
         
-        // Loop sinkronisasi setiap 5 detik agar saldo & referral selalu update
+        // Loop sinkronisasi setiap 5 detik
         setInterval(syncNeonData, 5000);
     }
 });
 
-/**
- * Fungsi Logout Global
- */
 function logout() {
     localStorage.clear();
     window.location.href = 'index.html';
