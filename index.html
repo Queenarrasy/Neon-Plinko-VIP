@@ -25,7 +25,7 @@
         .overlay { position: absolute; inset: 0; background: radial-gradient(circle at center, transparent, var(--bg) 95%); z-index: 1; }
 
         .login-card {
-            width: 92%; max-width: 400px; padding: 30px;
+            width: 92%; max-width: 420px; padding: 30px;
             background: rgba(5, 6, 25, 0.7); backdrop-filter: blur(25px);
             border: 2px solid var(--blue); border-radius: 40px;
             text-align: center; z-index: 10; position: relative;
@@ -46,7 +46,8 @@
         .tab.active { background: linear-gradient(135deg, var(--blue), #001188); color: #fff; box-shadow: var(--gb); }
 
         .input-group { position: relative; margin-bottom: 12px; }
-        .input-group i { position: absolute; left: 18px; top: 15px; color: var(--yellow); font-size: 16px; text-shadow: var(--gy); }
+        .input-group i.main-icon { position: absolute; left: 18px; top: 15px; color: var(--yellow); font-size: 16px; text-shadow: var(--gy); }
+        .input-group .eye-btn { position: absolute; right: 18px; top: 15px; color: var(--blue); cursor: pointer; z-index: 5; }
         
         input, select {
             width: 100%; padding: 14px 15px 14px 50px; background: rgba(0,0,0,0.8);
@@ -64,8 +65,7 @@
         }
         .btn-glow:active { transform: scale(0.96); }
 
-        /* Custom Neon Modal */
-        #neon-modal { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.9); align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+        #neon-modal { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.95); align-items: center; justify-content: center; backdrop-filter: blur(10px); }
         .modal-box { width: 85%; max-width: 320px; background: #050614; border: 2px solid var(--pink); border-radius: 30px; padding: 30px; text-align: center; box-shadow: var(--gp); animation: zoomIn 0.3s ease; }
         @keyframes zoomIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         .modal-icon { font-size: 50px; color: var(--yellow); margin-bottom: 15px; text-shadow: var(--gy); }
@@ -73,6 +73,8 @@
 
         .footer-links { margin-top: 25px; font-size: 11px; font-weight: 700; }
         .footer-links a { color: var(--yellow); text-decoration: none; text-shadow: var(--gy); }
+        
+        .pass-hint { font-size: 10px; color: var(--pink); text-align: left; margin: -8px 0 10px 10px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -93,23 +95,29 @@
 
         <div id="form-container">
             <div class="input-group">
-                <i class="fas fa-user-astronaut"></i>
+                <i class="fas fa-user-astronaut main-icon"></i>
                 <input type="text" id="user" placeholder="USERNAME" autocomplete="off">
             </div>
 
             <div class="input-group">
-                <i class="fas fa-key"></i>
+                <i class="fas fa-key main-icon"></i>
                 <input type="password" id="pass" placeholder="PASSWORD">
+                <i class="fas fa-eye eye-btn" id="togglePass" onclick="togglePassword()"></i>
             </div>
 
             <div id="daftar-fields" style="display: none;">
+                <p class="pass-hint">* Password Min. 6 Karakter (Huruf & Angka)</p>
                 <div class="input-group">
-                    <i class="fas fa-id-card"></i>
+                    <i class="fas fa-id-card main-icon"></i>
                     <input type="text" id="nama" placeholder="NAMA SESUAI REKENING">
                 </div>
                 <div class="input-group">
-                    <i class="fas fa-university"></i>
-                    <select id="bank">
+                    <i class="fas fa-phone main-icon"></i>
+                    <input type="number" id="hp" placeholder="NOMOR HANDPHONE">
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-university main-icon"></i>
+                    <select id="bank" onchange="checkBank()">
                         <option value="" disabled selected>PILIH BANK / WALLET</option>
                         <option value="DANA">DANA</option>
                         <option value="GOPAY">GOPAY</option>
@@ -117,14 +125,19 @@
                         <option value="BCA">BANK BCA</option>
                         <option value="BRI">BANK BRI</option>
                         <option value="MANDIRI">BANK MANDIRI</option>
+                        <option value="LAINNYA">BANK LAINNYA</option>
                     </select>
                 </div>
-                <div class="input-group">
-                    <i class="fas fa-credit-card"></i>
-                    <input type="number" id="norek" placeholder="NOMOR REKENING / HP">
+                <div class="input-group" id="bank-kustom-box" style="display:none;">
+                    <i class="fas fa-edit main-icon"></i>
+                    <input type="text" id="bank_kustom" placeholder="MASUKKAN NAMA BANK">
                 </div>
                 <div class="input-group">
-                    <i class="fas fa-users-rays"></i>
+                    <i class="fas fa-credit-card main-icon"></i>
+                    <input type="number" id="norek" placeholder="NOMOR REKENING / E-WALLET">
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-users-rays main-icon"></i>
                     <input type="text" id="ref" placeholder="KODE REFERRAL (OPSIONAL)">
                 </div>
             </div>
@@ -151,9 +164,8 @@
     const _supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 
     let currentMode = 'login';
-
-    // --- SOUND ENGINE ---
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
     function playSnd(freq, type, dur) {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
@@ -162,6 +174,22 @@
         gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + dur);
         osc.connect(gain); gain.connect(audioCtx.destination);
         osc.start(); osc.stop(audioCtx.currentTime + dur);
+    }
+
+    function togglePassword() {
+        playSnd(600, 'sine', 0.1);
+        const p = document.getElementById('pass');
+        const icon = document.getElementById('togglePass');
+        if (p.type === "password") {
+            p.type = "text"; icon.classList.replace('fa-eye', 'fa-eye-slash');
+        } else {
+            p.type = "password"; icon.classList.replace('fa-eye-slash', 'fa-eye');
+        }
+    }
+
+    function checkBank() {
+        const val = document.getElementById('bank').value;
+        document.getElementById('bank-kustom-box').style.display = (val === 'LAINNYA') ? 'block' : 'none';
     }
 
     function switchTab(mode) {
@@ -185,6 +213,11 @@
         document.getElementById('neon-modal').style.display = 'none';
     }
 
+    function validatePass(p) {
+        const regex = /^(?=.*[a-zA-Z])(?=.*[0-9]).{6,}$/;
+        return regex.test(p);
+    }
+
     async function handleAuth() {
         const u = document.getElementById('user').value.toLowerCase().trim();
         const p = document.getElementById('pass').value.trim();
@@ -193,11 +226,10 @@
         if(!u || !p) return showNeonAlert("DATA TIDAK LENGKAP!", true);
 
         btn.disabled = true;
-        btn.innerText = "CONNECTING...";
+        btn.innerText = "PROCESSING...";
 
         if(currentMode === 'login') {
             const { data, error } = await _supa.from('profiles').select('*').eq('username', u).eq('password', p).single();
-
             if (error || !data) {
                 showNeonAlert("USERNAME / PASSWORD SALAH!", true);
                 btn.disabled = false; btn.innerText = "INITIALIZE ACCESS";
@@ -205,69 +237,76 @@
                 playSnd(1200, 'sine', 0.2);
                 const sid = Math.random().toString(36).substring(2);
                 localStorage.setItem('user_session', u);
-                localStorage.setItem('local_sid', sid);
                 await _supa.from('profiles').update({ last_session_id: sid }).eq('username', u);
-                
-                btn.innerText = "ACCESS GRANTED!";
                 setTimeout(() => { location.href = 'game.html'; }, 1000);
             }
         } else {
+            // PROSES DAFTAR
             const nama = document.getElementById('nama').value.toUpperCase().trim();
-            const bank = document.getElementById('bank').value;
+            const hp = document.getElementById('hp').value.trim();
+            const bankInit = document.getElementById('bank').value;
+            const bankFinal = (bankInit === 'LAINNYA') ? document.getElementById('bank_kustom').value.toUpperCase() : bankInit;
             const norek = document.getElementById('norek').value.trim();
             const ref = document.getElementById('ref').value.trim() || 'DIRECT';
 
-            if(!nama || !bank || !norek) {
+            if(!nama || !hp || !bankFinal || !norek) {
                 btn.disabled = false; btn.innerText = "CREATE VIP ACCOUNT";
-                return showNeonAlert("DATA REKENING WAJIB ISI!", true);
+                return showNeonAlert("LENGKAPI SEMUA DATA!", true);
             }
 
-            const { data: exist } = await _supa.from('profiles').select('username').eq('username', u).single();
-            if(exist) {
+            if(!validatePass(p)) {
                 btn.disabled = false; btn.innerText = "CREATE VIP ACCOUNT";
-                return showNeonAlert("USERNAME SUDAH TERPAKAI!", true);
+                return showNeonAlert("PASSWORD WAJIB 6 KARAKTER (HURUF & ANGKA)!", true);
             }
 
+            // CEK USERNAME & REKENING TERDAFTAR
+            const { data: userExist } = await _supa.from('profiles').select('username').eq('username', u).single();
+            if(userExist) {
+                btn.disabled = false; btn.innerText = "CREATE VIP ACCOUNT";
+                return showNeonAlert("USERNAME SUDAH TERDAFTAR!", true);
+            }
+
+            const { data: rekExist } = await _supa.from('profiles').select('rekening').eq('rekening', norek).single();
+            if(rekExist) {
+                btn.disabled = false; btn.innerText = "CREATE VIP ACCOUNT";
+                return showNeonAlert("NOMOR REKENING SUDAH TERDAFTAR!", true);
+            }
+
+            // INPUT KE DATABASE
             const { error: insErr } = await _supa.from('profiles').insert([{
-                username: u, password: p, nama_lengkap: nama,
-                bank_name: bank, rekening: norek, referred_by: ref,
+                username: u, password: p, nama_lengkap: nama, phone: hp,
+                bank_name: bankFinal, rekening: norek, referred_by: ref,
                 saldo: 0, winrate: 30, maxwin_limit: 100000 
             }]);
 
             if(insErr) {
-                showNeonAlert("GAGAL DAFTAR: " + insErr.message, true);
+                showNeonAlert("SYSTEM BUSY: " + insErr.message, true);
                 btn.disabled = false;
             } else {
                 showNeonAlert("REGISTRASI BERHASIL! SILAHKAN LOGIN.");
-                setTimeout(() => { switchTab('login'); }, 1500);
-                btn.disabled = false;
+                setTimeout(() => { location.reload(); }, 1500);
             }
         }
     }
 
-    // --- BACKGROUND STARFIELD ---
+    // CANVAS ANIMATION
     const canvas = document.getElementById('canvas-bg');
     const ctx = canvas.getContext('2d');
     let stars = [];
-
     function initCanvas() {
         canvas.width = window.innerWidth; canvas.height = window.innerHeight;
         stars = [];
         for(let i=0; i<150; i++) stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*1.5, d: Math.random()*0.5 });
     }
-
     function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "#fff";
+        ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.fillStyle = "#fff";
         stars.forEach(s => {
             ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fill();
             s.y += s.d; if(s.y > canvas.height) s.y = 0;
         });
         requestAnimationFrame(draw);
     }
-
-    window.onresize = initCanvas;
-    initCanvas(); draw();
+    window.onresize = initCanvas; initCanvas(); draw();
 </script>
 </body>
 </html>
