@@ -3,134 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>SUPREME OMEGA V15.3 — ARCHITECT</title>
+    <title>SUPREME OMEGA V15.4 — ULTIMATE</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@300;600;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { 
-            --pink: #ff0077; --blue: #0022ff; --yellow: #fbff00; --bg: #000002;
+            --pink: #ff0077; --blue: #0022ff; --yellow: #fbff00; --bg: #000005;
             --gp: 0 0 10px #ff0077; --gb: 0 0 10px #0022ff; --gy: 0 0 10px #fbff00;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body { background: var(--bg); color: var(--yellow); font-family: 'Outfit', sans-serif; overflow: hidden; height: 100vh; }
         
-        /* Particle Background */
-        #canvas-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.4; }
+        #canvas-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.3; }
         
-        /* Header & Nav */
-        .nav-top { background: rgba(0,0,5,0.95); padding: 15px; border-bottom: 1px solid var(--blue); position: relative; z-index: 100; display: flex; justify-content: space-between; align-items: center; }
-        .panic-timer { font-size: 10px; color: var(--pink); font-weight: 900; text-shadow: var(--gp); }
+        /* Header */
+        .header { background: rgba(0,0,10,0.9); padding: 12px 15px; border-bottom: 2px solid var(--blue); position: relative; z-index: 100; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--gb); }
+        
+        /* Sticky Report Top */
+        .top-stats { background: rgba(0,0,0,0.8); padding: 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; border-bottom: 1px solid rgba(0,34,255,0.3); position: relative; z-index: 90; }
+        .stat-box { text-align: center; border-right: 1px solid rgba(255,255,255,0.1); }
+        .stat-box:last-child { border-right: none; }
+        .stat-box small { display: block; font-size: 7px; color: var(--pink); font-weight: 900; }
+        .stat-box b { font-size: 10px; color: #fff; }
 
-        /* App Container */
-        .main-scroll { height: calc(100vh - 140px); overflow-y: auto; padding: 15px; position: relative; z-index: 10; }
-        .section-box { background: rgba(0,34,255,0.03); border: 1px solid rgba(0,34,255,0.3); border-radius: 12px; margin-bottom: 20px; padding: 15px; height: 300px; display: flex; flex-direction: column; }
-        .section-box h2 { font-size: 12px; letter-spacing: 2px; color: var(--pink); margin-bottom: 10px; border-bottom: 1px solid var(--blue); padding-bottom: 5px; }
-        .inner-scroll { flex: 1; overflow-y: auto; padding-right: 5px; }
+        /* Alphabet Grid */
+        .alpha-nav { display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; padding: 10px; background: rgba(0,0,20,0.9); border-bottom: 1px solid var(--blue); }
+        .alpha-btn { background: #000; border: 1px solid rgba(0,34,255,0.4); color: #fff; font-size: 10px; padding: 5px 0; text-align: center; cursor: pointer; border-radius: 4px; }
+        .alpha-btn.active { border-color: var(--pink); color: var(--pink); box-shadow: var(--gp); }
 
-        /* UI Components */
-        .card { background: rgba(0,0,20,0.6); border: 1px solid var(--blue); padding: 12px; border-radius: 10px; margin-bottom: 10px; box-shadow: var(--gb); }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-        .stat-min { text-align: center; background: rgba(0,0,0,0.4); padding: 8px; border-radius: 8px; border: 1px solid rgba(251,255,0,0.2); }
-        .stat-min small { display: block; font-size: 7px; color: var(--pink); font-weight: 900; }
-        .stat-min b { font-size: 12px; color: #fff; }
+        /* Main Content */
+        .content { height: calc(100vh - 245px); overflow-y: auto; padding: 15px; position: relative; z-index: 10; }
+        .card { background: rgba(0,0,30,0.7); border: 1px solid var(--blue); border-radius: 12px; padding: 12px; margin-bottom: 15px; box-shadow: var(--gb); position: relative; overflow: hidden; }
+        .card::after { content: ''; position: absolute; top: 0; right: 0; width: 40px; height: 40px; background: linear-gradient(45deg, transparent 50%, rgba(0,34,255,0.1) 50%); }
 
-        /* Inputs & Buttons */
-        .input-dark { width: 100%; background: #000; border: 1px solid var(--blue); color: var(--yellow); padding: 8px; border-radius: 6px; font-size: 12px; outline: none; text-align: center; }
-        .btn { background: var(--blue); color: #fff; border: none; padding: 10px; border-radius: 6px; font-weight: 900; cursor: pointer; font-size: 10px; width: 100%; text-shadow: var(--gb); }
+        /* Labels & Inputs */
+        .lbl { font-size: 8px; color: var(--pink); font-weight: 900; margin-bottom: 4px; display: block; }
+        .input-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .in-box { background: rgba(0,0,0,0.5); border: 1px solid rgba(0,34,255,0.4); padding: 6px; border-radius: 6px; }
+        input { width: 100%; background: transparent; border: none; color: #fff; font-size: 12px; font-weight: 600; outline: none; text-align: center; }
+        
+        .btn { background: var(--blue); color: #fff; border: none; padding: 10px; border-radius: 8px; font-weight: 900; cursor: pointer; font-size: 10px; letter-spacing: 1px; width: 100%; margin-top: 8px; }
         .btn-pink { background: var(--pink); box-shadow: var(--gp); }
         .btn-yellow { background: var(--yellow); color: #000; }
 
-        /* Navigation Bottom */
-        .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 70px; background: #000; border-top: 1px solid var(--blue); display: flex; justify-content: space-around; align-items: center; z-index: 100; }
-        .nav-item { color: rgba(0,34,255,0.4); text-align: center; font-size: 20px; transition: 0.3s; }
-        .nav-item.active { color: var(--pink); transform: translateY(-5px); text-shadow: var(--gp); }
-        .nav-item p { font-size: 8px; margin-top: 5px; font-weight: 900; }
+        /* Footer Nav */
+        .footer { position: fixed; bottom: 0; width: 100%; height: 70px; background: #000; border-top: 1px solid var(--blue); display: flex; justify-content: space-around; align-items: center; z-index: 100; }
+        .nav-item { color: rgba(255,255,255,0.3); text-align: center; transition: 0.3s; cursor: pointer; }
+        .nav-item.active { color: var(--pink); text-shadow: var(--gp); }
+        .nav-item i { font-size: 18px; }
+        .nav-item p { font-size: 8px; margin-top: 4px; font-weight: 900; }
 
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 3px; }
-        ::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 10px; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--pink); border-radius: 10px; }
     </style>
 </head>
 <body>
     <canvas id="canvas-bg"></canvas>
 
-    <div class="nav-top">
-        <div>
-            <span style="font-family:'Cinzel Decorative'; color:var(--pink); font-size:16px;">OMEGA V15.3</span>
-            <div id="p-status" class="panic-timer">SYSTEM NORMAL</div>
-        </div>
-        <div style="display:flex; gap:5px;">
-            <select id="p-duration" class="input-dark" style="width:70px; height:30px; font-size:9px;">
-                <option value="5">5 MIN</option>
-                <option value="10">10 MIN</option>
-                <option value="60">1 HOUR</option>
-            </select>
-            <button id="p-btn" onclick="triggerPanic()" class="btn btn-pink" style="width:80px; height:30px;">PANIC</button>
-        </div>
+    <div class="header">
+        <span style="font-family:'Cinzel Decorative'; color:var(--pink); font-size:18px;">SUPREME <span style="color:var(--yellow)">OMEGA</span></span>
+        <div id="p-timer" style="font-size:10px; font-weight:900; color:var(--pink)">SYSTEM STABLE</div>
     </div>
 
-    <div class="main-scroll" id="page-container">
-        <div id="tab-kasir" class="page">
-            <div class="section-box" style="height:auto;">
-                <h2>FINANCE DASHBOARD</h2>
-                <div class="grid-2">
-                    <div class="stat-min"><small>TODAY DEPO</small><b id="d-day">IDR 0</b></div>
-                    <div class="stat-min"><small>TODAY WD</small><b id="w-day">IDR 0</b></div>
-                    <div class="stat-min"><small>TOTAL DEPO</small><b id="d-all">IDR 0</b></div>
-                    <div class="stat-min"><small>TOTAL WD</small><b id="w-all">IDR 0</b></div>
-                </div>
-            </div>
-            <div class="section-box">
-                <h2>PENDING QUEUE</h2>
-                <div class="inner-scroll" id="queue-list"></div>
-            </div>
-        </div>
-
-        <div id="tab-user" class="page" style="display:none;">
-            <div class="section-box">
-                <h2>PLAYER DATABASE</h2>
-                <div class="inner-scroll" id="user-list"></div>
-            </div>
-            <div class="section-box">
-                <h2>GROWTH STATS</h2>
-                <div class="inner-scroll">
-                    <div class="card"><small>New Players (Today):</small><h3 id="u-day">0</h3></div>
-                    <div class="card"><small>New Players (Month):</small><h3 id="u-month">0</h3></div>
-                </div>
-            </div>
-        </div>
-
-        <div id="tab-gift" class="page" style="display:none;">
-            <div class="section-box" style="height:auto;">
-                <h2>MASS GIFT SYSTEM</h2>
-                <input type="number" id="mass-amt" class="input-dark" placeholder="ENTER AMOUNT">
-                <button class="btn btn-yellow" onclick="giftAll()" style="margin-top:10px;">SEND TO ALL PLAYERS</button>
-            </div>
-            <div class="section-box">
-                <h2>GIFT EXPENDITURE</h2>
-                <div class="inner-scroll" id="gift-log">
-                    <div class="card" style="text-align:center;">
-                        <small>TOTAL GIFT SENT</small>
-                        <h2 id="total-gift" style="color:var(--yellow)">IDR 0</h2>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="tab-stat" class="page" style="display:none;">
-            <div class="section-box" style="height:450px;">
-                <h2>MONTHLY LEDGER</h2>
-                <div class="inner-scroll" id="ledger-list"></div>
-            </div>
-        </div>
+    <div class="top-stats">
+        <div class="stat-box"><small>DAY DEPO</small><b id="s-dd">0</b></div>
+        <div class="stat-box"><small>DAY WD</small><b id="s-dw">0</b></div>
+        <div class="stat-box"><small>TOT DEPO</small><b id="s-td">0</b></div>
+        <div class="stat-box"><small>TOT WD</small><b id="s-tw">0</b></div>
     </div>
 
-    <nav class="nav-bottom">
-        <div class="nav-item active" onclick="showTab('kasir', this)"><i class="fas fa-wallet"></i><p>CASHIER</p></div>
-        <div class="nav-item" onclick="showTab('user', this)"><i class="fas fa-users"></i><p>PLAYERS</p></div>
-        <div class="nav-item" onclick="showTab('gift', this)"><i class="fas fa-gift"></i><p>GIFT</p></div>
-        <div class="nav-item" onclick="showTab('stat', this)"><i class="fas fa-file-invoice"></i><p>REPORT</p></div>
+    <div id="alpha-nav-container" class="alpha-nav"></div>
+
+    <div class="content" id="main-content">
+        <div id="tab-user" class="page"></div>
+        <div id="tab-kasir" class="page" style="display:none;"></div>
+        <div id="tab-gift" class="page" style="display:none;"></div>
+        <div id="tab-stat" class="page" style="display:none;"></div>
+    </div>
+
+    <nav class="footer">
+        <div class="nav-item active" onclick="switchTab('user', this)"><i class="fas fa-users"></i><p>PLAYERS</p></div>
+        <div class="nav-item" onclick="switchTab('kasir', this)"><i class="fas fa-cash-register"></i><p>CASHIER</p></div>
+        <div class="nav-item" onclick="switchTab('gift', this)"><i class="fas fa-gift"></i><p>GIFT</p></div>
+        <div class="nav-item" onclick="switchTab('stat', this)"><i class="fas fa-chart-pie"></i><p>REPORT</p></div>
     </nav>
 
 <script>
@@ -138,179 +94,207 @@
     const SUPA_KEY = "sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani"; 
     const _supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 
-    let originalWinrates = {};
-    let isPanic = false;
+    let currentLetter = 'A';
+    let allPlayers = [];
+    let allDeposits = [];
+    let allWithdrawals = [];
+
+    // Initialize Alpha Nav
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split("");
+    document.getElementById('alpha-nav-container').innerHTML = chars.map(c => 
+        `<div class="alpha-btn ${c==='A'?'active':''}" onclick="filterLetter('${c}', this)">${c}</div>`
+    ).join('');
+
+    function filterLetter(l, el) {
+        currentLetter = l;
+        document.querySelectorAll('.alpha-btn').forEach(b => b.classList.remove('active'));
+        el.classList.add('active');
+        renderPlayers();
+    }
 
     async function fetchData() {
-        const { data: p } = await _supa.from('profiles').select('*').order('created_at', {ascending: false});
+        const { data: p } = await _supa.from('profiles').select('*');
         const { data: d } = await _supa.from('deposits').select('*');
         const { data: w } = await _supa.from('withdrawals').select('*');
         
-        const now = new Date();
-        const todayStr = now.toISOString().split('T')[0];
-        const monthStr = now.toISOString().slice(0, 7);
+        allPlayers = p || [];
+        allDeposits = d || [];
+        allWithdrawals = w || [];
 
-        // Finance Logic
-        const filterSum = (arr, status, date) => arr?.filter(x => x.status === status && (date ? x.created_at.startsWith(date) : true)).reduce((a,b) => a + (Number(b.amount) || Number(b.net_receive) || Number(b.nominal) || 0), 0) || 0;
-
-        const tdD = filterSum(d, 'SUKSES', todayStr);
-        const tdW = filterSum(w, 'SUKSES', todayStr);
-        const allD = filterSum(d, 'SUKSES');
-        const allW = filterSum(w, 'SUKSES');
-
-        document.getElementById('d-day').innerText = "IDR " + tdD.toLocaleString();
-        document.getElementById('w-day').innerText = "IDR " + tdW.toLocaleString();
-        document.getElementById('d-all').innerText = "IDR " + allD.toLocaleString();
-        document.getElementById('w-all').innerText = "IDR " + allW.toLocaleString();
-
-        // User Logic
-        document.getElementById('u-day').innerText = p?.filter(x => x.created_at.startsWith(todayStr)).length || 0;
-        document.getElementById('u-month').innerText = p?.filter(x => x.created_at.startsWith(monthStr)).length || 0;
-
-        renderQueue(d.filter(x => x.status === 'PROSES'), w.filter(x => x.status === 'PROSES'));
-        renderUsers(p);
-        renderLedger(tdD, tdW, allD, allW);
+        updateTopStats();
+        renderPlayers();
+        renderKasir();
+        renderGift();
+        renderReport();
     }
 
-    function renderQueue(ds, ws) {
-        let h = '';
-        ds.forEach(x => h += `<div class="card"><b>${x.username}</b> <span style="color:var(--blue)">+${(x.net_receive||x.amount).toLocaleString()}</span><button class="btn" onclick="approveD('${x.id}','${x.username}',${x.net_receive||x.amount})" style="margin-top:5px">APPROVE</button></div>`);
-        ws.forEach(x => h += `<div class="card"><b>${x.username}</b> <span style="color:var(--pink)">-${(x.nominal||x.amount).toLocaleString()}</span><button class="btn btn-pink" onclick="approveW('${x.id}')" style="margin-top:5px">RELEASE</button></div>`);
-        document.getElementById('queue-list').innerHTML = h || '<p style="font-size:10px; opacity:0.5; text-align:center;">EMPTY</p>';
+    function updateTopStats() {
+        const today = new Date().toISOString().split('T')[0];
+        const sum = (arr, status, date) => arr.filter(x => x.status === 'SUKSES' && (date ? x.created_at.startsWith(date) : true)).reduce((a,b) => a + (Number(b.amount||b.net_receive||b.nominal)||0), 0);
+        
+        document.getElementById('s-dd').innerText = sum(allDeposits, 'SUKSES', today).toLocaleString();
+        document.getElementById('s-dw').innerText = sum(allWithdrawals, 'SUKSES', today).toLocaleString();
+        document.getElementById('s-td').innerText = sum(allDeposits, 'SUKSES').toLocaleString();
+        document.getElementById('s-tw').innerText = sum(allWithdrawals, 'SUKSES').toLocaleString();
     }
 
-    function renderUsers(users) {
-        document.getElementById('user-list').innerHTML = users.map(u => `
+    function renderPlayers() {
+        const container = document.getElementById('tab-user');
+        const filtered = allPlayers.filter(u => (u.username||"").toUpperCase().startsWith(currentLetter));
+        
+        container.innerHTML = filtered.map(u => {
+            const userDepo = allDeposits.filter(x => x.username === u.username && x.status === 'SUKSES').reduce((a,b)=>a+(Number(b.amount||b.net_receive)||0),0);
+            const userWD = allWithdrawals.filter(x => x.username === u.username && x.status === 'SUKSES').reduce((a,b)=>a+(Number(b.nominal||b.amount)||0),0);
+            const profitLoss = userDepo - userWD;
+
+            return `
             <div class="card">
-                <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                    <b style="color:var(--pink)">${u.username}</b>
-                    <span style="font-size:10px; color:var(--yellow)">IDR ${(u.saldo||0).toLocaleString()}</span>
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:1px solid rgba(0,34,255,0.2); padding-bottom:8px;">
+                    <div>
+                        <b style="color:var(--yellow); font-size:14px;">${u.username}</b>
+                        <p style="font-size:9px; color:#aaa;">P/L: <span style="color:${profitLoss<0?'#0f0':'#f00'}">${profitLoss.toLocaleString()}</span></p>
+                    </div>
+                    <div style="text-align:right">
+                        <small class="lbl">SALDO LIVE</small>
+                        <b style="color:#fff">IDR ${(u.saldo||0).toLocaleString()}</b>
+                    </div>
                 </div>
-                <div class="grid-2">
-                    <input type="number" id="wr-${u.id}" class="input-dark" value="${u.winrate}">
-                    <button class="btn" onclick="updateWR('${u.id}')">SYNC</button>
+                <div class="input-group">
+                    <div class="in-box"><small class="lbl">WINRATE %</small><input type="number" id="wr-${u.id}" value="${u.winrate||10}"></div>
+                    <div class="in-box"><small class="lbl">MAXWIN LIMIT</small><input type="number" id="mx-${u.id}" value="${u.maxwin_limit||1000000}"></div>
+                    <div class="in-box"><small class="lbl">TIMER (MIN)</small><input type="number" id="tm-${u.id}" value="${u.session_timer||0}"></div>
+                    <button class="btn btn-yellow" style="margin-top:0" onclick="syncPlayer('${u.id}')">SYNC</button>
                 </div>
-                <div class="grid-2" style="margin-top:5px;">
-                    <input type="number" id="gt-${u.id}" class="input-dark" placeholder="GIFT">
-                    <button class="btn btn-yellow" onclick="sendGift('${u.id}', '${u.username}')">GIFT</button>
-                </div>
-            </div>
-        `).join('');
+            </div>`;
+        }).join('') || `<p style="text-align:center; padding:20px; font-size:10px; opacity:0.5;">NO PLAYERS IN SECTION ${currentLetter}</p>`;
     }
 
-    async function updateWR(id) {
-        const val = document.getElementById('wr-'+id).value;
-        await _supa.from('profiles').update({winrate: val}).eq('id', id);
+    async function syncPlayer(id) {
+        const wr = document.getElementById('wr-'+id).value;
+        const mx = document.getElementById('mx-'+id).value;
+        const tm = document.getElementById('tm-'+id).value;
+        const { error } = await _supa.from('profiles').update({ winrate: wr, maxwin_limit: mx, session_timer: tm }).eq('id', id);
+        if(!error) alert("PLAYER SYNCED");
         fetchData();
     }
 
-    async function sendGift(id, user) {
-        const amt = parseInt(document.getElementById('gt-'+id).value);
+    function renderKasir() {
+        const ds = allDeposits.filter(x => x.status === 'PROSES');
+        const ws = allWithdrawals.filter(x => x.status === 'PROSES');
+        let h = '<h2>PENDING REQUESTS</h2>';
+        ds.forEach(x => h += `<div class="card" style="border-left:4px solid var(--blue)"><b>${x.username}</b><p>DEPO: IDR ${(x.net_receive||x.amount).toLocaleString()}</p><button class="btn" onclick="appD('${x.id}','${x.username}',${x.net_receive||x.amount})">APPROVE</button></div>`);
+        ws.forEach(x => h += `<div class="card" style="border-left:4px solid var(--pink)"><b>${x.username}</b><p>WD: IDR ${(x.nominal||x.amount).toLocaleString()}</p><button class="btn btn-pink" onclick="appW('${x.id}')">RELEASE WD</button></div>`);
+        document.getElementById('tab-kasir').innerHTML = h;
+    }
+
+    async function appD(id, user, amt) {
+        await _supa.from('deposits').update({status:'SUKSES'}).eq('id', id);
+        const { data } = await _supa.from('profiles').select('saldo').eq('username', user).single();
+        await _supa.from('profiles').update({saldo: (data.saldo||0) + amt}).eq('username', user);
+        fetchData();
+    }
+
+    async function appW(id) {
+        await _supa.from('withdrawals').update({status:'SUKSES'}).eq('id', id);
+        fetchData();
+    }
+
+    function renderGift() {
+        const filtered = allPlayers.filter(u => (u.username||"").toUpperCase().startsWith(currentLetter));
+        let h = `
+            <div class="card" style="border:1px solid var(--yellow)">
+                <small class="lbl">GLOBAL GIFT (ALL PLAYERS)</small>
+                <input type="number" id="mass-amt" class="input-dark" style="background:#111; padding:10px; border-radius:5px; margin-bottom:10px;" placeholder="NOMINAL">
+                <button class="btn btn-yellow" onclick="giftAll()">SEND TO ALL</button>
+            </div>
+            <h3>SECTION ${currentLetter}</h3>
+        `;
+        h += filtered.map(u => `
+            <div class="card">
+                <b>${u.username}</b>
+                <div class="input-group">
+                    <input type="number" id="gft-${u.id}" placeholder="NOMINAL">
+                    <input type="text" id="msg-${u.id}" placeholder="PESAN">
+                </div>
+                <button class="btn" onclick="sendGift('${u.id}')">SEND GIFT</button>
+            </div>
+        `).join('');
+        document.getElementById('tab-gift').innerHTML = h;
+    }
+
+    async function sendGift(id) {
+        const amt = parseInt(document.getElementById('gft-'+id).value);
         if(!amt) return;
         const { data } = await _supa.from('profiles').select('saldo').eq('id', id).single();
-        await _supa.from('profiles').update({saldo: data.saldo + amt}).eq('id', id);
-        alert(`GIFT IDR ${amt} SENT TO ${user}`);
+        await _supa.from('profiles').update({saldo: (data.saldo||0) + amt}).eq('id', id);
+        alert("GIFT SENT");
         fetchData();
     }
 
     async function giftAll() {
         const amt = parseInt(document.getElementById('mass-amt').value);
         if(!amt) return;
-        const { data } = await _supa.from('profiles').select('id, saldo');
-        for(let u of data) {
-            await _supa.from('profiles').update({saldo: u.saldo + amt}).eq('id', u.id);
+        for(let u of allPlayers) {
+            await _supa.from('profiles').update({saldo: (u.saldo||0) + amt}).eq('id', u.id);
         }
-        alert("MASS GIFT SUCCESSFUL");
+        alert("MASS GIFT SUCCESS");
         fetchData();
     }
 
-    async function triggerPanic() {
-        if(isPanic) return;
-        isPanic = true;
-        const dur = parseInt(document.getElementById('p-duration').value);
-        const { data: users } = await _supa.from('profiles').select('id, winrate');
-        
-        // Simpan winrate asli
-        users.forEach(u => originalWinrates[u.id] = u.winrate);
-        
-        // Set All to 10%
-        await _supa.from('profiles').update({winrate: 10});
-        
-        let sec = dur * 60;
-        const timer = setInterval(() => {
-            sec--;
-            document.getElementById('p-status').innerText = `PANIC ACTIVE: ${Math.floor(sec/60)}m ${sec%60}s`;
-            if(sec <= 0) {
-                clearInterval(timer);
-                revertPanic();
-            }
-        }, 1000);
+    function renderReport() {
+        const today = new Date().toISOString().split('T')[0];
+        const month = new Date().toISOString().slice(0, 7);
+        const sum = (arr, status, date) => arr.filter(x => x.status === 'SUKSES' && (date ? x.created_at.startsWith(date) : true)).reduce((a,b) => a + (Number(b.amount||b.net_receive||b.nominal)||0), 0);
 
-        document.getElementById('p-btn').disabled = true;
-        fetchData();
-    }
+        const dD = sum(allDeposits, 'SUKSES', today);
+        const dW = sum(allWithdrawals, 'SUKSES', today);
+        const mD = sum(allDeposits, 'SUKSES', month);
+        const mW = sum(allWithdrawals, 'SUKSES', month);
 
-    async function revertPanic() {
-        for(let id in originalWinrates) {
-            await _supa.from('profiles').update({winrate: originalWinrates[id]}).eq('id', id);
-        }
-        isPanic = false;
-        document.getElementById('p-status').innerText = `SYSTEM NORMAL`;
-        document.getElementById('p-btn').disabled = false;
-        alert("PANIC DURATION ENDED. WINRATES REVERTED.");
-        fetchData();
-    }
-
-    function renderLedger(tdD, tdW, allD, allW) {
-        const netD = tdD - tdW;
-        const netA = allD - allW;
-        document.getElementById('ledger-list').innerHTML = `
+        document.getElementById('tab-stat').innerHTML = `
             <div class="card">
-                <small>TODAY NET PROFIT</small>
-                <h2 style="color:${netD>=0?'var(--yellow)':'var(--pink)'}">IDR ${netD.toLocaleString()}</h2>
+                <h2 style="color:var(--yellow)">DAILY PROFIT</h2>
+                <h1 style="font-size:28px">IDR ${(dD - dW).toLocaleString()}</h1>
+                <p>Depo: ${dD.toLocaleString()} | WD: ${dW.toLocaleString()}</p>
             </div>
             <div class="card">
-                <small>TOTAL NET PROFIT (ALL TIME)</small>
-                <h2 style="color:${netA>=0?'var(--yellow)':'var(--pink)'}">IDR ${netA.toLocaleString()}</h2>
+                <h2 style="color:var(--pink)">MONTHLY PROFIT</h2>
+                <h1 style="font-size:28px">IDR ${(mD - mW).toLocaleString()}</h1>
+                <p>Depo: ${mD.toLocaleString()} | WD: ${mW.toLocaleString()}</p>
+            </div>
+            <div class="card">
+                <h2>NEW PLAYERS</h2>
+                <p>Today: ${allPlayers.filter(x=>x.created_at.startsWith(today)).length}</p>
+                <p>Month: ${allPlayers.filter(x=>x.created_at.startsWith(month)).length}</p>
             </div>
         `;
     }
 
-    async function approveD(id, user, amt) {
-        await _supa.from('deposits').update({status:'SUKSES'}).eq('id', id);
-        const { data } = await _supa.from('profiles').select('saldo').eq('username', user).single();
-        await _supa.from('profiles').update({saldo: data.saldo + amt}).eq('username', user);
-        fetchData();
-    }
-
-    async function approveW(id) {
-        await _supa.from('withdrawals').update({status:'SUKSES'}).eq('id', id);
-        fetchData();
-    }
-
-    function showTab(t, el) {
+    function switchTab(t, el) {
         document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
         document.getElementById('tab-'+t).style.display = 'block';
         document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
         el.classList.add('active');
+        // Alphabet nav only for player & gift
+        document.getElementById('alpha-nav-container').style.display = (t==='user' || t==='gift') ? 'grid' : 'none';
     }
 
-    // Particle Background
+    // Canvas Background
     const c = document.getElementById('canvas-bg'); const x = c.getContext('2d');
     c.width = window.innerWidth; c.height = window.innerHeight;
-    let p = [];
-    for(let i=0; i<40; i++) p.push({x:Math.random()*c.width, y:Math.random()*c.height, r:Math.random()*2, s:Math.random()*0.5});
+    let particles = [];
+    for(let i=0; i<30; i++) particles.push({x:Math.random()*c.width, y:Math.random()*c.height, r:Math.random()*2, s:Math.random()*0.5});
     function draw() {
         x.clearRect(0,0,c.width,c.height);
-        p.forEach(i => {
-            x.beginPath(); x.arc(i.x, i.y, i.r, 0, 7); x.fillStyle = '#0022ff'; x.fill();
-            i.y -= i.s; if(i.y < 0) i.y = c.height;
+        particles.forEach(p => {
+            x.beginPath(); x.arc(p.x, p.y, p.r, 0, 7); x.fillStyle = '#0022ff'; x.fill();
+            p.y -= p.s; if(p.y < 0) p.y = c.height;
         });
         requestAnimationFrame(draw);
     } draw();
 
     fetchData();
-    setInterval(fetchData, 15000);
+    setInterval(fetchData, 20000);
 </script>
 </body>
 </html>
