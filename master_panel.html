@@ -22,7 +22,6 @@
             background-image: radial-gradient(circle at top right, #050a30 0%, var(--bg) 70%);
         }
 
-        /* Gate Keeper / Login */
         #gate-keeper { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
         .gate-card { 
             width: 90%; max-width: 380px; padding: 40px; border-radius: 30px; 
@@ -32,7 +31,6 @@
         
         #main-app { display: none; }
 
-        /* Header */
         .nav-top { 
             background: rgba(2, 3, 13, 0.9); padding: 15px 20px; 
             border-bottom: 2px solid var(--blue); position: sticky; top: 0; 
@@ -47,7 +45,6 @@
         .panic-active { display: block !important; animation: blink 1s infinite; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
-        /* Dashboard Stats */
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
         .stat-box { background: rgba(0,0,0,0.5); border: 1px solid var(--blue); padding: 15px; border-radius: 15px; text-align: center; }
         .stat-box small { font-size: 9px; color: var(--cyan); display: block; margin-bottom: 5px; }
@@ -55,7 +52,6 @@
 
         .content { padding: 20px; padding-bottom: 100px; max-width: 600px; margin: auto; }
         
-        /* Cards */
         .card { 
             background: rgba(255,255,255,0.03); border: 1px solid rgba(0, 34, 255, 0.2); 
             border-radius: 20px; padding: 20px; margin-bottom: 15px; 
@@ -79,12 +75,8 @@
         }
         .btn-main:active { transform: scale(0.98); }
         
-        .btn-panic { 
-            background: var(--pink) !important; margin-bottom: 20px; 
-            box-shadow: var(--shadow-p); 
-        }
+        .btn-panic { background: var(--pink) !important; margin-bottom: 20px; box-shadow: var(--shadow-p); }
 
-        /* Tab Navigation */
         .nav-bottom { 
             position: fixed; bottom: 0; width: 100%; height: 75px; 
             background: rgba(2, 3, 13, 0.98); border-top: 2px solid var(--blue); 
@@ -97,7 +89,6 @@
         .profit { color: var(--green); text-shadow: 0 0 5px var(--green); }
         .loss { color: var(--pink); text-shadow: 0 0 5px var(--pink); }
 
-        /* Custom Alert */
         #neon-alert { 
             display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); 
             z-index:10000; align-items:center; justify-content:center; 
@@ -134,28 +125,27 @@
         </div>
 
         <div class="content">
-            
             <div class="stats-grid">
                 <div class="stat-box">
                     <small>TOTAL SALDO USER</small>
                     <span id="stat-total-saldo">Rp 0</span>
                 </div>
                 <div class="stat-box">
-                    <small>USER ONLINE</small>
+                    <small>PEMAIN AKTIF</small>
                     <span id="stat-user-count">0</span>
                 </div>
             </div>
 
             <div id="tab-kasir" class="page">
                 <button id="panic-btn-ui" class="btn-main btn-panic" onclick="togglePanicMode()">AKTIFKAN MODE KURAS (GLOBAL)</button>
-                <h3 style="font-size:12px; color:var(--yellow); margin-bottom:15px; letter-spacing:1px;"><i class="fas fa-clock-rotate-left"></i> ANTREAN TRANSAKSI</h3>
+                <h3 style="font-size:12px; color:var(--yellow); margin-bottom:15px;"><i class="fas fa-clock-rotate-left"></i> PENDING REQUEST</h3>
                 <div id="list-kasir"></div>
             </div>
 
             <div id="tab-user" class="page" style="display:none">
                 <div style="position:relative; margin-bottom:20px;">
                     <i class="fas fa-search" style="position:absolute; left:15px; top:13px; color:var(--blue);"></i>
-                    <input type="text" id="search-user" placeholder="Cari nama pemain..." onkeyup="filterUser()" style="padding-left:40px;">
+                    <input type="text" id="search-user" placeholder="Cari pemain..." onkeyup="filterUser()" style="padding-left:40px;">
                 </div>
                 <div id="list-user"></div>
             </div>
@@ -164,10 +154,12 @@
                 <div class="card" style="border-color:var(--pink); background: rgba(255,0,119,0.05);">
                     <span class="card-label" style="color:var(--pink)"><i class="fas fa-gift"></i> SEND GIFT / BONUS</span>
                     <select id="gift-target"></select>
-                    <input type="number" id="gift-amount" placeholder="Nominal Rp (Contoh: 50000)">
-                    <textarea id="gift-msg" rows="3" placeholder="Pesan untuk pemain (Muncul di Inbox)"></textarea>
-                    <button class="btn-main" style="background:var(--pink)" onclick="sendGift()">KIRIM HADIAH SEKARANG</button>
+                    <input type="number" id="gift-amount" placeholder="Nominal Rp">
+                    <textarea id="gift-msg" rows="3" placeholder="Pesan Inbox..."></textarea>
+                    <button class="btn-main" style="background:var(--pink)" onclick="sendGift()">KIRIM HADIAH</button>
                 </div>
+                <h3 style="font-size:12px; color:var(--cyan); margin:20px 0 10px;"><i class="fas fa-history"></i> LOG GIFT TERAKHIR</h3>
+                <div id="log-gift" style="font-size:10px;"></div>
             </div>
         </div>
 
@@ -194,6 +186,7 @@
 
     const AUTH = { u: "admin_neon", p: "master777" };
     let isPanic = false;
+    let lastUserHash = ""; // Untuk mencegah render ulang jika data sama
 
     function login() {
         if(document.getElementById('adm-user').value === AUTH.u && document.getElementById('adm-pass').value === AUTH.p) {
@@ -202,15 +195,18 @@
             document.getElementById('main-app').style.display = 'block';
             refreshAll();
             setInterval(refreshAll, 5000); 
-        } else { showPopup("PASSWORD SALAH!"); }
+        } else { showPopup("ACCESS DENIED!"); }
     }
 
     async function refreshAll() {
-        loadKasir();
-        loadUser();
-        loadGiftTarget();
-        checkPanicStatus();
         updateStats();
+        loadKasir();
+        loadUserSmart(); // Fungsi baru agar tidak reset input
+        checkPanicStatus();
+        if(document.getElementById('tab-gift').style.display !== 'none') {
+            loadGiftTarget();
+            loadGiftLogs();
+        }
     }
 
     async function updateStats() {
@@ -229,55 +225,58 @@
 
         if(depo) depo.forEach(d => {
             html += `<div class="card" style="border-left:4px solid var(--green)">
-                <span class="card-label">DEPOSIT REQUEST</span>
-                <div style="display:flex; justify-content:space-between;">
-                    <b>${d.username}</b>
-                    <span class="profit">Rp ${Number(d.net_receive).toLocaleString()}</span>
+                <span class="card-label">DEPO: ${d.username}</span>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <b style="color:var(--green)">Rp ${Number(d.net_receive).toLocaleString()}</b>
+                    <button class="btn-main" style="background:var(--green); width:100px; height:30px; font-size:9px;" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive})">APPROVE</button>
                 </div>
-                <button class="btn-main" style="background:var(--green); margin-top:15px; height:35px; font-size:9px;" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive})">APPROVE DEPO</button>
             </div>`;
         });
 
         if(wd) wd.forEach(w => {
             html += `<div class="card" style="border-left:4px solid var(--pink)">
-                <span class="card-label">WITHDRAWAL REQUEST</span>
-                <div style="display:flex; justify-content:space-between;">
-                    <b>${w.username}</b>
-                    <span class="loss">Rp ${Number(w.amount).toLocaleString()}</span>
-                </div>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:15px;">
-                    <button class="btn-main" style="height:35px; font-size:9px;" onclick="updateStatus('withdrawals','${w.id}','SUKSES')">APPROVE</button>
-                    <button class="btn-main" style="background:#444; height:35px; font-size:9px;" onclick="updateStatus('withdrawals','${w.id}','DITOLAK')">REJECT</button>
+                <span class="card-label">WD: ${w.username}</span>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <b style="color:var(--pink)">Rp ${Number(w.amount).toLocaleString()}</b>
+                    <div style="display:flex; gap:5px;">
+                        <button class="btn-main" style="width:70px; height:30px; font-size:9px;" onclick="updateStatus('withdrawals','${w.id}','SUKSES')">ACC</button>
+                        <button class="btn-main" style="background:#444; width:70px; height:30px; font-size:9px;" onclick="updateStatus('withdrawals','${w.id}','DITOLAK')">REJECT</button>
+                    </div>
                 </div>
             </div>`;
         });
-        document.getElementById('list-kasir').innerHTML = html || '<p style="text-align:center; opacity:0.3; padding:40px; font-size:10px;">TIDAK ADA TRANSAKSI</p>';
+        document.getElementById('list-kasir').innerHTML = html || '<p style="text-align:center; opacity:0.3; padding:20px; font-size:10px;">ANTREAN BERSIH</p>';
     }
 
-    async function loadUser() {
+    // FUNGSI PERBAIKAN: Load User tanpa reset input
+    async function loadUserSmart() {
         const { data } = await _supa.from('profiles').select('*').order('username', {ascending:true});
-        if(data) {
-            document.getElementById('list-user').innerHTML = data.map(u => {
-                const sessionMins = Math.floor((new Date() - new Date(u.session_start || u.created_at)) / 60000);
-                return `
-                <div class="card user-item" data-name="${u.username.toLowerCase()}">
-                    <span class="card-label">PLAYER SESSION</span>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <b style="color:var(--yellow)">${u.username.toUpperCase()}</b>
-                        <span class="profit">Rp ${Number(u.saldo).toLocaleString()}</span>
-                    </div>
-                    <div style="font-size:9px; color:var(--cyan); margin-bottom:10px;">
-                        <i class="fas fa-clock"></i> Sesi: ${sessionMins}m / ${u.session_minutes}m
-                    </div>
-                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px;">
-                        <div><small style="font-size:7px;">WINRATE %</small><input type="number" id="wr-${u.id}" value="${u.winrate}"></div>
-                        <div><small style="font-size:7px;">LIMIT RP</small><input type="number" id="mw-${u.id}" value="${u.maxwin_limit}"></div>
-                        <div><small style="font-size:7px;">MENIT</small><input type="number" id="tm-${u.id}" value="${u.session_minutes}"></div>
-                    </div>
-                    <button class="btn-main" style="margin-top:10px; height:35px; font-size:9px;" onclick="saveUser('${u.id}')">UPDATE SETTINGS</button>
+        if(!data) return;
+
+        // Cek apakah ada perubahan data (jumlah user atau saldo) sebelum render ulang
+        const currentHash = JSON.stringify(data.map(u => [u.username, u.saldo]));
+        if(currentHash === lastUserHash) return; 
+        
+        // Jangan render jika admin sedang fokus mengetik di salah satu input
+        if(document.activeElement.tagName === "INPUT" && document.activeElement.id !== "search-user") return;
+
+        lastUserHash = currentHash;
+        document.getElementById('list-user').innerHTML = data.map(u => {
+            const sessionMins = Math.floor((new Date() - new Date(u.session_start || u.created_at)) / 60000);
+            return `
+            <div class="card user-item" data-name="${u.username.toLowerCase()}">
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <b style="color:var(--yellow)">${u.username.toUpperCase()}</b>
+                    <span class="profit">Rp ${Number(u.saldo).toLocaleString()}</span>
                 </div>
-            `;}).join('');
-        }
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px;">
+                    <div><small style="font-size:7px;">WINRATE</small><input type="number" id="wr-${u.id}" value="${u.winrate}"></div>
+                    <div><small style="font-size:7px;">LIMIT</small><input type="number" id="mw-${u.id}" value="${u.maxwin_limit}"></div>
+                    <div><small style="font-size:7px;">MENIT</small><input type="number" id="tm-${u.id}" value="${u.session_minutes}"></div>
+                </div>
+                <button class="btn-main" style="margin-top:10px; height:30px; font-size:9px;" onclick="saveUser('${u.id}')">SAVE SETTINGS</button>
+            </div>
+        `;}).join('');
     }
 
     async function saveUser(id) {
@@ -287,7 +286,7 @@
             session_minutes: parseInt(document.getElementById('tm-'+id).value)
         };
         await _supa.from('profiles').update(updateData).eq('id', id);
-        showPopup("KONFIGURASI DIKIRIM!");
+        showPopup("SETTING DISIMPAN!");
     }
 
     async function checkPanicStatus() {
@@ -303,16 +302,13 @@
         const nextState = !isPanic;
         await _supa.from('system_config').update({ panic_mode: nextState }).eq('id', 1);
         await _supa.from('profiles').update({ panic_mode: nextState });
-        showPopup(nextState ? "MODE KURAS AKTIF!" : "MODE NORMAL KEMBALI");
+        showPopup(nextState ? "MODE KURAS AKTIF!" : "MODE NORMAL");
         refreshAll();
     }
 
     async function approveDepo(id, user, amt) {
         const { data } = await _supa.from('profiles').select('saldo').eq('username', user).single();
-        await _supa.from('profiles').update({ 
-            saldo: data.saldo + amt,
-            session_start: new Date() 
-        }).eq('username', user);
+        await _supa.from('profiles').update({ saldo: data.saldo + amt, session_start: new Date() }).eq('username', user);
         await _supa.from('deposits').update({ status: 'SUKSES' }).eq('id', id);
         showPopup("DEPO BERHASIL!");
         refreshAll();
@@ -320,7 +316,7 @@
 
     async function updateStatus(table, id, status) {
         await _supa.from(table).update({ status: status }).eq('id', id);
-        showPopup("STATUS UPDATED!");
+        showPopup("BERHASIL!");
         refreshAll();
     }
 
@@ -328,23 +324,32 @@
         const target = document.getElementById('gift-target').value;
         const amount = document.getElementById('gift-amount').value;
         const msg = document.getElementById('gift-msg').value;
-        if(!target || !amount) return showPopup("LENGKAPI DATA!");
+        if(!target || !amount) return showPopup("DATA TIDAK LENGKAP!");
         
-        await _supa.from('inbox').insert([{ 
-            username: target, 
-            nominal: parseInt(amount), 
-            pesan: msg, 
-            status: 'UNCLAIMED' 
-        }]);
-        
-        showPopup("HADIAH TERKIRIM KE " + target);
+        await _supa.from('inbox').insert([{ username: target, nominal: parseInt(amount), pesan: msg, status: 'UNCLAIMED' }]);
+        showPopup("GIFT TERKIRIM!");
         document.getElementById('gift-amount').value = "";
-        document.getElementById('gift-msg').value = "";
+        loadGiftLogs();
+    }
+
+    async function loadGiftLogs() {
+        const { data } = await _supa.from('inbox').select('*').order('id', {ascending:false}).limit(5);
+        if(data) {
+            document.getElementById('log-gift').innerHTML = data.map(l => `
+                <div style="background:rgba(255,255,255,0.05); padding:8px; border-radius:10px; margin-bottom:5px; border-left:2px solid var(--pink);">
+                    <b>${l.username}</b> - Rp ${Number(l.nominal).toLocaleString()} 
+                    <span style="float:right; color:${l.status === 'CLAIMED' ? 'var(--green)' : 'var(--yellow)'}">${l.status}</span>
+                </div>
+            `).join('');
+        }
     }
 
     async function loadGiftTarget() {
         const { data } = await _supa.from('profiles').select('username');
-        if(data) document.getElementById('gift-target').innerHTML = data.map(u => `<option value="${u.username}">${u.username}</option>`).join('');
+        if(data) {
+            const currentVal = document.getElementById('gift-target').value;
+            document.getElementById('gift-target').innerHTML = data.map(u => `<option value="${u.username}" ${u.username === currentVal ? 'selected':''}>${u.username}</option>`).join('');
+        }
     }
 
     function switchTab(tab, el) {
@@ -352,6 +357,7 @@
         document.getElementById('tab-' + tab).style.display = 'block';
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         el.classList.add('active');
+        if(tab === 'gift') { loadGiftTarget(); loadGiftLogs(); }
     }
 
     function filterUser() {
