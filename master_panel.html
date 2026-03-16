@@ -3,56 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>SUPREME OMEGA V14.8 — MASTER CONTROL</title>
+    <title>SUPREME OMEGA V15 — FINAL BUILD</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@300;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { 
             --pink: #ff0077; --blue: #0022ff; --cyan: #00d4ff; --yellow: #fbff00; --bg: #010208;
-            --gp: 0 0 20px #ff0077; --gb: 0 0 25px #0022ff; --gy: 0 0 20px #fbff00;
+            --gp: 0 0 20px #ff0077; --gb: 0 0 25px #0022ff; --gy: 0 0 20px #fbff00; --gc: 0 0 20px #00d4ff;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; overflow-x: hidden; min-height: 100vh; }
-        #canvas-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.6; }
+        #canvas-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.5; }
         
-        /* UI Shell */
-        .nav-top { background: rgba(1,2,8,0.95); padding: 15px 20px; border-bottom: 2px solid var(--blue); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(15px); display: flex; justify-content: space-between; align-items: center; }
+        /* Core UI */
+        .nav-top { background: rgba(1,2,8,0.85); padding: 15px 20px; border-bottom: 2px solid var(--blue); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(20px); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 5px 20px rgba(0,34,255,0.2); }
         .content { padding: 15px; padding-bottom: 120px; max-width: 700px; margin: auto; position: relative; z-index: 10; }
 
-        /* Report Cards */
-        .report-card { background: linear-gradient(135deg, #000, #050a24); border: 1.5px solid var(--cyan); border-radius: 20px; padding: 15px; margin-bottom: 20px; display: flex; gap: 15px; box-shadow: inset 0 0 15px rgba(0, 212, 255, 0.1); }
-        .report-val { flex: 1; text-align: center; }
-        .report-val small { font-size: 8px; color: var(--pink); font-weight: 800; text-transform: uppercase; display: block; }
-        .report-val h3 { font-size: 14px; color: var(--yellow); text-shadow: var(--gy); margin-top: 5px; }
+        /* Dashboard Cards */
+        .report-card { background: linear-gradient(135deg, #020412, #050a24); border: 1.5px solid var(--cyan); border-radius: 16px; padding: 15px; margin-bottom: 20px; display: flex; gap: 15px; box-shadow: inset 0 0 20px rgba(0, 212, 255, 0.05), var(--gc); }
+        .report-val { flex: 1; text-align: center; border-right: 1px solid rgba(0,212,255,0.2); }
+        .report-val:last-child { border-right: none; }
+        .report-val small { font-size: 8px; color: var(--pink); font-weight: 800; letter-spacing: 1px; }
+        .report-val h3 { font-size: 15px; color: var(--yellow); text-shadow: var(--gy); margin-top: 5px; font-family: 'Cinzel Decorative', cursive; }
 
-        /* Matrix Grid */
-        .matrix-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 20px; }
-        .alpha-box { background: rgba(0, 34, 255, 0.1); border: 1px solid var(--blue); border-radius: 8px; padding: 10px 2px; text-align: center; cursor: pointer; transition: 0.3s; }
-        .alpha-box.active { background: var(--pink); border-color: var(--yellow); box-shadow: var(--gp); transform: scale(1.05); }
+        /* Index A-Z */
+        .matrix-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 20px; }
+        .alpha-box { background: rgba(0, 34, 255, 0.05); border: 1px solid var(--blue); border-radius: 8px; padding: 12px 2px; text-align: center; cursor: pointer; transition: all 0.3s ease; }
+        .alpha-box.active { background: rgba(255,0,119,0.2); border-color: var(--pink); box-shadow: var(--gp); transform: translateY(-3px); }
 
-        /* Player Card */
-        .player-card { background: rgba(5,6,25,0.95); border: 1.5px solid var(--blue); border-radius: 20px; padding: 18px; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); position: relative; overflow: hidden; }
-        .player-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--cyan); }
+        /* Player Modules */
+        .player-card { background: rgba(5,6,20,0.8); border: 1px solid var(--blue); border-radius: 16px; padding: 20px; margin-bottom: 15px; position: relative; overflow: hidden; backdrop-filter: blur(10px); }
+        .player-card::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--cyan); box-shadow: var(--gc); }
         
-        input, select { width: 100%; padding: 12px; background: #000; border: 1px solid var(--blue); color: var(--yellow); border-radius: 12px; font-size: 11px; outline: none; margin-top: 5px; }
-        input:focus { border-color: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+        .input-group { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin:15px 0; }
+        .input-box { background: rgba(0,0,0,0.5); border: 1px solid rgba(0,212,255,0.3); border-radius: 10px; padding: 5px; text-align: center; }
+        .input-box small { font-size: 7px; color: var(--pink); display: block; margin-bottom: 3px; font-weight: 800; }
+        input { width: 100%; background: transparent; border: none; color: var(--yellow); font-size: 14px; text-align: center; font-weight: 800; outline: none; }
+        input:focus { color: #fff; text-shadow: 0 0 10px #fff; }
         
-        .btn { background: linear-gradient(90deg, var(--blue), #000088); color: #fff; border: 1px solid var(--cyan); padding: 12px; border-radius: 50px; font-weight: 900; width: 100%; cursor: pointer; text-transform: uppercase; font-size: 10px; margin-top: 10px; box-shadow: var(--gb); transition: 0.3s; }
-        .btn-pink { background: linear-gradient(90deg, var(--pink), #aa0044); border-color: var(--yellow); box-shadow: var(--gp); }
-        .btn:active { transform: scale(0.95); }
+        /* Buttons */
+        .btn { background: linear-gradient(90deg, #001188, var(--blue)); color: #fff; border: 1px solid var(--cyan); padding: 14px; border-radius: 12px; font-weight: 800; width: 100%; cursor: pointer; text-transform: uppercase; font-size: 11px; letter-spacing: 2px; box-shadow: 0 0 15px rgba(0,34,255,0.4); transition: 0.2s; }
+        .btn:active { transform: scale(0.97); }
+        .btn-pink { background: linear-gradient(90deg, #880033, var(--pink)); border-color: #ff88bb; box-shadow: var(--gp); }
 
-        /* Navigation */
-        .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 80px; background: #000; border-top: 2px solid var(--blue); display: flex; justify-content: space-around; align-items: center; z-index: 1000; padding-bottom: env(safe-area-inset-bottom); }
-        .nav-btn { color: rgba(0,212,255,0.3); text-align: center; flex: 1; cursor: pointer; }
-        .nav-btn.active { color: var(--yellow); text-shadow: var(--gy); }
-        .nav-btn i { font-size: 18px; }
-        .nav-btn p { font-size: 7px; font-weight: 800; margin-top: 5px; }
+        /* Bottom Nav */
+        .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 75px; background: rgba(1,2,8,0.95); border-top: 1px solid var(--blue); display: flex; justify-content: space-around; align-items: center; z-index: 1000; padding-bottom: env(safe-area-inset-bottom); backdrop-filter: blur(15px); }
+        .nav-btn { color: rgba(0,212,255,0.4); text-align: center; flex: 1; cursor: pointer; transition: 0.3s; }
+        .nav-btn.active { color: var(--yellow); text-shadow: var(--gy); transform: translateY(-3px); }
+        .nav-btn i { font-size: 20px; }
+        .nav-btn p { font-size: 8px; font-weight: 800; margin-top: 6px; letter-spacing: 1px; }
 
-        /* Pop Alert */
-        #alert-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:10000; align-items:center; justify-content:center; backdrop-filter: blur(8px); }
-        .alert-box { width:280px; background:#050619; border:2px solid var(--pink); border-radius:25px; padding:30px; text-align:center; box-shadow: var(--gp); animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 10px var(--pink); } 50% { box-shadow: 0 0 25px var(--pink); } 100% { box-shadow: 0 0 10px var(--pink); } }
+        /* Alert Hologram */
+        #alert-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:10000; align-items:center; justify-content:center; backdrop-filter: blur(5px); }
+        .alert-box { width:300px; background:linear-gradient(180deg, #050619, #000); border:1px solid var(--pink); border-radius:20px; padding:30px; text-align:center; box-shadow: var(--gp); }
     </style>
 </head>
 <body>
@@ -60,8 +64,8 @@
 
     <div id="main-app">
         <div class="nav-top">
-            <span style="font-family:'Cinzel Decorative'; color:var(--pink); font-size:18px; letter-spacing:1px;">SUPREME OMEGA</span>
-            <div id="panic-ui" onclick="togglePanic()" style="padding:5px 12px; border:1px solid var(--pink); border-radius:15px; font-size:9px; font-weight:900; cursor:pointer; transition:0.3s;">PANIC MODE</div>
+            <span style="font-family:'Cinzel Decorative'; color:var(--cyan); font-size:20px; text-shadow:var(--gc);">SUPREME <span style="color:var(--pink); text-shadow:var(--gp);">V15</span></span>
+            <div id="panic-ui" onclick="togglePanic()" style="padding:8px 15px; border:1px solid var(--pink); border-radius:50px; font-size:9px; font-weight:900; cursor:pointer; transition:0.3s; background:rgba(255,0,119,0.1); color:var(--pink);">PANIC MODE</div>
         </div>
 
         <div class="content">
@@ -86,22 +90,29 @@
         <nav class="nav-bottom">
             <div class="nav-btn active" onclick="switchTab('kasir', this)"><i class="fas fa-bolt"></i><p>KASIR</p></div>
             <div class="nav-btn" onclick="switchTab('user', this)"><i class="fas fa-users"></i><p>PLAYERS</p></div>
-            <div class="nav-btn" onclick="switchTab('stat', this)"><i class="fas fa-chart-line"></i><p>REPORT</p></div>
-            <div class="nav-btn" onclick="location.reload()"><i class="fas fa-sync-alt"></i><p>RELOAD</p></div>
+            <div class="nav-btn" onclick="switchTab('stat', this)"><i class="fas fa-chart-pie"></i><p>REPORT</p></div>
+            <div class="nav-btn" onclick="location.reload()"><i class="fas fa-sync"></i><p>REFRESH</p></div>
         </nav>
     </div>
 
-    <div id="alert-modal"><div class="alert-box"><p id="alert-msg" style="color:var(--yellow); font-weight:800; font-size:13px; line-height:1.5;"></p><button onclick="closeAlert()" class="btn btn-pink">DISMISS</button></div></div>
+    <div id="alert-modal">
+        <div class="alert-box">
+            <i class="fas fa-exclamation-triangle" style="font-size:30px; color:var(--yellow); margin-bottom:15px; text-shadow:var(--gy);"></i>
+            <p id="alert-msg" style="color:#fff; font-weight:600; font-size:14px; line-height:1.6; margin-bottom:20px;"></p>
+            <button onclick="closeAlert()" class="btn btn-pink" style="border-radius:50px;">DISMISS</button>
+        </div>
+    </div>
 
 <script>
-    const SUPA_URL = "https://bgffnmwrviyqpeevzjsn.supabase.co"; 
-    const SUPA_KEY = "sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani"; 
+    // --- MASUKKAN KREDENSIAL SUPABASE ANDA DI SINI ---
+    const SUPA_URL = "MASUKKAN_URL_SUPABASE_ANDA"; 
+    const SUPA_KEY = "MASUKKAN_KEY_SUPABASE_ANDA"; 
     const _supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 
     let allUsers = [];
     let selectedLetter = 'A';
 
-    // Inisialisasi Data
+    // ENGINE UTAMA: Fetch Data
     async function fetchData() {
         try {
             const { data: p } = await _supa.from('profiles').select('*').order('username');
@@ -111,9 +122,13 @@
 
             if(p) { allUsers = p; renderAlphaGrid(); renderUserList(); }
             
-            // Statistik Logic: Cek nominal OR amount (Dual Column)
-            const totalD = d_all?.filter(x => x.status === 'SUKSES').reduce((a,b) => a + (Number(b.net_receive || b.amount) || 0), 0) || 0;
-            const totalW = w_all?.filter(x => x.status === 'SUKSES').reduce((a,b) => a + (Number(b.nominal || b.amount) || 0), 0) || 0;
+            // ANTI-DOUBLE LOGIC: Mengambil nilai mutlak tanpa duplikasi penjumlahan
+            const totalD = d_all?.filter(x => x.status === 'SUKSES').reduce((acc, curr) => acc + (Number(curr.net_receive) || Number(curr.amount) || 0), 0) || 0;
+            const totalW = w_all?.filter(x => x.status === 'SUKSES').reduce((acc, curr) => {
+                // Prioritaskan 'nominal', jika kosong baru pakai 'amount' (tidak dijumlahkan dua-duanya)
+                const val = curr.nominal > 0 ? curr.nominal : (curr.amount || 0);
+                return acc + Number(val);
+            }, 0) || 0;
 
             document.getElementById('stat-depo').innerText = "IDR " + totalD.toLocaleString();
             document.getElementById('stat-wd').innerText = "IDR " + totalW.toLocaleString();
@@ -121,65 +136,83 @@
             renderKasir(d_all?.filter(x => x.status === 'PROSES'), w_all?.filter(x => x.status === 'PROSES'));
             renderStatement(totalD, totalW);
             if(c) updatePanicUI(c.panic_mode);
-        } catch(e) { console.error("Fetch Error:", e); }
+        } catch(e) { console.error("Network Error:", e); }
     }
 
+    // RENDER: Navigasi A-Z
     function renderAlphaGrid() {
         const grid = document.getElementById('alpha-grid');
         const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split("");
         grid.innerHTML = chars.map(char => {
             const count = allUsers.filter(u => (u.username || "").toUpperCase().startsWith(char)).length;
             return `<div class="alpha-box ${selectedLetter===char?'active':''}" onclick="selectedLetter='${char}'; renderUserList(); renderAlphaGrid();">
-                <b style="font-size:13px;">${char}</b><br><small style="font-size:7px; color:var(--cyan)">${count}</small></div>`;
+                <b style="font-size:14px; color:#fff;">${char}</b><br><span style="font-size:8px; color:var(--cyan);">${count} NODE</span></div>`;
         }).join('');
     }
 
+    // RENDER: Daftar Player
     function renderUserList() {
         const container = document.getElementById('list-user');
         const filtered = allUsers.filter(u => (u.username || "").toUpperCase().startsWith(selectedLetter));
         container.innerHTML = filtered.map(u => `
             <div class="player-card">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <b style="color:var(--cyan); letter-spacing:1px;">${(u.username || '').toUpperCase()}</b>
-                    <span style="font-size:10px; color:var(--yellow)">BAL: ${(u.saldo||0).toLocaleString()}</span>
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(0,212,255,0.2); padding-bottom:10px;">
+                    <b style="color:var(--cyan); font-size:16px; letter-spacing:1px; text-transform:uppercase;">${u.username}</b>
+                    <span style="font-size:11px; color:var(--yellow); font-weight:800;">IDR ${(u.saldo||0).toLocaleString()}</span>
                 </div>
-                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; margin-top:12px;">
-                    <div><small style="font-size:7px; color:var(--pink); font-weight:800;">WINRATE %</small><input type="number" id="wr-${u.id}" value="${u.winrate ?? 10}"></div>
-                    <div><small style="font-size:7px; color:var(--pink); font-weight:800;">MAXWIN</small><input type="number" id="mw-${u.id}" value="${u.maxwin_limit ?? 1000000}"></div>
-                    <div><small style="font-size:7px; color:var(--pink); font-weight:800;">SESSION</small><input type="number" id="tm-${u.id}" value="${u.session_timer ?? 0}"></div>
+                <div class="input-group">
+                    <div class="input-box"><small>WINRATE %</small><input type="number" id="wr-${u.id}" value="${u.winrate ?? 10}"></div>
+                    <div class="input-box"><small>MAXWIN</small><input type="number" id="mw-${u.id}" value="${u.maxwin_limit ?? 1000000}"></div>
+                    <div class="input-box"><small>SESSION</small><input type="number" id="tm-${u.id}" value="${u.session_timer ?? 0}"></div>
                 </div>
-                <button class="btn" onclick="syncNode('${u.id}', this)">SYNC PLAYER NODE</button>
+                <button class="btn" onclick="syncNode('${u.id}', this)"><i class="fas fa-satellite-dish"></i> SYNC CORE</button>
             </div>
-        `).join('') || '<p style="text-align:center; opacity:0.3; padding:40px; font-size:10px;">NODE EMPTY</p>';
+        `).join('') || '<div style="text-align:center; padding:50px; opacity:0.3;"><i class="fas fa-ghost" style="font-size:40px;"></i><p style="margin-top:10px; font-size:10px; letter-spacing:2px;">NO PLAYERS DETECTED</p></div>';
     }
 
+    // FUNGSI: Update Player (Anti-Reset Logic)
     async function syncNode(id, btn) {
-        btn.innerText = "TRANSMITTING...";
-        const wr = parseInt(document.getElementById('wr-'+id).value);
-        const mw = parseInt(document.getElementById('mw-'+id).value);
-        const tm = parseInt(document.getElementById('tm-'+id).value);
+        btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> TRANSMITTING...";
+        btn.style.opacity = "0.7";
+        btn.disabled = true;
+
+        const wr = parseInt(document.getElementById('wr-'+id).value) || 0;
+        const mw = parseInt(document.getElementById('mw-'+id).value) || 0;
+        const tm = parseInt(document.getElementById('tm-'+id).value) || 0;
         
         const { error } = await _supa.from('profiles').update({ 
-            winrate: wr, 
-            maxwin_limit: mw, 
-            session_timer: tm 
+            winrate: wr, maxwin_limit: mw, session_timer: tm 
         }).eq('id', id);
 
-        if(!error) showAlert("SINKRONISASI BERHASIL<br>Player: " + id);
-        else showAlert("SQL ERROR:<br>" + error.message);
-        btn.innerText = "SYNC PLAYER NODE";
+        if(!error) {
+            // Update Data Lokal agar UI tidak kembali ke awal saat Render Ulang
+            let userIndex = allUsers.findIndex(u => u.id === id);
+            if(userIndex !== -1) {
+                allUsers[userIndex].winrate = wr;
+                allUsers[userIndex].maxwin_limit = mw;
+                allUsers[userIndex].session_timer = tm;
+            }
+            showAlert("<span style='color:var(--cyan);'>SYNC SUCCESSFUL</span><br><br>Node Secured.<br>Winrate Locked at " + wr + "%");
+        } else {
+            showAlert("<span style='color:var(--pink);'>SYNC FAILED</span><br><br>Database Rejected the Core Override.");
+        }
+        
+        btn.innerHTML = "<i class='fas fa-satellite-dish'></i> SYNC CORE";
+        btn.style.opacity = "1";
+        btn.disabled = false;
     }
 
+    // RENDER: Kasir (Depo & WD)
     function renderKasir(deps, wds) {
         const cont = document.getElementById('list-kasir');
         let h = '';
-        deps?.forEach(d => h += `<div class="player-card" style="border-left:5px solid var(--cyan)">
-            <small style="color:var(--cyan)">INCOMING DEPOSIT</small><h4 style="margin:5px 0;">${d.username}</h4><h3>IDR ${(d.net_receive || d.amount || 0).toLocaleString()}</h3>
-            <button class="btn" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive || d.amount})">APPROVE</button></div>`);
-        wds?.forEach(w => h += `<div class="player-card" style="border-left:5px solid var(--pink)">
-            <small style="color:var(--pink)">WITHDRAWAL REQUEST</small><h4 style="margin:5px 0;">${w.username}</h4><h3>IDR ${(w.nominal || w.amount || 0).toLocaleString()}</h3>
-            <button class="btn btn-pink" onclick="approveWD('${w.id}')">COMPLETE WD</button></div>`);
-        cont.innerHTML = h || '<p style="text-align:center; opacity:0.2; padding-top:40px; font-size:10px;">NO PENDING SIGNAL</p>';
+        deps?.forEach(d => h += `<div class="player-card" style="border-left:4px solid var(--cyan)">
+            <small style="color:var(--cyan); font-weight:800; letter-spacing:1px;">DEPOSIT REQUEST</small><h3 style="margin:5px 0; color:#fff;">${d.username}</h3><h2 style="color:var(--yellow);">IDR ${(d.net_receive || d.amount || 0).toLocaleString()}</h2>
+            <button class="btn" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive || d.amount})" style="margin-top:15px;">APPROVE DEPOSIT</button></div>`);
+        wds?.forEach(w => h += `<div class="player-card" style="border-left:4px solid var(--pink)">
+            <small style="color:var(--pink); font-weight:800; letter-spacing:1px;">WITHDRAWAL ALERT</small><h3 style="margin:5px 0; color:#fff;">${w.username}</h3><h2 style="color:var(--yellow);">IDR ${(w.nominal || w.amount || 0).toLocaleString()}</h2>
+            <button class="btn btn-pink" onclick="approveWD('${w.id}')" style="margin-top:15px;">PROCESS PAYOUT</button></div>`);
+        cont.innerHTML = h || '<div style="text-align:center; padding:50px; opacity:0.3;"><i class="fas fa-check-circle" style="font-size:40px;"></i><p style="margin-top:10px; font-size:10px; letter-spacing:2px;">ALL QUEUES CLEARED</p></div>';
     }
 
     async function approveDepo(id, user, amt) {
@@ -194,22 +227,28 @@
         fetchData();
     }
 
+    // RENDER: Laporan Keuangan
     function renderStatement(td, tw) {
         const net = td - tw;
+        const color = net >= 0 ? 'var(--cyan)' : 'var(--pink)';
+        const shadow = net >= 0 ? 'var(--gc)' : 'var(--gp)';
+        
         document.getElementById('statement-list').innerHTML = `
-            <div class="player-card" style="border:1px solid var(--yellow); text-align:center;">
-                <h2 style="font-family:'Cinzel Decorative'; color:var(--yellow); font-size:18px;">NET PROFIT</h2>
-                <div style="margin:20px 0;">
-                    <p style="font-size:10px; opacity:0.6;">GROSS DEPOSIT: IDR ${td.toLocaleString()}</p>
-                    <p style="font-size:10px; opacity:0.6;">GROSS WITHDRAW: IDR ${tw.toLocaleString()}</p>
+            <div class="player-card" style="border:1px solid rgba(251,255,0,0.5); text-align:center; padding:30px 15px;">
+                <h2 style="font-family:'Cinzel Decorative'; color:var(--yellow); font-size:22px; margin-bottom:20px;">SYSTEM LEDGER</h2>
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px; border-bottom:1px dashed rgba(255,255,255,0.1); padding-bottom:10px;">
+                    <span style="font-size:12px; color:#aaa;">GROSS IN (DEPO)</span><span style="color:var(--cyan); font-weight:800;">IDR ${td.toLocaleString()}</span>
                 </div>
-                <h1 style="color:${net >= 0 ? 'var(--cyan)' : 'var(--pink)'}; text-shadow:${net >= 0 ? 'var(--gb)' : 'var(--gp)'};">
-                    IDR ${net.toLocaleString()}
-                </h1>
+                <div style="display:flex; justify-content:space-between; margin-bottom:20px; border-bottom:1px dashed rgba(255,255,255,0.1); padding-bottom:10px;">
+                    <span style="font-size:12px; color:#aaa;">GROSS OUT (WD)</span><span style="color:var(--pink); font-weight:800;">IDR ${tw.toLocaleString()}</span>
+                </div>
+                <small style="color:#888; letter-spacing:2px; font-size:9px;">NET REVENUE OVERRIDE</small>
+                <h1 style="color:${color}; text-shadow:${shadow}; font-size:28px; margin-top:5px; font-family:'Outfit';">IDR ${net.toLocaleString()}</h1>
             </div>
         `;
     }
 
+    // FUNGSI: Panic Mode Toggle
     async function togglePanic() {
         const { data } = await _supa.from('system_config').select('panic_mode').eq('id', 1).maybeSingle();
         const next = !data?.panic_mode;
@@ -220,11 +259,13 @@
 
     function updatePanicUI(isP) {
         const pBtn = document.getElementById('panic-ui');
-        pBtn.style.background = isP ? "var(--pink)" : "transparent";
+        pBtn.style.background = isP ? "rgba(255,0,119,0.8)" : "rgba(255,0,119,0.1)";
+        pBtn.style.color = isP ? "#fff" : "var(--pink)";
         pBtn.style.boxShadow = isP ? "var(--gp)" : "none";
-        pBtn.innerText = isP ? "PANIC ACTIVE" : "PANIC MODE";
+        pBtn.innerText = isP ? "PANIC ENGAGED" : "PANIC MODE";
     }
 
+    // UI HELPER: Navigasi Tab & Alert
     function switchTab(t, el) {
         document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
         document.getElementById('tab-'+t).style.display = 'block';
@@ -233,20 +274,21 @@
     }
 
     function showAlert(m) { document.getElementById('alert-msg').innerHTML = m; document.getElementById('alert-modal').style.display = 'flex'; }
-    function closeAlert() { document.getElementById('alert-modal').style.display = 'none'; fetchData(); }
+    function closeAlert() { document.getElementById('alert-modal').style.display = 'none'; }
 
-    // Partikel Latar Belakang (Optimized)
+    // EFEK VISUAL: Cyberpunk Particle Engine
     const c = document.getElementById('canvas-bg'); const x = c.getContext('2d');
     c.width = window.innerWidth; c.height = window.innerHeight;
-    let stars = []; for(let i=0; i<60; i++) stars.push({x:Math.random()*c.width, y:Math.random()*c.height, r:Math.random()*1.2, sp:Math.random()*0.4+0.1});
+    let stars = []; for(let i=0; i<50; i++) stars.push({x:Math.random()*c.width, y:Math.random()*c.height, r:Math.random()*1.5, sp:Math.random()*0.5+0.1});
     function anim() {
-        x.clearRect(0,0,c.width,c.height); x.fillStyle = "rgba(0, 212, 255, 0.6)";
+        x.clearRect(0,0,c.width,c.height); x.fillStyle = "rgba(0, 212, 255, 0.7)";
         stars.forEach(s => { x.beginPath(); x.arc(s.x, s.y, s.r, 0, 7); x.fill(); s.y += s.sp; if(s.y > c.height) s.y = -5; });
         requestAnimationFrame(anim);
     } anim();
 
+    // AUTO-START
     fetchData();
-    setInterval(fetchData, 8000); // Auto refresh data setiap 8 detik
+    setInterval(fetchData, 10000); // Sinkronisasi latar belakang setiap 10 detik
 </script>
 </body>
 </html>
