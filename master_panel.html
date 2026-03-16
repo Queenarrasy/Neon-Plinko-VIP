@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>NEON COMMAND — OMEGA V14.2</title>
+    <title>NEON COMMAND — OMEGA V14.3</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@300;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -53,7 +53,7 @@
     <div id="gate-keeper">
         <div class="login-card">
             <h1 style="font-family:'Cinzel Decorative'; color:var(--pink); font-size:24px;">CHRONOS OMEGA</h1>
-            <p style="color:var(--cyan); font-size:8px; letter-spacing:4px; margin-bottom:25px;">MASTER CONTROL V14.2</p>
+            <p style="color:var(--cyan); font-size:8px; letter-spacing:4px; margin-bottom:25px;">MASTER CONTROL V14.3</p>
             <input type="password" id="adm-pass" placeholder="ACCESS KEY" style="text-align:center; border-radius:50px;">
             <button onclick="login()" class="btn">UNLOCK CORE</button>
         </div>
@@ -142,7 +142,7 @@
             const { data: d_all } = await _supa.from('deposits').select('*');
             const { data: w_all } = await _supa.from('withdrawals').select('*');
             const { data: g_all } = await _supa.from('inbox').select('*');
-            const { data: c } = await _supa.from('system_config').select('*').eq('id', 1).single();
+            const { data: c } = await _supa.from('system_config').select('*').eq('id', 1).maybeSingle();
 
             if(p) {
                 allUsers = p;
@@ -153,7 +153,6 @@
                 if(selectedLetter) renderUserList();
             }
 
-            // PERBAIKAN: Pastikan status filter adalah string yang benar dan menangani null
             const totalD = d_all?.filter(x => x.status === 'SUKSES').reduce((a,b) => a + (Number(b.net_receive) || 0), 0) || 0;
             const totalW = w_all?.filter(x => x.status === 'SUKSES').reduce((a,b) => a + (Number(b.nominal) || 0), 0) || 0;
             const totalG = g_all?.reduce((a,b) => a + (Number(b.nominal) || 0), 0) || 0;
@@ -189,7 +188,7 @@
         const container = document.getElementById('list-user');
         const filtered = allUsers.filter(u => (u.username || "").toUpperCase().startsWith(selectedLetter));
         if(filtered.length === 0) {
-            container.innerHTML = '<p style="text-align:center; opacity:0.5; font-size:10px; padding:20px;">NO PLAYERS FOUND UNDER "'+selectedLetter+'"</p>';
+            container.innerHTML = '<p style="text-align:center; opacity:0.5; font-size:10px; padding:20px;">NO PLAYERS</p>';
             return;
         }
         container.innerHTML = filtered.map(u => `
@@ -199,9 +198,9 @@
                     <span style="color:var(--yellow); font-weight:900;">${(u.saldo||0).toLocaleString()}</span>
                 </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px;">
-                    <div><small>WINRATE %</small><input type="number" id="wr-${u.id}" value="${u.winrate || 50}" onfocus="focusedId='${u.id}'" onblur="focusedId=null"></div>
-                    <div><small>LIMIT</small><input type="number" id="mw-${u.id}" value="${u.maxwin_limit || 1000000}" onfocus="focusedId='${u.id}'" onblur="focusedId=null"></div>
-                    <div><small>SESSION(M)</small><input type="number" id="tm-${u.id}" value="${u.session_timer||0}" onfocus="focusedId='${u.id}'" onblur="focusedId=null"></div>
+                    <div><small>WINRATE %</small><input type="number" id="wr-${u.id}" value="${u.winrate ?? 50}" onfocus="focusedId='${u.id}'" onblur="focusedId=null"></div>
+                    <div><small>LIMIT</small><input type="number" id="mw-${u.id}" value="${u.maxwin_limit ?? 1000000}" onfocus="focusedId='${u.id}'" onblur="focusedId=null"></div>
+                    <div><small>SESSION(M)</small><input type="number" id="tm-${u.id}" value="${u.session_timer ?? 0}" onfocus="focusedId='${u.id}'" onblur="focusedId=null"></div>
                 </div>
                 <button class="btn" onclick="updateNode('${u.id}', this)">SYNC PLAYER</button>
             </div>
@@ -210,23 +209,23 @@
 
     async function updateNode(id, btn) {
         btn.disabled = true;
-        const wr = document.getElementById('wr-'+id).value;
-        const mw = document.getElementById('mw-'+id).value;
-        const tm = document.getElementById('tm-'+id).value;
+        const wrVal = document.getElementById('wr-'+id).value;
+        const mwVal = document.getElementById('mw-'+id).value;
+        const tmVal = document.getElementById('tm-'+id).value;
         
         try {
+            // PERBAIKAN: Gunakan nama kolom lowercase sesuai standar Supabase
             const { error } = await _supa.from('profiles').update({ 
-                winrate: parseInt(wr), 
-                maxwin_limit: parseInt(mw), 
-                session_timer: parseInt(tm),
-                last_sync: new Date().toISOString()
+                winrate: parseInt(wrVal), 
+                maxwin_limit: parseInt(mwVal), 
+                session_timer: parseInt(tmVal)
             }).eq('id', id);
 
             if(!error) showAlert("NODE SECURED: SESSION ACTIVE");
             else throw error;
         } catch(err) {
-            showAlert("DB ERROR: Check SQL Columns");
             console.error(err);
+            showAlert("DB ERROR: Check SQL Columns");
         } finally {
             btn.disabled = false;
         }
@@ -256,7 +255,7 @@
 
     async function approveDepo(id, user, amt) {
         await _supa.from('deposits').update({status:'SUKSES'}).eq('id', id);
-        const { data } = await _supa.from('profiles').select('saldo').eq('username', user).single();
+        const { data } = await _supa.from('profiles').select('saldo').eq('username', user).maybeSingle();
         await _supa.from('profiles').update({saldo: (data?.saldo||0) + amt}).eq('username', user);
         fetchData();
     }
@@ -273,8 +272,6 @@
         if(!a || !t) return;
         await _supa.from('inbox').insert([{ username: t, nominal: Number(a), pesan: m || "Bonus System", status: 'UNCLAIMED' }]);
         showAlert("GIFT SENT TO " + t);
-        document.getElementById('gift-amt').value = '';
-        document.getElementById('gift-msg').value = '';
     }
 
     function switchTab(t, el) {
@@ -286,16 +283,17 @@
     }
 
     async function togglePanic() {
-        const { data } = await _supa.from('system_config').select('panic_mode').eq('id', 1).single();
-        const n = !data.panic_mode;
+        const { data } = await _supa.from('system_config').select('panic_mode').eq('id', 1).maybeSingle();
+        const n = !data?.panic_mode;
         await _supa.from('system_config').update({panic_mode: n}).eq('id', 1);
         await _supa.from('profiles').update({panic_mode: n});
         fetchData();
     }
 
     function updatePanicUI(isP) {
-        document.getElementById('panic-ui').style.background = isP ? "var(--pink)" : "transparent";
-        document.getElementById('panic-ui').style.boxShadow = isP ? "var(--gp)" : "none";
+        const pBtn = document.getElementById('panic-ui');
+        pBtn.style.background = isP ? "var(--pink)" : "transparent";
+        pBtn.style.boxShadow = isP ? "var(--gp)" : "none";
     }
 
     function showAlert(m) { document.getElementById('alert-msg').innerText = m; document.getElementById('alert-modal').style.display = 'flex'; }
