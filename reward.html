@@ -16,7 +16,7 @@
           --bg: #02030d;
           --shadow-p: 0 0 25px rgba(255, 0, 119, 0.7);
           --shadow-b: 0 0 30px rgba(0, 34, 255, 0.7);
-          --shadow-y: 0 0 20px rgba(251, 255, 0, 0.6);
+          --shadow-y: 0 0 25px rgba(251, 255, 0, 0.8);
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
@@ -27,7 +27,6 @@
           min-height: 100vh; overflow-x: hidden;
         }
 
-        /* Latar belakang partikel menembus kotak transparan */
         #bg-canvas {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 1; opacity: 0.5; pointer-events: none;
@@ -62,17 +61,21 @@
         .prize-item { font-size: 10px; font-weight: 800; color: #fff; }
         .prize-item b { display: block; font-size: 20px; color: var(--yellow); margin-top: 5px; text-shadow: var(--shadow-y); }
 
-        /* BINGKAI INCOMING GIFT TEBAL KUNING NEON */
+        /* BINGKAI INCOMING GIFT - SUPER TEBAL KUNING */
         .mail-list { display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px; }
         .mail-item {
-          background: rgba(251, 255, 0, 0.05); 
-          border: 4px solid var(--yellow); /* TEBAL */
-          border-radius: 20px; padding: 18px; 
-          box-shadow: var(--shadow-y), inset 0 0 15px rgba(251, 255, 0, 0.1);
-          backdrop-filter: blur(6px);
+          background: rgba(251, 255, 0, 0.1); 
+          border: 5px solid var(--yellow); /* Lebih Tebal */
+          border-radius: 20px; padding: 20px; 
+          box-shadow: var(--shadow-y), inset 0 0 20px rgba(251, 255, 0, 0.2);
+          backdrop-filter: blur(8px);
+          animation: pulseYellow 2s infinite ease-in-out;
+        }
+        @keyframes pulseYellow {
+            0%, 100% { border-color: var(--yellow); box-shadow: var(--shadow-y); }
+            50% { border-color: #fff; box-shadow: 0 0 40px var(--yellow); }
         }
 
-        /* Card Styles */
         .card {
           background: rgba(0, 34, 255, 0.08); border: 3px solid var(--blue);
           border-radius: 25px; padding: 20px; text-align: center; margin-bottom: 20px;
@@ -99,7 +102,6 @@
             text-shadow: var(--shadow-p);
         }
 
-        /* History List Styles */
         .history-card {
             background: rgba(0, 34, 255, 0.05); border: 2px solid var(--blue);
             border-radius: 20px; padding: 15px; max-height: 200px; overflow-y: auto;
@@ -116,7 +118,6 @@
         .status-valid { border: 1px solid var(--yellow); color: var(--yellow); box-shadow: var(--shadow-y); }
         .status-pending { border: 1px solid var(--pink); color: var(--pink); box-shadow: var(--shadow-p); }
 
-        /* Buttons */
         .btn-main {
           width: 100%; padding: 15px; border: none; border-radius: 14px;
           background: var(--blue); color: #fff; font-weight: 900; 
@@ -127,7 +128,6 @@
         .btn-main:active { transform: scale(0.96); }
         .btn-main:disabled { opacity: 0.3; filter: grayscale(1); }
 
-        /* Modal */
         #modal-overlay { 
             display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); 
             z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(10px); 
@@ -137,7 +137,6 @@
             padding: 30px; width: 85%; max-width: 320px; text-align: center; box-shadow: var(--shadow-b); 
         }
 
-        /* Navbar */
         .nav-bar { 
             position: fixed; bottom: 0; width: 100%; height: 80px; 
             background: rgba(2, 3, 13, 0.95); display: flex; justify-content: space-around; 
@@ -192,7 +191,7 @@
 
     <div class="section-title"><i class="fas fa-history"></i> LAST INVITED</div>
     <div class="history-card" id="history-list">
-        <div style="text-align:center; padding:20px; opacity:0.5; font-size:12px; color:var(--yellow);">Loading...</div>
+        <div style="text-align:center; padding:20px; opacity:0.5; font-size:12px; color:var(--yellow);">No data</div>
     </div>
 </div>
 
@@ -213,7 +212,6 @@
 </nav>
 
 <script>
-// Mengambil username yang konsisten dengan config.js
 const USERNAME = getUsername();
 
 // --- ANIMASI BACKGROUND ---
@@ -255,11 +253,9 @@ function playSnd(id) {
     if(s) { s.currentTime = 0; s.play().catch(()=>{}); } 
 }
 
-// --- FUNGSI REWARD (INTEGRASI SUPABASE) ---
+// --- FUNGSI REWARD ---
 async function initReward() {
     if(!USERNAME) return;
-
-    // Load Data Referal & Inbox
     loadReferralStats();
     loadInbox();
 }
@@ -267,10 +263,10 @@ async function initReward() {
 async function loadReferralStats() {
     const histContainer = document.getElementById('history-list');
     try {
-        const { data: friends } = await _supabase.from('profiles').select('username, created_at').eq('invited_by', USERNAME).order('created_at', { ascending: false });
+        const { data: friends } = await _supabase.from('profiles').select('username, created_at').eq('referred_by', USERNAME).order('created_at', { ascending: false });
         
         if(!friends || friends.length === 0) {
-            histContainer.innerHTML = '<div style="text-align:center; opacity:0.4; padding:20px; color:var(--yellow);">No referrals yet</div>';
+            histContainer.innerHTML = '<div style="text-align:center; opacity:0.4; padding:20px; color:var(--yellow);">Belum ada referral</div>';
             return;
         }
 
@@ -282,7 +278,7 @@ async function loadReferralStats() {
         const bonus = valids.size * 5000;
         document.getElementById('bonus-ref').innerText = "Rp " + bonus.toLocaleString();
 
-        // Klaim Mingguan Aktif di Hari Minggu
+        // Aktifkan klaim di hari Minggu
         if(new Date().getDay() === 0 && bonus > 0) {
             const b = document.getElementById('btn-claim-ref');
             b.disabled = false; 
@@ -306,50 +302,75 @@ async function loadReferralStats() {
 async function loadInbox() {
     const list = document.getElementById('mail-list');
     try {
-        const { data } = await _supabase.from('inbox').select('*').eq('username', USERNAME).eq('status', 'UNCLAIMED');
+        // PERBAIKAN: Pastikan memanggil status UNCLAIMED sesuai dashboard admin
+        const { data, error } = await _supabase.from('inbox')
+            .select('*')
+            .eq('username', USERNAME)
+            .eq('status', 'UNCLAIMED');
+
+        if(error) throw error;
+
         if(data && data.length > 0) {
             list.innerHTML = data.map(m => `
                 <div class="mail-item">
-                    <div style="font-size:11px; color:var(--pink); margin-bottom:6px; font-weight:900;">VIP NEON GIFT</div>
-                    <div style="font-size:14px; margin-bottom:12px; color:#fff;">${m.pesan}</div>
-                    <div style="color:var(--yellow); font-weight:900; font-size:20px; margin-bottom:15px; text-shadow:var(--shadow-y);">Rp ${m.nominal.toLocaleString()}</div>
-                    <button class="btn-main" onclick="claimMail(${m.id}, ${m.nominal})">REDEEM NOW</button>
+                    <div style="font-size:11px; color:var(--pink); margin-bottom:8px; font-weight:900;"><i class="fas fa-bolt"></i> VIP NEON GIFT</div>
+                    <div style="font-size:14px; margin-bottom:12px; color:#fff; font-weight:600;">${m.pesan || 'Hadiah Admin'}</div>
+                    <div style="color:var(--yellow); font-weight:900; font-size:24px; margin-bottom:15px; text-shadow:var(--shadow-y);">Rp ${(m.nominal || 0).toLocaleString()}</div>
+                    <button class="btn-main" onclick="claimMail(${m.id}, ${m.nominal})">AMBIL SEKARANG</button>
                 </div>
             `).join('');
         } else {
-            list.innerHTML = '<div style="text-align:center; opacity:0.4; padding:25px; font-size:12px; border:2px dashed var(--yellow); border-radius:20px; color:var(--yellow);">Inbox Kosong</div>';
+            list.innerHTML = '<div style="text-align:center; opacity:0.6; padding:30px; border:2px dashed var(--yellow); border-radius:20px; color:var(--yellow);"><i class="fas fa-envelope-open" style="font-size:20px; display:block; margin-bottom:10px;"></i>Belum ada hadiah masuk</div>';
         }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error("Inbox Error:", e.message); }
 }
 
 async function claimMail(id, amt) {
     playSnd('snd-click');
     try {
+        // Ambil saldo terbaru
         const { data: p } = await _supabase.from('profiles').select('saldo').eq('username', USERNAME).single();
-        await _supabase.from('profiles').update({ saldo: p.saldo + amt }).eq('username', USERNAME);
-        await _supabase.from('inbox').update({ status: 'CLAIMED' }).eq('id', id);
-        playSnd('snd-success');
-        showModal("REDEEMED", "Bonus Rp " + amt.toLocaleString() + " telah ditambahkan ke saldo!");
-        syncNeonData(); // Sinkron ulang saldo
-        loadInbox();
-    } catch (e) { alert("Redeem Gagal"); }
+        const newSaldo = (p.saldo || 0) + amt;
+
+        // Update saldo & status inbox
+        const { error: updSaldo } = await _supabase.from('profiles').update({ saldo: newSaldo }).eq('username', USERNAME);
+        const { error: updInbox } = await _supabase.from('inbox').update({ status: 'CLAIMED' }).eq('id', id);
+
+        if(!updSaldo && !updInbox) {
+            playSnd('snd-success');
+            showModal("BERHASIL", "Hadiah Rp " + amt.toLocaleString() + " masuk ke saldo!");
+            syncNeonData(); // Update tampilan saldo di header (via config.js)
+            loadInbox(); // Refresh list hadiah
+        }
+    } catch (e) { alert("Gagal mengambil hadiah."); }
 }
 
 async function processRefClaim() {
     playSnd('snd-click');
     try {
-        const { data: friends } = await _supabase.from('profiles').select('username').eq('invited_by', USERNAME);
+        // Hitung ulang bonus untuk keamanan
+        const { data: friends } = await _supabase.from('profiles').select('username').eq('referred_by', USERNAME);
         const uList = friends.map(f => f.username);
         const { data: vDepo } = await _supabase.from('deposits').select('username').in('username', uList).eq('status', 'SUKSES').gte('amount', 20000);
         const validCount = [...new Set(vDepo.map(d => d.username))].length;
         const bonus = validCount * 5000;
         
+        if(bonus <= 0) return;
+
         const { data: p } = await _supabase.from('profiles').select('saldo').eq('username', USERNAME).single();
         await _supabase.from('profiles').update({ saldo: p.saldo + bonus }).eq('username', USERNAME);
-        await _supabase.from('deposits').insert([{ username: USERNAME, amount: bonus, method: 'REFERRAL', status: 'SUKSES', net_receive: bonus, keterangan: 'REF_WEEKLY' }]);
+        
+        // Catat sebagai deposit referral
+        await _supabase.from('deposits').insert([{ 
+            username: USERNAME, 
+            amount: bonus, 
+            method: 'REFERRAL_BONUS', 
+            status: 'SUKSES', 
+            keterangan: 'Klaim Mingguan' 
+        }]);
         
         playSnd('snd-success');
-        showModal("SUCCESS", "Bonus Referral Mingguan Rp " + bonus.toLocaleString() + " Berhasil Dicairkan!");
+        showModal("SUKSES", "Bonus Referral Rp " + bonus.toLocaleString() + " dicairkan!");
         syncNeonData();
         loadReferralStats();
     } catch (e) { alert("Klaim Gagal"); }
@@ -359,15 +380,23 @@ function copyRef() {
     playSnd('snd-click'); 
     const code = document.getElementById('ref-code').innerText;
     if(code !== "REFRESHING...") {
-        navigator.clipboard.writeText(code); 
-        showModal("COPIED", "Kode Referral disalin ke clipboard!"); 
+        navigator.clipboard.writeText(code).then(() => {
+            showModal("DISALIN", "Kode " + code + " siap dibagikan!"); 
+        });
     }
 }
 
-function showModal(t, m) { document.getElementById('m-title').innerText = t; document.getElementById('m-msg').innerText = m; document.getElementById('modal-overlay').style.display = 'flex'; }
-function closeModal() { playSnd('snd-click'); document.getElementById('modal-overlay').style.display = 'none'; }
+function showModal(t, m) { 
+    document.getElementById('m-title').innerText = t; 
+    document.getElementById('m-msg').innerText = m; 
+    document.getElementById('modal-overlay').style.display = 'flex'; 
+}
 
-// Jalankan inisialisasi reward
+function closeModal() { 
+    playSnd('snd-click'); 
+    document.getElementById('modal-overlay').style.display = 'none'; 
+}
+
 window.addEventListener('load', initReward);
 </script>
 </body>
