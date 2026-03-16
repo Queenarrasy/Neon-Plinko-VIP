@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>NEON COMMAND — SUPREME ADMIN V10.1</title>
+    <title>NEON COMMAND — SUPREME ADMIN V10.2</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -189,13 +189,14 @@
 
     function startMonitoring() {
         refreshAll();
-        // BACKUP REFRESH: Setiap 3 detik tarik data paksa (Mencegah saldo berhenti)
+        // FORCE REFRESH: Setiap 2 detik untuk memastikan saldo mengalir di jendela mengambang
         if(autoRefreshTimer) clearInterval(autoRefreshTimer);
-        autoRefreshTimer = setInterval(refreshAll, 3000);
+        autoRefreshTimer = setInterval(refreshAll, 2000);
 
-        // REALTIME SUBSCRIPTION
-        _supa.channel('db-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        // REALTIME SUBSCRIPTION: Menggunakan channel broadcast untuk memicu refresh instan
+        _supa.channel('room1')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload) => {
+            console.log('Realtime change:', payload);
             refreshAll();
         })
         .subscribe();
@@ -218,40 +219,53 @@
     }
 
     async function loadUserSmart() {
-        // Jangan refresh UI jika Admin sedang menginput data agar ketikan tidak hilang
+        // Mencegah gangguan saat mengetik
         if(document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA") return;
 
         const { data } = await _supa.from('profiles').select('*').order('username', {ascending:true});
         if(!data) return;
 
-        document.getElementById('list-user').innerHTML = data.map(u => `
-            <div class="card" style="${u.saldo > 0 ? 'border-color:var(--yellow); box-shadow:var(--gy);' : ''}">
-                <div style="display:flex; justify-content:space-between;">
-                    <b style="color:var(--pink);">${u.username.toUpperCase()}</b>
-                    <span style="color:var(--yellow); font-weight:800;">${Number(u.saldo).toLocaleString()}</span>
+        document.getElementById('list-user').innerHTML = data.map(u => {
+            // Logika Deteksi Limit untuk membantu visual Admin
+            const isLimit = u.saldo >= u.maxwin_limit;
+            const cardColor = isLimit ? 'border: 2px solid var(--pink); box-shadow: var(--gp);' : (u.saldo > 0 ? 'border: 1px solid var(--yellow); box-shadow: var(--gy);' : '');
+
+            return `
+            <div class="card" style="${cardColor}">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <b style="color:${isLimit ? 'var(--yellow)' : 'var(--pink)'};">${isLimit ? '⚠️ ' : ''}${u.username.toUpperCase()}</b>
+                    <span style="color:var(--yellow); font-weight:800; font-size:15px;">${Number(u.saldo).toLocaleString()}</span>
                 </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px; margin-top:10px;">
-                    <div><small style="font-size:8px;">WR%</small><input type="number" id="wr-${u.id}" value="${u.winrate}"></div>
-                    <div><small style="font-size:8px;">MAXW</small><input type="number" id="mw-${u.id}" value="${u.maxwin_limit}"></div>
-                    <div><small style="font-size:8px;">TIME</small><input type="number" id="tm-${u.id}" value="${u.session_minutes}"></div>
+                    <div><small style="font-size:8px; color:var(--cyan)">WIN%</small><input type="number" id="wr-${u.id}" value="${u.winrate}"></div>
+                    <div><small style="font-size:8px; color:var(--cyan)">LIMIT</small><input type="number" id="mw-${u.id}" value="${u.maxwin_limit}"></div>
+                    <div><small style="font-size:8px; color:var(--cyan)">MINS</small><input type="number" id="tm-${u.id}" value="${u.session_minutes}"></div>
                 </div>
-                <button class="btn-main" style="margin-top:8px; height:30px; font-size:9px;" onclick="saveUser('${u.id}')">COMMIT</button>
-            </div>`).join('');
+                <button class="btn-main" style="margin-top:8px; height:32px; font-size:9px; border-radius:10px;" onclick="saveUser('${u.id}')">SAVE CONFIG</button>
+            </div>`;
+        }).join('');
     }
 
     async function saveUser(id) {
-        const wr = document.getElementById('wr-'+id).value;
-        const mw = document.getElementById('mw-'+id).value;
-        const tm = document.getElementById('tm-'+id).value;
+        const wr = parseInt(document.getElementById('wr-'+id).value);
+        const mw = parseInt(document.getElementById('mw-'+id).value);
+        const tm = parseInt(document.getElementById('tm-'+id).value);
         
-        await _supa.from('profiles').update({
-            winrate: parseInt(wr),
-            maxwin_limit: parseInt(mw),
-            session_minutes: parseInt(tm)
+        // Proteksi Tambahan: Jika WR dikosongkan atau salah input
+        const finalWR = isNaN(wr) ? 50 : wr;
+
+        const { error } = await _supa.from('profiles').update({
+            winrate: finalWR,
+            maxwin_limit: mw,
+            session_minutes: tm
         }).eq('id', id);
         
-        showAlert("CONFIG UPDATED");
-        refreshAll();
+        if(!error) {
+            showAlert("UPLINK SUCCESS: CONFIG SYNCED");
+            refreshAll();
+        } else {
+            showAlert("SYNC ERROR: RE-INITIALIZING...");
+        }
     }
 
     async function loadKasir() {
@@ -259,12 +273,12 @@
         let html = '';
         if(depo) depo.forEach(d => {
             html += `<div class="card" style="border-left:4px solid var(--yellow)">
-                <span class="card-label">DEP: ${d.username}</span>
-                <b>IDR ${Number(d.net_receive).toLocaleString()}</b>
-                <button class="btn-main" style="margin-top:10px;" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive})">APPROVE</button>
+                <span class="card-label">NODES: ${d.username}</span>
+                <b style="color:var(--yellow)">IDR ${Number(d.net_receive).toLocaleString()}</b>
+                <button class="btn-main" style="margin-top:10px; background:var(--blue);" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive})">AUTHORIZE</button>
             </div>`;
         });
-        document.getElementById('list-kasir').innerHTML = html || '<p style="text-align:center; opacity:0.3; font-size:10px;">NO INCOMING SIGNALS</p>';
+        document.getElementById('list-kasir').innerHTML = html || '<p style="text-align:center; opacity:0.3; font-size:10px; letter-spacing:2px;">NO INCOMING SIGNALS</p>';
     }
 
     async function approveDepo(id, user, amt) {
@@ -304,7 +318,7 @@
     async function loadGiftTarget() {
         const { data } = await _supa.from('profiles').select('username');
         if(data) {
-            document.getElementById('gift-target').innerHTML = '<option value="">-- TARGET --</option>' + 
+            document.getElementById('gift-target').innerHTML = '<option value="">-- SELECT TARGET --</option>' + 
                 data.map(u => `<option value="${u.username}">${u.username.toUpperCase()}</option>`).join('');
         }
     }
@@ -312,9 +326,10 @@
     async function sendGift() {
         const target = document.getElementById('gift-target').value;
         const amount = document.getElementById('gift-amount').value;
-        if(!target || !amount) return;
-        await _supa.from('inbox').insert([{ username: target, nominal: Number(amount), pesan: document.getElementById('gift-msg').value || "SYS_GIFT", status: 'UNCLAIMED' }]);
-        showAlert("TRANSFER SUCCESS");
+        if(!target || !amount) return showAlert("INPUT INVALID");
+        await _supa.from('inbox').insert([{ username: target, nominal: Number(amount), pesan: document.getElementById('gift-msg').value || "SYS_BONUS", status: 'UNCLAIMED' }]);
+        showAlert("CHIPS TRANSMITTED");
+        document.getElementById('gift-amount').value = "";
     }
 
     function showAlert(m) { document.getElementById('alert-msg').innerText = m; document.getElementById('alert-modal').style.display = 'flex'; }
@@ -323,6 +338,7 @@
 
     function drawStars() {
         const c = document.getElementById('canvas-bg'); const x = c.getContext('2d');
+        if(!c) return;
         c.width = window.innerWidth; c.height = window.innerHeight;
         let s = [];
         for(let i=0; i<85; i++) s.push({x:Math.random()*c.width, y:Math.random()*c.height, r:Math.random()*2, sp:Math.random()*0.4+0.1, o:Math.random()*0.6+0.4});
