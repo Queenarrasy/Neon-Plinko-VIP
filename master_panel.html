@@ -3,56 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>NEON COMMAND — OMEGA V12.0</title>
+    <title>NEON MATRIX — V13.0 OMEGA</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@300;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { 
             --pink: #ff0077; --blue: #0022ff; --cyan: #00d4ff; --yellow: #fbff00; --bg: #010208;
-            --gp: 0 0 25px #ff0077; --gb: 0 0 30px #0022ff; --gy: 0 0 25px #fbff00;
+            --gp: 0 0 20px #ff0077; --gb: 0 0 25px #0022ff; --gy: 0 0 20px #fbff00;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; overflow-x: hidden; min-height: 100vh; }
         #canvas-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
         
-        /* LOGIN PAGE - FULL NEON & PARTICLES */
+        /* LOGIN PAGE */
         #gate-keeper { position: fixed; inset: 0; background: radial-gradient(circle at center, #050a24, #000); z-index: 9999; display: flex; align-items: center; justify-content: center; }
-        .login-card { width: 85%; max-width: 380px; padding: 50px 30px; border: 3px solid var(--pink); border-radius: 40px; background: rgba(1, 2, 8, 0.9); box-shadow: var(--gp); backdrop-filter: blur(15px); text-align: center; border-style: double; }
-        .login-card h1 { font-family: 'Cinzel Decorative'; color: var(--pink); font-size: 28px; text-shadow: var(--gp); margin-bottom: 5px; }
-        
+        .login-card { width: 85%; max-width: 380px; padding: 50px 30px; border: 2px solid var(--pink); border-radius: 40px; background: rgba(1, 2, 8, 0.95); box-shadow: var(--gp); text-align: center; }
+
         /* NAV TOP */
-        .nav-top { background: rgba(1,2,8,0.95); padding: 15px 20px; border-bottom: 2px solid var(--blue); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(15px); display: flex; justify-content: space-between; align-items: center; box-shadow: var(--gb); }
-        .content { padding: 15px; padding-bottom: 120px; max-width: 650px; margin: auto; position: relative; z-index: 10; }
+        .nav-top { background: rgba(1,2,8,0.95); padding: 15px 20px; border-bottom: 2px solid var(--blue); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(15px); display: flex; justify-content: space-between; align-items: center; }
+        .content { padding: 15px; padding-bottom: 120px; max-width: 700px; margin: auto; position: relative; z-index: 10; }
+
+        /* ALPHABET GRID */
+        .matrix-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 20px; }
+        .alpha-box { background: rgba(0, 34, 255, 0.1); border: 1px solid var(--blue); border-radius: 10px; padding: 10px 5px; text-align: center; cursor: pointer; transition: 0.3s; }
+        .alpha-box.active { background: var(--pink); border-color: var(--yellow); box-shadow: var(--gp); }
+        .alpha-box b { display: block; font-size: 16px; color: var(--yellow); }
+        .alpha-box small { font-size: 9px; color: var(--cyan); font-weight: 800; }
+
+        /* DAILY REPORT BOX */
+        .report-card { background: linear-gradient(90deg, #000, #050a24); border: 1.5px solid var(--cyan); border-radius: 15px; padding: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: inset 0 0 15px rgba(0, 212, 255, 0.2); }
+
+        /* PLAYER CARDS */
+        .player-card { background: rgba(5,6,25,0.95); border: 1.5px solid var(--blue); border-radius: 20px; padding: 18px; margin-bottom: 15px; }
+        .card-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         
-        /* USER LIST & CARDS */
-        .player-card { background: rgba(5,6,25,0.9); border: 2px solid var(--blue); border-radius: 25px; padding: 20px; margin-bottom: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: 0.3s; }
-        .card-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid rgba(0,212,255,0.2); padding-bottom: 12px; margin-bottom: 12px; }
-        .user-meta b { color: var(--cyan); font-size: 16px; text-shadow: 0 0 10px var(--cyan); }
-        .user-meta span { display: block; font-size: 9px; color: #888; margin-top: 3px; }
-        .user-saldo { text-align: right; }
-        .user-saldo .amt { color: var(--yellow); font-size: 18px; font-weight: 900; text-shadow: var(--gy); }
+        input, textarea, select { width: 100%; padding: 12px; background: #000; border: 1px solid var(--blue); color: var(--yellow); border-radius: 12px; font-size: 13px; outline: none; margin-top: 5px; font-family: 'Outfit'; }
+        .btn { background: linear-gradient(90deg, var(--blue), #000088); color: #fff; border: 1px solid var(--cyan); padding: 12px; border-radius: 50px; font-weight: 900; width: 100%; cursor: pointer; text-transform: uppercase; font-size: 10px; letter-spacing: 1px; margin-top: 10px; box-shadow: var(--gb); }
+        .btn-pink { background: linear-gradient(90deg, var(--pink), #aa0044); border-color: var(--yellow); }
 
-        /* INPUTS & BUTTONS */
-        input, textarea, select { width: 100%; padding: 14px; background: #000; border: 1.5px solid var(--blue); color: var(--yellow); border-radius: 15px; font-size: 14px; outline: none; margin-top: 8px; font-family: 'Outfit'; font-weight: 600; }
-        input:focus { border-color: var(--pink); box-shadow: var(--gp); }
-        .btn { background: linear-gradient(135deg, var(--blue), #0000aa); color: #fff; border: 1px solid var(--cyan); padding: 15px; border-radius: 50px; font-weight: 900; width: 100%; cursor: pointer; text-transform: uppercase; font-size: 11px; letter-spacing: 2px; margin-top: 15px; box-shadow: var(--gb); }
-        .btn-pink { background: linear-gradient(135deg, var(--pink), #aa0044); border-color: var(--yellow); box-shadow: var(--gp); }
-        .btn:active { transform: scale(0.95); }
-
-        /* NAVIGATION BOTTOM */
-        .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 85px; background: #000; border-top: 2px solid var(--blue); display: flex; justify-content: space-around; align-items: center; z-index: 1000; padding-bottom: env(safe-area-inset-bottom); }
-        .nav-btn { color: rgba(0,212,255,0.3); text-align: center; flex: 1; cursor: pointer; transition: 0.3s; }
+        /* NAV BOTTOM */
+        .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 80px; background: #000; border-top: 2px solid var(--blue); display: flex; justify-content: space-around; align-items: center; z-index: 1000; padding-bottom: env(safe-area-inset-bottom); }
+        .nav-btn { color: rgba(0,212,255,0.3); text-align: center; flex: 1; cursor: pointer; }
         .nav-btn.active { color: var(--yellow); text-shadow: var(--gy); }
-        .nav-btn i { font-size: 22px; }
-        .nav-btn span { display: block; font-size: 9px; font-weight: 800; margin-top: 5px; text-transform: uppercase; }
+        .nav-btn span { display: block; font-size: 8px; font-weight: 800; margin-top: 5px; }
 
-        /* ALERT MODAL */
-        #alert-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:10000; align-items:center; justify-content:center; backdrop-filter: blur(5px); }
-        .alert-box { width:300px; background:#050619; border:2px solid var(--pink); border-radius:30px; padding:35px; text-align:center; box-shadow: var(--gp); }
-
-        /* STATUS DOT */
-        .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; background: #00ff00; box-shadow: 0 0 10px #00ff00; }
+        #alert-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:10000; align-items:center; justify-content:center; }
+        .alert-box { width:280px; background:#050619; border:2px solid var(--pink); border-radius:25px; padding:30px; text-align:center; box-shadow: var(--gp); }
     </style>
 </head>
 <body>
@@ -60,69 +57,68 @@
 
     <div id="gate-keeper">
         <div class="login-card">
-            <h1>NEON COMMAND</h1>
-            <p style="color:var(--cyan); font-size:9px; letter-spacing:5px; margin-bottom:30px; font-weight:800;">UPLINK V12.0 OMEGA</p>
-            <input type="password" id="adm-pass" placeholder="MASTER ACCESS KEY" style="text-align:center; border-radius:50px;">
-            <button onclick="login()" class="btn">INITIALIZE SYSTEM</button>
+            <h1 style="font-family:'Cinzel Decorative'; color:var(--pink); font-size:24px; text-shadow: var(--gp);">COMMAND CENTER</h1>
+            <p style="color:var(--cyan); font-size:8px; letter-spacing:4px; margin-bottom:25px;">MATRIX V13.0 OMEGA</p>
+            <input type="password" id="adm-pass" placeholder="ACCESS KEY" style="text-align:center; border-radius:50px;">
+            <button onclick="login()" class="btn">INITIALIZE CORE</button>
         </div>
     </div>
 
     <div id="main-app" style="display:none;">
         <div class="nav-top">
             <div>
-                <span style="font-family:'Cinzel Decorative'; color:var(--pink); font-size:20px; text-shadow: var(--gp);">SUPREME</span>
-                <small id="sync-info" style="display:block; color:var(--cyan); font-size:8px;"><i class="fas fa-circle-notch fa-spin"></i> SYSTEM SYNCED</small>
+                <span style="font-family:'Cinzel Decorative'; color:var(--pink); font-size:18px;">SUPREME</span>
+                <small style="display:block; color:var(--cyan); font-size:8px;"><i class="fas fa-microchip fa-spin"></i> SYSTEM STABLE</small>
             </div>
-            <div id="panic-ui" onclick="togglePanic()" style="padding:8px 15px; border:2px solid var(--pink); border-radius:20px; font-size:10px; font-weight:900; cursor:pointer; transition:0.3s;">PANIC MODE</div>
+            <div id="panic-ui" onclick="togglePanic()" style="padding:5px 12px; border:1px solid var(--pink); border-radius:15px; font-size:9px; font-weight:900; cursor:pointer;">PANIC MODE</div>
         </div>
 
         <div class="content">
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:25px;">
-                <div style="background:rgba(0,0,0,0.8); border:1px solid var(--blue); padding:15px; border-radius:20px; text-align:center;">
-                    <small style="color:var(--pink); font-size:9px; font-weight:800;">TOTAL LIQUIDITY</small>
-                    <span id="total-saldo" style="display:block; color:var(--yellow); font-size:20px; font-weight:900; text-shadow:var(--gy);">0</span>
+            <div class="report-card">
+                <div>
+                    <small style="color:var(--cyan); font-weight:800;">DAILY NEW REGISTRATION</small>
+                    <h2 id="new-players-count" style="color:var(--yellow); font-size:24px; text-shadow:var(--gy);">0</h2>
                 </div>
-                <div style="background:rgba(0,0,0,0.8); border:1px solid var(--blue); padding:15px; border-radius:20px; text-align:center;">
-                    <small style="color:var(--pink); font-size:9px; font-weight:800;">ACTIVE NODES</small>
-                    <span id="total-users" style="display:block; color:var(--yellow); font-size:20px; font-weight:900; text-shadow:var(--gy);">0</span>
-                </div>
+                <i class="fas fa-chart-line" style="color:var(--pink); font-size:30px;"></i>
             </div>
 
             <div id="tab-kasir" class="page">
-                <h2 style="font-size:11px; color:var(--cyan); margin-bottom:15px; letter-spacing:3px;">INCOMING SIGNALS (DEPO/WD)</h2>
+                <h2 style="font-size:10px; color:var(--cyan); margin-bottom:15px; letter-spacing:2px;">TRANSACTION FLOW</h2>
                 <div id="list-kasir"></div>
             </div>
 
             <div id="tab-user" class="page" style="display:none;">
-                <div style="position:sticky; top:80px; z-index:50; background:var(--bg); padding-bottom:15px;">
-                    <input type="text" id="user-search" placeholder="CARI USERNAME PEMAIN..." oninput="renderUsers()" style="border-radius:50px; border-color:var(--cyan);">
-                </div>
+                <input type="text" id="user-search" placeholder="CARI USERNAME..." oninput="renderAlphaGrid()" style="margin-bottom:15px; border-color:var(--cyan); border-radius:50px;">
+                
+                <div class="matrix-grid" id="alpha-grid"></div>
+                
+                <div id="selected-initial-title" style="color:var(--pink); font-size:12px; font-weight:800; margin-bottom:10px; text-transform:uppercase;"></div>
                 <div id="list-user"></div>
             </div>
 
             <div id="tab-gift" class="page" style="display:none;">
                 <div class="player-card">
-                    <h3 style="color:var(--pink); margin-bottom:15px;">INJECT SYSTEM BALANCE</h3>
-                    <small style="color:var(--cyan); font-weight:800;">TARGET PEMAIN</small>
+                    <h3 style="color:var(--pink); font-size:14px; margin-bottom:10px;">GIFT TRANSMISSION</h3>
+                    <small>TARGET NODE</small>
                     <select id="gift-target"></select>
-                    <small style="color:var(--cyan); font-weight:800;">NOMINAL (IDR)</small>
-                    <input type="number" id="gift-amt" placeholder="Masukan jumlah...">
-                    <small style="color:var(--cyan); font-weight:800;">KOTAK PESAN (INBOX)</small>
-                    <textarea id="gift-msg" rows="3" placeholder="Tulis pesan bonus di sini..."></textarea>
-                    <button onclick="sendGift()" class="btn">TRANSMIT BALANCE</button>
+                    <small>NOMINAL (IDR)</small>
+                    <input type="number" id="gift-amt" placeholder="0">
+                    <small>MESSAGE</small>
+                    <textarea id="gift-msg" rows="3" placeholder="Pesan hadiah..."></textarea>
+                    <button onclick="sendGift()" class="btn">SEND GIFT</button>
                 </div>
             </div>
         </div>
 
         <nav class="nav-bottom">
             <div class="nav-btn active" onclick="switchTab('kasir', this)"><i class="fas fa-bolt"></i><span>KASIR</span></div>
-            <div class="nav-btn" onclick="switchTab('user', this)"><i class="fas fa-users-cog"></i><span>PLAYERS</span></div>
+            <div class="nav-btn" onclick="switchTab('user', this)"><i class="fas fa-th-large"></i><span>PLAYERS</span></div>
             <div class="nav-btn" onclick="switchTab('gift', this)"><i class="fas fa-gift"></i><span>GIFT</span></div>
             <div class="nav-btn" onclick="location.reload()"><i class="fas fa-power-off"></i><span>EXIT</span></div>
         </nav>
     </div>
 
-    <div id="alert-modal"><div class="alert-box"><p id="alert-msg" style="color:var(--yellow); font-weight:800;"></p><button onclick="closeAlert()" class="btn btn-pink">NOTED</button></div></div>
+    <div id="alert-modal"><div class="alert-box"><p id="alert-msg" style="font-weight:800; color:var(--yellow); font-size:13px;"></p><button onclick="closeAlert()" class="btn btn-pink">CONFIRM</button></div></div>
 
 <script>
     const SUPA_URL = "https://bgffnmwrviyqpeevzjsn.supabase.co"; 
@@ -131,18 +127,19 @@
 
     let allUsers = [];
     let focusedId = null;
+    let selectedLetter = null;
 
     function login() {
         if(document.getElementById('adm-pass').value === "master777") {
             document.getElementById('gate-keeper').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
             initEngine();
-        } else { alert("ACCESS DENIED: KEY INVALID"); }
+        } else { alert("ACCESS DENIED"); }
     }
 
     async function initEngine() {
         fetchData();
-        _supa.channel('any').on('postgres_changes', {event:'*', schema:'public'}, () => fetchData()).subscribe();
+        _supa.channel('db').on('postgres_changes', {event:'*', schema:'public'}, () => fetchData()).subscribe();
         setInterval(() => { if(!focusedId) fetchData(); }, 5000);
     }
 
@@ -154,111 +151,143 @@
 
         if(p) {
             allUsers = p;
-            document.getElementById('total-saldo').innerText = p.reduce((a,b)=>a+(b.saldo||0),0).toLocaleString();
-            document.getElementById('total-users').innerText = p.length;
-            renderUsers();
+            calculateDailyReport(p);
+            renderAlphaGrid();
+            if(selectedLetter) renderUserList();
         }
         renderKasir(d, w);
         updatePanicUI(c?.panic_mode);
     }
 
-    function renderUsers() {
+    function calculateDailyReport(users) {
+        const today = new Date().toISOString().split('T')[0];
+        const newPlayers = users.filter(u => u.created_at && u.created_at.startsWith(today)).length;
+        document.getElementById('new-players-count').innerText = newPlayers;
+    }
+
+    function renderAlphaGrid() {
+        const grid = document.getElementById('alpha-grid');
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split("");
+        const search = document.getElementById('user-search').value.toLowerCase();
+
+        grid.innerHTML = chars.map(char => {
+            const count = allUsers.filter(u => u.username.toUpperCase().startsWith(char)).length;
+            const isActive = selectedLetter === char ? 'active' : '';
+            return `<div class="alpha-box ${isActive}" onclick="selectLetter('${char}')">
+                        <b>${char}</b>
+                        <small>[${count}]</small>
+                    </div>`;
+        }).join('');
+
+        if(search) {
+            selectedLetter = null;
+            document.getElementById('selected-initial-title').innerText = "SEARCH RESULTS:";
+            renderUserList(search);
+        }
+    }
+
+    function selectLetter(char) {
+        selectedLetter = char;
+        document.getElementById('user-search').value = "";
+        document.getElementById('selected-initial-title').innerText = `INITIAL [${char}] PLAYERS:`;
+        renderAlphaGrid();
+        renderUserList();
+    }
+
+    function renderUserList(searchQuery = null) {
         if(focusedId) return;
-        const q = document.getElementById('user-search').value.toLowerCase();
         const container = document.getElementById('list-user');
-        const filtered = allUsers.filter(u => u.username.toLowerCase().includes(q));
-        
+        let filtered = [];
+
+        if(searchQuery) {
+            filtered = allUsers.filter(u => u.username.toLowerCase().includes(searchQuery));
+        } else if(selectedLetter) {
+            filtered = allUsers.filter(u => u.username.toUpperCase().startsWith(selectedLetter));
+        }
+
         container.innerHTML = filtered.map(u => `
             <div class="player-card" style="${u.saldo >= u.maxwin_limit ? 'border-color:var(--pink); box-shadow: var(--gp);' : ''}">
-                <div class="card-header">
-                    <div class="user-meta">
-                        <b><div class="dot"></div>${u.username.toUpperCase()}</b>
-                        <span>USER_ID: ${u.id.substring(0,13)}...</span>
+                <div class="card-row">
+                    <div>
+                        <b style="color:var(--cyan); font-size:15px;">${u.username.toUpperCase()}</b>
+                        <div style="font-size:9px; color:#888;">MAXWIN: ${u.maxwin_limit.toLocaleString()}</div>
                     </div>
-                    <div class="user-saldo">
-                        <div class="amt">${(u.saldo||0).toLocaleString()}</div>
-                        <small style="font-size:8px; opacity:0.5; color:var(--cyan)">CURRENT BALANCE</small>
+                    <div style="text-align:right">
+                        <div style="color:var(--yellow); font-size:18px; font-weight:900;">${(u.saldo||0).toLocaleString()}</div>
+                        <small style="font-size:8px; opacity:0.6;">BALANCE</small>
                     </div>
                 </div>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:10px;">
-                    <div><small style="color:var(--pink); font-size:9px;">WINRATE %</small><input type="number" id="wr-${u.id}" value="${u.winrate}" onfocus="focusedId='${u.id}'" onblur="focusedId=null"></div>
-                    <div><small style="color:var(--pink); font-size:9px;">MAXWIN LIMIT</small><input type="number" id="mw-${u.id}" value="${u.maxwin_limit}" onfocus="focusedId='${u.id}'" onblur="focusedId=null"></div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <div><small style="font-size:9px;">WINRATE %</small><input type="number" id="wr-${u.id}" value="${u.winrate}" onfocus="focusedId='${u.id}'" onblur="focusedId=null"></div>
+                    <div><small style="font-size:9px;">ADJUST LIMIT</small><input type="number" id="mw-${u.id}" value="${u.maxwin_limit}" onfocus="focusedId='${u.id}'" onblur="focusedId=null"></div>
                 </div>
-                <button class="btn" onclick="updateNode('${u.id}', this)">SYNC PLAYER NODE</button>
+                <button class="btn" onclick="updateNode('${u.id}', this)">SYNC PLAYER</button>
             </div>
         `).join('');
     }
 
     async function updateNode(id, btn) {
-        btn.disabled = true; btn.innerText = "UPLINKING...";
-        const { error } = await _supa.from('profiles').update({ 
-            winrate: document.getElementById('wr-'+id).value, 
-            maxwin_limit: document.getElementById('mw-'+id).value,
-            updated_at: new Date()
-        }).eq('id', id);
-        if(!error) showAlert("DATA SYNCED SUCCESSFULLY");
-        btn.disabled = false; btn.innerText = "SYNC PLAYER NODE";
+        btn.disabled = true;
+        const wr = document.getElementById('wr-'+id).value;
+        const mw = document.getElementById('mw-'+id).value;
+        await _supa.from('profiles').update({ winrate: wr, maxwin_limit: mw }).eq('id', id);
+        showAlert("NODE UPDATED");
+        btn.disabled = false;
     }
 
     function renderKasir(deps, wds) {
         const cont = document.getElementById('list-kasir');
         let html = '';
         if(deps) deps.forEach(d => {
-            html += `<div class="player-card" style="border-left:8px solid var(--cyan);">
-                <small style="color:var(--cyan); font-weight:800;">💰 DEPOSIT SIGNAL</small>
-                <h3 style="margin:5px 0;">${d.username}</h3>
-                <h2 style="color:var(--yellow); text-shadow:var(--gy);">IDR ${d.net_receive.toLocaleString()}</h2>
-                <button class="btn" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive})">APPROVE DEPO</button>
+            html += `<div class="player-card" style="border-left:5px solid var(--cyan);">
+                <small style="color:var(--cyan)">DEPOSIT SIGNAL</small>
+                <h3>${d.username}</h3>
+                <h2 style="color:var(--yellow)">IDR ${d.net_receive.toLocaleString()}</h2>
+                <button class="btn" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive})">APPROVE</button>
             </div>`;
         });
         if(wds) wds.forEach(w => {
-            html += `<div class="player-card" style="border-left:8px solid var(--pink);">
-                <small style="color:var(--pink); font-weight:800;">💸 WITHDRAW SIGNAL</small>
-                <h3 style="margin:5px 0;">${w.username}</h3>
-                <h2 style="color:var(--yellow); text-shadow:var(--gy);">IDR ${w.nominal.toLocaleString()}</h2>
-                <div style="background:#000; padding:10px; border-radius:10px; font-size:11px; margin:10px 0; border:1px solid var(--pink);">
-                    BANK: ${w.bank_name}<br>NOMOR: ${w.acc_number}
-                </div>
-                <button class="btn btn-pink" onclick="approveWD('${w.id}')">COMPLETE PAYOUT</button>
+            html += `<div class="player-card" style="border-left:5px solid var(--pink);">
+                <small style="color:var(--pink)">WITHDRAW SIGNAL</small>
+                <h3>${w.username}</h3>
+                <h2 style="color:var(--yellow)">IDR ${w.nominal.toLocaleString()}</h2>
+                <button class="btn btn-pink" onclick="approveWD('${w.id}')">COMPLETE</button>
             </div>`;
         });
-        cont.innerHTML = html || '<p style="text-align:center; opacity:0.3; font-size:11px; margin-top:40px;">NO DATA IN QUEUE</p>';
+        cont.innerHTML = html || '<p style="text-align:center; opacity:0.3; font-size:10px; margin-top:30px;">IDLE...</p>';
     }
 
     async function approveDepo(id, user, amt) {
         await _supa.from('deposits').update({status:'SUKSES'}).eq('id', id);
         const { data } = await _supa.from('profiles').select('saldo').eq('username', user).single();
         await _supa.from('profiles').update({saldo: (data.saldo||0) + amt}).eq('username', user);
-        showAlert("DEPOSIT SUCCESS");
+        showAlert("DEPO SUCCESS");
     }
 
     async function approveWD(id) {
         await _supa.from('withdrawals').update({status:'SUKSES'}).eq('id', id);
-        showAlert("WD COMPLETED");
+        showAlert("WD SUCCESS");
     }
 
     async function sendGift() {
         const t = document.getElementById('gift-target').value;
         const a = document.getElementById('gift-amt').value;
         const m = document.getElementById('gift-msg').value;
-        if(!a) return alert("Masukan Nominal!");
-        await _supa.from('inbox').insert([{ username: t, nominal: Number(a), pesan: m || "Bonus System", status: 'UNCLAIMED' }]);
-        showAlert("GIFT TRANSMITTED TO " + t);
-        document.getElementById('gift-amt').value = "";
-        document.getElementById('gift-msg').value = "";
+        if(!a) return;
+        await _supa.from('inbox').insert([{ username: t, nominal: Number(a), pesan: m || "System Gift", status: 'UNCLAIMED' }]);
+        showAlert("GIFT SENT");
     }
 
     async function togglePanic() {
         const { data } = await _supa.from('system_config').select('panic_mode').eq('id', 1).single();
-        const next = !data.panic_mode;
-        await _supa.from('system_config').update({panic_mode: next}).eq('id', 1);
-        await _supa.from('profiles').update({panic_mode: next});
+        const n = !data.panic_mode;
+        await _supa.from('system_config').update({panic_mode: n}).eq('id', 1);
+        await _supa.from('profiles').update({panic_mode: n});
     }
 
     function updatePanicUI(isP) {
         const p = document.getElementById('panic-ui');
-        if(isP) { p.innerText = "PANIC ON"; p.style.background = "var(--pink)"; p.style.boxShadow = "var(--gp)"; }
-        else { p.innerText = "PANIC OFF"; p.style.background = "transparent"; p.style.boxShadow = "none"; }
+        p.style.background = isP ? "var(--pink)" : "transparent";
     }
 
     function switchTab(t, el) {
@@ -272,16 +301,12 @@
     function showAlert(m) { document.getElementById('alert-msg').innerText = m; document.getElementById('alert-modal').style.display = 'flex'; }
     function closeAlert() { document.getElementById('alert-modal').style.display = 'none'; fetchData(); }
 
-    // PARTICLES (OMEGA BRIGHTNESS)
     const c = document.getElementById('canvas-bg'); const x = c.getContext('2d');
     c.width = window.innerWidth; c.height = window.innerHeight;
-    let stars = []; for(let i=0; i<100; i++) stars.push({x:Math.random()*c.width, y:Math.random()*c.height, r:Math.random()*2, sp:Math.random()*0.6+0.2, op:Math.random()});
+    let stars = []; for(let i=0; i<80; i++) stars.push({x:Math.random()*c.width, y:Math.random()*c.height, r:Math.random()*1.5, sp:Math.random()*0.4+0.1});
     function anim() {
-        x.clearRect(0,0,c.width,c.height);
-        stars.forEach(s => {
-            x.beginPath(); x.fillStyle = `rgba(0, 212, 255, ${Math.abs(Math.sin(s.op))})`;
-            x.arc(s.x, s.y, s.r, 0, 7); x.fill(); s.y += s.sp; s.op += 0.02; if(s.y > c.height) s.y = -5;
-        });
+        x.clearRect(0,0,c.width,c.height); x.fillStyle = "rgba(0, 212, 255, 0.9)";
+        stars.forEach(s => { x.beginPath(); x.arc(s.x, s.y, s.r, 0, 7); x.fill(); s.y += s.sp; if(s.y > c.height) s.y = -5; });
         requestAnimationFrame(anim);
     } anim();
 </script>
