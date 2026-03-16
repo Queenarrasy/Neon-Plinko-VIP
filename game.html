@@ -12,7 +12,7 @@
         :root { 
             --pink: #ff0077; 
             --blue: #0022ff; 
-            --deep-blue: #0044ff; /* Deep Blue Neon */
+            --deep-blue: #0044ff; 
             --yellow: #fbff00; 
             --bg: #02030d;
             --gp: 0 0 20px rgba(255, 0, 119, 0.8);
@@ -56,12 +56,10 @@
 
         .multiplier-bar { width: 98%; display: flex; gap: 2px; margin-top: 5px; }
         .m-slot { 
-            flex: 1; height: 35px; border-radius: 4px; font-size: 7px; font-weight: 900; 
+            flex: 1; height: 35px; border-radius: 4px; font-size: 10px; font-weight: 900; 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
             color: #fff; border: 1px solid rgba(255,255,255,0.1); transition: 0.2s;
-            line-height: 1.1;
         }
-        .m-slot b { font-size: 10px; display: block; }
         .hit-win { transform: scale(1.2) translateY(-5px); filter: brightness(1.5); box-shadow: var(--gy); z-index: 10; border: 1px solid #fff; }
 
         .win-notif { 
@@ -181,7 +179,6 @@
     
     const engine = Engine.create({ gravity: { y: 1.5 } });
     
-    // Bet List Update as requested
     const BETS = [400, 800, 1000, 1200, 1600, 1800, 2000, 4000, 6000, 8000, 10000, 12000, 16000, 18000, 20000];
     
     let bIdx = 0, balance = 0, sessionWin = 0;
@@ -208,17 +205,17 @@
 
     function refreshUI() { 
         document.getElementById('saldo-text').innerText = "IDR " + Math.floor(balance).toLocaleString(); 
-        updateMultiplierLabels();
     }
 
     function updateMultiplierLabels() {
-        const currentBet = BETS[bIdx];
+        const bar = document.getElementById('m-bar');
+        bar.innerHTML = "";
         multis.forEach((v, i) => {
-            const el = document.getElementById('s-' + i);
-            if(el) {
-                const estWin = Math.floor(currentBet * v);
-                el.innerHTML = `<b>X${v}</b>${estWin.toLocaleString()}`;
-            }
+            const slot = document.createElement('div');
+            slot.className = 'm-slot'; slot.id = 's-' + i; 
+            slot.style.background = mColors[i];
+            slot.innerHTML = `X${v}`;
+            bar.appendChild(slot);
         });
     }
 
@@ -236,10 +233,6 @@
         }
 
         multis.forEach((v, i) => {
-            const slot = document.createElement('div');
-            slot.className = 'm-slot'; slot.id = 's-' + i; slot.style.background = mColors[i];
-            document.getElementById('m-bar').appendChild(slot);
-            
             const sensor = Bodies.rectangle(38 + i * 36, 485, 30, 40, { isStatic: true, isSensor: true, label: `win_${v}_${i}`, render: { visible: false } });
             Composite.add(engine.world, sensor);
         });
@@ -297,12 +290,14 @@
         refreshUI();
 
         const disp = document.getElementById('win-display');
-        disp.innerText = `JACKPOT: IDR ${win.toLocaleString()}`;
+        disp.innerText = `(X${m}) ${win.toLocaleString()}`;
         disp.className = 'active';
         
         const s = document.getElementById('s-' + idx);
-        s.classList.add('hit-win');
-        setTimeout(() => { s.classList.remove('hit-win'); disp.className = ''; }, 600);
+        if(s) {
+            s.classList.add('hit-win');
+            setTimeout(() => { s.classList.remove('hit-win'); disp.className = ''; }, 600);
+        }
 
         if(m >= 1) beep(1200, 0.2);
         Composite.remove(engine.world, ball);
@@ -314,7 +309,6 @@
         beep(600, 0.05); 
         bIdx = Math.max(0, Math.min(BETS.length-1, bIdx+d)); 
         document.getElementById('bet-amt').innerText = BETS[bIdx].toLocaleString(); 
-        updateMultiplierLabels();
     }
     
     function setSpeed(s) {
