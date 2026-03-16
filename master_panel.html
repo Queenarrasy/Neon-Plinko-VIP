@@ -3,99 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>SUPREME OMEGA V15.1 — NEON OVERRIDE</title>
+    <title>SUPREME OMEGA V15.2 — DEFINITIVE</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@600;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@400;600;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* === TEMA WARNA STRICT: HANYA PINK, DEEP BLUE, KUNING === */
         :root { 
-            --pink: #ff0077; 
-            --blue: #0022ff; 
-            --yellow: #fbff00; 
-            --bg: #000005; /* Deep dark blue-black untuk kontras neon */
-            --gp: 0 0 15px #ff0077, 0 0 30px #ff0077;
-            --gb: 0 0 15px #0022ff, 0 0 30px #0022ff;
-            --gy: 0 0 15px #fbff00, 0 0 30px #fbff00;
+            --pink: #ff0077; --blue: #0022ff; --yellow: #fbff00; --bg: #000003;
+            --gp: 0 0 8px #ff0077; --gb: 0 0 10px #0022ff; --gy: 0 0 8px #fbff00;
         }
-        
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body { background: var(--bg); color: var(--yellow); font-family: 'Outfit', sans-serif; overflow-x: hidden; min-height: 100vh; }
+        #canvas-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.6; }
         
-        /* Particle & GIF Background */
-        #canvas-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.8; }
-        .gif-header { width: 100%; height: 120px; background: url('https://i.pinimg.com/originals/18/d9/43/18d94340a6b579177114b09c5dbd1b54.gif') center/cover; position: relative; border-bottom: 3px solid var(--pink); box-shadow: var(--gp); z-index: 10; opacity: 0.9; }
-        .gif-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,34,255,0.3) 0%, rgba(0,0,5,1) 100%); }
+        .gif-header { width: 100%; height: 100px; background: url('https://i.pinimg.com/originals/18/d9/43/18d94340a6b579177114b09c5dbd1b54.gif') center/cover; position: relative; border-bottom: 2px solid var(--pink); box-shadow: var(--gp); z-index: 10; }
+        .gif-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0) 0%, var(--bg) 100%); }
 
-        /* Core UI */
-        .nav-top { background: rgba(0,0,10,0.95); padding: 15px 20px; border-bottom: 2px solid var(--blue); position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--gb); }
-        .content { padding: 15px; padding-bottom: 120px; max-width: 700px; margin: auto; position: relative; z-index: 10; }
+        .nav-top { background: rgba(0,0,5,0.9); padding: 12px 15px; border-bottom: 1px solid var(--blue); position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(10px); }
+        .content { padding: 15px; padding-bottom: 110px; max-width: 600px; margin: auto; position: relative; z-index: 10; }
 
-        /* Dashboard Cards */
-        .report-card { background: rgba(0, 34, 255, 0.05); border: 2px solid var(--blue); border-radius: 16px; padding: 15px; margin-bottom: 20px; display: flex; gap: 15px; box-shadow: inset 0 0 20px rgba(0, 34, 255, 0.2), var(--gb); }
-        .report-val { flex: 1; text-align: center; border-right: 2px solid var(--blue); }
+        .report-card { background: rgba(0, 34, 255, 0.03); border: 1px solid var(--blue); border-radius: 12px; padding: 12px; margin-bottom: 15px; display: flex; gap: 10px; box-shadow: var(--gb); }
+        .report-val { flex: 1; text-align: center; border-right: 1px solid rgba(0,34,255,0.3); }
         .report-val:last-child { border-right: none; }
-        .report-val small { font-size: 9px; color: var(--pink); font-weight: 900; letter-spacing: 2px; text-shadow: var(--gp); display: block; }
-        .report-val h3 { font-size: 16px; color: var(--yellow); text-shadow: var(--gy); margin-top: 8px; font-family: 'Cinzel Decorative', cursive; }
+        .report-val small { font-size: 8px; color: var(--pink); font-weight: 900; letter-spacing: 1px; text-shadow: var(--gp); }
+        .report-val h3 { font-size: 14px; color: var(--yellow); margin-top: 4px; font-family: 'Cinzel Decorative'; }
 
-        /* Index A-Z */
-        .matrix-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 20px; }
-        .alpha-box { background: rgba(0, 34, 255, 0.1); border: 2px solid var(--blue); border-radius: 8px; padding: 12px 2px; text-align: center; cursor: pointer; transition: all 0.3s ease; box-shadow: var(--gb); }
-        .alpha-box b { color: var(--yellow); font-size: 16px; text-shadow: var(--gy); }
-        .alpha-box span { font-size: 9px; color: var(--pink); text-shadow: var(--gp); display: block; margin-top: 2px; font-weight: 900; }
-        .alpha-box.active { background: rgba(255,0,119,0.2); border-color: var(--pink); box-shadow: var(--gp); transform: scale(1.05); }
+        .matrix-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 15px; }
+        .alpha-box { background: rgba(0, 34, 255, 0.05); border: 1px solid var(--blue); border-radius: 6px; padding: 10px 0; text-align: center; cursor: pointer; transition: 0.2s; }
+        .alpha-box.active { background: rgba(255,0,119,0.15); border-color: var(--pink); box-shadow: var(--gp); }
+        .alpha-box b { color: #fff; font-size: 13px; }
 
-        /* Player Modules */
-        .player-card { background: rgba(0,0,15,0.9); border: 2px solid var(--blue); border-radius: 16px; padding: 20px; margin-bottom: 15px; position: relative; overflow: hidden; box-shadow: var(--gb); }
-        .player-card::before { content: ''; position: absolute; top: 0; left: 0; width: 5px; height: 100%; background: var(--pink); box-shadow: var(--gp); }
+        .player-card { background: rgba(0,0,20,0.8); border: 1px solid var(--blue); border-radius: 12px; padding: 15px; margin-bottom: 12px; position: relative; box-shadow: var(--gb); }
+        .player-card::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--pink); }
         
-        .card-header { display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--blue); padding-bottom:12px; }
-        .card-header b { color: var(--pink); font-size: 18px; letter-spacing: 2px; text-transform: uppercase; text-shadow: var(--gp); }
-        .card-header span { font-size: 12px; color: var(--yellow); font-weight: 900; text-shadow: var(--gy); }
-
-        .input-group { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin:15px 0; }
-        .input-box { background: rgba(0,34,255,0.1); border: 2px solid var(--blue); border-radius: 10px; padding: 8px 5px; text-align: center; box-shadow: inset 0 0 10px rgba(0,34,255,0.5); }
-        .input-box small { font-size: 8px; color: var(--pink); display: block; margin-bottom: 5px; font-weight: 900; letter-spacing: 1px; text-shadow: var(--gp); }
-        input { width: 100%; background: transparent; border: none; color: var(--yellow); font-size: 16px; text-align: center; font-weight: 900; text-shadow: var(--gy); outline: none; }
+        .input-group { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; margin:12px 0; }
+        .input-box { background: rgba(0,0,0,0.4); border: 1px solid rgba(0,34,255,0.4); border-radius: 8px; padding: 6px; text-align: center; }
+        .input-box small { font-size: 7px; color: var(--pink); display: block; margin-bottom: 3px; font-weight: 900; }
+        input { width: 100%; background: transparent; border: none; color: var(--yellow); font-size: 14px; text-align: center; font-weight: 900; outline: none; }
         
-        /* Buttons */
-        .btn { background: var(--blue); color: var(--yellow); border: 2px solid var(--blue); padding: 15px; border-radius: 12px; font-weight: 900; width: 100%; cursor: pointer; text-transform: uppercase; font-size: 12px; letter-spacing: 2px; box-shadow: var(--gb); transition: 0.2s; text-shadow: var(--gy); margin-top: 10px; }
-        .btn:active { transform: scale(0.95); }
-        .btn-pink { background: var(--pink); border-color: var(--pink); box-shadow: var(--gp); color: var(--yellow); }
+        .btn { background: var(--blue); color: #fff; border: 1px solid var(--blue); padding: 12px; border-radius: 10px; font-weight: 900; width: 100%; cursor: pointer; text-transform: uppercase; font-size: 10px; letter-spacing: 1px; box-shadow: var(--gb); }
+        .btn-pink { background: var(--pink); border-color: var(--pink); box-shadow: var(--gp); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* Bottom Nav */
-        .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 80px; background: rgba(0,0,10,0.98); border-top: 2px solid var(--blue); display: flex; justify-content: space-around; align-items: center; z-index: 1000; padding-bottom: env(safe-area-inset-bottom); box-shadow: var(--gb); }
-        .nav-btn { color: var(--blue); text-align: center; flex: 1; cursor: pointer; transition: 0.3s; text-shadow: 0 0 5px var(--blue); }
-        .nav-btn.active { color: var(--pink); text-shadow: var(--gp); transform: translateY(-3px); }
-        .nav-btn i { font-size: 22px; }
-        .nav-btn p { font-size: 9px; font-weight: 900; margin-top: 6px; letter-spacing: 1px; }
+        .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 75px; background: rgba(0,0,5,0.95); border-top: 1px solid var(--blue); display: flex; justify-content: space-around; align-items: center; z-index: 1000; padding-bottom: env(safe-area-inset-bottom); }
+        .nav-btn { color: rgba(0,34,255,0.5); text-align: center; flex: 1; cursor: pointer; }
+        .nav-btn.active { color: var(--pink); text-shadow: var(--gp); }
+        .nav-btn i { font-size: 18px; }
+        .nav-btn p { font-size: 8px; font-weight: 900; margin-top: 4px; }
 
-        /* Alert Hologram - STRICT COLORS */
-        #alert-modal { display:none; position:fixed; inset:0; background:rgba(0,0,5,0.95); z-index:10000; align-items:center; justify-content:center; }
-        .alert-box { width:320px; background: var(--bg); border: 3px solid var(--pink); border-radius:20px; padding:30px; text-align:center; box-shadow: var(--gp); animation: pulseAlert 1.5s infinite; }
-        .alert-box i { font-size: 40px; color: var(--yellow); text-shadow: var(--gy); margin-bottom: 20px; }
-        .alert-box p { color: var(--yellow); font-weight: 900; font-size: 15px; line-height: 1.6; margin-bottom: 25px; text-shadow: var(--gy); text-transform: uppercase; }
-        @keyframes pulseAlert { 0% { box-shadow: 0 0 20px var(--pink); } 50% { box-shadow: 0 0 50px var(--pink); } 100% { box-shadow: 0 0 20px var(--pink); } }
+        #alert-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:10000; align-items:center; justify-content:center; }
+        .alert-box { width:280px; background: #000; border: 2px solid var(--pink); border-radius:15px; padding:25px; text-align:center; box-shadow: var(--gp); }
     </style>
 </head>
 <body>
     <canvas id="canvas-bg"></canvas>
-
-    <div class="gif-header">
-        <div class="gif-overlay"></div>
-    </div>
+    <div class="gif-header"><div class="gif-overlay"></div></div>
 
     <div id="main-app">
         <div class="nav-top">
-            <span style="font-family:'Cinzel Decorative'; color:var(--pink); font-size:22px; text-shadow:var(--gp);">SUPREME <span style="color:var(--yellow); text-shadow:var(--gy);">V15.1</span></span>
-            <div id="panic-ui" onclick="togglePanic()" style="padding:10px 15px; border:2px solid var(--blue); border-radius:50px; font-size:10px; font-weight:900; cursor:pointer; color:var(--yellow); box-shadow:var(--gb); text-shadow:var(--gy); background:rgba(0,34,255,0.2);">PANIC MODE</div>
+            <span style="font-family:'Cinzel Decorative'; color:var(--pink); font-size:18px; text-shadow:var(--gp);">SUPREME <span style="color:var(--yellow);">V15.2</span></span>
+            <div id="panic-ui" onclick="togglePanic()" style="padding:8px 12px; border:1px solid var(--pink); border-radius:50px; font-size:9px; font-weight:900; cursor:pointer; transition:0.3s; color:var(--pink);">PANIC MODE</div>
         </div>
 
         <div class="content">
             <div id="tab-kasir" class="page">
                 <div class="report-card">
-                    <div class="report-val"><small>TOTAL IN</small><h3 id="stat-depo">IDR 0</h3></div>
-                    <div class="report-val"><small>TOTAL OUT</small><h3 id="stat-wd">IDR 0</h3></div>
+                    <div class="report-val"><small>TOTAL DEPO</small><h3 id="stat-depo">IDR 0</h3></div>
+                    <div class="report-val"><small>TOTAL WD</small><h3 id="stat-wd">IDR 0</h3></div>
                 </div>
                 <div id="list-kasir"></div>
             </div>
@@ -113,21 +87,20 @@
         <nav class="nav-bottom">
             <div class="nav-btn active" onclick="switchTab('kasir', this)"><i class="fas fa-bolt"></i><p>KASIR</p></div>
             <div class="nav-btn" onclick="switchTab('user', this)"><i class="fas fa-users"></i><p>PLAYERS</p></div>
-            <div class="nav-btn" onclick="switchTab('stat', this)"><i class="fas fa-chart-pie"></i><p>REPORT</p></div>
-            <div class="nav-btn" onclick="location.reload()"><i class="fas fa-sync"></i><p>RELOAD</p></div>
+            <div class="nav-btn" onclick="switchTab('stat', this)"><i class="fas fa-chart-line"></i><p>REPORT</p></div>
+            <div class="nav-btn" onclick="location.reload()"><i class="fas fa-sync"></i><p>REFRESH</p></div>
         </nav>
     </div>
 
     <div id="alert-modal">
         <div class="alert-box">
-            <i class="fas fa-radiation"></i>
-            <p id="alert-msg"></p>
-            <button onclick="closeAlert()" class="btn btn-pink" style="border-radius:50px;">ACKNOWLEDGE</button>
+            <i class="fas fa-biohazard" style="font-size:30px; color:var(--pink); margin-bottom:15px;"></i>
+            <p id="alert-msg" style="font-size:13px; font-weight:600;"></p>
+            <button onclick="closeAlert()" class="btn btn-pink" style="margin-top:20px;">DISMISS</button>
         </div>
     </div>
 
 <script>
-    // === API KEY DIKEMBALIKAN (DATA AKAN MUNCUL) ===
     const SUPA_URL = "https://bgffnmwrviyqpeevzjsn.supabase.co"; 
     const SUPA_KEY = "sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani"; 
     const _supa = supabase.createClient(SUPA_URL, SUPA_KEY);
@@ -135,7 +108,6 @@
     let allUsers = [];
     let selectedLetter = 'A';
 
-    // ENGINE UTAMA: Fetch Data
     async function fetchData() {
         try {
             const { data: p } = await _supa.from('profiles').select('*').order('username');
@@ -145,99 +117,82 @@
 
             if(p) { allUsers = p; renderAlphaGrid(); renderUserList(); }
             
-            // ANTI-DOUBLE LOGIC
             const totalD = d_all?.filter(x => x.status === 'SUKSES').reduce((acc, curr) => acc + (Number(curr.net_receive) || Number(curr.amount) || 0), 0) || 0;
-            const totalW = w_all?.filter(x => x.status === 'SUKSES').reduce((acc, curr) => {
-                const val = curr.nominal > 0 ? curr.nominal : (curr.amount || 0);
-                return acc + Number(val);
-            }, 0) || 0;
+            const totalW = w_all?.filter(x => x.status === 'SUKSES').reduce((acc, curr) => acc + (Number(curr.nominal) || Number(curr.amount) || 0), 0) || 0;
+
+            // Daily Logic
+            const today = new Date().toISOString().split('T')[0];
+            const dailyD = d_all?.filter(x => x.status === 'SUKSES' && x.created_at?.startsWith(today)).reduce((acc, curr) => acc + (Number(curr.net_receive) || Number(curr.amount) || 0), 0) || 0;
+            const dailyW = w_all?.filter(x => x.status === 'SUKSES' && x.created_at?.startsWith(today)).reduce((acc, curr) => acc + (Number(curr.nominal) || Number(curr.amount) || 0), 0) || 0;
 
             document.getElementById('stat-depo').innerText = "IDR " + totalD.toLocaleString();
             document.getElementById('stat-wd').innerText = "IDR " + totalW.toLocaleString();
 
             renderKasir(d_all?.filter(x => x.status === 'PROSES'), w_all?.filter(x => x.status === 'PROSES'));
-            renderStatement(totalD, totalW);
+            renderStatement(totalD, totalW, dailyD, dailyW);
             if(c) updatePanicUI(c.panic_mode);
-        } catch(e) { console.error("Network Error:", e); }
+        } catch(e) { console.error(e); }
     }
 
-    // RENDER: Navigasi A-Z
     function renderAlphaGrid() {
         const grid = document.getElementById('alpha-grid');
         const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split("");
         grid.innerHTML = chars.map(char => {
             const count = allUsers.filter(u => (u.username || "").toUpperCase().startsWith(char)).length;
             return `<div class="alpha-box ${selectedLetter===char?'active':''}" onclick="selectedLetter='${char}'; renderUserList(); renderAlphaGrid();">
-                <b>${char}</b><span>${count} NODE</span></div>`;
+                <b>${char}</b><br><span style="font-size:7px; color:var(--blue);">${count}</span></div>`;
         }).join('');
     }
 
-    // RENDER: Daftar Player
     function renderUserList() {
         const container = document.getElementById('list-user');
         const filtered = allUsers.filter(u => (u.username || "").toUpperCase().startsWith(selectedLetter));
         container.innerHTML = filtered.map(u => `
             <div class="player-card">
-                <div class="card-header">
-                    <b>${u.username}</b>
-                    <span>IDR ${(u.saldo||0).toLocaleString()}</span>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(0,34,255,0.2); padding-bottom:8px;">
+                    <b style="color:var(--pink); font-size:14px;">${u.username}</b>
+                    <span style="font-size:11px; color:var(--yellow);">IDR ${(u.saldo||0).toLocaleString()}</span>
                 </div>
                 <div class="input-group">
                     <div class="input-box"><small>WINRATE %</small><input type="number" id="wr-${u.id}" value="${u.winrate ?? 10}"></div>
                     <div class="input-box"><small>MAXWIN</small><input type="number" id="mw-${u.id}" value="${u.maxwin_limit ?? 1000000}"></div>
                     <div class="input-box"><small>SESSION</small><input type="number" id="tm-${u.id}" value="${u.session_timer ?? 0}"></div>
                 </div>
-                <button class="btn" onclick="syncNode('${u.id}', this)"><i class="fas fa-satellite-dish"></i> SYNC CORE</button>
+                <button class="btn" id="btn-${u.id}" onclick="syncNode('${u.id}')"><i class="fas fa-satellite-dish"></i> SYNC PLAYER</button>
             </div>
-        `).join('') || '<div style="text-align:center; padding:50px; opacity:0.8;"><i class="fas fa-ghost" style="font-size:50px; color:var(--pink); text-shadow:var(--gp);"></i><p style="margin-top:15px; font-size:12px; letter-spacing:2px; font-weight:900; color:var(--yellow); text-shadow:var(--gy);">NO PLAYERS DETECTED</p></div>';
+        `).join('') || '<p style="text-align:center; padding:20px; font-size:10px;">EMPTY SECTOR</p>';
     }
 
-    // FUNGSI: Update Player (Anti-Reset Logic)
-    async function syncNode(id, btn) {
-        btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> TRANSMITTING...";
+    async function syncNode(id) {
+        const btn = document.getElementById('btn-'+id);
         btn.disabled = true;
+        btn.innerText = "UPLOADING...";
 
-        const wr = parseInt(document.getElementById('wr-'+id).value) || 0;
-        const mw = parseInt(document.getElementById('mw-'+id).value) || 0;
-        const tm = parseInt(document.getElementById('tm-'+id).value) || 0;
+        const wr = parseInt(document.getElementById('wr-'+id).value);
+        const mw = parseInt(document.getElementById('mw-'+id).value);
+        const tm = parseInt(document.getElementById('tm-'+id).value);
         
-        const { error } = await _supa.from('profiles').update({ 
-            winrate: wr, maxwin_limit: mw, session_timer: tm 
-        }).eq('id', id);
+        const { error } = await _supa.from('profiles').update({ winrate: wr, maxwin_limit: mw, session_timer: tm }).eq('id', id);
 
         if(!error) {
-            let userIndex = allUsers.findIndex(u => u.id === id);
-            if(userIndex !== -1) {
-                allUsers[userIndex].winrate = wr;
-                allUsers[userIndex].maxwin_limit = mw;
-                allUsers[userIndex].session_timer = tm;
-            }
-            showAlert("SYNC SUCCESSFUL<br><br>WINRATE LOCKED AT " + wr + "%");
-        } else {
-            showAlert("SYNC FAILED<br>DATABASE REJECTED");
+            let idx = allUsers.findIndex(u => u.id === id);
+            if(idx !== -1) { allUsers[idx].winrate = wr; allUsers[idx].maxwin_limit = mw; allUsers[idx].session_timer = tm; }
+            showAlert("NODE UPDATED SUCCESSFULLY");
         }
-        
-        btn.innerHTML = "<i class='fas fa-satellite-dish'></i> SYNC CORE";
         btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-satellite-dish"></i> SYNC PLAYER';
     }
 
-    // RENDER: Kasir (Depo & WD)
     function renderKasir(deps, wds) {
         const cont = document.getElementById('list-kasir');
         let h = '';
-        deps?.forEach(d => h += `<div class="player-card" style="border-left:5px solid var(--blue)">
-            <small style="color:var(--blue); font-weight:900; letter-spacing:2px; text-shadow:var(--gb);">DEPOSIT DETECTED</small>
-            <h3 style="margin:8px 0; color:var(--pink); font-size:20px; text-transform:uppercase; text-shadow:var(--gp);">${d.username}</h3>
-            <h2 style="color:var(--yellow); text-shadow:var(--gy);">IDR ${(d.net_receive || d.amount || 0).toLocaleString()}</h2>
-            <button class="btn" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive || d.amount})">APPROVE INCOMING</button></div>`);
-        
-        wds?.forEach(w => h += `<div class="player-card" style="border-left:5px solid var(--pink)">
-            <small style="color:var(--pink); font-weight:900; letter-spacing:2px; text-shadow:var(--gp);">WITHDRAWAL ALERT</small>
-            <h3 style="margin:8px 0; color:var(--blue); font-size:20px; text-transform:uppercase; text-shadow:var(--gb);">${w.username}</h3>
-            <h2 style="color:var(--yellow); text-shadow:var(--gy);">IDR ${(w.nominal || w.amount || 0).toLocaleString()}</h2>
-            <button class="btn btn-pink" onclick="approveWD('${w.id}')">PROCESS PAYOUT</button></div>`);
-            
-        cont.innerHTML = h || '<div style="text-align:center; padding:50px;"><i class="fas fa-check-circle" style="font-size:50px; color:var(--blue); text-shadow:var(--gb);"></i><p style="margin-top:15px; font-size:12px; letter-spacing:2px; font-weight:900; color:var(--yellow); text-shadow:var(--gy);">ALL QUEUES CLEARED</p></div>';
+        deps?.forEach(d => h += `<div class="player-card" style="border-left:3px solid var(--blue)">
+            <small style="color:var(--blue)">DEPO REQUEST</small><h3 style="color:#fff;">${d.username}</h3><h2 style="color:var(--yellow);">IDR ${Number(d.net_receive || d.amount).toLocaleString()}</h2>
+            <button class="btn btn-pink" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive || d.amount})" style="margin-top:10px;">APPROVE</button></div>`);
+        wds?.forEach(w => h += `<div class="player-card" style="border-left:3px solid var(--pink)">
+            <small style="color:var(--pink)">WD REQUEST</small><h3 style="color:#fff;">${w.username}</h3><h2 style="color:var(--yellow);">IDR ${Number(w.nominal || w.amount).toLocaleString()}</h2>
+            <button class="btn" onclick="approveWD('${w.id}')" style="margin-top:10px;">RELEASE WD</button></div>`);
+        cont.innerHTML = h || '<p style="text-align:center; padding:30px; font-size:10px; opacity:0.5;">NO PENDING ORDERS</p>';
     }
 
     async function approveDepo(id, user, amt) {
@@ -252,45 +207,48 @@
         fetchData();
     }
 
-    // RENDER: Laporan Keuangan
-    function renderStatement(td, tw) {
-        const net = td - tw;
-        const color = net >= 0 ? 'var(--blue)' : 'var(--pink)';
-        const shadow = net >= 0 ? 'var(--gb)' : 'var(--gp)';
-        
+    function renderStatement(td, tw, dd, dw) {
+        const netTotal = td - tw;
+        const netDaily = dd - dw;
         document.getElementById('statement-list').innerHTML = `
-            <div class="player-card" style="border:2px solid var(--yellow); text-align:center; padding:30px 15px; box-shadow:var(--gy);">
-                <h2 style="font-family:'Cinzel Decorative'; color:var(--yellow); font-size:24px; margin-bottom:20px; text-shadow:var(--gy);">SYSTEM LEDGER</h2>
-                <div style="display:flex; justify-content:space-between; margin-bottom:12px; border-bottom:2px dashed var(--blue); padding-bottom:10px;">
-                    <span style="font-size:12px; color:var(--pink); font-weight:900; text-shadow:var(--gp);">IN (DEPO)</span><span style="color:var(--yellow); font-weight:900; text-shadow:var(--gy);">IDR ${td.toLocaleString()}</span>
+            <div class="player-card" style="border:1px solid var(--yellow); text-align:center;">
+                <h2 style="font-family:'Cinzel Decorative'; font-size:18px; margin-bottom:15px;">LEDGER OVERRIDE</h2>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <div class="input-box"><small>DAILY NET</small><p style="color:var(--pink)">IDR ${netDaily.toLocaleString()}</p></div>
+                    <div class="input-box"><small>TOTAL NET</small><p style="color:var(--blue)">IDR ${netTotal.toLocaleString()}</p></div>
                 </div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:25px; border-bottom:2px dashed var(--blue); padding-bottom:10px;">
-                    <span style="font-size:12px; color:var(--pink); font-weight:900; text-shadow:var(--gp);">OUT (WD)</span><span style="color:var(--yellow); font-weight:900; text-shadow:var(--gy);">IDR ${tw.toLocaleString()}</span>
+                <div style="margin-top:15px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:10px;">
+                    <small style="color:#555">ACCUMULATED REVENUE</small>
+                    <h1 style="font-size:24px; color:${netTotal>=0?'var(--yellow)':'var(--pink)'}">IDR ${netTotal.toLocaleString()}</h1>
                 </div>
-                <small style="color:var(--pink); letter-spacing:3px; font-size:10px; font-weight:900; text-shadow:var(--gp);">NET REVENUE</small>
-                <h1 style="color:${color}; text-shadow:${shadow}; font-size:32px; margin-top:8px; font-family:'Outfit';">IDR ${net.toLocaleString()}</h1>
             </div>
         `;
     }
 
-    // FUNGSI: Panic Mode Toggle
     async function togglePanic() {
         const { data } = await _supa.from('system_config').select('panic_mode').eq('id', 1).maybeSingle();
         const next = !data?.panic_mode;
+        
+        // Update Config
         await _supa.from('system_config').update({panic_mode: next}).eq('id', 1);
-        await _supa.from('profiles').update({panic_mode: next});
+        
+        // EFFECT: If Panic is ON, Set all players winrate to 10%
+        if(next) {
+            await _supa.from('profiles').update({ winrate: 10 });
+            showAlert("CRITICAL: PANIC ENGAGED.<br>ALL PLAYERS RESET TO 10%");
+        } else {
+            showAlert("PANIC DISENGAGED.<br>MANUAL CONTROL RESTORED");
+        }
         fetchData();
     }
 
     function updatePanicUI(isP) {
         const pBtn = document.getElementById('panic-ui');
-        pBtn.style.background = isP ? "var(--pink)" : "rgba(0,34,255,0.2)";
-        pBtn.style.borderColor = isP ? "var(--pink)" : "var(--blue)";
-        pBtn.style.boxShadow = isP ? "var(--gp)" : "var(--gb)";
-        pBtn.innerText = isP ? "PANIC ENGAGED" : "PANIC MODE";
+        pBtn.style.background = isP ? "var(--pink)" : "transparent";
+        pBtn.style.color = isP ? "#fff" : "var(--pink)";
+        pBtn.innerText = isP ? "SYSTEM LOCKED" : "PANIC MODE";
     }
 
-    // UI HELPER
     function switchTab(t, el) {
         document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
         document.getElementById('tab-'+t).style.display = 'block';
@@ -301,31 +259,22 @@
     function showAlert(m) { document.getElementById('alert-msg').innerHTML = m; document.getElementById('alert-modal').style.display = 'flex'; }
     function closeAlert() { document.getElementById('alert-modal').style.display = 'none'; }
 
-    // EFEK VISUAL: Cyberpunk Particle Engine (STRICT NEON PINK & BLUE ONLY)
+    // Particle Engine
     const c = document.getElementById('canvas-bg'); const x = c.getContext('2d');
     c.width = window.innerWidth; c.height = window.innerHeight;
-    let particles = []; 
-    const colors = ['#ff0077', '#0022ff']; // HANYA PINK DAN BLUE
-    for(let i=0; i<60; i++) particles.push({
-        x: Math.random()*c.width, y: Math.random()*c.height, 
-        r: Math.random()*2 + 1, sp: Math.random()*0.8+0.2, 
-        color: colors[Math.floor(Math.random() * colors.length)]
-    });
+    let stars = [];
+    for(let i=0; i<50; i++) stars.push({x:Math.random()*c.width, y:Math.random()*c.height, r:Math.random()*1.5, sp:Math.random()*0.5, color: Math.random()>0.5?'#ff0077':'#0022ff'});
     function anim() {
         x.clearRect(0,0,c.width,c.height);
-        particles.forEach(p => { 
-            x.beginPath(); x.arc(p.x, p.y, p.r, 0, 7); 
-            x.fillStyle = p.color; 
-            x.shadowBlur = 15; x.shadowColor = p.color;
-            x.fill(); p.y -= p.sp; 
-            if(p.y < -10) { p.y = c.height + 10; p.x = Math.random()*c.width; } 
+        stars.forEach(s => { 
+            x.beginPath(); x.arc(s.x, s.y, s.r, 0, 7); x.fillStyle = s.color; x.fill();
+            s.y -= s.sp; if(s.y < -5) s.y = c.height+5;
         });
         requestAnimationFrame(anim);
     } anim();
 
-    // AUTO-START
     fetchData();
-    setInterval(fetchData, 8000);
+    setInterval(fetchData, 10000);
 </script>
 </body>
 </html>
