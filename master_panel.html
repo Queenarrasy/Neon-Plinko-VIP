@@ -156,7 +156,7 @@
                     <select id="gift-target"></select>
                     <input type="number" id="gift-amount" placeholder="Nominal Rp">
                     <textarea id="gift-msg" rows="3" placeholder="Pesan Inbox..."></textarea>
-                    <button class="btn-main" style="background:var(--pink)" onclick="sendGift()">KIRIM HADIAH</button>
+                    <button id="btn-gift-exec" class="btn-main" style="background:var(--pink)" onclick="sendGift()">KIRIM HADIAH</button>
                 </div>
                 <h3 style="font-size:12px; color:var(--cyan); margin:20px 0 10px;"><i class="fas fa-history"></i> LOG GIFT TERAKHIR</h3>
                 <div id="log-gift" style="font-size:10px;"></div>
@@ -186,7 +186,7 @@
 
     const AUTH = { u: "admin_neon", p: "master777" };
     let isPanic = false;
-    let lastUserHash = ""; // Untuk mencegah render ulang jika data sama
+    let lastUserHash = ""; 
 
     function login() {
         if(document.getElementById('adm-user').value === AUTH.u && document.getElementById('adm-pass').value === AUTH.p) {
@@ -201,7 +201,7 @@
     async function refreshAll() {
         updateStats();
         loadKasir();
-        loadUserSmart(); // Fungsi baru agar tidak reset input
+        loadUserSmart(); 
         checkPanicStatus();
         if(document.getElementById('tab-gift').style.display !== 'none') {
             loadGiftTarget();
@@ -248,21 +248,17 @@
         document.getElementById('list-kasir').innerHTML = html || '<p style="text-align:center; opacity:0.3; padding:20px; font-size:10px;">ANTREAN BERSIH</p>';
     }
 
-    // FUNGSI PERBAIKAN: Load User tanpa reset input
     async function loadUserSmart() {
         const { data } = await _supa.from('profiles').select('*').order('username', {ascending:true});
         if(!data) return;
 
-        // Cek apakah ada perubahan data (jumlah user atau saldo) sebelum render ulang
         const currentHash = JSON.stringify(data.map(u => [u.username, u.saldo]));
         if(currentHash === lastUserHash) return; 
         
-        // Jangan render jika admin sedang fokus mengetik di salah satu input
         if(document.activeElement.tagName === "INPUT" && document.activeElement.id !== "search-user") return;
 
         lastUserHash = currentHash;
         document.getElementById('list-user').innerHTML = data.map(u => {
-            const sessionMins = Math.floor((new Date() - new Date(u.session_start || u.created_at)) / 60000);
             return `
             <div class="card user-item" data-name="${u.username.toLowerCase()}">
                 <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
@@ -320,16 +316,38 @@
         refreshAll();
     }
 
+    // FUNGSI PERBAIKAN UTAMA: SEND GIFT
     async function sendGift() {
         const target = document.getElementById('gift-target').value;
         const amount = document.getElementById('gift-amount').value;
         const msg = document.getElementById('gift-msg').value;
+        const btn = document.getElementById('btn-gift-exec');
+
         if(!target || !amount) return showPopup("DATA TIDAK LENGKAP!");
         
-        await _supa.from('inbox').insert([{ username: target, nominal: parseInt(amount), pesan: msg, status: 'UNCLAIMED' }]);
-        showPopup("GIFT TERKIRIM!");
-        document.getElementById('gift-amount').value = "";
-        loadGiftLogs();
+        btn.disabled = true;
+        btn.innerText = "PROSES...";
+
+        // Pastikan nominal dikirim sebagai NUMBER murni dan menyertakan timestamp
+        const { error } = await _supa.from('inbox').insert([{ 
+            username: target, 
+            nominal: Number(amount), 
+            pesan: msg || "Bonus dari Admin", 
+            status: 'UNCLAIMED',
+            created_at: new Date().toISOString()
+        }]);
+
+        if(error) {
+            showPopup("ERROR: " + error.message);
+        } else {
+            showPopup("HADIAH BERHASIL MASUK KE " + target);
+            document.getElementById('gift-amount').value = "";
+            document.getElementById('gift-msg').value = "";
+            loadGiftLogs();
+        }
+        
+        btn.disabled = false;
+        btn.innerText = "KIRIM HADIAH";
     }
 
     async function loadGiftLogs() {
@@ -345,7 +363,7 @@
     }
 
     async function loadGiftTarget() {
-        const { data } = await _supa.from('profiles').select('username');
+        const { data } = await _supa.from('profiles').select('username').order('username', {ascending:true});
         if(data) {
             const currentVal = document.getElementById('gift-target').value;
             document.getElementById('gift-target').innerHTML = data.map(u => `<option value="${u.username}" ${u.username === currentVal ? 'selected':''}>${u.username}</option>`).join('');
