@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>NEON COMMAND — OMEGA V14.4</title>
+    <title>NEON COMMAND — OMEGA V14.5</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@300;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -16,33 +16,41 @@
         body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; overflow-x: hidden; min-height: 100vh; }
         #canvas-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
         
+        /* Login Overlay */
         #gate-keeper { position: fixed; inset: 0; background: radial-gradient(circle at center, #050a24, #000); z-index: 9999; display: flex; align-items: center; justify-content: center; }
         .login-card { width: 85%; max-width: 380px; padding: 50px 30px; border: 2px solid var(--pink); border-radius: 40px; background: rgba(1, 2, 8, 0.95); box-shadow: var(--gp); text-align: center; }
 
+        /* Navigation */
         .nav-top { background: rgba(1,2,8,0.95); padding: 15px 20px; border-bottom: 2px solid var(--blue); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(15px); display: flex; justify-content: space-between; align-items: center; }
         .content { padding: 15px; padding-bottom: 120px; max-width: 700px; margin: auto; position: relative; z-index: 10; }
 
+        /* Report Widgets */
         .report-card { background: linear-gradient(135deg, #000, #050a24); border: 1.5px solid var(--cyan); border-radius: 20px; padding: 15px; margin-bottom: 20px; display: flex; gap: 15px; align-items: center; box-shadow: inset 0 0 15px rgba(0, 212, 255, 0.1); }
         .report-val { flex: 1; }
         .report-val small { font-size: 8px; color: var(--pink); font-weight: 800; text-transform: uppercase; display: block; }
         .report-val h3 { font-size: 14px; color: var(--yellow); text-shadow: var(--gy); }
 
+        /* Alpha Matrix Grid */
         .matrix-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 20px; }
         .alpha-box { background: rgba(0, 34, 255, 0.1); border: 1px solid var(--blue); border-radius: 8px; padding: 10px 2px; text-align: center; cursor: pointer; transition: 0.2s; }
         .alpha-box.active { background: var(--pink); border-color: var(--yellow); box-shadow: var(--gp); }
         .alpha-box b { display: block; font-size: 14px; color: #fff; }
         .alpha-box small { font-size: 8px; color: var(--cyan); font-weight: 800; }
 
+        /* Player & Action Cards */
         .player-card { background: rgba(5,6,25,0.95); border: 1.5px solid var(--blue); border-radius: 20px; padding: 18px; margin-bottom: 15px; }
         input, select, textarea { width: 100%; padding: 12px; background: #000; border: 1px solid var(--blue); color: var(--yellow); border-radius: 12px; font-size: 12px; outline: none; margin-top: 5px; font-family: 'Outfit'; }
+        
         .btn { background: linear-gradient(90deg, var(--blue), #000088); color: #fff; border: 1px solid var(--cyan); padding: 12px; border-radius: 50px; font-weight: 900; width: 100%; cursor: pointer; text-transform: uppercase; font-size: 10px; margin-top: 10px; box-shadow: var(--gb); }
         .btn-pink { background: linear-gradient(90deg, var(--pink), #aa0044); border-color: var(--yellow); }
 
+        /* Bottom Menu */
         .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 80px; background: #000; border-top: 2px solid var(--blue); display: flex; justify-content: space-around; align-items: center; z-index: 1000; padding-bottom: env(safe-area-inset-bottom); }
         .nav-btn { color: rgba(0,212,255,0.3); text-align: center; flex: 1; cursor: pointer; }
         .nav-btn.active { color: var(--yellow); text-shadow: var(--gy); }
         .nav-btn span { display: block; font-size: 7px; font-weight: 800; margin-top: 5px; }
 
+        /* Alert System */
         #alert-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:10000; align-items:center; justify-content:center; }
         .alert-box { width:280px; background:#050619; border:2px solid var(--pink); border-radius:25px; padding:30px; text-align:center; box-shadow: var(--gp); }
     </style>
@@ -53,7 +61,7 @@
     <div id="gate-keeper">
         <div class="login-card">
             <h1 style="font-family:'Cinzel Decorative'; color:var(--pink); font-size:24px;">CHRONOS OMEGA</h1>
-            <p style="color:var(--cyan); font-size:8px; letter-spacing:4px; margin-bottom:25px;">MASTER CONTROL V14.4</p>
+            <p style="color:var(--cyan); font-size:8px; letter-spacing:4px; margin-bottom:25px;">MASTER CONTROL V14.5</p>
             <input type="password" id="adm-pass" placeholder="ACCESS KEY" style="text-align:center; border-radius:50px;">
             <button onclick="login()" class="btn">UNLOCK CORE</button>
         </div>
@@ -132,6 +140,7 @@
 
     async function initEngine() {
         fetchData();
+        // Real-time listener
         _supa.channel('db').on('postgres_changes', {event:'*', schema:'public'}, () => fetchData()).subscribe();
     }
 
@@ -187,14 +196,14 @@
         const container = document.getElementById('list-user');
         const filtered = allUsers.filter(u => (u.username || "").toUpperCase().startsWith(selectedLetter));
         if(filtered.length === 0) {
-            container.innerHTML = '<p style="text-align:center; opacity:0.5; font-size:10px; padding:20px;">NO PLAYERS</p>';
+            container.innerHTML = '<p style="text-align:center; opacity:0.5; font-size:10px; padding:20px;">NO PLAYERS FOUND</p>';
             return;
         }
         container.innerHTML = filtered.map(u => `
             <div class="player-card">
                 <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
                     <b style="color:var(--cyan)">${(u.username || 'UNKNOWN').toUpperCase()}</b>
-                    <span style="color:var(--yellow); font-weight:900;">${(u.saldo||0).toLocaleString()}</span>
+                    <span style="color:var(--yellow); font-weight:900;">IDR ${(u.saldo||0).toLocaleString()}</span>
                 </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px;">
                     <div><small>WINRATE %</small><input type="number" id="wr-${u.id}" value="${u.winrate ?? 50}" onfocus="focusedId='${u.id}'" onblur="focusedId=null"></div>
@@ -208,25 +217,22 @@
 
     async function updateNode(id, btn) {
         btn.disabled = true;
-        const wr = parseInt(document.getElementById('wr-'+id).value) || 50;
-        const mw = parseInt(document.getElementById('mw-'+id).value) || 1000000;
-        const tm = parseInt(document.getElementById('tm-'+id).value) || 0;
+        const wrVal = parseInt(document.getElementById('wr-'+id).value) || 0;
+        const mwVal = parseInt(document.getElementById('mw-'+id).value) || 0;
+        const tmVal = parseInt(document.getElementById('tm-'+id).value) || 0;
         
         try {
             const { error } = await _supa.from('profiles').update({ 
-                winrate: wr, 
-                maxwin_limit: mw, 
-                session_timer: tm 
+                winrate: wrVal, 
+                maxwin_limit: mwVal, 
+                session_timer: tmVal
             }).eq('id', id);
 
-            if(!error) {
-                showAlert("NODE SECURED: SESSION ACTIVE (" + tm + " MIN)");
-            } else {
-                throw error;
-            }
+            if(!error) showAlert("NODE SECURED: SESSION " + tmVal + " MIN");
+            else throw error;
         } catch(err) {
-            console.error("Update Error:", err);
-            showAlert("DB ERROR: Jalankan SQL Perbaikan di Supabase!");
+            console.error(err);
+            showAlert("DB ERROR: Jalankan SQL Reset di Supabase!");
         } finally {
             btn.disabled = false;
         }
@@ -245,11 +251,11 @@
         const curM = new Date().getMonth();
         document.getElementById('statement-list').innerHTML = `
             <div class="player-card" style="border:1px solid var(--yellow)">
-                <h3 style="color:var(--yellow)">LAPORAN: ${months[curM]} 2026</h3>
-                <hr style="opacity:0.1; margin:10px 0;">
-                <p>Total Depo: <span style="color:var(--cyan)">IDR ${td.toLocaleString()}</span></p>
-                <p>Total WD: <span style="color:var(--pink)">IDR ${tw.toLocaleString()}</span></p>
-                <h4 style="margin-top:10px; color:var(--yellow)">PROFIT: IDR ${(td-tw).toLocaleString()}</h4>
+                <h3 style="color:var(--yellow)">BULAN: ${months[curM]} 2026</h3>
+                <hr style="opacity:0.2; margin:10px 0;">
+                <p style="font-size:13px;">Total Depo: <span style="color:var(--cyan)">IDR ${td.toLocaleString()}</span></p>
+                <p style="font-size:13px;">Total WD: <span style="color:var(--pink)">IDR ${tw.toLocaleString()}</span></p>
+                <h4 style="margin-top:10px; color:var(--yellow)">NET PROFIT: IDR ${(td-tw).toLocaleString()}</h4>
             </div>
         `;
     }
@@ -272,8 +278,7 @@
         const m = document.getElementById('gift-msg').value;
         if(!a || !t) return;
         await _supa.from('inbox').insert([{ username: t, nominal: Number(a), pesan: m || "Bonus System", status: 'UNCLAIMED' }]);
-        showAlert("GIFT SENT TO " + t);
-        document.getElementById('gift-amt').value = '';
+        showAlert("GIFT TRANSMITTED TO " + t);
     }
 
     function switchTab(t, el) {
@@ -302,7 +307,7 @@
     function showAlert(m) { document.getElementById('alert-msg').innerText = m; document.getElementById('alert-modal').style.display = 'flex'; }
     function closeAlert() { document.getElementById('alert-modal').style.display = 'none'; fetchData(); }
 
-    // Efek BG Bintang
+    // BG Star Animation
     const c = document.getElementById('canvas-bg'); const x = c.getContext('2d');
     c.width = window.innerWidth; c.height = window.innerHeight;
     let stars = []; for(let i=0; i<60; i++) stars.push({x:Math.random()*c.width, y:Math.random()*c.height, r:Math.random()*1.2, sp:Math.random()*0.3+0.1});
