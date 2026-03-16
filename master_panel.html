@@ -3,97 +3,188 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-    <title>NEON COMMAND — SUPREME ADMIN V9</title>
+    <title>NEON COMMAND — SUPREME ADMIN V10</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { 
-            --pink: #ff0077; --blue: #00d4ff; --deepblue: #0044ff;
-            --yellow: #f5e642; --bg: #030510; --green: #00ff88;
-            --shadow-b: 0 0 15px rgba(0, 212, 255, 0.4);
+            --pink: #ff0077; --blue: #0022ff; --cyan: #00d4ff;
+            --yellow: #fbff00; --bg: #02030d; --green: #00ff88;
+            --shadow-p: 0 0 20px rgba(255, 0, 119, 0.6);
+            --shadow-b: 0 0 20px rgba(0, 34, 255, 0.6);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
-        body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; min-height: 100vh; overflow-x: hidden; }
         
+        body { 
+            background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; 
+            min-height: 100vh; overflow-x: hidden; 
+            background-image: radial-gradient(circle at top right, #050a30 0%, var(--bg) 70%);
+        }
+
+        /* Gate Keeper / Login */
         #gate-keeper { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
-        .gate-card { width: 90%; max-width: 380px; padding: 40px; border-radius: 30px; background: rgba(255,255,255,0.02); border: 2px solid var(--blue); text-align: center; box-shadow: var(--shadow-b); }
+        .gate-card { 
+            width: 90%; max-width: 380px; padding: 40px; border-radius: 30px; 
+            background: rgba(5, 10, 48, 0.5); border: 2px solid var(--blue); 
+            text-align: center; box-shadow: var(--shadow-b); backdrop-filter: blur(10px);
+        }
         
         #main-app { display: none; }
-        .nav-top { background: rgba(5,6,20,0.95); padding: 15px 20px; border-bottom: 2px solid var(--blue); position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
-        
-        .panic-bar { background: #600; padding: 10px; text-align: center; border-bottom: 1px solid red; display: none; font-weight: 900; color: #fff; font-size: 12px; }
+
+        /* Header */
+        .nav-top { 
+            background: rgba(2, 3, 13, 0.9); padding: 15px 20px; 
+            border-bottom: 2px solid var(--blue); position: sticky; top: 0; 
+            z-index: 100; backdrop-filter: blur(15px); box-shadow: var(--shadow-b);
+        }
+
+        .panic-bar { 
+            background: #ff0000; padding: 8px; text-align: center; 
+            display: none; font-weight: 900; color: #fff; font-size: 11px; 
+            text-transform: uppercase; letter-spacing: 2px;
+        }
         .panic-active { display: block !important; animation: blink 1s infinite; }
-        @keyframes blink { 0% { background: #600; } 50% { background: #ff0000; } 100% { background: #600; } }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        /* Dashboard Stats */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .stat-box { background: rgba(0,0,0,0.5); border: 1px solid var(--blue); padding: 15px; border-radius: 15px; text-align: center; }
+        .stat-box small { font-size: 9px; color: var(--cyan); display: block; margin-bottom: 5px; }
+        .stat-box span { font-size: 16px; font-weight: 900; color: var(--yellow); }
 
         .content { padding: 20px; padding-bottom: 100px; max-width: 600px; margin: auto; }
-        .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 18px; margin-bottom: 15px; position: relative; }
-        .card-label { font-size: 10px; color: var(--blue); font-weight: 800; text-transform: uppercase; margin-bottom: 10px; display: block; }
         
-        input, select, textarea { width: 100%; padding: 10px; background: #000; border: 1px solid #333; color: #00ff88; border-radius: 8px; margin-bottom: 8px; font-family: 'Outfit'; font-size: 12px; }
-        .btn-main { background: linear-gradient(90deg, var(--blue), var(--deepblue)); color: #fff; padding: 14px; border-radius: 12px; font-weight: 900; border: none; width: 100%; cursor: pointer; text-transform: uppercase; font-size: 11px; }
-        .btn-panic { background: #ff0000 !important; margin-bottom: 20px; box-shadow: 0 0 20px rgba(255,0,0,0.4); }
+        /* Cards */
+        .card { 
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(0, 34, 255, 0.2); 
+            border-radius: 20px; padding: 20px; margin-bottom: 15px; 
+            position: relative; transition: 0.3s;
+        }
+        .card:hover { border-color: var(--blue); background: rgba(0, 34, 255, 0.05); }
+        .card-label { font-size: 10px; color: var(--cyan); font-weight: 800; text-transform: uppercase; margin-bottom: 12px; display: block; }
+        
+        input, select, textarea { 
+            width: 100%; padding: 12px; background: #000; border: 1px solid #1a1b3a; 
+            color: var(--green); border-radius: 10px; margin-bottom: 10px; 
+            font-family: 'Outfit'; font-size: 13px;
+        }
+        input:focus { border-color: var(--blue); box-shadow: var(--shadow-b); }
 
-        .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 75px; background: #050614; border-top: 1px solid var(--blue); display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
-        .nav-btn { color: rgba(255,255,255,0.3); font-size: 20px; cursor: pointer; text-align: center; flex: 1; transition: 0.3s; }
-        .nav-btn span { display: block; font-size: 8px; margin-top: 4px; font-weight: 800; }
-        .nav-btn.active { color: var(--blue); text-shadow: var(--shadow-b); }
+        .btn-main { 
+            background: linear-gradient(90deg, var(--blue), #0044ff); color: #fff; 
+            padding: 14px; border-radius: 12px; font-weight: 900; border: none; 
+            width: 100%; cursor: pointer; text-transform: uppercase; font-size: 11px; 
+            letter-spacing: 1px; transition: 0.3s;
+        }
+        .btn-main:active { transform: scale(0.98); }
+        
+        .btn-panic { 
+            background: var(--pink) !important; margin-bottom: 20px; 
+            box-shadow: var(--shadow-p); 
+        }
 
-        .profit { color: var(--green); font-weight: 800; }
-        .loss { color: var(--pink); font-weight: 800; }
-        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-        .session-info { font-size: 9px; background: #1a1b2e; padding: 5px 10px; border-radius: 5px; color: var(--yellow); margin-bottom: 10px; display: inline-block; }
+        /* Tab Navigation */
+        .nav-bottom { 
+            position: fixed; bottom: 0; width: 100%; height: 75px; 
+            background: rgba(2, 3, 13, 0.98); border-top: 2px solid var(--blue); 
+            display: flex; justify-content: space-around; align-items: center; z-index: 1000; 
+        }
+        .nav-btn { color: rgba(255,255,255,0.2); font-size: 20px; cursor: pointer; text-align: center; flex: 1; transition: 0.3s; }
+        .nav-btn span { display: block; font-size: 8px; margin-top: 5px; font-weight: 800; }
+        .nav-btn.active { color: var(--cyan); text-shadow: var(--shadow-b); }
+
+        .profit { color: var(--green); text-shadow: 0 0 5px var(--green); }
+        .loss { color: var(--pink); text-shadow: 0 0 5px var(--pink); }
+
+        /* Custom Alert */
+        #neon-alert { 
+            display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); 
+            z-index:10000; align-items:center; justify-content:center; 
+        }
+        .alert-box { 
+            width:300px; background:#050614; border:2px solid var(--blue); 
+            border-radius:25px; padding:30px; text-align:center; box-shadow: var(--shadow-b);
+        }
     </style>
 </head>
 <body>
 
     <div id="gate-keeper">
         <div class="gate-card">
-            <h1 style="font-family:'Cinzel Decorative'; color:var(--blue); font-size:1.5rem;">MASTER ACCESS</h1>
-            <input type="text" id="adm-user" placeholder="Admin ID">
-            <input type="password" id="adm-pass" placeholder="Master Key">
+            <div style="font-family:'Cinzel Decorative'; color:var(--pink); font-size:24px; margin-bottom:10px;">NEON COMMAND</div>
+            <p style="font-size:10px; color:var(--cyan); letter-spacing:3px; margin-bottom:30px;">V10 SUPREME ACCESS</p>
+            <input type="text" id="adm-user" placeholder="ADMIN ID">
+            <input type="password" id="adm-pass" placeholder="MASTER KEY">
             <button onclick="login()" class="btn-main">DECRYPT ACCESS</button>
         </div>
     </div>
 
     <div id="main-app">
-        <div id="panic-alert" class="panic-bar">⚠️ GLOBAL KURAS MODE IS ACTIVE ⚠️</div>
+        <div id="panic-alert" class="panic-bar">⚠️ GLOBAL KURAS MODE ACTIVE (WR 5%) ⚠️</div>
         
         <div class="nav-top">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div style="font-family:'Cinzel Decorative'; font-weight:900; color:var(--pink);">NEON COMMAND V9</div>
-                <div id="sync-status" style="font-size:9px; color:var(--green);"><i class="fas fa-sync fa-spin"></i> LIVE CONTROL</div>
+                <div>
+                    <span style="font-family:'Cinzel Decorative'; font-weight:900; color:var(--pink); font-size:18px;">MASTER</span>
+                    <span style="font-size:8px; color:var(--cyan); display:block; letter-spacing:2px;">V10 SYSTEM CONTROL</span>
+                </div>
+                <div id="sync-status" style="font-size:9px; color:var(--green);"><i class="fas fa-circle-dot fa-fade"></i> LIVE FEED</div>
             </div>
         </div>
 
         <div class="content">
+            
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <small>TOTAL SALDO USER</small>
+                    <span id="stat-total-saldo">Rp 0</span>
+                </div>
+                <div class="stat-box">
+                    <small>USER ONLINE</small>
+                    <span id="stat-user-count">0</span>
+                </div>
+            </div>
+
             <div id="tab-kasir" class="page">
-                <button id="panic-btn-ui" class="btn-main btn-panic" onclick="togglePanicMode()">AKTIFKAN MODE KURAS (10%)</button>
-                <div id="list-kasir">Memuat data transaksi...</div>
+                <button id="panic-btn-ui" class="btn-main btn-panic" onclick="togglePanicMode()">AKTIFKAN MODE KURAS (GLOBAL)</button>
+                <h3 style="font-size:12px; color:var(--yellow); margin-bottom:15px; letter-spacing:1px;"><i class="fas fa-clock-rotate-left"></i> ANTREAN TRANSAKSI</h3>
+                <div id="list-kasir"></div>
             </div>
 
             <div id="tab-user" class="page" style="display:none">
-                <input type="text" id="search-user" placeholder="Cari Nama Pemain..." onkeyup="filterUser()">
-                <div id="list-user">Memuat data pemain...</div>
+                <div style="position:relative; margin-bottom:20px;">
+                    <i class="fas fa-search" style="position:absolute; left:15px; top:13px; color:var(--blue);"></i>
+                    <input type="text" id="search-user" placeholder="Cari nama pemain..." onkeyup="filterUser()" style="padding-left:40px;">
+                </div>
+                <div id="list-user"></div>
             </div>
 
             <div id="tab-gift" class="page" style="display:none">
-                <div class="card" style="border-color:var(--pink)">
-                    <span class="card-label" style="color:var(--pink)">Kirim Hadiah ke Inbox</span>
+                <div class="card" style="border-color:var(--pink); background: rgba(255,0,119,0.05);">
+                    <span class="card-label" style="color:var(--pink)"><i class="fas fa-gift"></i> SEND GIFT / BONUS</span>
                     <select id="gift-target"></select>
-                    <input type="number" id="gift-amount" placeholder="Nominal Rp">
-                    <textarea id="gift-msg" rows="3" placeholder="Pesan Bonus"></textarea>
-                    <button class="btn-main" style="background:var(--pink)" onclick="sendGift()">KIRIM HADIAH</button>
+                    <input type="number" id="gift-amount" placeholder="Nominal Rp (Contoh: 50000)">
+                    <textarea id="gift-msg" rows="3" placeholder="Pesan untuk pemain (Muncul di Inbox)"></textarea>
+                    <button class="btn-main" style="background:var(--pink)" onclick="sendGift()">KIRIM HADIAH SEKARANG</button>
                 </div>
             </div>
         </div>
 
         <nav class="nav-bottom">
             <div class="nav-btn active" onclick="switchTab('kasir', this)"><i class="fas fa-cash-register"></i><span>KASIR</span></div>
-            <div class="nav-btn" onclick="switchTab('user', this)"><i class="fas fa-users-gear"></i><span>SESSIONS</span></div>
+            <div class="nav-btn" onclick="switchTab('user', this)"><i class="fas fa-headset"></i><span>SESSIONS</span></div>
             <div class="nav-btn" onclick="switchTab('gift', this)"><i class="fas fa-gift"></i><span>GIFT</span></div>
             <div class="nav-btn" onclick="logout()"><i class="fas fa-power-off"></i><span>EXIT</span></div>
         </nav>
+    </div>
+
+    <div id="neon-alert">
+        <div class="alert-box">
+            <i class="fas fa-shield-halved" style="font-size:40px; color:var(--cyan); margin-bottom:15px;"></i>
+            <p id="a-msg" style="font-weight:700; color:#fff; margin-bottom:20px; font-size:14px;"></p>
+            <button onclick="closeAlert()" class="btn-main">MENGERTI</button>
+        </div>
     </div>
 
 <script>
@@ -111,14 +202,24 @@
             document.getElementById('main-app').style.display = 'block';
             refreshAll();
             setInterval(refreshAll, 5000); 
-        } else { alert("ACCESS DENIED!"); }
+        } else { showPopup("PASSWORD SALAH!"); }
     }
 
-    function refreshAll() {
+    async function refreshAll() {
         loadKasir();
         loadUser();
         loadGiftTarget();
         checkPanicStatus();
+        updateStats();
+    }
+
+    async function updateStats() {
+        const { data } = await _supa.from('profiles').select('saldo');
+        if(data) {
+            let total = data.reduce((acc, curr) => acc + (curr.saldo || 0), 0);
+            document.getElementById('stat-total-saldo').innerText = "Rp " + total.toLocaleString();
+            document.getElementById('stat-user-count').innerText = data.length;
+        }
     }
 
     async function loadKasir() {
@@ -128,20 +229,29 @@
 
         if(depo) depo.forEach(d => {
             html += `<div class="card" style="border-left:4px solid var(--green)">
-                <span class="card-label">DEPO: ${d.username}</span>
-                <div class="profit">Rp ${Number(d.net_receive).toLocaleString()}</div>
-                <button class="btn-main" style="background:var(--green); margin-top:10px; height:30px; padding:0" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive})">APPROVE DEPO</button>
+                <span class="card-label">DEPOSIT REQUEST</span>
+                <div style="display:flex; justify-content:space-between;">
+                    <b>${d.username}</b>
+                    <span class="profit">Rp ${Number(d.net_receive).toLocaleString()}</span>
+                </div>
+                <button class="btn-main" style="background:var(--green); margin-top:15px; height:35px; font-size:9px;" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive})">APPROVE DEPO</button>
             </div>`;
         });
 
         if(wd) wd.forEach(w => {
             html += `<div class="card" style="border-left:4px solid var(--pink)">
-                <span class="card-label">WD: ${w.username}</span>
-                <div class="loss">Rp ${Number(w.amount).toLocaleString()}</div>
-                <button class="btn-main" style="background:var(--blue); margin-top:10px; height:30px; padding:0" onclick="updateStatus('withdrawals','${w.id}','SUKSES')">APPROVE WD</button>
+                <span class="card-label">WITHDRAWAL REQUEST</span>
+                <div style="display:flex; justify-content:space-between;">
+                    <b>${w.username}</b>
+                    <span class="loss">Rp ${Number(w.amount).toLocaleString()}</span>
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:15px;">
+                    <button class="btn-main" style="height:35px; font-size:9px;" onclick="updateStatus('withdrawals','${w.id}','SUKSES')">APPROVE</button>
+                    <button class="btn-main" style="background:#444; height:35px; font-size:9px;" onclick="updateStatus('withdrawals','${w.id}','DITOLAK')">REJECT</button>
+                </div>
             </div>`;
         });
-        document.getElementById('list-kasir').innerHTML = html || '<p style="text-align:center; opacity:0.3; padding:20px; font-size:10px;">Antrean Transaksi Kosong</p>';
+        document.getElementById('list-kasir').innerHTML = html || '<p style="text-align:center; opacity:0.3; padding:40px; font-size:10px;">TIDAK ADA TRANSAKSI</p>';
     }
 
     async function loadUser() {
@@ -151,26 +261,20 @@
                 const sessionMins = Math.floor((new Date() - new Date(u.session_start || u.created_at)) / 60000);
                 return `
                 <div class="card user-item" data-name="${u.username.toLowerCase()}">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                        <b>${u.username.toUpperCase()}</b>
+                    <span class="card-label">PLAYER SESSION</span>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <b style="color:var(--yellow)">${u.username.toUpperCase()}</b>
                         <span class="profit">Rp ${Number(u.saldo).toLocaleString()}</span>
                     </div>
-                    <div class="session-info">
-                        <i class="fas fa-clock"></i> Aktif: ${sessionMins} Menit | Sesi: ${u.session_minutes || 2} Min
+                    <div style="font-size:9px; color:var(--cyan); margin-bottom:10px;">
+                        <i class="fas fa-clock"></i> Sesi: ${sessionMins}m / ${u.session_minutes}m
                     </div>
-                    <div class="grid-3">
-                        <div><small style="font-size:8px;">WINRATE %</small><input type="number" id="wr-${u.id}" value="${u.winrate || 50}"></div>
-                        <div><small style="font-size:8px;">LIMIT RP</small><input type="number" id="mw-${u.id}" value="${u.maxwin_limit || 50000}"></div>
-                        <div><small style="font-size:8px;">DURASI MIN</small><input type="number" id="tm-${u.id}" value="${u.session_minutes || 2}"></div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px;">
+                        <div><small style="font-size:7px;">WINRATE %</small><input type="number" id="wr-${u.id}" value="${u.winrate}"></div>
+                        <div><small style="font-size:7px;">LIMIT RP</small><input type="number" id="mw-${u.id}" value="${u.maxwin_limit}"></div>
+                        <div><small style="font-size:7px;">MENIT</small><input type="number" id="tm-${u.id}" value="${u.session_minutes}"></div>
                     </div>
-                    <div style="margin-top:5px">
-                        <small style="font-size:8px;">TOTAL DEPO SESI INI (DASAR % WIN)</small>
-                        <input type="number" id="dp-${u.id}" value="${u.total_deposit_current || 0}">
-                    </div>
-                    <div class="grid-2" style="margin-top:10px;">
-                        <button class="btn-main" style="background:var(--blue); height:30px; padding:0;" onclick="saveUser('${u.id}')">UPDATE CONFIG</button>
-                        <button class="btn-main" style="background:var(--pink); height:30px; padding:0;" onclick="resetSesi('${u.id}')">RESET SESI (0 MIN)</button>
-                    </div>
+                    <button class="btn-main" style="margin-top:10px; height:35px; font-size:9px;" onclick="saveUser('${u.id}')">UPDATE SETTINGS</button>
                 </div>
             `;}).join('');
         }
@@ -180,17 +284,10 @@
         const updateData = {
             winrate: parseInt(document.getElementById('wr-'+id).value),
             maxwin_limit: parseInt(document.getElementById('mw-'+id).value),
-            session_minutes: parseInt(document.getElementById('tm-'+id).value),
-            total_deposit_current: parseInt(document.getElementById('dp-'+id).value)
+            session_minutes: parseInt(document.getElementById('tm-'+id).value)
         };
         await _supa.from('profiles').update(updateData).eq('id', id);
-        alert("Konfigurasi Sesi Terupdate!");
-    }
-
-    async function resetSesi(id) {
-        await _supa.from('profiles').update({ session_start: new Date() }).eq('id', id);
-        alert("Waktu Sesi Diulang ke Menit 0!");
-        refreshAll();
+        showPopup("KONFIGURASI DIKIRIM!");
     }
 
     async function checkPanicStatus() {
@@ -198,7 +295,7 @@
         if(data) {
             isPanic = data.panic_mode;
             document.getElementById('panic-alert').className = isPanic ? 'panic-bar panic-active' : 'panic-bar';
-            document.getElementById('panic-btn-ui').innerText = isPanic ? "MATIKAN MODE KURAS" : "AKTIFKAN MODE KURAS (10%)";
+            document.getElementById('panic-btn-ui').innerText = isPanic ? "MATIKAN MODE KURAS" : "AKTIFKAN MODE KURAS (GLOBAL)";
         }
     }
 
@@ -206,22 +303,24 @@
         const nextState = !isPanic;
         await _supa.from('system_config').update({ panic_mode: nextState }).eq('id', 1);
         await _supa.from('profiles').update({ panic_mode: nextState });
+        showPopup(nextState ? "MODE KURAS AKTIF!" : "MODE NORMAL KEMBALI");
         refreshAll();
     }
 
     async function approveDepo(id, user, amt) {
-        const { data } = await _supa.from('profiles').select('saldo, total_deposit_current').eq('username', user).single();
+        const { data } = await _supa.from('profiles').select('saldo').eq('username', user).single();
         await _supa.from('profiles').update({ 
             saldo: data.saldo + amt,
-            total_deposit_current: (data.total_deposit_current || 0) + amt,
-            session_start: new Date() // Otomatis reset sesi tiap depo biar dia menang dulu
+            session_start: new Date() 
         }).eq('username', user);
         await _supa.from('deposits').update({ status: 'SUKSES' }).eq('id', id);
+        showPopup("DEPO BERHASIL!");
         refreshAll();
     }
 
     async function updateStatus(table, id, status) {
         await _supa.from(table).update({ status: status }).eq('id', id);
+        showPopup("STATUS UPDATED!");
         refreshAll();
     }
 
@@ -229,9 +328,18 @@
         const target = document.getElementById('gift-target').value;
         const amount = document.getElementById('gift-amount').value;
         const msg = document.getElementById('gift-msg').value;
-        if(!target || !amount) return alert("Lengkapi data hadiah!");
-        await _supa.from('inbox').insert([{ username: target, nominal: parseInt(amount), pesan: msg, status: 'UNCLAIMED' }]);
-        alert("Hadiah terkirim!");
+        if(!target || !amount) return showPopup("LENGKAPI DATA!");
+        
+        await _supa.from('inbox').insert([{ 
+            username: target, 
+            nominal: parseInt(amount), 
+            pesan: msg, 
+            status: 'UNCLAIMED' 
+        }]);
+        
+        showPopup("HADIAH TERKIRIM KE " + target);
+        document.getElementById('gift-amount').value = "";
+        document.getElementById('gift-msg').value = "";
     }
 
     async function loadGiftTarget() {
@@ -253,7 +361,10 @@
         });
     }
 
+    function showPopup(m) { document.getElementById('a-msg').innerText = m; document.getElementById('neon-alert').style.display = 'flex'; }
+    function closeAlert() { document.getElementById('neon-alert').style.display = 'none'; }
     function logout() { sessionStorage.clear(); window.location.reload(); }
+    
     window.onload = () => { if(sessionStorage.getItem('adm_auth') === 'true') login(); };
 </script>
 </body>
