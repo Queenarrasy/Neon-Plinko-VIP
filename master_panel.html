@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>NEON COMMAND — SUPREME ADMIN V10.3</title>
+    <title>NEON COMMAND — SUPREME ADMIN V10.5</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -33,10 +33,12 @@
         .stat-box span { font-size: 16px; font-weight: 900; color: var(--yellow); text-shadow: var(--gy); }
         .card { background: rgba(0,0,0,0.85); border: 1px solid var(--blue); border-radius: 20px; padding: 20px; margin-bottom: 15px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .card-label { font-size: 10px; color: var(--cyan); font-weight: 800; text-transform: uppercase; margin-bottom: 12px; display: block; }
-        input, select, textarea { width: 100%; padding: 12px; background: rgba(5, 6, 25, 0.8); border: 1px solid var(--blue); color: var(--yellow); border-radius: 10px; margin-bottom: 10px; font-family: 'Outfit'; font-size: 13px; }
-        .btn-main { background: linear-gradient(90deg, var(--blue), #001188); color: #fff; padding: 14px; border-radius: 50px; font-weight: 900; border: 1px solid var(--cyan); width: 100%; cursor: pointer; text-transform: uppercase; font-size: 11px; letter-spacing: 2px; box-shadow: var(--gb); }
+        input, select, textarea { width: 100%; padding: 12px; background: rgba(5, 6, 25, 0.8); border: 1px solid var(--blue); color: var(--yellow); border-radius: 10px; margin-bottom: 10px; font-family: 'Outfit'; font-size: 13px; outline: none; }
+        input:focus { border-color: var(--pink); box-shadow: var(--gp); }
+        .btn-main { background: linear-gradient(90deg, var(--blue), #001188); color: #fff; padding: 14px; border-radius: 50px; font-weight: 900; border: 1px solid var(--cyan); width: 100%; cursor: pointer; text-transform: uppercase; font-size: 11px; letter-spacing: 2px; box-shadow: var(--gb); transition: 0.2s; }
+        .btn-main:active { transform: scale(0.95); opacity: 0.8; }
         .nav-bottom { position: fixed; bottom: 0; width: 100%; height: 80px; background: #000; border-top: 2px solid var(--blue); display: flex; justify-content: space-around; align-items: center; z-index: 1000; padding-bottom: env(safe-area-inset-bottom); }
-        .nav-btn { color: rgba(0, 212, 255, 0.3); font-size: 20px; text-align: center; flex: 1; }
+        .nav-btn { color: rgba(0, 212, 255, 0.3); font-size: 20px; text-align: center; flex: 1; cursor: pointer; }
         .nav-btn span { display: block; font-size: 8px; margin-top: 5px; font-weight: 800; }
         .nav-btn.active { color: var(--yellow); text-shadow: var(--gy); }
         #alert-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:10000; align-items:center; justify-content:center; backdrop-filter:blur(15px); }
@@ -66,7 +68,7 @@
                     <span style="font-family:'Cinzel Decorative'; font-weight:900; color:var(--pink); font-size:18px;">SUPREME</span>
                     <span id="live-indicator" style="font-size:8px; color:var(--cyan); display:block; font-weight:800;"><i class="fas fa-circle fa-fade"></i> SIGNAL STABLE</span>
                 </div>
-                <div id="sync-status" style="font-size:10px; color:var(--yellow); font-weight:800;">V10.3 LIVE</div>
+                <div id="sync-status" style="font-size:10px; color:var(--yellow); font-weight:800;">V10.5 MASTER</div>
             </div>
         </div>
 
@@ -119,6 +121,7 @@
 
     const AUTH = { u: "admin_neon", p: "master777" };
     let autoRefresh;
+    let isEditing = false;
 
     function login() {
         if(document.getElementById('adm-user').value === AUTH.u && document.getElementById('adm-pass').value === AUTH.p) {
@@ -130,80 +133,92 @@
         } else { alert("WRONG KEY"); }
     }
 
-    // ENGINE UTAMA: Menggabungkan Realtime & Auto-Polling
     async function initEngine() {
         refreshAll();
         
-        // Realtime Listener
-        _supa.channel('any').on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-            console.log("⚡ Change Detected");
-            refreshAll();
-        }).subscribe();
+        // REALTIME SUBSCRIPTION
+        _supa.channel('custom-all-channel')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload) => {
+            if(!isEditing) refreshAll();
+        })
+        .subscribe();
 
-        // Backup Polling: 1 Detik (Sangat agresif agar saldo "bergerak" mulus)
+        // FALLBACK POLLING (Setiap 2 detik untuk update saldo mulus)
         if(autoRefresh) clearInterval(autoRefresh);
-        autoRefresh = setInterval(refreshAll, 1500);
+        autoRefresh = setInterval(() => {
+            if(!isEditing) refreshAll();
+        }, 2000);
     }
 
     async function refreshAll() {
-        // Cek Stats
-        const { data: profiles } = await _supa.from('profiles').select('*').order('username');
+        const { data: profiles, error } = await _supa.from('profiles').select('*').order('username');
         if(profiles) {
             let total = profiles.reduce((a, b) => a + (b.saldo || 0), 0);
             document.getElementById('stat-total-saldo').innerText = total.toLocaleString();
             document.getElementById('stat-user-count').innerText = profiles.length;
             renderUsers(profiles);
         }
-        
-        // Cek Kasir & Panic
         loadKasir();
         checkPanic();
     }
 
     function renderUsers(data) {
-        if(document.activeElement.tagName === "INPUT") return;
+        if(isEditing) return;
         const container = document.getElementById('list-user');
         container.innerHTML = data.map(u => {
-            const danger = u.saldo >= (u.maxwin_limit * 0.8);
+            const isLimit = u.saldo >= u.maxwin_limit;
             return `
-            <div class="card" style="${danger ? 'border:2px solid var(--pink); box-shadow:var(--gp);' : ''}">
+            <div class="card" style="${isLimit ? 'border:2px solid var(--pink); box-shadow:var(--gp); animation:blink 1.5s infinite;' : ''}">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <b style="color:var(--cyan);">${u.username.toUpperCase()}</b>
+                    <b style="color:${isLimit ? 'var(--yellow)' : 'var(--cyan)'};">${isLimit ? '⚠️ ' : ''}${u.username.toUpperCase()}</b>
                     <span style="color:var(--yellow); font-size:18px; font-weight:900;">${Number(u.saldo).toLocaleString()}</span>
                 </div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; margin-top:15px;">
-                    <div><small>WINRATE</small><input type="number" id="wr-${u.id}" value="${u.winrate}"></div>
-                    <div><small>MAXWIN</small><input type="number" id="mw-${u.id}" value="${u.maxwin_limit}"></div>
-                    <div><small>SESSION</small><input type="number" id="tm-${u.id}" value="${u.session_minutes}"></div>
+                    <div><small>WINRATE %</small><input type="number" id="wr-${u.id}" value="${u.winrate}" onfocus="isEditing=true" onblur="isEditing=false"></div>
+                    <div><small>MAXWIN</small><input type="number" id="mw-${u.id}" value="${u.maxwin_limit}" onfocus="isEditing=true" onblur="isEditing=false"></div>
+                    <div><small>MINUTES</small><input type="number" id="tm-${u.id}" value="${u.session_minutes}" onfocus="isEditing=true" onblur="isEditing=false"></div>
                 </div>
-                <button class="btn-main" style="height:35px; margin-top:10px; font-size:9px;" onclick="saveUser('${u.id}')">UPDATE NODE</button>
+                <button class="btn-main" style="height:35px; margin-top:10px; font-size:9px;" onclick="saveUser('${u.id}')">FORCE SYNC NODE</button>
             </div>`;
         }).join('');
     }
 
     async function saveUser(id) {
-        const payload = {
-            winrate: parseInt(document.getElementById('wr-'+id).value),
-            maxwin_limit: parseInt(document.getElementById('mw-'+id).value),
-            session_minutes: parseInt(document.getElementById('tm-'+id).value)
-        };
-        const { error } = await _supa.from('profiles').update(payload).eq('id', id);
-        if(!error) showAlert("CONFIG SYNCED");
+        const wr = parseInt(document.getElementById('wr-'+id).value);
+        const mw = parseInt(document.getElementById('mw-'+id).value);
+        const tm = parseInt(document.getElementById('tm-'+id).value);
+
+        // Paksa Update ke Database
+        const { error } = await _supa.from('profiles').update({
+            winrate: wr,
+            maxwin_limit: mw,
+            session_minutes: tm,
+            // Menambahkan timestamp agar game di sisi pemain mendeteksi perubahan data terbaru
+            updated_at: new Date().toISOString() 
+        }).eq('id', id);
+
+        if(!error) {
+            showAlert("SYNC SUCCESS: CONFIG LOCKED");
+            isEditing = false;
+            refreshAll();
+        } else {
+            showAlert("SYNC ERROR: CONNECTION TIMEOUT");
+        }
     }
 
     async function loadKasir() {
         const { data } = await _supa.from('deposits').select('*').eq('status', 'PROSES');
         const cont = document.getElementById('list-kasir');
         if(!data || data.length === 0) {
-            cont.innerHTML = '<p style="text-align:center; font-size:10px; opacity:0.5;">WAITING FOR SIGNALS...</p>';
+            cont.innerHTML = '<p style="text-align:center; font-size:10px; opacity:0.5; letter-spacing:2px;">WAITING FOR UPLINK...</p>';
             return;
         }
         cont.innerHTML = data.map(d => `
             <div class="card" style="border-left:5px solid var(--yellow);">
-                <small>DEPOSIT REQ</small>
+                <small>INCOMING DEPOSIT</small>
                 <h3>${d.username}</h3>
                 <h2 style="color:var(--yellow)">IDR ${d.net_receive.toLocaleString()}</h2>
-                <button class="btn-main" style="margin-top:10px;" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive})">APPROVE</button>
+                <button class="btn-main" style="margin-top:10px;" onclick="approveDepo('${d.id}','${d.username}',${d.net_receive})">AUTHORIZE</button>
             </div>
         `).join('');
     }
@@ -211,7 +226,10 @@
     async function approveDepo(id, user, amt) {
         await _supa.from('deposits').update({ status: 'SUKSES' }).eq('id', id);
         const { data } = await _supa.from('profiles').select('saldo').eq('username', user).single();
-        await _supa.from('profiles').update({ saldo: (data.saldo || 0) + amt, session_start: new Date().toISOString() }).eq('username', user);
+        await _supa.from('profiles').update({ 
+            saldo: (data.saldo || 0) + amt, 
+            session_start: new Date().toISOString() 
+        }).eq('username', user);
         refreshAll();
     }
 
@@ -219,8 +237,8 @@
         const t = document.getElementById('gift-target').value;
         const a = document.getElementById('gift-amount').value;
         if(!t || !a) return;
-        await _supa.from('inbox').insert([{ username: t, nominal: Number(a), pesan: document.getElementById('gift-msg').value || "SYSTEM_GIFT", status: 'UNCLAIMED' }]);
-        showAlert("GIFT SENT!");
+        await _supa.from('inbox').insert([{ username: t, nominal: Number(a), pesan: document.getElementById('gift-msg').value || "SYS_GIFT", status: 'UNCLAIMED' }]);
+        showAlert("GIFT DATA TRANSMITTED");
         document.getElementById('gift-amount').value = "";
     }
 
@@ -236,7 +254,8 @@
         const next = !data.panic_mode;
         await _supa.from('system_config').update({ panic_mode: next }).eq('id', 1);
         await _supa.from('profiles').update({ panic_mode: next });
-        showAlert("PANIC MODE: " + (next ? "ON" : "OFF"));
+        showAlert("PANIC MODE: " + (next ? "ACTIVATED" : "DEACTIVATED"));
+        refreshAll();
     }
 
     function switchTab(t, el) {
@@ -249,7 +268,7 @@
 
     async function loadGiftOptions() {
         const { data } = await _supa.from('profiles').select('username');
-        if(data) document.getElementById('gift-target').innerHTML = data.map(u => `<option value="${u.username}">${u.username}</option>`).join('');
+        if(data) document.getElementById('gift-target').innerHTML = data.map(u => `<option value="${u.username}">${u.username.toUpperCase()}</option>`).join('');
     }
 
     function showAlert(m) { document.getElementById('alert-msg').innerText = m; document.getElementById('alert-modal').style.display = 'flex'; }
