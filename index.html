@@ -2,200 +2,198 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
     <title>NEON PLINKO — VIP ACCESS</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     <style>
         :root { 
-            --pink: #ff0077; --blue: #0022ff; --yellow: #fbff00; --bg: #02030d;
-            --gp: 0 0 20px rgba(255, 0, 119, 0.8);
-            --gb: 0 0 20px rgba(0, 34, 255, 0.8);
-            --gy: 0 0 20px rgba(251, 255, 0, 0.8);
+            --pink: #ff0077; --blue: #0022ff; --yellow: #fbff00; --bg: #000005;
+            --gp: 0 0 20px rgba(255,0,119,0.8); --gb: 0 0 20px rgba(0,34,255,0.8); --gy: 0 0 20px rgba(251,255,0,0.8);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; outline: none; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; height: 100vh; overflow: hidden; display: flex; align-items: center; justify-content: center; }
         
-        body { 
-            background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif;
-            height: 100vh; overflow: hidden; display: flex; align-items: center; justify-content: center;
-        }
+        #particles-js { position: fixed; width: 100%; height: 100%; z-index: 0; background: radial-gradient(circle at center, #000020 0%, #000 100%); }
 
-        #canvas-bg { position: absolute; inset: 0; z-index: 0; }
-        .overlay { position: absolute; inset: 0; background: radial-gradient(circle at center, transparent, var(--bg) 95%); z-index: 1; }
+        /* Neon Alert */
+        #neon-alert { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); width: 85%; max-width: 320px; background: var(--pink); color: #fff; padding: 15px 20px; border-radius: 12px; text-align: center; font-weight: 900; z-index: 9000; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 0 30px var(--pink); font-size: 13px; letter-spacing: 1px; }
+        #neon-alert.show { top: 20px; }
+        #neon-alert.success { background: linear-gradient(90deg, #0022ff, #0055ff); box-shadow: 0 0 30px var(--blue); }
 
         .login-card {
-            width: 92%; max-width: 420px; padding: 30px;
-            background: rgba(5, 6, 25, 0.7); backdrop-filter: blur(25px);
-            border: 2px solid var(--blue); border-radius: 40px;
+            width: 92%; max-width: 420px; padding: 35px 30px;
+            background: rgba(0,0,30,0.85); backdrop-filter: blur(25px);
+            border: 2px solid var(--blue); border-radius: 30px;
             text-align: center; z-index: 10; position: relative;
-            box-shadow: var(--gb), inset 0 0 30px rgba(0, 34, 255, 0.2);
-            animation: float 4s ease-in-out infinite;
+            box-shadow: var(--gb), inset 0 0 30px rgba(0,34,255,0.1);
             max-height: 95vh; overflow-y: auto;
         }
         .login-card::-webkit-scrollbar { display: none; }
 
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+        .logo-area { margin-bottom: 28px; }
+        .logo-area h1 { font-family: 'Cinzel Decorative'; font-size: 32px; color: var(--pink); text-shadow: var(--gp); letter-spacing: 3px; line-height: 1; }
+        .logo-area h1 span { color: var(--yellow); text-shadow: var(--gy); }
+        .logo-area .sub { font-size: 9px; letter-spacing: 6px; color: var(--yellow); font-weight: 900; text-shadow: var(--gy); margin-top: 6px; }
+        .logo-area .tagline { font-size: 10px; color: rgba(255,255,255,0.3); margin-top: 5px; letter-spacing: 2px; }
 
-        .logo-area { margin-bottom: 25px; }
-        .logo-area h1 { font-family: 'Cinzel Decorative'; font-size: 28px; color: var(--pink); text-shadow: var(--gp); letter-spacing: 2px; }
-        .logo-area p { font-size: 10px; letter-spacing: 5px; color: var(--yellow); font-weight: 900; text-shadow: var(--gy); }
-
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; background: rgba(0,0,0,0.6); padding: 6px; border-radius: 50px; border: 1px solid var(--blue); }
-        .tab { flex: 1; padding: 12px; border-radius: 50px; cursor: pointer; font-size: 12px; font-weight: 800; transition: 0.3s; color: rgba(255,255,255,0.3); }
+        .tabs { display: flex; gap: 8px; margin-bottom: 22px; background: rgba(0,0,0,0.6); padding: 5px; border-radius: 50px; border: 1px solid rgba(0,34,255,0.4); }
+        .tab { flex: 1; padding: 12px; border-radius: 50px; cursor: pointer; font-size: 11px; font-weight: 900; transition: 0.3s; color: rgba(255,255,255,0.3); letter-spacing: 2px; }
         .tab.active { background: linear-gradient(135deg, var(--blue), #001188); color: #fff; box-shadow: var(--gb); }
 
         .input-group { position: relative; margin-bottom: 12px; }
-        .input-group i.main-icon { position: absolute; left: 18px; top: 15px; color: var(--yellow); font-size: 16px; text-shadow: var(--gy); }
-        .input-group .eye-btn { position: absolute; right: 18px; top: 15px; color: var(--blue); cursor: pointer; z-index: 5; }
-        
+        .input-group i.main-icon { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: var(--yellow); font-size: 15px; z-index:2; }
+        .input-group .eye-btn { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); color: var(--blue); cursor: pointer; z-index: 5; }
+
         input, select {
-            width: 100%; padding: 14px 15px 14px 50px; background: rgba(0,0,0,0.8);
-            border: 1px solid rgba(0, 212, 255, 0.4); border-radius: 18px;
-            color: #fff; font-family: 'Outfit'; transition: 0.3s; font-size: 14px;
+            width: 100%; padding: 14px 15px 14px 48px; background: rgba(0,0,0,0.7);
+            border: 1px solid rgba(0,34,255,0.4); border-radius: 15px;
+            color: #fff; font-family: 'Outfit'; transition: 0.3s; font-size: 13px;
         }
-        input:focus { border-color: var(--pink); box-shadow: var(--gp); }
+        select { padding-left: 48px; appearance: none; }
+        input:focus, select:focus { border-color: var(--pink); box-shadow: var(--gp); background: rgba(0,0,10,0.9); }
+        input::placeholder { color: rgba(255,255,255,0.25); }
 
         .btn-glow {
-            width: 100%; padding: 18px; border-radius: 50px; border: none;
+            width: 100%; padding: 17px; border-radius: 50px; border: none;
             background: linear-gradient(90deg, var(--blue), var(--pink));
-            color: #fff; font-weight: 900; font-size: 15px; cursor: pointer;
+            color: #fff; font-weight: 900; font-size: 13px; cursor: pointer;
             text-transform: uppercase; letter-spacing: 3px; margin-top: 15px;
-            box-shadow: var(--gp); transition: 0.3s; text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            box-shadow: var(--gp); transition: 0.3s; font-family: 'Cinzel Decorative';
         }
         .btn-glow:active { transform: scale(0.96); }
+        .btn-glow:disabled { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; }
 
-        #neon-modal { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.95); align-items: center; justify-content: center; backdrop-filter: blur(10px); }
-        .modal-box { width: 85%; max-width: 320px; background: #050614; border: 2px solid var(--pink); border-radius: 30px; padding: 30px; text-align: center; box-shadow: var(--gp); animation: zoomIn 0.3s ease; }
-        @keyframes zoomIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .modal-icon { font-size: 50px; color: var(--yellow); margin-bottom: 15px; text-shadow: var(--gy); }
-        .modal-btn { width: 100%; padding: 12px; background: var(--pink); border: none; color: #fff; border-radius: 50px; font-weight: 900; margin-top: 20px; cursor: pointer; box-shadow: var(--gp); }
+        .pass-hint { font-size: 9px; color: var(--pink); text-align: left; margin: -8px 0 12px 10px; font-weight: 800; }
 
-        .footer-links { margin-top: 25px; font-size: 11px; font-weight: 700; }
+        .footer-links { margin-top: 22px; font-size: 11px; font-weight: 700; }
         .footer-links a { color: var(--yellow); text-decoration: none; text-shadow: var(--gy); }
-        
-        .pass-hint { font-size: 10px; color: var(--pink); text-align: left; margin: -8px 0 10px 10px; font-weight: bold; }
+
+        /* Modal */
+        #neon-modal { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.95); align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+        .modal-box { width: 85%; max-width: 320px; background: rgba(0,0,20,0.98); border: 2px solid var(--pink); border-radius: 25px; padding: 30px; text-align: center; box-shadow: var(--gp); animation: zoomIn 0.3s ease; }
+        @keyframes zoomIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .modal-icon { font-size: 45px; color: var(--yellow); margin-bottom: 15px; text-shadow: var(--gy); }
+        .modal-btn { width: 100%; padding: 13px; background: var(--pink); border: none; color: #fff; border-radius: 50px; font-weight: 900; margin-top: 20px; cursor: pointer; box-shadow: var(--gp); letter-spacing: 2px; font-size: 12px; }
+        #m-text { font-weight: 600; line-height: 1.6; font-size: 14px; color: #eee; }
     </style>
 </head>
 <body>
 
-    <canvas id="canvas-bg"></canvas>
-    <div class="overlay"></div>
+<div id="particles-js"></div>
+<div id="neon-alert">SYSTEM NOTIFICATION</div>
 
-    <div class="login-card">
-        <div class="logo-area">
-            <h1>NEON PLINKO</h1>
-            <p>PREMIUM VIP</p>
-        </div>
-
-        <div class="tabs">
-            <div class="tab active" id="t-login" onclick="switchTab('login')">LOGIN</div>
-            <div class="tab" id="t-daftar" onclick="switchTab('daftar')">DAFTAR</div>
-        </div>
-
-        <div id="form-container">
-            <div class="input-group">
-                <i class="fas fa-user-astronaut main-icon"></i>
-                <input type="text" id="user" placeholder="USERNAME" autocomplete="off">
-            </div>
-
-            <div class="input-group">
-                <i class="fas fa-key main-icon"></i>
-                <input type="password" id="pass" placeholder="PASSWORD">
-                <i class="fas fa-eye eye-btn" id="togglePass" onclick="togglePassword()"></i>
-            </div>
-
-            <div id="daftar-fields" style="display: none;">
-                <p class="pass-hint">* Password Min. 6 Karakter (Huruf & Angka)</p>
-                <div class="input-group">
-                    <i class="fas fa-id-card main-icon"></i>
-                    <input type="text" id="nama" placeholder="NAMA SESUAI REKENING">
-                </div>
-                <div class="input-group">
-                    <i class="fas fa-phone main-icon"></i>
-                    <input type="number" id="hp" placeholder="NOMOR HANDPHONE">
-                </div>
-                <div class="input-group">
-                    <i class="fas fa-university main-icon"></i>
-                    <select id="bank" onchange="checkBank()">
-                        <option value="" disabled selected>PILIH BANK / WALLET</option>
-                        <option value="DANA">DANA</option>
-                        <option value="GOPAY">GOPAY</option>
-                        <option value="OVO">OVO</option>
-                        <option value="BCA">BANK BCA</option>
-                        <option value="BRI">BANK BRI</option>
-                        <option value="MANDIRI">BANK MANDIRI</option>
-                        <option value="LAINNYA">BANK LAINNYA</option>
-                    </select>
-                </div>
-                <div class="input-group" id="bank-kustom-box" style="display:none;">
-                    <i class="fas fa-edit main-icon"></i>
-                    <input type="text" id="bank_kustom" placeholder="MASUKKAN NAMA BANK">
-                </div>
-                <div class="input-group">
-                    <i class="fas fa-credit-card main-icon"></i>
-                    <input type="number" id="norek" placeholder="NOMOR REKENING / E-WALLET">
-                </div>
-                <div class="input-group">
-                    <i class="fas fa-users-rays main-icon"></i>
-                    <input type="text" id="ref" placeholder="KODE REFERRAL (OPSIONAL)">
-                </div>
-            </div>
-
-            <button class="btn-glow" id="btn-action" onclick="handleAuth()">INITIALIZE ACCESS</button>
-        </div>
-        
-        <div class="footer-links">
-            <a href="https://wa.me/6289510249551" target="_blank"><i class="fab fa-whatsapp"></i> HUBUNGI ADMIN NEON VIP</a>
-        </div>
+<div class="login-card">
+    <div class="logo-area">
+        <h1>NEON<span>PLINKO</span></h1>
+        <div class="sub">BY AR GAMING</div>
+        <div class="tagline">PREMIUM VIP ACCESS SYSTEM</div>
     </div>
 
-    <div id="neon-modal">
-        <div class="modal-box">
-            <i class="fas fa-bolt-lightning modal-icon" id="m-icon"></i>
-            <p id="m-text" style="font-weight: 600; line-height: 1.5;"></p>
-            <button class="modal-btn" onclick="closeModal()">CONFIRM</button>
-        </div>
+    <div class="tabs">
+        <div class="tab active" id="t-login" onclick="switchTab('login')"><i class="fas fa-unlock-keyhole"></i> LOGIN</div>
+        <div class="tab" id="t-daftar" onclick="switchTab('daftar')"><i class="fas fa-user-plus"></i> DAFTAR</div>
     </div>
+
+    <div id="form-container">
+        <div class="input-group">
+            <i class="fas fa-user-astronaut main-icon"></i>
+            <input type="text" id="user" placeholder="USERNAME" autocomplete="off">
+        </div>
+        <div class="input-group">
+            <i class="fas fa-key main-icon"></i>
+            <input type="password" id="pass" placeholder="PASSWORD">
+            <i class="fas fa-eye eye-btn" id="togglePass" onclick="togglePassword()"></i>
+        </div>
+
+        <div id="daftar-fields" style="display:none;">
+            <p class="pass-hint"><i class="fas fa-shield"></i> PASSWORD MIN. 6 KARAKTER (HURUF & ANGKA)</p>
+            <div class="input-group">
+                <i class="fas fa-id-card main-icon"></i>
+                <input type="text" id="nama" placeholder="NAMA SESUAI REKENING">
+            </div>
+            <div class="input-group">
+                <i class="fas fa-phone main-icon"></i>
+                <input type="number" id="hp" placeholder="NOMOR HANDPHONE / WA">
+            </div>
+            <div class="input-group">
+                <i class="fas fa-university main-icon"></i>
+                <select id="bank" onchange="checkBank()">
+                    <option value="" disabled selected>PILIH BANK / WALLET</option>
+                    <option value="DANA">DANA</option>
+                    <option value="GOPAY">GOPAY</option>
+                    <option value="OVO">OVO</option>
+                    <option value="BCA">BANK BCA</option>
+                    <option value="BRI">BANK BRI</option>
+                    <option value="MANDIRI">BANK MANDIRI</option>
+                    <option value="LAINNYA">BANK LAINNYA</option>
+                </select>
+            </div>
+            <div class="input-group" id="bank-kustom-box" style="display:none;">
+                <i class="fas fa-edit main-icon"></i>
+                <input type="text" id="bank_kustom" placeholder="MASUKKAN NAMA BANK">
+            </div>
+            <div class="input-group">
+                <i class="fas fa-credit-card main-icon"></i>
+                <input type="number" id="norek" placeholder="NOMOR REKENING / E-WALLET">
+            </div>
+            <div class="input-group">
+                <i class="fas fa-users-rays main-icon"></i>
+                <input type="text" id="ref" placeholder="KODE REFERRAL (OPSIONAL)">
+            </div>
+        </div>
+
+        <button class="btn-glow" id="btn-action" onclick="handleAuth()">INITIALIZE ACCESS</button>
+    </div>
+
+    <div class="footer-links">
+        <a href="https://wa.me/6289510249551" target="_blank"><i class="fab fa-whatsapp"></i> HUBUNGI ADMIN NEON VIP</a>
+    </div>
+</div>
+
+<div id="neon-modal">
+    <div class="modal-box">
+        <i class="fas fa-bolt-lightning modal-icon" id="m-icon"></i>
+        <p id="m-text"></p>
+        <button class="modal-btn" onclick="closeModal()">CONFIRM</button>
+    </div>
+</div>
 
 <script>
-    const SUPA_URL = "https://bgffnmwrviyqpeevzjsn.supabase.co"; 
-    const SUPA_KEY = "sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani"; 
+    const SUPA_URL = "https://bgffnmwrviyqpeevzjsn.supabase.co";
+    const SUPA_KEY = "sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani";
     const _supa = supabase.createClient(SUPA_URL, SUPA_KEY);
-
     let currentMode = 'login';
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-    // LOGIKA AUTO-CAPTURE REFERRAL DARI URL
-    function captureReferral() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const refFromUrl = urlParams.get('ref');
-        if (refFromUrl) {
-            localStorage.setItem('pending_ref', refFromUrl);
-            const refInput = document.getElementById('ref');
-            if (refInput) refInput.value = refFromUrl;
-        }
-    }
+    // PARTICLES
+    particlesJS("particles-js", {
+        "particles": {
+            "number": { "value": 80 },
+            "color": { "value": "#ff0077" },
+            "shape": { "type": "circle" },
+            "opacity": { "value": 0.5, "random": true },
+            "size": { "value": 3, "random": true },
+            "line_linked": { "enable": true, "distance": 150, "color": "#0022ff", "opacity": 0.4, "width": 1 },
+            "move": { "enable": true, "speed": 2, "random": true }
+        },
+        "interactivity": { "events": { "onhover": { "enable": true, "mode": "repulse" } } }
+    });
 
-    function playSnd(freq, type, dur) {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + dur);
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.start(); osc.stop(audioCtx.currentTime + dur);
+    function showNeonAlert(msg, isSuccess = false) {
+        const a = document.getElementById('neon-alert');
+        a.innerText = msg;
+        a.className = isSuccess ? 'show success' : 'show';
+        setTimeout(() => a.className = '', 3000);
     }
 
     function togglePassword() {
-        playSnd(600, 'sine', 0.1);
         const p = document.getElementById('pass');
         const icon = document.getElementById('togglePass');
-        if (p.type === "password") {
-            p.type = "text"; icon.classList.replace('fa-eye', 'fa-eye-slash');
-        } else {
-            p.type = "password"; icon.classList.replace('fa-eye-slash', 'fa-eye');
-        }
+        p.type = p.type === "password" ? "text" : "password";
+        icon.classList.toggle('fa-eye', p.type === 'password');
+        icon.classList.toggle('fa-eye-slash', p.type === 'text');
     }
 
     function checkBank() {
@@ -204,145 +202,110 @@
     }
 
     function switchTab(mode) {
-        playSnd(440, 'sine', 0.1);
         currentMode = mode;
         document.getElementById('t-login').classList.toggle('active', mode === 'login');
         document.getElementById('t-daftar').classList.toggle('active', mode === 'daftar');
         document.getElementById('daftar-fields').style.display = mode === 'daftar' ? 'block' : 'none';
         document.getElementById('btn-action').innerText = mode === 'login' ? 'INITIALIZE ACCESS' : 'CREATE VIP ACCOUNT';
-        
-        // Jika pindah ke tab daftar, cek apakah ada ref tersimpan
         if (mode === 'daftar') {
             const savedRef = localStorage.getItem('pending_ref');
             if (savedRef) document.getElementById('ref').value = savedRef;
         }
     }
 
-    function showNeonAlert(msg, isError = false) {
-        if(isError) playSnd(150, 'sawtooth', 0.3); else playSnd(880, 'sine', 0.2);
+    function showNeonModal(msg, isError = false) {
         document.getElementById('m-text').innerText = msg;
         document.getElementById('m-icon').style.color = isError ? '#ff0077' : '#fbff00';
         document.getElementById('neon-modal').style.display = 'flex';
     }
 
     function closeModal() {
-        playSnd(600, 'sine', 0.1);
         document.getElementById('neon-modal').style.display = 'none';
     }
 
     function validatePass(p) {
-        const regex = /^(?=.*[a-zA-Z])(?=.*[0-9]).{6,}$/;
-        return regex.test(p);
+        return /^(?=.*[a-zA-Z])(?=.*[0-9]).{6,}$/.test(p);
+    }
+
+    function captureReferral() {
+        const params = new URLSearchParams(window.location.search);
+        const ref = params.get('ref');
+        if (ref) {
+            localStorage.setItem('pending_ref', ref);
+            switchTab('daftar');
+        }
     }
 
     async function handleAuth() {
         const u = document.getElementById('user').value.toLowerCase().trim();
         const p = document.getElementById('pass').value.trim();
         const btn = document.getElementById('btn-action');
-
-        if(!u || !p) return showNeonAlert("DATA TIDAK LENGKAP!", true);
+        if (!u || !p) return showNeonModal("DATA TIDAK LENGKAP!", true);
 
         btn.disabled = true;
         btn.innerText = "PROCESSING...";
 
-        if(currentMode === 'login') {
+        if (currentMode === 'login') {
             const { data, error } = await _supa.from('profiles').select('*').eq('username', u).eq('password', p).single();
             if (error || !data) {
-                showNeonAlert("USERNAME / PASSWORD SALAH!", true);
+                showNeonModal("USERNAME / PASSWORD SALAH!", true);
                 btn.disabled = false; btn.innerText = "INITIALIZE ACCESS";
             } else {
-                playSnd(1200, 'sine', 0.2);
+                showNeonAlert("ACCESS GRANTED — ENTERING SYSTEM", true);
                 const sid = Math.random().toString(36).substring(2);
-                // Gunakan key neon_user agar sinkron dengan config.js Anda
                 localStorage.setItem('neon_user', u);
                 localStorage.setItem('user_session', u);
                 await _supa.from('profiles').update({ last_session_id: sid }).eq('username', u);
-                setTimeout(() => { location.href = 'game.html'; }, 1000);
+                setTimeout(() => location.href = 'game.html', 1200);
             }
         } else {
-            // PROSES DAFTAR
             const nama = document.getElementById('nama').value.toUpperCase().trim();
             const hp = document.getElementById('hp').value.trim();
             const bankInit = document.getElementById('bank').value;
-            const bankFinal = (bankInit === 'LAINNYA') ? document.getElementById('bank_kustom').value.toUpperCase() : bankInit;
+            const bankFinal = bankInit === 'LAINNYA' ? document.getElementById('bank_kustom').value.toUpperCase() : bankInit;
             const norek = document.getElementById('norek').value.trim();
             const refInput = document.getElementById('ref').value.trim();
             const refFinal = refInput || 'DIRECT';
-
-            // Generate Kode Referral Permanen Untuk User Baru
             const myNewRef = "NEON" + Math.random().toString(36).substring(2, 7).toUpperCase();
 
-            if(!nama || !hp || !bankFinal || !norek) {
+            if (!nama || !hp || !bankFinal || !norek) {
                 btn.disabled = false; btn.innerText = "CREATE VIP ACCOUNT";
-                return showNeonAlert("LENGKAPI SEMUA DATA!", true);
+                return showNeonModal("LENGKAPI SEMUA DATA!", true);
+            }
+            if (!validatePass(p)) {
+                btn.disabled = false; btn.innerText = "CREATE VIP ACCOUNT";
+                return showNeonModal("PASSWORD WAJIB 6 KARAKTER (HURUF & ANGKA)!", true);
             }
 
-            if(!validatePass(p)) {
-                btn.disabled = false; btn.innerText = "CREATE VIP ACCOUNT";
-                return showNeonAlert("PASSWORD WAJIB 6 KARAKTER (HURUF & ANGKA)!", true);
-            }
-
-            // CEK USERNAME & REKENING TERDAFTAR
             const { data: userExist } = await _supa.from('profiles').select('username').eq('username', u).single();
-            if(userExist) {
+            if (userExist) {
                 btn.disabled = false; btn.innerText = "CREATE VIP ACCOUNT";
-                return showNeonAlert("USERNAME SUDAH TERDAFTAR!", true);
+                return showNeonModal("USERNAME SUDAH TERDAFTAR!", true);
             }
-
             const { data: rekExist } = await _supa.from('profiles').select('rekening').eq('rekening', norek).single();
-            if(rekExist) {
+            if (rekExist) {
                 btn.disabled = false; btn.innerText = "CREATE VIP ACCOUNT";
-                return showNeonAlert("NOMOR REKENING SUDAH TERDAFTAR!", true);
+                return showNeonModal("NOMOR REKENING SUDAH TERDAFTAR!", true);
             }
 
-            // INPUT KE DATABASE
             const { error: insErr } = await _supa.from('profiles').insert([{
-                username: u, 
-                password: p, 
-                nama_lengkap: nama, 
-                phone: hp,
-                bank_name: bankFinal, 
-                rekening: norek, 
-                referred_by: refFinal, // Siapa yang mengundang
-                referral_code: myNewRef, // Kode miliknya sendiri (PERMANEN)
-                saldo: 0, 
-                winrate: 30, 
-                maxwin_limit: 100000 
+                username: u, password: p, nama_lengkap: nama,
+                nomor_hp: hp, bank_name: bankFinal, rekening: norek,
+                referred_by: refFinal, referral_code: myNewRef,
+                saldo: 0, winrate: 30, maxwin_limit: 100000
             }]);
 
-            if(insErr) {
-                showNeonAlert("SYSTEM BUSY: " + insErr.message, true);
-                btn.disabled = false;
+            if (insErr) {
+                showNeonModal("SYSTEM BUSY: " + insErr.message, true);
+                btn.disabled = false; btn.innerText = "CREATE VIP ACCOUNT";
             } else {
                 localStorage.removeItem('pending_ref');
-                showNeonAlert("REGISTRASI BERHASIL! SILAHKAN LOGIN.");
-                setTimeout(() => { location.reload(); }, 1500);
+                showNeonModal("REGISTRASI BERHASIL! SILAHKAN LOGIN.");
+                setTimeout(() => location.reload(), 2000);
             }
         }
     }
 
-    // CANVAS ANIMATION
-    const canvas = document.getElementById('canvas-bg');
-    const ctx = canvas.getContext('2d');
-    let stars = [];
-    function initCanvas() {
-        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-        stars = [];
-        for(let i=0; i<150; i++) stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*1.5, d: Math.random()*0.5 });
-    }
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.fillStyle = "#fff";
-        stars.forEach(s => {
-            ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fill();
-            s.y += s.d; if(s.y > canvas.height) s.y = 0;
-        });
-        requestAnimationFrame(draw);
-    }
-    window.onresize = initCanvas; 
-    initCanvas(); 
-    draw();
-    
-    // Jalankan capture referral saat halaman dimuat
     window.onload = captureReferral;
 </script>
 </body>
