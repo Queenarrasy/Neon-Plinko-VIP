@@ -225,29 +225,70 @@ async function dropBall(){
     refreshUI();
     await _supa.from('profiles').update({saldo: balance}).eq('username', user);
 
-    // Tentukan apakah menang berdasarkan finalWR (sudah fresh dari DB)
+    // Tentukan menang/kalah dari DB winrate
     const isHoki = (Math.random() * 100) < finalWR;
-    let forceX = isHoki ? (Math.random() > 0.5 ? 3.8 : -3.8) : (Math.random() > 0.5 ? 0.5 : -0.5);
 
-    const ball=Bodies.circle(200+(Math.random()*6-3),20,8,{label:'ball',restitution:0.5,friction:0.01,render:{fillStyle:'#ff0077',strokeStyle:'#ffffff',lineWidth:2}});
-    Body.setVelocity(ball,{x:forceX,y:0});
-    Composite.add(engine.world,ball);
-    beep(800,0.1);
-    setTimeout(()=>{if(Composite.allBodies(engine.world).includes(ball))Composite.remove(engine.world,ball);},7000);
+    // ── STRATEGI ARAH BOLA ──────────────────────────────────
+    // MENANG  → dorong ke pinggir kiri/kanan (slot X10/X5 besar)
+    // KALAH   → dorong ke tengah (slot X0.2 kecil) — terlihat alami
+    // Slot layout: [10,5,2,0.5,0.2,0.2,0.5,2,5,10]
+    // Tengah (idx 4,5) = X0.2, tepi (idx 0,9) = X10
+    let forceX;
+    if(isHoki){
+        // Arahkan ke tepi — slot besar
+        forceX = Math.random() > 0.5 ? 4.2 : -4.2;
+    } else {
+        // Arahkan ke tengah — slot kecil X0.2, terlihat wajar secara fisik
+        // Variasi kecil agar tidak selalu persis tengah
+        forceX = (Math.random() * 0.8 - 0.4); // antara -0.4 sampai +0.4
+    }
+
+    const ball = Bodies.circle(200+(Math.random()*4-2), 20, 8, {
+        label:'ball',
+        restitution:0.5,
+        friction:0.01,
+        render:{fillStyle:'#ff0077', strokeStyle:'#ffffff', lineWidth:2}
+    });
+    ball.isHoki = isHoki;
+    Body.setVelocity(ball, {x: forceX, y: 0});
+    Composite.add(engine.world, ball);
+    beep(800, 0.1);
+
+    // Cleanup bola yang tidak mengenai sensor
+    setTimeout(()=>{
+        if(Composite.allBodies(engine.world).includes(ball)){
+            Composite.remove(engine.world, ball);
+        }
+    }, 7000);
 }
 
-async function calcWin(ball,label){
-    if(ball.used)return;ball.used=true;
-    const info=label.split('_');const m=parseFloat(info[1]);const idx=info[2];
-    const win=Math.floor(BETS[bIdx]*m);balance=Math.round(balance+win);refreshUI();
-    const disp=document.getElementById('win-display');
-    if(disp){disp.innerText=`(X${m}) +${win.toLocaleString()}`;disp.className='active';}
-    const s=document.getElementById('s-'+idx);
-    if(s){s.classList.add('hit-win');setTimeout(()=>{s.classList.remove('hit-win');if(disp)disp.className='';},600);}
-    if(m>=5){beep(1200,0.3,0.2);showNeonAlert(`X${m} JACKPOT! +${win.toLocaleString()}`,'win');}
-    else if(m>=2)beep(1000,0.2,0.15);else if(m>=1)beep(800,0.15,0.1);else beep(400,0.1,0.05);
-    Composite.remove(engine.world,ball);
-    await _supa.from('profiles').update({saldo:balance}).eq('username',user);
+async function calcWin(ball, label){
+    if(ball.used) return;
+    ball.used = true;
+    const info = label.split('_');
+    const mHit = parseFloat(info[1]); // multiplier slot yang benar-benar kena
+    const idx  = parseInt(info[2]);
+
+    // ── HASIL BAYARAN ────────────────────────────────────────
+    // Selalu bayar sesuai slot yang BENAR-BENAR DIMASUKI bola
+    // Manipulasi sudah dilakukan lewat arah fisika — tidak ada angka palsu
+    // Pemain melihat: bola masuk slot X0.2 → dapat sedikit. Natural & wajar.
+    const win = Math.floor(BETS[bIdx] * mHit);
+    balance = Math.round(balance + win);
+    refreshUI();
+
+    const disp = document.getElementById('win-display');
+    if(disp){ disp.innerText = `(X${mHit}) +${win.toLocaleString()}`; disp.className = 'active'; }
+    const s = document.getElementById('s-'+idx);
+    if(s){ s.classList.add('hit-win'); setTimeout(()=>{ s.classList.remove('hit-win'); if(disp) disp.className=''; }, 600); }
+
+    if(mHit >= 5){ beep(1200,0.3,0.2); showNeonAlert(`X${mHit} JACKPOT! +${win.toLocaleString()}`, 'win'); }
+    else if(mHit >= 2) beep(1000,0.2,0.15);
+    else if(mHit >= 1) beep(800,0.15,0.1);
+    else beep(400,0.1,0.05);
+
+    Composite.remove(engine.world, ball);
+    await _supa.from('profiles').update({saldo: balance}).eq('username', user);
 }
 
 function adjustBet(d){if(autoMode)return;beep(500,0.05);bIdx=Math.max(0,Math.min(BETS.length-1,bIdx+d));document.getElementById('bet-amt').innerText=BETS[bIdx].toLocaleString();}
