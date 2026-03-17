@@ -3,58 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>OMEGA V18.0 — ELITE COMMAND CENTER</title>
+    <title>OMEGA V18 — ELITE COMMAND CENTER</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@300;600;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     <style>
-        :root { --pink: #ff0077; --blue: #0022ff; --yellow: #fbff00; --bg: #000005; --neon-text: 0 0 10px rgba(255,0,119,0.8); }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: var(--bg); color: #fff; font-family: 'Outfit', sans-serif; height: 100vh; overflow: hidden; }
+        :root{
+            --pink:#ff0077; --blue:#0022ff; --yellow:#fbff00; --bg:#000005;
+            --gp:0 0 20px #ff0077, 0 0 50px rgba(255,0,119,.55);
+            --gb:0 0 20px #0022ff, 0 0 50px rgba(0,34,255,.55);
+            --gy:0 0 20px #fbff00, 0 0 50px rgba(251,255,0,.55);
+            --card:rgba(0,0,40,.72); --border:rgba(0,34,255,.38);
+        }
+        *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+        body{background:var(--bg);color:#fff;font-family:'Outfit',sans-serif;height:100vh;overflow:hidden;}
+        #particles-js{position:fixed;width:100%;height:100%;z-index:0;background:radial-gradient(circle at center,#000018,#000);}
 
-        /* Background Particle Effect */
-        #particles-js { position: fixed; width: 100%; height: 100%; z-index: -1; background: radial-gradient(circle at center, #000020 0%, #000 100%); }
+        /* ── ALERT STANDAR OMEGA V18 ── */
+        #neon-alert{
+            position:fixed;top:-120px;left:50%;transform:translateX(-50%);
+            width:86%;max-width:340px;
+            background:rgba(0,0,15,.97);
+            border:2px solid var(--pink);border-top:3px solid var(--yellow);
+            color:#fff;padding:14px 20px;border-radius:14px;
+            text-align:center;font-weight:900;z-index:9999;
+            font-family:'Outfit',sans-serif;font-size:13px;letter-spacing:.5px;
+            transition:.55s cubic-bezier(.175,.885,.32,1.275);
+            box-shadow:0 0 35px var(--pink),0 0 70px rgba(255,0,119,.3);
+        }
+        #neon-alert.show{top:12px;}
+        #neon-alert.ok{border-color:var(--blue);box-shadow:0 0 35px var(--blue),0 0 70px rgba(0,34,255,.3);}
 
-        /* UI Shell */
-        .header { background: rgba(0,0,30,0.9); padding: 15px; border-bottom: 2px solid var(--blue); display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(10px); }
-        .panic-btn { background: #111; color: #fff; border: 1px solid #333; padding: 8px 15px; border-radius: 5px; font-weight: 900; cursor: pointer; transition: 0.3s; }
-        .panic-active { background: var(--pink) !important; box-shadow: 0 0 20px var(--pink); border-color: #fff; animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        /* ── HEADER ── */
+        .header{background:rgba(0,0,22,.97);padding:12px 18px;border-bottom:2px solid var(--blue);display:flex;justify-content:space-between;align-items:center;backdrop-filter:blur(20px);position:relative;z-index:100;box-shadow:var(--gb);}
+        .logo-text{font-family:'Cinzel Decorative',serif;color:var(--pink);font-size:17px;text-shadow:var(--gp);}
+        .logo-text span{color:var(--yellow);text-shadow:var(--gy);}
+        .logo-sub{font-size:9px;color:rgba(255,255,255,.3);font-family:'Outfit',sans-serif;margin-left:6px;letter-spacing:1px;text-transform:uppercase;}
 
-        /* Navigation */
-        .nav-tabs { display: flex; background: rgba(0,0,0,0.8); border-bottom: 1px solid var(--blue); overflow-x: auto; scrollbar-width: none; }
-        .tab-link { flex: 1; padding: 15px; text-align: center; color: #666; cursor: pointer; font-size: 10px; font-weight: 900; text-transform: uppercase; white-space: nowrap; transition: 0.3s; }
-        .tab-link.active { color: var(--yellow); border-bottom: 2px solid var(--yellow); text-shadow: 0 0 10px var(--yellow); }
+        .panic-btn{background:rgba(0,0,0,.8);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.2);padding:8px 16px;border-radius:8px;font-weight:900;cursor:pointer;transition:.3s;font-size:11px;letter-spacing:1px;font-family:'Outfit',sans-serif;text-transform:uppercase;}
+        .panic-active{background:var(--pink)!important;box-shadow:var(--gp)!important;border-color:#fff!important;color:#fff!important;animation:panicPulse 1s infinite;}
+        @keyframes panicPulse{0%{transform:scale(1);box-shadow:0 0 15px var(--pink)}50%{transform:scale(1.05);box-shadow:0 0 40px var(--pink)}100%{transform:scale(1);box-shadow:0 0 15px var(--pink)}}
 
-        /* Alpha Filter */
-        .alpha-bar { display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; padding: 10px; background: #000; border-bottom: 1px solid #111; }
-        .alpha-btn { background: #050515; border: 1px solid #222; color: #fff; font-size: 10px; padding: 5px 0; border-radius: 3px; cursor: pointer; }
-        .alpha-btn.active { border-color: var(--pink); color: var(--pink); box-shadow: 0 0 10px var(--pink); }
+        /* ── TABS ── */
+        .nav-tabs{display:flex;background:rgba(0,0,0,.92);border-bottom:1px solid rgba(0,34,255,.35);overflow-x:auto;scrollbar-width:none;position:relative;z-index:100;}
+        .nav-tabs::-webkit-scrollbar{display:none;}
+        .tab-link{flex:1;padding:13px 8px;text-align:center;color:rgba(255,255,255,.3);cursor:pointer;font-size:9px;font-weight:900;text-transform:uppercase;white-space:nowrap;transition:.3s;letter-spacing:.5px;min-width:60px;font-family:'Outfit',sans-serif;}
+        .tab-link.active{color:var(--yellow);border-bottom:2px solid var(--yellow);text-shadow:var(--gy);background:rgba(251,255,0,.04);}
+        .tab-link i{display:block;font-size:16px;margin-bottom:3px;}
 
-        /* Viewport */
-        .main-container { height: calc(100vh - 200px); overflow-y: auto; padding: 15px; padding-bottom: 100px; }
-        .card { background: rgba(0,0,40,0.6); border: 1px solid rgba(0,34,255,0.3); border-radius: 12px; padding: 15px; margin-bottom: 15px; backdrop-filter: blur(5px); position: relative; }
-        
-        /* Live Monitor Table */
-        .monitor-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-        .monitor-table th { color: var(--pink); text-align: left; padding: 10px; border-bottom: 1px solid #222; }
-        .monitor-table td { padding: 10px; border-bottom: 1px solid #111; }
-        .status-up { color: #0f0; text-shadow: 0 0 5px #0f0; }
-        .status-down { color: #f00; text-shadow: 0 0 5px #f00; }
+        /* ── ALPHA FILTER ── */
+        .alpha-bar{display:grid;grid-template-columns:repeat(9,1fr);gap:3px;padding:8px 10px;background:#000;border-bottom:1px solid rgba(0,34,255,.2);position:relative;z-index:100;}
+        .alpha-btn{background:rgba(0,0,28,.85);border:1px solid rgba(0,34,255,.22);color:rgba(255,255,255,.45);font-size:9px;padding:5px 0;border-radius:4px;cursor:pointer;text-align:center;transition:.2s;line-height:1.3;font-family:'Outfit',sans-serif;}
+        .alpha-btn:hover{border-color:rgba(0,34,255,.6);color:var(--blue);}
+        .alpha-btn.active{border-color:var(--pink);color:var(--pink);background:rgba(255,0,119,.1);box-shadow:0 0 10px rgba(255,0,119,.4);}
 
-        /* Form Controls */
-        .input-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .field { background: #000; border: 1px solid #222; padding: 8px; border-radius: 6px; }
-        .field label { font-size: 7px; color: var(--pink); display: block; margin-bottom: 4px; font-weight: 900; }
-        input { width: 100%; background: transparent; border: none; color: #fff; font-size: 13px; outline: none; text-align: center; }
-        
-        .btn-action { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: 900; margin-top: 10px; cursor: pointer; transition: 0.2s; text-transform: uppercase; font-size: 10px; }
-        .btn-save { background: var(--yellow); color: #000; }
-        .btn-gift { background: var(--pink); color: #fff; box-shadow: 0 0 15px var(--pink); }
+        /* ── MAIN CONTAINER ── */
+        .main-container{height:calc(100vh - 175px);overflow-y:auto;padding:14px;padding-bottom:25px;position:relative;z-index:10;scrollbar-width:thin;scrollbar-color:var(--blue) #000;}
+        .main-container::-webkit-scrollbar{width:4px;}
+        .main-container::-webkit-scrollbar-track{background:#000;}
+        .main-container::-webkit-scrollbar-thumb{background:var(--blue);border-radius:2px;}
 
-        /* Alert PopUp */
-        #neon-alert { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); width: 80%; max-width: 300px; background: var(--pink); color: #fff; padding: 15px; border-radius: 10px; text-align: center; font-weight: 900; z-index: 2000; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 0 30px var(--pink); }
-        #neon-alert.show { top: 20px; }
+        /* ── CARDS ── */
+        .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:13px;backdrop-filter:blur(6px);}
+        .card-pink{border-color:rgba(255,0,119,.4);}
+
+        /* ── SEC TITLE ── */
+        .sec-title{font-size:9px;font-weight:900;color:var(--pink);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;display:flex;align-items:center;gap:6px;font-family:'Outfit',sans-serif;text-shadow:var(--gp);}
+        .sec-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(255,0,119,.35),transparent);}
+
+        /* ── PLAYER CARD ── */
+        .player-name{color:var(--yellow);font-size:15px;font-weight:900;text-shadow:var(--gy);}
+
+        /* ── INPUT GROUP ── */
+        .input-group{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 0;}
+        .field{background:rgba(0,0,0,.75);border:1px solid rgba(0,34,255,.35);padding:8px 10px;border-radius:8px;}
+        .field label{font-size:7px;color:var(--yellow);display:block;margin-bottom:4px;font-weight:900;letter-spacing:1px;text-transform:uppercase;text-shadow:var(--gy);}
+        .field input{width:100%;background:transparent;border:none;color:#fff;font-size:14px;font-weight:900;outline:none;text-align:center;font-family:'Outfit',sans-serif;}
+        .field-full{grid-column:span 2;}
+
+        /* ── BUTTONS ── */
+        .btn-action{width:100%;padding:11px;border-radius:8px;border:none;font-weight:900;margin-top:10px;cursor:pointer;transition:.2s;text-transform:uppercase;font-size:9px;letter-spacing:1px;font-family:'Outfit',sans-serif;}
+        .btn-save{background:var(--yellow);color:#000;box-shadow:0 0 10px rgba(251,255,0,.4);}
+        .btn-gift{background:linear-gradient(90deg,var(--pink),#b400dc);color:#fff;box-shadow:0 0 14px rgba(255,0,119,.5);}
+        .btn-approve{background:linear-gradient(90deg,var(--blue),#0055ff);color:#fff;box-shadow:0 0 14px rgba(0,34,255,.5);}
+        .btn-reject{background:linear-gradient(90deg,#2a2a2a,#444);color:#fff;}
+        .btn-action:active{transform:scale(.97);}
+
+        /* ── LIVE TABLE ── */
+        .monitor-table{width:100%;border-collapse:collapse;font-size:11px;}
+        .monitor-table th{color:var(--pink);text-align:left;padding:10px 8px;border-bottom:1px solid rgba(255,0,119,.35);font-size:9px;letter-spacing:1px;text-transform:uppercase;text-shadow:var(--gp);}
+        .monitor-table td{padding:10px 8px;border-bottom:1px solid rgba(0,34,255,.12);font-size:12px;}
+        .monitor-table tr:hover td{background:rgba(0,34,255,.06);}
+        .status-up{color:#00ff88;font-weight:900;text-shadow:0 0 8px #00ff88;}
+        .status-down{color:var(--pink);font-weight:900;text-shadow:var(--gp);}
+        .status-zero{color:rgba(255,255,255,.25);}
+
+        /* ── REPORT ── */
+        .report-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+        .report-box{background:rgba(0,0,0,.65);border:1px solid var(--border);border-radius:12px;padding:15px;text-align:center;}
+        .report-val{font-size:16px;font-weight:900;margin-top:8px;}
+
+        /* ── MASS GIFT ── */
+        .mass-gift-box{background:rgba(255,0,119,.08);border:1px solid rgba(255,0,119,.45);border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 0 15px rgba(255,0,119,.15);}
+        .mass-input{width:100%;background:#000;border:1px solid rgba(0,34,255,.45);border-radius:8px;color:var(--yellow);font-size:20px;font-weight:900;padding:12px;text-align:center;outline:none;margin:10px 0;font-family:'Outfit',sans-serif;box-shadow:inset 0 0 10px rgba(0,34,255,.1);}
+
+        /* ── PENDING BADGE ── */
+        .pending-badge{display:inline-block;background:var(--pink);color:#fff;font-size:8px;font-weight:900;padding:2px 8px;border-radius:50px;margin-left:6px;animation:panicPulse 2s infinite;box-shadow:var(--gp);}
+
+        .btn-flex{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+
+        /* ── CONFIRM MODAL ── */
+        #confirm-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:9998;align-items:center;justify-content:center;backdrop-filter:blur(12px);}
+        .confirm-box{background:rgba(0,0,15,.99);border:2px solid var(--pink);border-top:3px solid var(--yellow);border-radius:22px;padding:28px;width:88%;max-width:300px;text-align:center;box-shadow:var(--gp);animation:zoomIn .3s ease;}
+        @keyframes zoomIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+        #confirm-title{font-size:16px;font-weight:900;color:var(--pink);text-shadow:var(--gp);margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;}
+        #confirm-msg{font-size:13px;color:#ddd;margin:0 0 20px;line-height:1.65;font-weight:600;}
+        .confirm-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+        .btn-no{background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.15);padding:12px;border-radius:8px;cursor:pointer;font-weight:900;font-family:'Outfit',sans-serif;text-transform:uppercase;font-size:11px;}
+        .btn-yes{background:linear-gradient(90deg,var(--pink),#aa0044);color:#fff;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:900;box-shadow:var(--gp);font-family:'Outfit',sans-serif;text-transform:uppercase;font-size:11px;}
     </style>
 </head>
 <body>
@@ -62,211 +129,394 @@
 <div id="particles-js"></div>
 <div id="neon-alert">SYSTEM NOTIFICATION</div>
 
+<div id="confirm-overlay">
+    <div class="confirm-box">
+        <h3 id="confirm-title">KONFIRMASI</h3>
+        <p id="confirm-msg"></p>
+        <div class="confirm-btns">
+            <button class="btn-no" onclick="closeConfirm()">BATAL</button>
+            <button class="btn-yes" id="btn-confirm-yes">YA, LANJUT</button>
+        </div>
+    </div>
+</div>
+
 <div class="header">
-    <h1 style="font-family:'Cinzel Decorative'; color:var(--pink); font-size:18px;">OMEGA <span style="color:var(--yellow)">V18</span></h1>
-    <button id="panic-master" class="panic-btn" onclick="togglePanicGlobal()">PANIC MODE</button>
+    <div>
+        <span class="logo-text">OMEGA <span>V18</span></span>
+        <span class="logo-sub">CONTROL</span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+        <div id="panic-indicator" style="display:none;width:10px;height:10px;border-radius:50%;background:var(--pink);box-shadow:var(--gp);animation:panicPulse .8s infinite;"></div>
+        <button id="panic-master" class="panic-btn" onclick="togglePanicGlobal()">
+            <i class="fas fa-skull"></i> PANIC
+        </button>
+    </div>
 </div>
 
 <div class="nav-tabs">
-    <div class="tab-link active" onclick="switchTab('players', this)"><i class="fas fa-users"></i> PLAYERS</div>
-    <div class="tab-link" onclick="switchTab('live', this)"><i class="fas fa-satellite-dish"></i> LIVE MONITOR</div>
-    <div class="tab-link" onclick="switchTab('cashier', this)"><i class="fas fa-vault"></i> KASIR</div>
-    <div class="tab-link" onclick="switchTab('gift', this)"><i class="fas fa-gift"></i> GIFT</div>
-    <div class="tab-link" onclick="switchTab('report', this)"><i class="fas fa-chart-pie"></i> REPORT</div>
+    <div class="tab-link active" onclick="switchTab('players',this)"><i class="fas fa-users"></i>PLAYERS</div>
+    <div class="tab-link" onclick="switchTab('live',this)"><i class="fas fa-satellite-dish"></i>LIVE</div>
+    <div class="tab-link" onclick="switchTab('cashier',this)">
+        <i class="fas fa-vault"></i>KASIR
+        <span id="pending-count" class="pending-badge" style="display:none;">0</span>
+    </div>
+    <div class="tab-link" onclick="switchTab('gift',this)"><i class="fas fa-gift"></i>GIFT</div>
+    <div class="tab-link" onclick="switchTab('report',this)"><i class="fas fa-chart-pie"></i>REPORT</div>
 </div>
 
 <div id="alpha-nav" class="alpha-bar"></div>
 
 <div class="main-container">
     <div id="view-players" class="tab-content"></div>
+
     <div id="view-live" class="tab-content" style="display:none;">
-        <div class="card" style="padding:0; overflow:hidden;">
+        <div class="sec-title">
+            <i class="fas fa-circle" style="color:var(--pink);animation:panicPulse 1.5s infinite;"></i>
+            Live Player Monitor
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;border-radius:14px;">
             <table class="monitor-table">
                 <thead>
-                    <tr><th>USERNAME</th><th>START</th><th>LIVE SALDO</th><th>PNL</th></tr>
+                    <tr>
+                        <th><i class="fas fa-user"></i> USERNAME</th>
+                        <th>SALDO AWAL</th>
+                        <th>LIVE SALDO</th>
+                        <th>PNL</th>
+                    </tr>
                 </thead>
-                <tbody id="live-body"></tbody>
+                <tbody id="live-body">
+                    <tr><td colspan="4" style="text-align:center;padding:30px;opacity:.4;font-size:11px;">Memuat data...</td></tr>
+                </tbody>
             </table>
         </div>
+        <div style="font-size:9px;opacity:.3;text-align:right;margin-top:5px;letter-spacing:1px;">AUTO REFRESH 15s</div>
     </div>
+
     <div id="view-cashier" class="tab-content" style="display:none;"></div>
     <div id="view-gift" class="tab-content" style="display:none;"></div>
     <div id="view-report" class="tab-content" style="display:none;"></div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
 <script>
-    const SURL = "https://bgffnmwrviyqpeevzjsn.supabase.co"; 
-    const SKEY = "sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani"; 
-    const _db = supabase.createClient(SURL, SKEY);
+const SURL="https://bgffnmwrviyqpeevzjsn.supabase.co",SKEY="sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani";
+const _db=supabase.createClient(SURL,SKEY);
+let currentTab='players',activeAlpha='A',allData={p:[],d:[],w:[]};
 
-    let currentTab = 'players', activeAlpha = 'S', allData = { p:[], d:[], w:[] };
+/* ── PARTICLES ── */
+particlesJS("particles-js",{
+    "particles":{
+        "number":{"value":100},
+        "color":{"value":"#ff0077"},
+        "shape":{"type":"circle"},
+        "opacity":{"value":0.75,"random":true,"anim":{"enable":true,"speed":0.8,"opacity_min":0.3}},
+        "size":{"value":3.5,"random":true},
+        "line_linked":{"enable":true,"distance":150,"color":"#0022ff","opacity":0.55,"width":1.2},
+        "move":{"enable":true,"speed":2.5,"random":true,"out_mode":"out"}
+    },
+    "interactivity":{"events":{"onhover":{"enable":false},"onclick":{"enable":true,"mode":"push"}},"modes":{"push":{"particles_nb":3}}}
+});
 
-    // Initial Load
-    async function init() {
-        const { data: p } = await _db.from('profiles').select('*');
-        const { data: d } = await _db.from('deposits').select('*');
-        const { data: w } = await _db.from('withdrawals').select('*');
-        allData = { p: p||[], d: d||[], w: w||[] };
-        
-        updatePanicUI();
-        renderAlpha();
-        renderActiveView();
-    }
+/* ── INIT ── */
+async function init(){
+    const[rP,rD,rW]=await Promise.all([
+        _db.from('profiles').select('*'),
+        _db.from('deposits').select('*'),
+        _db.from('withdrawals').select('*')
+    ]);
+    allData={p:rP.data||[],d:rD.data||[],w:rW.data||[]};
+    updatePanicUI();renderAlpha();renderActiveView();updatePendingBadge();
+}
 
-    function renderAlpha() {
-        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split("");
-        document.getElementById('alpha-nav').innerHTML = letters.map(l => {
-            const count = allData.p.filter(u => (u.username||"").toUpperCase().startsWith(l)).length;
-            return `<button class="alpha-btn ${l==activeAlpha?'active':''}" onclick="setAlpha('${l}')">${l}<br>${count}</button>`;
-        }).join('');
-    }
+/* ── ALPHA ── */
+function renderAlpha(){
+    const letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split('');
+    document.getElementById('alpha-nav').innerHTML=letters.map(l=>{
+        const count=allData.p.filter(u=>(u.username||"").toUpperCase().startsWith(l)).length;
+        return `<button class="alpha-btn ${l===activeAlpha?'active':''}" onclick="setAlpha('${l}')">${l}<br><span style="font-size:8px;opacity:.6;">${count}</span></button>`;
+    }).join('');
+}
+function setAlpha(l){activeAlpha=l;renderActiveView();}
+function renderActiveView(){
+    if(currentTab==='players')renderPlayers();
+    if(currentTab==='live')renderLive();
+    if(currentTab==='cashier')renderCashier();
+    if(currentTab==='gift')renderGift();
+    if(currentTab==='report')renderReport();
+    renderAlpha();
+}
 
-    function setAlpha(l) { activeAlpha = l; renderActiveView(); }
-
-    function renderActiveView() {
-        if(currentTab === 'players') renderPlayers();
-        if(currentTab === 'live') renderLive();
-        if(currentTab === 'cashier') renderCashier();
-        if(currentTab === 'gift') renderGift();
-        if(currentTab === 'report') renderReport();
-    }
-
-    // 1. VIEW PLAYERS
-    function renderPlayers() {
-        const filtered = allData.p.filter(u => (u.username||"").toUpperCase().startsWith(activeAlpha));
-        document.getElementById('view-players').innerHTML = filtered.map(u => `
-            <div class="card">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <b style="color:var(--yellow); font-size:16px;">${u.username}</b>
-                    <small style="color:#666">Saldo: ${Number(u.saldo).toLocaleString()}</small>
+/* ── 1. PLAYERS ── */
+function renderPlayers(){
+    const filtered=allData.p.filter(u=>(u.username||"").toUpperCase().startsWith(activeAlpha));
+    if(filtered.length===0){document.getElementById('view-players').innerHTML='<div style="text-align:center;padding:40px;opacity:.3;font-size:12px;"><i class="fas fa-user-slash" style="font-size:30px;display:block;margin-bottom:10px;"></i>Tidak ada player dengan huruf ini</div>';return;}
+    document.getElementById('view-players').innerHTML=filtered.map(u=>{
+        const pD=allData.d.filter(x=>x.username===u.username&&x.status==='SUKSES').reduce((s,x)=>s+(parseFloat(x.net_receive)||0),0);
+        const pW=allData.w.filter(x=>x.username===u.username&&x.status==='SUKSES').reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
+        const pnl=pD-pW;
+        const pc=pnl>=0?"#00ff88":"var(--pink)";
+        const pl=pnl>=0?`+${pnl.toLocaleString()}`:pnl.toLocaleString();
+        return `<div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px;">
+                <div>
+                    <div class="player-name">${u.username}</div>
+                    <div style="font-size:9px;opacity:.4;margin-top:2px;">${u.nama_lengkap||''} &bull; ${u.bank_name||''}</div>
                 </div>
-                <div class="input-group">
-                    <div class="field"><label>WINRATE %</label><input type="number" id="wr-${u.id}" value="${u.winrate}"></div>
-                    <div class="field"><label>MAXWIN</label><input type="number" id="mx-${u.id}" value="${u.maxwin_limit}"></div>
-                    <div class="field" style="grid-column:span 2"><label>SESSION (MIN)</label><input type="number" id="sm-${u.id}" value="${u.session_minutes||0}"></div>
+                <div style="text-align:right;">
+                    <div style="font-size:13px;font-weight:900;color:var(--yellow);text-shadow:var(--gy)">${Number(u.saldo||0).toLocaleString()}</div>
+                    <div style="font-size:9px;color:${pc};font-weight:900;">PNL: ${pl}</div>
                 </div>
-                <button class="btn-action btn-save" onclick="updateUser('${u.id}')">UPDATE PROFILE</button>
-            </div>`).join('');
-    }
+            </div>
+            <div class="input-group">
+                <div class="field"><label><i class="fas fa-percent"></i> WINRATE %</label><input type="number" id="wr-${u.id}" value="${u.winrate||30}" min="1" max="100"></div>
+                <div class="field"><label><i class="fas fa-trophy"></i> MAXWIN</label><input type="number" id="mx-${u.id}" value="${u.maxwin_limit||100000}"></div>
+                <div class="field field-full"><label><i class="fas fa-hourglass-half"></i> SESSION (MENIT)</label><input type="number" id="sm-${u.id}" value="${u.session_minutes||0}"></div>
+            </div>
+            <button class="btn-action btn-save" onclick="updateUser('${u.id}')"><i class="fas fa-floppy-disk"></i> UPDATE PLAYER</button>
+        </div>`;
+    }).join('');
+}
 
-    // 2. LIVE MONITOR (NEW)
-    function renderLive() {
-        const body = document.getElementById('live-body');
-        const activeOnly = allData.p.filter(u => u.saldo > 0);
-        body.innerHTML = activeOnly.map(u => {
-            const start = u.initial_balance_session || 0;
-            const live = u.saldo || 0;
-            const diff = live - start;
-            return `<tr>
-                <td><b>${u.username}</b></td>
-                <td>${start.toLocaleString()}</td>
-                <td style="color:var(--yellow)">${live.toLocaleString()}</td>
-                <td class="${diff>=0?'status-up':'status-down'}">${diff >= 0 ? '+' : ''}${diff.toLocaleString()}</td>
-            </tr>`;
-        }).join('');
-    }
+/* ── 2. LIVE MONITOR ── */
+function renderLive(){
+    const body=document.getElementById('live-body');
+    const sorted=[...allData.p].sort((a,b)=>(b.saldo||0)-(a.saldo||0));
+    if(sorted.length===0){body.innerHTML='<tr><td colspan="4" style="text-align:center;padding:25px;opacity:.4;font-size:11px;">Tidak ada data player</td></tr>';return;}
+    body.innerHTML=sorted.map(u=>{
+        const start=u.initial_balance_session||0,live=u.saldo||0,diff=live-start;
+        let dc=diff>0?'status-up':(diff<0?'status-down':'status-zero');
+        return `<tr>
+            <td><b style="color:var(--yellow);text-shadow:var(--gy)">${u.username}</b><br><span style="font-size:9px;opacity:.35;">${u.bank_name||''}</span></td>
+            <td style="color:rgba(255,255,255,.5);">${start.toLocaleString()}</td>
+            <td style="font-weight:900;">${live.toLocaleString()}</td>
+            <td class="${dc}">${diff>=0?'+':''}${diff.toLocaleString()}</td>
+        </tr>`;
+    }).join('');
+}
 
-    // 3. KASIR
-    function renderCashier() {
-        const pD = allData.d.filter(x => x.status === 'PROSES');
-        const pW = allData.w.filter(x => x.status === 'PROSES');
-        let html = '<h3>PENDING TRANSACTIONS</h3>';
-        pD.forEach(x => html += `<div class="card" style="border-left:4px solid var(--blue)"><b>${x.username}</b><p>DEPO: +${(x.net_receive||x.amount).toLocaleString()}</p><button class="btn-action btn-save" onclick="procD('${x.id}','${x.username}',${x.net_receive||x.amount})">APPROVE DEPO</button></div>`);
-        pW.forEach(x => html += `<div class="card" style="border-left:4px solid var(--pink)"><b>${x.username}</b><p>WD: -${(x.nominal||x.amount).toLocaleString()}</p><button class="btn-action btn-gift" onclick="procW('${x.id}')">APPROVE WD</button></div>`);
-        document.getElementById('view-cashier').innerHTML = html || '<p style="text-align:center; padding:50px;">NO PENDING</p>';
+/* ── 3. KASIR ── */
+function renderCashier(){
+    const pD=allData.d.filter(x=>x.status==='PROSES');
+    const pW=allData.w.filter(x=>x.status==='PROSES');
+    let html='';
+    if(pD.length===0&&pW.length===0){
+        document.getElementById('view-cashier').innerHTML='<div style="text-align:center;padding:60px 20px;opacity:.3;font-size:13px;"><i class="fas fa-check-circle" style="font-size:40px;display:block;margin-bottom:15px;color:var(--blue);text-shadow:var(--gb)"></i>SEMUA TRANSAKSI BERSIH<br>Tidak ada pending</div>';
+        return;
     }
-
-    // 4. GIFT SYSTEM
-    function renderGift() {
-        const filtered = allData.p.filter(u => (u.username||"").toUpperCase().startsWith(activeAlpha));
-        let h = `<div class="card" style="background:rgba(255,0,119,0.1); border-color:var(--pink)"><label style="color:var(--pink); font-weight:900;">MASS BROADCAST GIFT</label><input type="number" id="mass-amt" placeholder="NOMINAL" style="background:#000; padding:10px; border-radius:5px; margin:10px 0;"><button class="btn-action btn-gift" onclick="sendMass()">KIRIM KE SEMUA PLAYER</button></div>`;
-        h += filtered.map(u => `
-            <div class="card">
-                <b>${u.username}</b>
-                <div class="input-group">
-                    <div class="field"><label>NOMINAL GIFT</label><input type="number" id="g-${u.id}" placeholder="0"></div>
-                    <div class="field"><label>CURRENT</label><input type="text" value="${u.saldo.toLocaleString()}" disabled></div>
+    if(pD.length>0){
+        html+='<div class="sec-title"><i class="fas fa-arrow-down" style="color:var(--blue);text-shadow:var(--gb)"></i> PENDING DEPOSIT ('+pD.length+')</div>';
+        pD.forEach(x=>{
+            html+=`<div class="card" style="border-left:4px solid var(--blue);padding-left:14px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <div style="font-weight:900;color:var(--yellow);font-size:14px;text-shadow:var(--gy)">${x.username}</div>
+                        <div style="font-size:10px;opacity:.5;margin-top:2px;">${x.method||'QRIS'} &bull; ${new Date(x.created_at).toLocaleString('id-ID')}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:16px;font-weight:900;color:var(--blue);text-shadow:var(--gb)">+${(x.net_receive||x.amount||0).toLocaleString()}</div>
+                        <div style="font-size:9px;color:var(--yellow);">Input: ${(x.amount||0).toLocaleString()}</div>
+                    </div>
                 </div>
-                <button class="btn-action btn-gift" onclick="sendGift('${u.id}')">KIRIM HADIAH</button>
-            </div>`).join('');
-        document.getElementById('view-gift').innerHTML = h;
+                <div class="btn-flex" style="margin-top:10px;">
+                    <button class="btn-action btn-approve" onclick="procD('${x.id}','${x.username}',${x.net_receive||x.amount})"><i class="fas fa-check"></i> APPROVE</button>
+                    <button class="btn-action btn-reject" onclick="rejectTx('deposits','${x.id}','${x.username}')"><i class="fas fa-xmark"></i> REJECT</button>
+                </div>
+            </div>`;
+        });
     }
-
-    // Actions
-    async function updateUser(id) {
-        const wr = document.getElementById('wr-'+id).value;
-        const mx = document.getElementById('mx-'+id).value;
-        const sm = document.getElementById('sm-'+id).value;
-        const { error } = await _db.from('profiles').update({ winrate: wr, maxwin_limit: mx, session_minutes: sm, panic_mode: false }).eq('id', id);
-        if(!error) { showAlert("PLAYER DATA UPDATED"); init(); }
+    if(pW.length>0){
+        html+='<div class="sec-title" style="margin-top:15px;"><i class="fas fa-arrow-up" style="color:var(--pink);text-shadow:var(--gp)"></i> PENDING WITHDRAW ('+pW.length+')</div>';
+        pW.forEach(x=>{
+            html+=`<div class="card card-pink" style="border-left:4px solid var(--pink);padding-left:14px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <div style="font-weight:900;color:var(--yellow);font-size:14px;text-shadow:var(--gy)">${x.username}</div>
+                        <div style="font-size:10px;opacity:.5;margin-top:2px;">${new Date(x.created_at).toLocaleString('id-ID')}</div>
+                    </div>
+                    <div style="font-size:16px;font-weight:900;color:var(--pink);text-shadow:var(--gp)">-${(x.nominal||x.amount||0).toLocaleString()}</div>
+                </div>
+                <div class="btn-flex" style="margin-top:10px;">
+                    <button class="btn-action btn-gift" onclick="procW('${x.id}')"><i class="fas fa-check"></i> APPROVE WD</button>
+                    <button class="btn-action btn-reject" onclick="rejectWd('${x.id}','${x.username}',${x.nominal||x.amount})"><i class="fas fa-rotate-left"></i> KEMBALIKAN</button>
+                </div>
+            </div>`;
+        });
     }
+    document.getElementById('view-cashier').innerHTML=html;
+}
+function updatePendingBadge(){
+    const count=allData.d.filter(x=>x.status==='PROSES').length+allData.w.filter(x=>x.status==='PROSES').length;
+    const badge=document.getElementById('pending-count');
+    if(count>0){badge.style.display='inline-block';badge.innerText=count;}else badge.style.display='none';
+}
 
-    async function sendGift(id) {
-        const amt = parseInt(document.getElementById('g-'+id).value);
-        if(!amt) return;
-        const { data } = await _db.from('profiles').select('saldo').eq('id', id).single();
-        await _db.from('profiles').update({ saldo: (data.saldo||0) + amt }).eq('id', id);
-        showAlert("GIFT SENT SUCCESS"); init();
-    }
+/* ── 4. GIFT ── */
+function renderGift(){
+    const filtered=allData.p.filter(u=>(u.username||"").toUpperCase().startsWith(activeAlpha));
+    let h=`<div class="mass-gift-box">
+        <div class="sec-title"><i class="fas fa-broadcast-tower"></i> MASS BROADCAST GIFT</div>
+        <div style="font-size:11px;opacity:.5;margin-bottom:8px;">Kirim saldo ke SEMUA player sekaligus</div>
+        <input type="number" id="mass-amt" class="mass-input" placeholder="NOMINAL GIFT (Rp)">
+        <button class="btn-action btn-gift" onclick="sendMass()"><i class="fas fa-paper-plane"></i> KIRIM KE SEMUA PLAYER (${allData.p.length})</button>
+    </div>`;
+    h+='<div class="sec-title"><i class="fas fa-user-tag"></i> GIFT INDIVIDUAL</div>';
+    h+=filtered.map(u=>`
+        <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <span class="player-name">${u.username}</span>
+                <span style="font-size:12px;color:var(--yellow);font-weight:900;text-shadow:var(--gy)">${Number(u.saldo||0).toLocaleString()}</span>
+            </div>
+            <div class="input-group">
+                <div class="field"><label><i class="fas fa-coins"></i> NOMINAL GIFT</label><input type="number" id="g-${u.id}" placeholder="0"></div>
+                <div class="field"><label><i class="fas fa-inbox"></i> PESAN</label><input type="text" id="gm-${u.id}" placeholder="VIP Bonus"></div>
+            </div>
+            <button class="btn-action btn-gift" onclick="sendGift('${u.id}','${u.username}')"><i class="fas fa-gift"></i> KIRIM HADIAH</button>
+        </div>`).join('');
+    document.getElementById('view-gift').innerHTML=h;
+}
 
-    async function sendMass() {
-        const amt = parseInt(document.getElementById('mass-amt').value);
-        if(!amt) return;
-        if(!confirm(`Kirim ${amt} ke SEMUA Player?`)) return;
-        for(let u of allData.p) { await _db.from('profiles').update({ saldo: (u.saldo||0) + amt }).eq('id', u.id); }
-        showAlert("MASS GIFT DISPATCHED"); init();
-    }
+/* ── 5. REPORT ── */
+function renderReport(){
+    const today=new Date().toISOString().split('T')[0];
+    const thisMonth=new Date().toISOString().substring(0,7);
+    const tD=allData.d.filter(x=>x.status==='SUKSES'&&x.created_at&&x.created_at.startsWith(today)).reduce((s,x)=>s+(x.net_receive||0),0);
+    const tW=allData.w.filter(x=>x.status==='SUKSES'&&x.created_at&&x.created_at.startsWith(today)).reduce((s,x)=>s+(x.amount||0),0);
+    const mD=allData.d.filter(x=>x.status==='SUKSES'&&x.created_at&&x.created_at.startsWith(thisMonth)).reduce((s,x)=>s+(x.net_receive||0),0);
+    const mW=allData.w.filter(x=>x.status==='SUKSES'&&x.created_at&&x.created_at.startsWith(thisMonth)).reduce((s,x)=>s+(x.amount||0),0);
+    const totalSaldo=allData.p.reduce((s,u)=>s+(u.saldo||0),0);
+    const ptDay=tD-tW,ptMon=mD-mW;
+    const isPanic=allData.p.some(u=>u.panic_mode);
+    document.getElementById('view-report').innerHTML=`
+        <div class="sec-title"><i class="fas fa-calendar-day"></i> Hari Ini — ${today}</div>
+        <div class="report-grid">
+            <div class="report-box" style="border-color:rgba(0,34,255,.45)"><div style="font-size:9px;opacity:.5;letter-spacing:1px;">DEPO HARI INI</div><div class="report-val" style="color:var(--blue);text-shadow:var(--gb)">${tD.toLocaleString()}</div></div>
+            <div class="report-box" style="border-color:rgba(255,0,119,.45)"><div style="font-size:9px;opacity:.5;letter-spacing:1px;">WD HARI INI</div><div class="report-val" style="color:var(--pink);text-shadow:var(--gp)">${tW.toLocaleString()}</div></div>
+            <div class="report-box" style="grid-column:span 2;border-color:${ptDay>=0?'rgba(0,255,100,.35)':'rgba(255,0,119,.35)'}">
+                <div style="font-size:9px;opacity:.5;letter-spacing:1px;">PROFIT HARI INI</div>
+                <div class="report-val" style="color:${ptDay>=0?'#00ff88':'var(--pink)'};font-size:22px;text-shadow:${ptDay>=0?'0 0 15px #00ff88':'var(--gp)'}">
+                    ${ptDay>=0?'+':''}${ptDay.toLocaleString()}
+                </div>
+            </div>
+        </div>
+        <div class="sec-title"><i class="fas fa-calendar-month"></i> Bulan Ini — ${thisMonth}</div>
+        <div class="report-grid">
+            <div class="report-box" style="border-color:rgba(0,34,255,.45)"><div style="font-size:9px;opacity:.5;letter-spacing:1px;">DEPO BULAN</div><div class="report-val" style="color:var(--blue);text-shadow:var(--gb)">${mD.toLocaleString()}</div></div>
+            <div class="report-box" style="border-color:rgba(255,0,119,.45)"><div style="font-size:9px;opacity:.5;letter-spacing:1px;">WD BULAN</div><div class="report-val" style="color:var(--pink);text-shadow:var(--gp)">${mW.toLocaleString()}</div></div>
+            <div class="report-box" style="grid-column:span 2;border-color:${ptMon>=0?'rgba(0,255,100,.35)':'rgba(255,0,119,.35)'}">
+                <div style="font-size:9px;opacity:.5;letter-spacing:1px;">PROFIT BULAN INI</div>
+                <div class="report-val" style="color:${ptMon>=0?'#00ff88':'var(--pink)'};font-size:22px;text-shadow:${ptMon>=0?'0 0 15px #00ff88':'var(--gp)'}">
+                    ${ptMon>=0?'+':''}${ptMon.toLocaleString()}
+                </div>
+            </div>
+        </div>
+        <div class="sec-title"><i class="fas fa-database"></i> Ringkasan Sistem</div>
+        <div class="report-grid">
+            <div class="report-box"><div style="font-size:9px;opacity:.5;letter-spacing:1px;">TOTAL PLAYER</div><div class="report-val" style="color:var(--yellow);text-shadow:var(--gy)">${allData.p.length}</div></div>
+            <div class="report-box"><div style="font-size:9px;opacity:.5;letter-spacing:1px;">TOTAL SALDO</div><div class="report-val" style="color:var(--yellow);font-size:13px;text-shadow:var(--gy)">${totalSaldo.toLocaleString()}</div></div>
+            <div class="report-box"><div style="font-size:9px;opacity:.5;letter-spacing:1px;">TRANSAKSI PENDING</div><div class="report-val" style="color:var(--pink);text-shadow:var(--gp)">${allData.d.filter(x=>x.status==='PROSES').length+allData.w.filter(x=>x.status==='PROSES').length}</div></div>
+            <div class="report-box" style="border-color:${isPanic?'rgba(255,0,119,.5)':'rgba(0,255,100,.3)'}">
+                <div style="font-size:9px;opacity:.5;letter-spacing:1px;">PANIC MODE</div>
+                <div class="report-val" style="color:${isPanic?'var(--pink)':'#00ff88'};font-size:13px;">${isPanic?'AKTIF ⚠️':'AMAN ✅'}</div>
+            </div>
+        </div>`;
+}
 
-    async function togglePanicGlobal() {
-        const isCurrentlyPanic = allData.p.some(u => u.panic_mode === true);
-        const newWR = isCurrentlyPanic ? 10 : 1;
-        const confirmMsg = isCurrentlyPanic ? "Matikan Panic Mode?" : "AKTIFKAN PANIC MODE (WR 1% ALL)?";
-        if(confirm(confirmMsg)) {
-            await _db.from('profiles').update({ winrate: newWR, panic_mode: !isCurrentlyPanic });
-            showAlert(isCurrentlyPanic ? "SYSTEM SECURE" : "PANIC MODE ACTIVE!");
-            init();
+/* ── ACTIONS ── */
+async function updateUser(id){
+    const wr=document.getElementById('wr-'+id).value;
+    const mx=document.getElementById('mx-'+id).value;
+    const sm=document.getElementById('sm-'+id).value;
+    const{error}=await _db.from('profiles').update({winrate:parseInt(wr),maxwin_limit:parseInt(mx),session_minutes:parseInt(sm),panic_mode:false}).eq('id',id);
+    if(!error){showAlert("PLAYER DATA UPDATED ✓",'ok');init();}
+    else showAlert("ERROR: "+error.message);
+}
+async function sendGift(id,username){
+    const amt=parseInt(document.getElementById('g-'+id).value)||0;
+    const msg=document.getElementById('gm-'+id).value||'Hadiah Admin';
+    if(!amt)return showAlert("MASUKKAN NOMINAL GIFT!");
+    const{data}=await _db.from('profiles').select('saldo').eq('id',id).single();
+    await _db.from('profiles').update({saldo:(data.saldo||0)+amt}).eq('id',id);
+    await _db.from('inbox').insert([{username:username,nominal:amt,pesan:msg,status:'UNCLAIMED'}]);
+    showAlert(`GIFT ${amt.toLocaleString()} → ${username} ✓`,'ok');init();
+}
+async function sendMass(){
+    const amt=parseInt(document.getElementById('mass-amt').value)||0;
+    if(!amt)return showAlert("MASUKKAN NOMINAL GIFT!");
+    askConfirm(`Kirim Rp ${amt.toLocaleString()} ke SEMUA ${allData.p.length} player?`,async()=>{
+        for(let u of allData.p){
+            await _db.from('profiles').update({saldo:(u.saldo||0)+amt}).eq('id',u.id);
+            await _db.from('inbox').insert([{username:u.username,nominal:amt,pesan:'Mass Gift dari Admin',status:'UNCLAIMED'}]);
         }
-    }
-
-    function updatePanicUI() {
-        const isPanic = allData.p.some(u => u.panic_mode === true);
-        const btn = document.getElementById('panic-master');
-        btn.className = isPanic ? 'panic-btn panic-active' : 'panic-btn';
-        btn.innerText = isPanic ? "PANIC ON" : "PANIC MODE";
-    }
-
-    function showAlert(m) {
-        const a = document.getElementById('neon-alert');
-        a.innerText = m; a.classList.add('show');
-        setTimeout(() => a.classList.remove('show'), 3000);
-    }
-
-    function switchTab(t, el) {
-        currentTab = t;
-        document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
-        document.getElementById('view-'+t).style.display = 'block';
-        document.querySelectorAll('.tab-link').forEach(l => l.classList.remove('active'));
-        el.classList.add('active');
-        document.getElementById('alpha-nav').style.display = (t=='players'||t=='gift') ? 'grid' : 'none';
-        renderActiveView();
-    }
-
-    // Particles Config
-    particlesJS("particles-js", {
-        "particles": {
-            "number": { "value": 80 },
-            "color": { "value": "#ff0077" },
-            "shape": { "type": "circle" },
-            "opacity": { "value": 0.5 },
-            "size": { "value": 3 },
-            "line_linked": { "enable": true, "distance": 150, "color": "#0022ff", "opacity": 0.4, "width": 1 },
-            "move": { "enable": true, "speed": 2 }
-        }
+        showAlert(`MASS GIFT ${amt.toLocaleString()} TERKIRIM KE ${allData.p.length} PLAYER ✓`,'ok');init();
     });
-
-    init();
-    setInterval(init, 15000); // Live update every 15s
+}
+async function procD(id,username,net){
+    askConfirm(`Approve DEPOSIT +${Number(net).toLocaleString()} untuk ${username}?`,async()=>{
+        const{data}=await _db.from('profiles').select('saldo').eq('username',username).single();
+        await _db.from('profiles').update({saldo:(data.saldo||0)+Number(net),last_deposit_amount:Number(net)}).eq('username',username);
+        await _db.from('deposits').update({status:'SUKSES'}).eq('id',id);
+        showAlert(`DEPOSIT ${Number(net).toLocaleString()} → ${username} APPROVED ✓`,'ok');init();
+    });
+}
+async function procW(id){
+    askConfirm(`Approve WITHDRAW ini? Saldo sudah dipotong dari user.`,async()=>{
+        await _db.from('withdrawals').update({status:'SUKSES'}).eq('id',id);
+        showAlert("WITHDRAW APPROVED ✓",'ok');init();
+    });
+}
+async function rejectTx(table,id,username){
+    askConfirm(`Reject & batalkan transaksi ${username}?`,async()=>{
+        await _db.from(table).update({status:'GAGAL'}).eq('id',id);
+        showAlert("TRANSAKSI DITOLAK",'');init();
+    });
+}
+async function rejectWd(id,username,amt){
+    askConfirm(`Tolak WD dan kembalikan saldo ${Number(amt).toLocaleString()} ke ${username}?`,async()=>{
+        const{data}=await _db.from('profiles').select('saldo').eq('username',username).single();
+        await _db.from('profiles').update({saldo:(data.saldo||0)+Number(amt)}).eq('username',username);
+        await _db.from('withdrawals').update({status:'GAGAL'}).eq('id',id);
+        showAlert(`WD DITOLAK — Saldo ${Number(amt).toLocaleString()} dikembalikan ke ${username}`,'ok');init();
+    });
+}
+async function togglePanicGlobal(){
+    const isPanic=allData.p.some(u=>u.panic_mode===true);
+    const msg=isPanic?"Matikan PANIC MODE? Winrate semua player kembali normal.":"⚠️ AKTIFKAN PANIC MODE?\nSemua winrate akan menjadi 1% sekarang!";
+    askConfirm(msg,async()=>{
+        const newWR=isPanic?10:1;
+        await _db.from('profiles').update({winrate:newWR,panic_mode:!isPanic});
+        showAlert(isPanic?"✅ SISTEM AMAN — PANIC MODE MATI":"⚠️ PANIC MODE AKTIF — WR 1% ALL",isPanic?'ok':'');
+        init();
+    });
+}
+function updatePanicUI(){
+    const isPanic=allData.p.some(u=>u.panic_mode===true);
+    const btn=document.getElementById('panic-master');
+    const ind=document.getElementById('panic-indicator');
+    if(isPanic){btn.className='panic-btn panic-active';btn.innerHTML='<i class="fas fa-skull fa-shake"></i> PANIC ON';ind.style.display='block';}
+    else{btn.className='panic-btn';btn.innerHTML='<i class="fas fa-skull"></i> PANIC';ind.style.display='none';}
+}
+function showAlert(msg,type=''){
+    const a=document.getElementById('neon-alert');
+    a.innerText=msg;a.className=type==='ok'?'show ok':'show';
+    setTimeout(()=>a.className='',3500);
+}
+function askConfirm(msg,cb){
+    document.getElementById('confirm-msg').innerText=msg;
+    document.getElementById('confirm-overlay').style.display='flex';
+    document.getElementById('btn-confirm-yes').onclick=()=>{closeConfirm();cb();};
+}
+function closeConfirm(){document.getElementById('confirm-overlay').style.display='none';}
+function switchTab(t,el){
+    currentTab=t;
+    document.querySelectorAll('.tab-content').forEach(c=>c.style.display='none');
+    document.getElementById('view-'+t).style.display='block';
+    document.querySelectorAll('.tab-link').forEach(l=>l.classList.remove('active'));
+    el.classList.add('active');
+    const showAlpha=(t==='players'||t==='gift');
+    document.getElementById('alpha-nav').style.display=showAlpha?'grid':'none';
+    renderActiveView();
+}
+init();
+setInterval(init,15000);
 </script>
 </body>
 </html>
