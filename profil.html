@@ -3,238 +3,202 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>PROFIL VIP - NEON PLINKO</title>
+    <title>PROFIL VIP — NEON PLINKO VIP</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     <script src="config.js"></script>
     <style>
-        :root{
-          --pink:#ff0077;--blue:#0055ff;--yellow:#f5e642;--green:#26a17b;--bg:#02030d;
-          --card:rgba(255,255,255,.025);
-          --gp:0 0 12px rgba(255,0,119,.5), 0 0 25px rgba(255,0,119,.2);
-          --gb:0 0 12px rgba(0,85,255,.5), 0 0 25px rgba(0,85,255,.2);
-          --gy:0 0 12px rgba(245,230,66,.5), 0 0 25px rgba(245,230,66,.2);
+        :root {
+            --pink:#ff0077; --blue:#0022ff; --yellow:#fbff00; --bg:#000005;
+            --gp:0 0 20px #ff0077, 0 0 50px rgba(255,0,119,.55);
+            --gb:0 0 20px #0022ff, 0 0 50px rgba(0,34,255,.55);
+            --gy:0 0 20px #fbff00, 0 0 50px rgba(251,255,0,.55);
         }
-        *{box-sizing:border-box;margin:0;padding:0; -webkit-tap-highlight-color: transparent;}
-        body{
-          background:var(--bg); color:#dde0f0; font-family:'Outfit',sans-serif; min-height:100vh;
-          background-image: radial-gradient(circle at top right, rgba(255,0,119,0.05), transparent 400px);
-          padding-bottom: 90px;
-        }
+        *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+        body{background:var(--bg);color:#fff;font-family:'Outfit',sans-serif;min-height:100vh;padding-bottom:90px;}
+        #particles-js{position:fixed;width:100%;height:100%;z-index:0;background:radial-gradient(circle at 30% 50%,#000018 0%,#000 100%);}
 
-        /* Header */
-        .header{position:sticky;top:0;z-index:200;padding:15px 20px;background:rgba(2,3,13,.95); border-bottom:1px solid var(--blue); backdrop-filter:blur(15px); display:flex;align-items:center;justify-content:space-between;}
-        .btn-back{color:#fff; font-size:18px; text-decoration:none; width:35px; height:35px; border-radius:50%; border:1px solid var(--blue); display:flex; align-items:center; justify-content:center;}
-        .header-title{font-family:'Cinzel Decorative',serif; font-size:12px; font-weight:900; letter-spacing:2px; color:var(--pink); text-shadow:var(--gp);}
+        /* ALERT STANDAR */
+        #neon-alert{position:fixed;top:-120px;left:50%;transform:translateX(-50%);width:88%;max-width:340px;background:rgba(0,0,15,.97);border:2px solid var(--pink);border-top:3px solid var(--yellow);color:#fff;padding:14px 20px;border-radius:14px;text-align:center;font-weight:900;z-index:9000;font-family:'Outfit',sans-serif;font-size:13px;letter-spacing:.5px;transition:.55s cubic-bezier(.175,.885,.32,1.275);box-shadow:0 0 35px var(--pink),0 0 70px rgba(255,0,119,.3);}
+        #neon-alert.show{top:15px;}
+        #neon-alert.success{border-color:var(--blue);box-shadow:0 0 35px var(--blue),0 0 70px rgba(0,34,255,.3);}
 
-        .container{padding:20px; max-width:520px; margin:auto; display:flex; flex-direction:column; gap:15px;}
+        .header{position:sticky;top:0;z-index:200;padding:0 20px;height:65px;background:rgba(0,0,20,.97);border-bottom:2px solid var(--blue);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:space-between;box-shadow:var(--gb);}
+        .btn-back{color:rgba(255,255,255,.7);font-size:20px;text-decoration:none;}
+        .header-title{font-size:14px;font-weight:900;letter-spacing:2px;color:var(--pink);text-shadow:var(--gp);text-transform:uppercase;}
 
-        /* Hero Card */
-        .profile-hero{
-          background: linear-gradient(135deg, #0a0b1e 0%, #15173a 100%);
-          border: 1px solid var(--pink); border-radius: 25px; padding: 25px;
-          display: flex; align-items: center; gap: 20px; box-shadow: var(--gp);
-          position: relative; overflow: hidden;
-        }
-        .avatar-ring{width:70px; height:70px; border-radius:50%; border:2px solid var(--pink); background:rgba(255,0,119,.1); display:flex; align-items:center; justify-content:center; box-shadow: inset 0 0 15px rgba(255,0,119,0.2);}
-        .avatar-ring i{font-size:35px; color:var(--pink); text-shadow:var(--gp);}
-        
-        .profile-info h2{font-family:'Cinzel Decorative',serif; font-size:18px; font-weight:900; color:#fff; margin-bottom:5px; text-transform: uppercase;}
-        .profile-tier{font-size:10px; font-weight:800; letter-spacing:1px; color:var(--yellow); background:rgba(245,230,66,0.1); border:1px solid var(--yellow); padding:4px 12px; border-radius:50px; text-transform:uppercase; display:inline-block;}
+        .container{padding:20px;max-width:520px;margin:auto;position:relative;z-index:10;display:flex;flex-direction:column;gap:14px;}
 
-        /* Saldo */
-        .saldo-card{
-          background:rgba(255,255,255,0.03); border:1px solid var(--yellow); border-radius:20px; padding:25px; text-align:center; box-shadow:var(--gy); margin-top:5px;
-        }
-        .saldo-val{font-family:'Cinzel Decorative',serif; font-size:30px; font-weight:900; color:var(--yellow); text-shadow: 0 0 15px rgba(245,230,66,0.3);}
+        .profile-hero{background:rgba(0,0,40,.85);border:2px solid var(--pink);border-radius:22px;padding:22px;display:flex;align-items:center;gap:18px;box-shadow:var(--gp);backdrop-filter:blur(10px);}
+        .avatar-ring{width:70px;height:70px;border-radius:50%;border:2px solid var(--pink);background:rgba(255,0,119,.12);display:flex;align-items:center;justify-content:center;box-shadow:var(--gp),inset 0 0 20px rgba(255,0,119,.15);flex-shrink:0;}
+        .avatar-ring i{font-size:34px;color:var(--pink);text-shadow:var(--gp);}
+        .profile-info h2{font-size:18px;font-weight:900;color:#fff;margin-bottom:7px;letter-spacing:1px;}
+        .profile-tier{font-size:9px;font-weight:900;letter-spacing:2px;color:var(--yellow);background:rgba(251,255,0,.08);border:1px solid var(--yellow);padding:4px 13px;border-radius:50px;text-transform:uppercase;display:inline-block;box-shadow:var(--gy);}
 
-        /* Info List */
-        .section-label{font-size:11px; font-weight:800; color:var(--blue); letter-spacing:1px; margin-top:10px; text-transform:uppercase; display:flex; align-items:center; gap:8px;}
-        .info-grid{display:flex; flex-direction:column; gap:8px;}
-        .info-row{background:rgba(255,255,255,0.03); border:1px solid rgba(0,85,255,0.1); border-radius:15px; padding:15px 18px; display:flex; justify-content:space-between; align-items:center;}
-        .info-key{font-size:10px; font-weight:600; color:rgba(255,255,255,0.4); text-transform:uppercase;}
-        .info-val{font-size:13px; font-weight:700; color:#fff;}
+        .saldo-card{background:rgba(0,0,40,.8);border:2px solid var(--yellow);border-radius:20px;padding:22px;text-align:center;box-shadow:var(--gy);backdrop-filter:blur(10px);}
+        .saldo-label{font-size:10px;font-weight:800;color:rgba(255,255,255,.5);letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;}
+        .saldo-val{font-size:30px;font-weight:900;color:var(--yellow);text-shadow:var(--gy);letter-spacing:1px;}
 
-        /* Stats */
-        .stats-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
-        .stat-box{background:var(--card); border-radius:18px; padding:18px; text-align:center; border:1px solid rgba(255,255,255,0.05);}
-        .stat-val{font-size:15px; font-weight:900; margin-top:8px;}
+        .section-label{font-size:10px;font-weight:900;color:var(--blue);letter-spacing:2px;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-top:4px;}
+        .section-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(0,34,255,.5),transparent);}
 
-        /* Buttons */
-        .btn-action{width:100%; padding:16px; border-radius:50px; border:none; cursor:pointer; font-weight:800; text-transform:uppercase; font-size:14px; margin-top:10px; transition: 0.3s; display:flex; align-items:center; justify-content:center; gap:10px;}
-        .btn-logout{background:linear-gradient(90deg, #ff0077, #aa0044); color:white; box-shadow:var(--gp);}
-        .btn-logout:active{transform:scale(0.95); opacity:0.8;}
+        .info-grid{display:flex;flex-direction:column;gap:8px;}
+        .info-row{background:rgba(0,0,40,.7);border:1px solid rgba(0,34,255,.25);border-radius:14px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;backdrop-filter:blur(5px);transition:.2s;}
+        .info-row:hover{border-color:rgba(0,34,255,.55);background:rgba(0,0,60,.8);}
+        .info-key{font-size:10px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;}
+        .info-key i{margin-right:6px;}
+        .info-val{font-size:13px;font-weight:700;color:#fff;text-align:right;max-width:65%;word-break:break-all;}
 
-        /* Nav Bar Bottom */
-        .nav-bar { position: fixed; bottom: 0; left: 0; width: 100%; height: 75px; background: rgba(5, 6, 20, 0.98); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid var(--blue); backdrop-filter: blur(20px); z-index: 1000; padding-bottom: 10px; }
-        .nav-item { color: #444; text-decoration: none; text-align: center; font-size: 10px; font-weight: 700; flex: 1; transition: 0.3s; }
-        .nav-item.active { color: var(--pink); }
-        .nav-item i { font-size: 20px; display: block; margin-bottom: 5px; }
+        .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+        .stat-box{background:rgba(0,0,40,.7);border-radius:16px;padding:18px;text-align:center;backdrop-filter:blur(5px);}
+        .stat-label{font-size:9px;font-weight:800;opacity:.5;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
+        .stat-val{font-size:15px;font-weight:900;}
 
-        /* Modal simple */
-        #modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-        .modal-box { background: #0a0b1e; border: 2px solid var(--pink); border-radius: 25px; padding: 30px; width: 85%; max-width: 320px; text-align: center; box-shadow: var(--gp); }
+        .btn-logout{width:100%;padding:16px;border-radius:50px;border:none;cursor:pointer;font-weight:900;text-transform:uppercase;font-size:14px;letter-spacing:1px;transition:.3s;display:flex;align-items:center;justify-content:center;gap:10px;background:linear-gradient(90deg,var(--pink),#aa0044);color:white;box-shadow:var(--gp);}
+        .btn-logout:active{transform:scale(.95);opacity:.85;}
+
+        .nav-bar{position:fixed;bottom:0;left:0;width:100%;height:72px;background:rgba(0,0,15,.99);display:flex;justify-content:space-around;align-items:center;border-top:2px solid var(--blue);backdrop-filter:blur(20px);z-index:1000;padding-bottom:6px;box-shadow:0 -5px 20px rgba(0,34,255,.3);}
+        .nav-item{color:rgba(255,255,255,.3);text-decoration:none;text-align:center;font-size:9px;font-weight:900;flex:1;transition:.3s;letter-spacing:.5px;text-transform:uppercase;}
+        .nav-item.active{color:var(--pink);text-shadow:var(--gp);}
+        .nav-item i{font-size:20px;display:block;margin-bottom:3px;}
+
+        #modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:3000;align-items:center;justify-content:center;backdrop-filter:blur(10px);}
+        .modal-box{background:rgba(0,0,15,.99);border:2px solid var(--pink);border-top:3px solid var(--yellow);border-radius:22px;padding:28px;width:88%;max-width:320px;text-align:center;box-shadow:var(--gp);animation:zoomIn .3s ease;}
+        @keyframes zoomIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+        .modal-box h3{font-size:17px;font-weight:900;color:var(--pink);text-shadow:var(--gp);margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;}
+        .modal-box p{font-size:13px;color:#ccc;margin-bottom:22px;line-height:1.6;}
+        .btn-cancel{padding:14px 20px;border-radius:50px;border:1px solid rgba(255,255,255,.2);background:transparent;color:#fff;font-weight:900;cursor:pointer;flex:1;font-size:12px;}
     </style>
 </head>
 <body>
-
+<div id="particles-js"></div>
+<div id="neon-alert">NOTIFICATION</div>
 <audio id="snd-click" src="https://cdn.pixabay.com/audio/2022/03/15/audio_c8b417f73c.mp3"></audio>
 
 <div class="header">
-  <a href="game.html" class="btn-back" onclick="playSnd()"><i class="fa-solid fa-chevron-left"></i></a>
-  <div class="header-title">PROFIL VIP</div>
-  <div style="width:35px;"></div>
+    <a href="game.html" class="btn-back" onclick="playSnd()"><i class="fa-solid fa-chevron-left"></i></a>
+    <div class="header-title"><i class="fas fa-user-shield" style="margin-right:8px;text-shadow:var(--gp)"></i>PROFIL VIP</div>
+    <div style="width:35px;"></div>
 </div>
 
 <div class="container">
-  <div class="profile-hero">
-    <div class="avatar-ring"><i class="fa-solid fa-crown"></i></div>
-    <div class="profile-info">
-      <h2 id="display-username">MEMUAT...</h2>
-      <div class="profile-tier" id="profile-tier">VIP MEMBER</div>
+    <div class="profile-hero">
+        <div class="avatar-ring"><i class="fa-solid fa-crown"></i></div>
+        <div class="profile-info">
+            <h2 id="display-username">MEMUAT...</h2>
+            <div class="profile-tier" id="profile-tier">VIP MEMBER</div>
+        </div>
     </div>
-  </div>
 
-  <div class="saldo-card">
-    <div style="font-size:10px; opacity:0.6; letter-spacing:2px; margin-bottom:5px;">CREDIT BALANCE</div>
-    <div class="saldo-val" id="display-saldo">IDR 0</div>
-  </div>
-
-  <div class="section-label"><i class="fa-solid fa-shield-halved"></i> Data Pengiriman Dana</div>
-  <div class="info-grid">
-    <div class="info-row"><span class="info-key">Penerima</span><span class="info-val" id="profile-fullname">...</span></div>
-    <div class="info-row"><span class="info-key">Kontak WA</span><span class="info-val" id="profile-phone">...</span></div>
-    <div class="info-row"><span class="info-key">Bank/E-Wallet</span><span class="info-val" id="profile-bank">...</span></div>
-    <div class="info-row"><span class="info-key">No Rekening</span><span class="info-val" id="profile-rek">...</span></div>
-  </div>
-
-  <div class="section-label"><i class="fa-solid fa-chart-line"></i> Aktivitas Finansial</div>
-  <div class="stats-grid">
-    <div class="stat-box">
-      <div style="font-size:9px; opacity:0.5; font-weight:700;">TOTAL DEPOSIT</div>
-      <div class="stat-val" id="total-depo" style="color:var(--blue);">IDR 0</div>
+    <div class="saldo-card">
+        <div class="saldo-label">SALDO UTAMA</div>
+        <div class="saldo-val" id="display-saldo">IDR 0</div>
     </div>
-    <div class="stat-box">
-      <div style="font-size:9px; opacity:0.5; font-weight:700;">TOTAL WITHDRAW</div>
-      <div class="stat-val" id="total-wd" style="color:var(--pink);">IDR 0</div>
-    </div>
-  </div>
 
-  <button class="btn-action btn-logout" onclick="handleLogout()"><i class="fa-solid fa-power-off"></i> KELUAR DARI SESI</button>
-  
-  <p style="text-align:center; font-size:9px; opacity:0.3; margin-top:10px;">NEON PLINKO VIP v2.0 &bull; SECURE SESSION</p>
+    <div class="section-label"><i class="fa-solid fa-shield-halved"></i> Data Pengiriman Dana</div>
+    <div class="info-grid">
+        <div class="info-row">
+            <span class="info-key"><i class="fas fa-user"></i>Nama Penerima</span>
+            <span class="info-val" id="profile-fullname">—</span>
+        </div>
+        <div class="info-row">
+            <span class="info-key"><i class="fab fa-whatsapp"></i>Nomor WA</span>
+            <span class="info-val" id="profile-phone">—</span>
+        </div>
+        <div class="info-row">
+            <span class="info-key"><i class="fas fa-building-columns"></i>Bank / E-Wallet</span>
+            <span class="info-val" id="profile-bank">—</span>
+        </div>
+        <div class="info-row">
+            <span class="info-key"><i class="fas fa-credit-card"></i>No. Rekening</span>
+            <span class="info-val" id="profile-rek">—</span>
+        </div>
+        <div class="info-row" style="cursor:pointer" onclick="copyRef()">
+            <span class="info-key"><i class="fas fa-users-rays"></i>Kode Referral <i class="fas fa-copy" style="opacity:.5;margin-left:4px;"></i></span>
+            <span class="info-val" id="profile-ref" style="color:var(--yellow);text-shadow:var(--gy)">—</span>
+        </div>
+        <div class="info-row">
+            <span class="info-key"><i class="fas fa-user-plus"></i>Diundang Oleh</span>
+            <span class="info-val" id="profile-referredby">—</span>
+        </div>
+    </div>
+
+    <div class="section-label"><i class="fa-solid fa-chart-line"></i> Aktivitas Finansial</div>
+    <div class="stats-grid">
+        <div class="stat-box" style="border:1px solid rgba(0,34,255,.35);">
+            <div class="stat-label">Total Deposit</div>
+            <div class="stat-val" id="total-depo" style="color:var(--blue);text-shadow:var(--gb)">IDR 0</div>
+        </div>
+        <div class="stat-box" style="border:1px solid rgba(255,0,119,.35);">
+            <div class="stat-label">Total Withdraw</div>
+            <div class="stat-val" id="total-wd" style="color:var(--pink);text-shadow:var(--gp)">IDR 0</div>
+        </div>
+    </div>
+
+    <button class="btn-logout" onclick="handleLogout()">
+        <i class="fa-solid fa-power-off"></i> KELUAR DARI SESI
+    </button>
+    <p style="text-align:center;font-size:9px;opacity:.2;margin-top:5px;letter-spacing:1px;">OMEGA V18 NEON PLINKO &bull; SECURE SESSION</p>
 </div>
 
 <div class="nav-bar">
     <a href="game.html" class="nav-item"><i class="fas fa-gamepad"></i>PLAY</a>
     <a href="deposit.html" class="nav-item"><i class="fas fa-wallet"></i>DEPO</a>
     <a href="withdraw.html" class="nav-item"><i class="fas fa-money-bill-transfer"></i>WD</a>
+    <a href="reward.html" class="nav-item"><i class="fas fa-gift"></i>REWARD</a>
     <a href="profil.html" class="nav-item active"><i class="fas fa-user-shield"></i>PROFIL</a>
 </div>
 
 <div id="modal-overlay">
     <div class="modal-box">
-        <h3 style="color:var(--pink); font-family:'Cinzel Decorative'; font-size:18px">LOGOUT?</h3>
-        <p style="margin:20px 0; font-size:14px; color:#ccc;">Apakah Master yakin ingin keluar dari sesi ini?</p>
-        <div style="display:flex; gap:10px;">
-            <button class="btn-action" onclick="closeModal()" style="background:#333; margin:0;">BATAL</button>
-            <button class="btn-action btn-logout" onclick="prosesLogout()" style="margin:0;">YA, KELUAR</button>
+        <h3><i class="fas fa-power-off" style="margin-right:8px"></i>Konfirmasi Logout</h3>
+        <p>Apakah Anda yakin ingin keluar dari sesi VIP ini?</p>
+        <div style="display:flex;gap:10px;">
+            <button class="btn-cancel" onclick="closeModal()">BATAL</button>
+            <button class="btn-logout" onclick="prosesLogout()" style="flex:1;padding:14px;"><i class="fas fa-power-off"></i> YA, KELUAR</button>
         </div>
     </div>
 </div>
 
 <script>
-function playSnd() {
-    const s = document.getElementById('snd-click');
-    if(s) { s.currentTime = 0; s.play(); }
-}
-
-async function initProfile() {
-    const user = getUsername();
-    if (!user) {
-        window.location.href = 'index.html';
-        return;
-    }
-
-    // Tampilkan Username di Header
-    document.getElementById('display-username').innerText = user;
-
-    // Sinkron Saldo & Username global dari config.js
-    // Fungsi syncNeonData() biasanya sudah mengupdate display-saldo di config.js
-    if(typeof syncNeonData === "function") syncNeonData();
-
-    try {
-        // 1. Ambil Data Detail Profil
-        const { data: profile, error } = await _supabase
-            .from('profiles')
-            .select('*')
-            .eq('username', user)
-            .single();
-
-        if (profile) {
-            document.getElementById('profile-fullname').innerText = profile.nama_lengkap || 'Belum diatur';
-            document.getElementById('profile-phone').innerText = profile.nomor_hp || '-';
-            document.getElementById('profile-bank').innerText = profile.bank_name || 'Belum diatur';
-            document.getElementById('profile-rek').innerText = profile.rekening || 'Belum diatur';
-            if(profile.role) document.getElementById('profile-tier').innerText = profile.role.toUpperCase();
+const SUPA_URL="https://bgffnmwrviyqpeevzjsn.supabase.co",SUPA_KEY="sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani";
+const _db=supabase.createClient(SUPA_URL,SUPA_KEY);
+particlesJS("particles-js",{"particles":{"number":{"value":100},"color":{"value":"#ff0077"},"shape":{"type":"circle"},"opacity":{"value":0.75,"random":true,"anim":{"enable":true,"speed":0.8,"opacity_min":0.3}},"size":{"value":3.5,"random":true},"line_linked":{"enable":true,"distance":140,"color":"#0022ff","opacity":0.55,"width":1.2},"move":{"enable":true,"speed":2.5,"random":true,"out_mode":"out"}},"interactivity":{"events":{"onhover":{"enable":true,"mode":"repulse"},"onclick":{"enable":true,"mode":"push"}},"modes":{"repulse":{"distance":80},"push":{"particles_nb":4}}}});
+function playSnd(){const s=document.getElementById('snd-click');if(s){s.currentTime=0;s.play().catch(()=>{});}}
+function showNeonAlert(msg,ok=false){const a=document.getElementById('neon-alert');a.innerText=msg;a.className=ok?'show success':'show';setTimeout(()=>a.className='',3000);}
+function getUser(){return typeof getUsername==='function'?getUsername():localStorage.getItem('neon_user');}
+async function initProfile(){
+    const user=getUser();
+    if(!user){window.location.href='index.html';return;}
+    document.getElementById('display-username').innerText=user.toUpperCase();
+    if(typeof syncNeonData==="function")syncNeonData();
+    try{
+        const{data:p}=await _db.from('profiles').select('*').eq('username',user).single();
+        if(p){
+            document.getElementById('profile-fullname').innerText=p.nama_lengkap||'Belum diatur';
+            document.getElementById('profile-phone').innerText=p.nomor_hp||p.phone||'—';
+            document.getElementById('profile-bank').innerText=p.bank_name||'Belum diatur';
+            document.getElementById('profile-rek').innerText=p.rekening||'Belum diatur';
+            document.getElementById('profile-ref').innerText=p.referral_code||'Tidak ada';
+            document.getElementById('profile-referredby').innerText=p.referred_by||'DIRECT';
+            if(p.role)document.getElementById('profile-tier').innerText=p.role.toUpperCase();
+            if(p.saldo!==undefined)document.getElementById('display-saldo').innerText="IDR "+Number(p.saldo).toLocaleString('id-ID');
         }
-
-        // 2. Hitung Statistik Transaksi
-        updateStats(user);
-    } catch (err) {
-        console.error("Gagal memuat profil:", err);
-    }
+        const{data:d}=await _db.from('deposits').select('net_receive').eq('username',user).eq('status','SUKSES');
+        let s=0;if(d)d.forEach(x=>s+=(parseFloat(x.net_receive)||0));
+        document.getElementById('total-depo').innerText="IDR "+s.toLocaleString('id-ID');
+        const{data:w}=await _db.from('withdrawals').select('amount').eq('username',user).eq('status','SUKSES');
+        let ws=0;if(w)w.forEach(x=>ws+=(parseFloat(x.amount)||0));
+        document.getElementById('total-wd').innerText="IDR "+ws.toLocaleString('id-ID');
+    }catch(err){console.error(err);}
 }
-
-async function updateStats(username) {
-    // Total Deposit Sukses (net_receive adalah saldo bersih yang masuk)
-    const { data: depoData } = await _supabase
-        .from('deposits')
-        .select('net_receive')
-        .eq('username', username)
-        .eq('status', 'SUKSES');
-    
-    let sumDepo = 0;
-    if (depoData) depoData.forEach(d => sumDepo += (parseFloat(d.net_receive) || 0));
-    document.getElementById('total-depo').innerText = formatIDR(sumDepo);
-
-    // Total Withdraw Sukses
-    const { data: wdData } = await _supabase
-        .from('withdrawals')
-        .select('amount')
-        .eq('username', username)
-        .eq('status', 'SUKSES');
-
-    let sumWd = 0;
-    if (wdData) wdData.forEach(w => sumWd += (parseFloat(w.amount) || 0));
-    document.getElementById('total-wd').innerText = formatIDR(sumWd);
-}
-
-// Handler Logout
-function handleLogout() {
-    playSnd();
-    document.getElementById('modal-overlay').style.display = 'flex';
-}
-
-function closeModal() {
-    playSnd();
-    document.getElementById('modal-overlay').style.display = 'none';
-}
-
-function prosesLogout() {
-    localStorage.removeItem('neon_user');
-    localStorage.removeItem('cached_saldo');
-    window.location.href = 'index.html';
-}
-
-// Format Rupiah Helper
-function formatIDR(v) {
-    return "IDR " + v.toLocaleString('id-ID');
-}
-
-window.onload = initProfile;
+function copyRef(){const c=document.getElementById('profile-ref').innerText;if(c&&c!=='—'&&c!=='Tidak ada'){navigator.clipboard.writeText(c).catch(()=>{});showNeonAlert("KODE REFERRAL DISALIN: "+c,true);}}
+function handleLogout(){playSnd();document.getElementById('modal-overlay').style.display='flex';}
+function closeModal(){playSnd();document.getElementById('modal-overlay').style.display='none';}
+function prosesLogout(){localStorage.removeItem('neon_user');localStorage.removeItem('cached_saldo');localStorage.removeItem('user_session');window.location.href='index.html';}
+window.onload=initProfile;
 </script>
-
 </body>
 </html>
