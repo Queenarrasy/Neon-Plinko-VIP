@@ -239,13 +239,10 @@ async function fetchAndApplyWR(){
 }
 
 // ── REALTIME SUBSCRIPTION ─────────────────────────────────────
-// STRATEGI BARU yang benar:
-// Supabase Realtime payload.new sering PARTIAL — hanya kolom yang
-// diubah yang muncul, kolom lain undefined. Ini penyebab WR ter-reset.
-//
-// Solusi: saat event UPDATE diterima, CEK dulu apakah winrate di
-// payload.new valid. Jika ya → FETCH ULANG baris lengkap dari DB.
-// Jika tidak (berarti hanya saldo berubah) → ABAIKAN, jangan sentuh WR.
+// Strategi: saat ada event UPDATE pada baris profil user ini,
+// bandingkan winrate & panic_mode di payload.new dengan cache saat ini.
+// Jika BERBEDA → fetch ulang baris lengkap dari DB → update WR cache.
+// Jika SAMA (hanya saldo berubah) → abaikan, WR cache tidak disentuh.
 function startRealtime(){
     if(profileChannel) _supa.removeChannel(profileChannel);
     profileChannel = _supa
@@ -257,14 +254,17 @@ function startRealtime(){
             if(!payload.new) return;
             const n = payload.new;
 
-            // KUNCI: hanya fetch ulang jika payload berisi winrate yang valid
-            // Update saldo dari dropBall tidak membawa kolom winrate →
-            // n.winrate akan undefined → kondisi ini false → WR TIDAK berubah
-            if(n.winrate != null || n.panic_mode != null || n.maxwin_limit != null){
-                // Ada perubahan kolom kontrol → fetch data lengkap dari DB
-                fetchAndApplyWR();
+            // Deteksi: apakah kolom kontrol benar-benar berubah?
+            const wrChanged     = (n.winrate    != null) && (parseFloat(n.winrate)    !== WR.winrate);
+            const panicChanged  = (n.panic_mode != null) && (n.panic_mode             !== WR.panic_mode);
+            const mxChanged     = (n.maxwin_limit != null) && (parseFloat(n.maxwin_limit) !== WR.maxwin_limit);
+
+            if(wrChanged || panicChanged || mxChanged){
+                // Ada perubahan nyata dari admin → update WR cache langsung dari payload
+                // (tidak perlu fetch ulang — payload.new sudah berisi semua kolom)
+                loadCache(n);
             }
-            // Jika payload hanya berisi saldo (game activity) → diabaikan sepenuhnya
+            // Jika hanya saldo berubah → tidak ada satupun kondisi di atas true → diabaikan
         })
         .subscribe();
 }
@@ -313,39 +313,21 @@ function setupPlinko(){
 }
 
 // ── HITUNG WINRATE EFEKTIF ────────────────────────────────────
-// Urutan prioritas KETAT — panic/maxwin selalu menang
+// Aturan sederhana dan jelas:
+//   1. Panic mode aktif  → paksa kalah (1%)
+//   2. Maxwin tercapai   → paksa kalah (1%)
+//   3. Selain itu        → PAKAI PERSIS nilai winrate yang admin set
+// TIDAK ada override otomatis berbasis saldo — admin kontrol segalanya.
 function getEffectiveWR(){
-    // [1] PANIC MODE — override SEMUA kondisi lain, tidak ada pengecualian
+    // Panic mode: override semua, paksa kalah
     if(WR.panic_mode === true) return 1;
 
-    // [2] Saldo sudah melebihi batas maxwin → force kalah
+    // Maxwin limit tercapai: paksa kalah
     if(WR.maxwin_limit > 0 && balance >= WR.maxwin_limit) return 1;
 
-    // WR dasar dari cache (sudah di-set oleh admin, nilai 1–100)
-    let wr = WR.winrate;
-
-    // [3] Penalti sesi bermain terlalu lama
-    if(WR.session_minutes > 0 && WR.session_start){
-        const mins = (Date.now() - new Date(WR.session_start)) / 60000;
-        if(mins > WR.session_minutes){
-            const extra = Math.floor(mins - WR.session_minutes);
-            wr -= wr >= 80 ? extra * 5 : extra * 10;
-        }
-    }
-
-    // [4] WR rendah (admin set ≤40) + saldo sudah untung → force kalah
-    if(WR.winrate <= 40 && WR.last_deposit_amount > 0){
-        if(balance >= WR.last_deposit_amount * 1.05) return 1;
-    }
-
-    // [5] WR sedang (50–70) + saldo sudah di batas → kurangi ke 5%
-    if(WR.winrate >= 50 && WR.winrate <= 70 && WR.last_deposit_amount > 0){
-        const pct = WR.winrate === 50 ? 0.10 : WR.winrate === 60 ? 0.15 : 0.20;
-        if(balance >= WR.last_deposit_amount * (1 + pct)) wr = 5;
-    }
-
-    // Pastikan nilai final dalam range valid 1–100
-    return Math.max(1, Math.min(100, wr));
+    // Pakai winrate persis seperti yang admin set — tidak ada pengurangan otomatis
+    // Pastikan dalam range 1–100
+    return Math.max(1, Math.min(100, WR.winrate));
 }
 
 // ── DROP BALL ─────────────────────────────────────────────────
