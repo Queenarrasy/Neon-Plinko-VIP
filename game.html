@@ -656,23 +656,39 @@ function handleAction(){
 /* ──────────────────── BUILD WORLD ──────────────────── */
 function buildWorld(){
   var W=cv.width,H=cv.height;
-  SLOT_H=Math.max(24,H*0.085);
-  SLOT_Y=H-SLOT_H;
-  PAD_TOP=H*0.048;
-  var pegH=SLOT_Y-PAD_TOP-H*0.014;
-  RG=pegH/(ROWS-1);
-  PR=Math.max(3.5,W*0.013);
-  BR=Math.max(5,W*0.0165);
-  PEGS=[];
+
+  /* Slot zone at bottom */
+  SLOT_H  = Math.max(26, H*0.09);
+  SLOT_Y  = H - SLOT_H;
+
+  /* Top padding */
+  PAD_TOP = H*0.055;
+
+  /* Gap between last peg row bottom edge and slot top: 8% of height */
+  var GAP_BOTTOM = H*0.08;
+  var pegAreaH   = SLOT_Y - PAD_TOP - GAP_BOTTOM;
+  RG = pegAreaH / (ROWS - 1);
+
+  /* Peg radius: small enough so gaps between adjacent pegs are > 2×BR */
+  /* Min gap between peg edges = RG - 2*PR  must be > 2*BR             */
+  /* So: PR < RG*0.28,  BR < (RG - 2*PR)*0.45                         */
+  PR = Math.min(Math.max(3.5, W*0.012), RG*0.26);
+  BR = Math.min(Math.max(4.5, W*0.015), (RG - 2*PR)*0.42);
+
+  PEGS = [];
   for(var r=0;r<ROWS;r++){
-    var cols=r+2,span=(cols-1)*RG,x0=(W-span)/2,y=PAD_TOP+r*RG;
-    for(var c=0;c<cols;c++) PEGS.push({x:x0+c*RG,y:y});
+    var cols = r+2;
+    var span = (cols-1)*RG;
+    var x0   = (W-span)/2;
+    var y    = PAD_TOP + r*RG;
+    for(var c=0;c<cols;c++) PEGS.push({x:x0+c*RG, y:y});
   }
-  pegPulse=new Array(PEGS.length).fill(0);
-  var mults=MUL[RISK],sw=W/mults.length;
-  SLOTS_D=[];
+  pegPulse = new Array(PEGS.length).fill(0);
+
+  var mults = MUL[RISK], sw = W/mults.length;
+  SLOTS_D = [];
   for(var i=0;i<mults.length;i++)
-    SLOTS_D.push({x:i*sw,y:SLOT_Y,w:sw,h:SLOT_H,m:mults[i],glow:0});
+    SLOTS_D.push({x:i*sw, y:SLOT_Y, w:sw, h:SLOT_H, m:mults[i], glow:0});
 }
 
 /* ──────────────────── SLOT COLOR (pure neon palette) ──────────────────── */
@@ -834,30 +850,72 @@ function drawBall(b){
 
 /* ──────────────────── PHYSICS ──────────────────── */
 function physStep(b){
-  var W=cv.width,dt=1/SUBSTEPS;
+  var W=cv.width, dt=1/SUBSTEPS;
   for(var s=0;s<SUBSTEPS;s++){
-    b.vy+=GR*dt; b.vx*=Math.pow(FRIC,dt);
-    var sp=Math.sqrt(b.vx*b.vx+b.vy*b.vy);
-    if(sp>22){b.vx*=22/sp;b.vy*=22/sp;}
-    b.x+=b.vx*dt;b.y+=b.vy*dt;
-    if(b.x-BR<0){b.x=BR;b.vx=Math.abs(b.vx)*BOUNCE;}
-    if(b.x+BR>W){b.x=W-BR;b.vx=-Math.abs(b.vx)*BOUNCE;}
+    /* gravity + friction */
+    b.vy += GR*dt;
+    b.vx *= Math.pow(FRIC, dt);
+
+    /* speed cap — prevent tunneling */
+    var sp = Math.sqrt(b.vx*b.vx + b.vy*b.vy);
+    if(sp > 18){ b.vx *= 18/sp; b.vy *= 18/sp; }
+
+    /* ensure ball always moves downward enough (anti-stuck) */
+    if(b.vy < 0.4) b.vy += 0.18;
+
+    b.x += b.vx*dt;
+    b.y += b.vy*dt;
+
+    /* wall bounce — keep ball inside with margin */
+    if(b.x - BR < 1){ b.x = BR+1; b.vx =  Math.abs(b.vx)*BOUNCE + 0.3; }
+    if(b.x + BR > W-1){ b.x = W-1-BR; b.vx = -Math.abs(b.vx)*BOUNCE - 0.3; }
+
+    /* peg collisions */
     for(var pi=0;pi<PEGS.length;pi++){
-      var p=PEGS[pi],dx=b.x-p.x,dy=b.y-p.y;
-      var d=Math.sqrt(dx*dx+dy*dy),mn=BR+PR;
-      if(d<mn&&d>.001){
-        var nx=dx/d,ny=dy/d;
-        b.x+=nx*(mn-d+.5);b.y+=ny*(mn-d+.5);
-        var dot=b.vx*nx+b.vy*ny;
-        if(dot<0){
-          b.vx=(b.vx-2*dot*nx)*BOUNCE;b.vy=(b.vy-2*dot*ny)*BOUNCE;
-          b.vx+=(Math.random()-.5)*.7;
-          pegPulse[pi]=1.0;
+      var p  = PEGS[pi];
+      var dx = b.x - p.x, dy = b.y - p.y;
+      var d  = Math.sqrt(dx*dx + dy*dy);
+      var mn = BR + PR;
+      if(d < mn && d > 0.001){
+        var nx = dx/d, ny = dy/d;
+
+        /* push ball fully clear — generous separation */
+        var sep = mn - d + 1.2;
+        b.x += nx * sep;
+        b.y += ny * sep;
+
+        /* clamp back inside walls after separation */
+        if(b.x - BR < 1)   b.x = BR+1;
+        if(b.x + BR > W-1) b.x = W-1-BR;
+
+        var dot = b.vx*nx + b.vy*ny;
+        if(dot < 0){
+          b.vx = (b.vx - 2*dot*nx) * BOUNCE;
+          b.vy = (b.vy - 2*dot*ny) * BOUNCE;
+          /* random lateral nudge — helps escape symmetric traps */
+          b.vx += (Math.random() - 0.5) * 1.0;
+          /* guarantee downward motion after bounce */
+          if(b.vy < 0.5) b.vy = 0.5 + Math.random()*0.5;
+          pegPulse[pi] = 1.0;
         }
       }
     }
-    if(SLOTS_D.length&&b.y+BR>=SLOT_Y)return true;
+
+    /* slot detection */
+    if(SLOTS_D.length && b.y + BR >= SLOT_Y) return true;
   }
+
+  /* stuck guard: if ball barely moved down for too long, nudge it */
+  if(!b._lastY) b._lastY = b.y;
+  b._stuckCount = (b._stuckCount||0) + 1;
+  if(b._stuckCount % 30 === 0){
+    if(Math.abs(b.y - b._lastY) < 1){
+      b.vy += 1.5;
+      b.vx += (Math.random()-0.5)*2;
+    }
+    b._lastY = b.y;
+  }
+
   return false;
 }
 
@@ -1032,7 +1090,7 @@ function loadProfile(){
 function resize(){
   var box=cv.parentElement;
   var W=box&&box.clientWidth>10?box.clientWidth:window.innerWidth-20;
-  var H=Math.round(W*.98);
+  var H=Math.round(W*1.08); /* lebih tinggi = ruang cukup antara paku & slot */
   if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}
 }
 
