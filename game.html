@@ -157,15 +157,18 @@ const mColors= ['#ff0077','#ff0077','#0022ff','#001a88','#030314','#030314','#00
 let bIdx=0, balance=0, autoMode=false, turboMode=false, timer=null;
 
 // ── WINRATE CACHE ─────────────────────────────────────────────
-// Ini adalah satu-satunya sumber kebenaran winrate saat bermain.
-// Diisi pertama kali saat init(), lalu diperbarui OTOMATIS via
-// Supabase Realtime setiap kali admin UPDATE baris profil user ini.
+// Sumber kebenaran tunggal winrate selama bermain.
+// Diisi saat init() via fetch DB.
+// Diperbarui HANYA saat admin ubah setting via Realtime —
+// dengan cara FETCH ULANG ke DB, bukan pakai payload event
+// (payload.new dari Supabase sering tidak lengkap/partial).
 let WR = {
-    winrate:50, maxwin_limit:50000, panic_mode:false,
+    winrate:50, maxwin_limit:5000000, panic_mode:false,
     session_minutes:0, last_deposit_amount:200000,
     session_start:null, initial_balance_session:0
 };
 let profileChannel = null;
+let lastWinrate = 50; // snapshot untuk deteksi perubahan
 
 // ── AUDIO ─────────────────────────────────────────────────────
 const aCtx = new (window.AudioContext||window.webkitAudioContext)();
@@ -205,51 +208,63 @@ async function init(){
 }
 
 // ── LOAD CACHE dari row profil ────────────────────────────────
-// Dipanggil HANYA saat init() dan saat admin ubah setting via Realtime.
-// TIDAK dipanggil saat hanya saldo berubah (aktivitas game normal).
+// p harus row lengkap dari DB (bukan payload Realtime yang partial).
+// Dipanggil dari init() dan dari fetchAndApplyWR().
 function loadCache(p){
-    // Gunakan nilai apa adanya — JANGAN pakai || fallback karena winrate=1 tetap valid
-    WR.winrate             = (p.winrate        != null) ? parseFloat(p.winrate)        : 50;
-    WR.maxwin_limit        = (p.maxwin_limit   != null) ? parseFloat(p.maxwin_limit)   : 50000;
+    // WAJIB: hanya proses jika winrate ada dan valid (bukan undefined/null)
+    if(p.winrate == null) return;
+    WR.winrate             = parseFloat(p.winrate);
+    WR.maxwin_limit        = (p.maxwin_limit   != null) ? parseFloat(p.maxwin_limit)   : 5000000;
     WR.panic_mode          = (p.panic_mode === true);
     WR.session_minutes     = parseFloat(p.session_minutes || p.session_timer || 0) || 0;
     WR.last_deposit_amount = (p.last_deposit_amount != null) ? parseFloat(p.last_deposit_amount) : 200000;
     WR.session_start       = p.session_start || p.created_at || null;
     WR.initial_balance_session = (p.initial_balance_session != null) ? parseFloat(p.initial_balance_session) : balance;
+    lastWinrate = WR.winrate;
     const strip = document.getElementById('panic-strip');
     if(strip) strip.style.display = WR.panic_mode ? 'block' : 'none';
 }
 
+// ── FETCH ULANG WINRATE DARI DB ────────────────────────────────
+// Dipanggil saat Realtime mendeteksi ada update kolom kontrol.
+// Fetch ulang memastikan kita dapat data LENGKAP dan BENAR dari DB,
+// bukan payload partial yang bisa merusak WR cache.
+async function fetchAndApplyWR(){
+    const {data:p} = await _supa
+        .from('profiles')
+        .select('winrate,maxwin_limit,panic_mode,session_minutes,session_timer,last_deposit_amount,session_start,created_at,initial_balance_session')
+        .eq('username', user)
+        .single();
+    if(p) loadCache(p);
+}
+
 // ── REALTIME SUBSCRIPTION ─────────────────────────────────────
-// FIX UTAMA: Pisahkan event admin (ubah WR) dari event game (ubah saldo).
-// Sebelumnya setiap dropBall update saldo → Realtime → loadCache → WR
-// mungkin ter-reset karena payload.old tidak ada di beberapa implementasi.
-// Sekarang: hanya jalankan loadCache jika kolom KONTROL yang berubah.
+// STRATEGI BARU yang benar:
+// Supabase Realtime payload.new sering PARTIAL — hanya kolom yang
+// diubah yang muncul, kolom lain undefined. Ini penyebab WR ter-reset.
+//
+// Solusi: saat event UPDATE diterima, CEK dulu apakah winrate di
+// payload.new valid. Jika ya → FETCH ULANG baris lengkap dari DB.
+// Jika tidak (berarti hanya saldo berubah) → ABAIKAN, jangan sentuh WR.
 function startRealtime(){
     if(profileChannel) _supa.removeChannel(profileChannel);
     profileChannel = _supa
-        .channel('wr-control-' + user)
+        .channel('wr-ctrl-' + user)
         .on('postgres_changes',{
             event:'UPDATE', schema:'public', table:'profiles',
             filter:'username=eq.' + user
         }, payload => {
             if(!payload.new) return;
             const n = payload.new;
-            const o = payload.old || {};
 
-            // Cek apakah kolom KONTROL berubah (bukan hanya saldo)
-            const adminChange =
-                (o.winrate       !== undefined && n.winrate       !== o.winrate)      ||
-                (o.panic_mode    !== undefined && n.panic_mode    !== o.panic_mode)    ||
-                (o.maxwin_limit  !== undefined && n.maxwin_limit  !== o.maxwin_limit)  ||
-                (o.session_minutes !== undefined && n.session_minutes !== o.session_minutes) ||
-                // Jika old tidak lengkap (pertama subscribe), tetap load
-                (o.winrate === undefined);
-
-            if(adminChange){
-                loadCache(n);
+            // KUNCI: hanya fetch ulang jika payload berisi winrate yang valid
+            // Update saldo dari dropBall tidak membawa kolom winrate →
+            // n.winrate akan undefined → kondisi ini false → WR TIDAK berubah
+            if(n.winrate != null || n.panic_mode != null || n.maxwin_limit != null){
+                // Ada perubahan kolom kontrol → fetch data lengkap dari DB
+                fetchAndApplyWR();
             }
-            // Jika hanya saldo yang berubah (game activity) → skip
+            // Jika payload hanya berisi saldo (game activity) → diabaikan sepenuhnya
         })
         .subscribe();
 }
