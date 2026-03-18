@@ -268,8 +268,9 @@ let currentTab  = 'players';
 let activeAlpha = 'A';
 let allData     = { p: [], d: [], w: [] };
 
-// Snapshot saldo untuk deteksi perubahan & flash di live table
-let prevSaldo = {};
+// Snapshot saldo & winrate untuk deteksi perubahan & flash di live table
+let prevSaldo   = {};
+let prevWinrate = {}; // simpan WR terakhir agar tidak hilang saat payload partial
 
 // Channels
 let rtProfiles = null;   // Realtime profiles → live saldo
@@ -398,31 +399,38 @@ function patchLiveRow(u) {
     if(currentTab !== 'live') return;
     const rowId = 'lr-' + safeKey(u.username);
     const row   = document.getElementById(rowId);
-    const live  = Number(u.saldo || 0);
-    const start = Number(u.initial_balance_session || 0);
-    const diff  = live - start;
-    const wr    = u.winrate ?? '?';
 
-    const prev  = prevSaldo[u.username] ?? live;
+    // Ambil nilai dari allData (sudah di-patch sebelum patchLiveRow dipanggil)
+    // sehingga jika payload partial (misal hanya saldo), kita tetap pakai data lengkap
+    const full  = allData.p.find(p => p.username === u.username) || u;
+    const live  = Number(full.saldo || 0);
+    const start = Number(full.initial_balance_session || 0);
+    const diff  = live - start;
+    // Gunakan winrate dari allData (lengkap), bukan dari payload yang mungkin undefined
+    const wr    = (full.winrate != null) ? full.winrate : (prevWinrate[u.username] ?? '?');
+    prevWinrate[u.username] = wr;
+
+    const prev    = prevSaldo[u.username] ?? live;
     const changed = live !== prev;
     prevSaldo[u.username] = live;
 
     if(row) {
-        // Update sel saldo langsung tanpa rebuild row
         const cells = row.querySelectorAll('td');
-        if(cells[1]) cells[1].innerText = wr + '%';
+        // Update badge WR dengan class warna yang benar
+        if(cells[1]) {
+            const wrClass = wr >= 60 ? 'wr-high' : wr >= 30 ? 'wr-mid' : 'wr-low';
+            cells[1].innerHTML = `<span class="wr-badge ${wrClass}">${wr}%</span>`;
+        }
         if(cells[3]) cells[3].innerText = live.toLocaleString('id-ID');
         if(cells[4]) {
             cells[4].className = diff > 0 ? 'status-up' : (diff < 0 ? 'status-down' : 'status-zero');
             cells[4].innerText = (diff >= 0 ? '+' : '') + diff.toLocaleString('id-ID');
         }
-        // Flash animasi naik/turun
         if(changed) {
             row.className = live > prev ? 'flash-up' : 'flash-down';
             setTimeout(() => { if(row) row.className = ''; }, 800);
         }
     } else {
-        // Baris belum ada (player baru login), render ulang tabel live
         renderLive();
     }
 }
