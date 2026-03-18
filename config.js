@@ -1,10 +1,10 @@
 /**
  * ============================================================
  * OMEGA V18 — NEON PLINKO VIP
- * CENTRAL ENGINE v3.0
+ * CENTRAL ENGINE v3.1
  * ============================================================
  * Tabel yang digunakan:
- * - profiles       (25 columns)
+ * - profiles       (25+ columns)
  * - deposits       (7 columns)
  * - withdrawals    (7 columns)
  * - inbox          (6 columns)
@@ -58,32 +58,23 @@ function logout() {
 
 // ── 4. FORMAT HELPERS ─────────────────────────────────────────
 
-/**
- * Format angka ke IDR
- * Contoh: 1500000 → "IDR 1.500.000"
- */
 function formatIDR(amount) {
     return "IDR " + Math.floor(amount || 0).toLocaleString('id-ID');
 }
 
-/**
- * Format angka ke Rupiah singkat
- * Contoh: 1500000 → "Rp 1.500.000"
- */
 function formatRp(amount) {
     return "Rp " + Math.floor(amount || 0).toLocaleString('id-ID');
 }
 
-// ── 5. SYNC ENGINE (INTI) ─────────────────────────────────────
+// ── 5. SYNC ENGINE ────────────────────────────────────────────
 
 /**
- * Sinkronisasi data user ke semua elemen UI di halaman aktif.
- * Dipanggil otomatis setiap 5 detik dan saat halaman load.
- * 
- * FIX UTAMA:
+ * syncNeonData — sinkronisasi saldo & referral ke semua elemen UI.
+ *
+ * PERBAIKAN v3.1:
+ * - Support elemen di game.html (saldo-chip, saldo-val)
  * - Referral code dikunci permanen dari database
- * - Tidak akan berubah selama user tidak dihapus
- * - Support semua element ID yang dipakai di semua halaman
+ * - Tidak reset state game yang sedang berjalan
  */
 async function syncNeonData() {
     const user = getUsername();
@@ -92,107 +83,102 @@ async function syncNeonData() {
     try {
         const { data, error } = await _supabase
             .from('profiles')
-            .select('*')
+            .select('saldo, referral_code, username, panic_mode')
             .eq('username', user)
             .single();
 
         if (!data || error) return;
 
-        // Simpan saldo ke cache lokal
+        // Cache saldo
         localStorage.setItem('cached_saldo', data.saldo || 0);
 
         // ── KUNCI REFERRAL PERMANEN ──────────────────────────
         let currentRef = data.referral_code;
-
         if (!currentRef || currentRef.trim() === '') {
-            // Cek kunci sementara di localStorage dulu
             let tempRef = localStorage.getItem('temp_ref_lock');
             if (!tempRef) {
                 tempRef = 'NEON' + Math.random().toString(36).substring(2, 7).toUpperCase();
                 localStorage.setItem('temp_ref_lock', tempRef);
             }
-            // Simpan permanen ke database
             await _supabase
                 .from('profiles')
                 .update({ referral_code: tempRef })
                 .eq('username', user);
             currentRef = tempRef;
         } else {
-            // Sudah ada di DB → hapus kunci sementara
             localStorage.removeItem('temp_ref_lock');
         }
 
-        // ── UPDATE SEMUA ELEMEN UI ───────────────────────────
-        const saldoFormatted = formatIDR(data.saldo);
-        const saldoFormatted2 = formatRp(data.saldo);
+        // ── UPDATE ELEMEN UI ─────────────────────────────────
+        const saldoIDR = formatIDR(data.saldo);
+        const saldoRp  = formatRp(data.saldo);
 
-        // Mapping: id elemen → nilai
+        // Map ID elemen → nilai
         const uiMap = {
-            // Saldo (berbagai ID yang dipakai di tiap halaman)
-            'saldo-text'         : saldoFormatted,
-            'display-saldo'      : saldoFormatted,
-            'display-saldo-wd'   : saldoFormatted,
-            'profile-saldo'      : saldoFormatted,
-            'wd-saldo'           : saldoFormatted,
+            // Saldo — semua halaman
+            'saldo-text'        : saldoIDR,
+            'display-saldo'     : saldoIDR,
+            'display-saldo-wd'  : saldoIDR,
+            'profile-saldo'     : saldoIDR,
+            'wd-saldo'          : saldoIDR,
+            'saldo-val'         : saldoIDR,   // game.html
 
             // Username
-            'display-username'   : (data.username || '').toUpperCase(),
-            'header-username'    : (data.username || '').toUpperCase(),
+            'display-username'  : (data.username || '').toUpperCase(),
+            'header-username'   : (data.username || '').toUpperCase(),
 
-            // Referral (PERMANEN dari DB)
-            'ref-code'           : currentRef,
+            // Referral
+            'ref-code'          : currentRef,
         };
 
         for (const [id, value] of Object.entries(uiMap)) {
             const el = document.getElementById(id);
             if (el) {
-                if (el.tagName === 'INPUT') el.value = value;
-                else el.textContent = value;
+                if (el.tagName === 'INPUT') el.value  = value;
+                else                        el.textContent = value;
             }
         }
 
-        // ── TRIGGER FUNGSI TAMBAHAN JIKA ADA ────────────────
-        if (typeof loadHistory  === 'function') loadHistory();
-        if (typeof loadInbox    === 'function') loadInbox();
-        if (typeof refreshUI    === 'function') refreshUI();
+        // Saldo chip di game.html (mengandung icon, jadi pakai innerHTML)
+        const chip = document.getElementById('saldo-chip');
+        if (chip) {
+            chip.innerHTML = '<i class="fas fa-coins" style="margin-right:5px;font-size:10px;"></i>'
+                           + saldoIDR;
+        }
+
+        // Panic bar di game.html
+        const panicBar = document.getElementById('panic-bar');
+        if (panicBar) {
+            panicBar.style.display = data.panic_mode ? 'block' : 'none';
+        }
 
     } catch (err) {
-        // Silent fail — tidak tampilkan error ke user
-        console.warn('[syncNeonData] Warning:', err?.message || err);
+        console.warn('[syncNeonData]', err?.message || err);
     }
 }
 
 // ── 6. PROTEKSI HALAMAN ───────────────────────────────────────
 
-/**
- * Proteksi halaman:
- * - Halaman publik (index.html, login.html): boleh diakses tanpa login
- * - Halaman lain: redirect ke index.html jika belum login
- */
 document.addEventListener('DOMContentLoaded', () => {
     const user        = getUsername();
     const currentPage = window.location.pathname.split('/').pop() || 'index.html';
     const publicPages = ['index.html', 'login.html', 'register.html', ''];
 
-    // Jika bukan halaman publik dan belum login → redirect
     if (!publicPages.includes(currentPage) && !user) {
         window.location.href = 'index.html';
         return;
     }
 
-    // Jika sudah login → sync data & mulai interval
     if (user) {
+        // Sync segera
         syncNeonData();
-        setInterval(syncNeonData, 5000);
+        // Sync tiap 8 detik (lebih jarang agar tidak konflik dengan realtime di game.html)
+        setInterval(syncNeonData, 8000);
     }
 });
 
-// ── 7. SYSTEM CONFIG HELPER ───────────────────────────────────
+// ── 7. SYSTEM CONFIG HELPERS ──────────────────────────────────
 
-/**
- * Ambil konfigurasi sistem dari tabel system_config
- * Contoh: getSystemConfig('maintenance_mode')
- */
 async function getSystemConfig(key) {
     try {
         const { data } = await _supabase
@@ -206,25 +192,22 @@ async function getSystemConfig(key) {
     }
 }
 
-/**
- * Simpan konfigurasi sistem ke tabel system_config
- */
 async function setSystemConfig(key, value) {
     try {
         await _supabase
             .from('system_config')
             .upsert({ key, value }, { onConflict: 'key' });
     } catch (err) {
-        console.error('[setSystemConfig] Error:', err);
+        console.error('[setSystemConfig]', err);
     }
 }
 
-// ── 8. NEON ALERT HELPER ─────────────────────────────────────
+// ── 8. NEON ALERT GLOBAL ─────────────────────────────────────
 
 /**
- * Tampilkan alert neon standar OMEGA V18
- * Bisa dipanggil dari halaman mana saja
- * type: '' = pink (error/info), 'ok' = biru (sukses)
+ * Alert neon standar — bisa dipanggil dari halaman mana saja
+ * type: ''   = pink/merah (error/info)
+ *       'ok' = hijau/biru (sukses)
  */
 function showNeonAlertGlobal(msg, type = '') {
     const a = document.getElementById('neon-alert');
