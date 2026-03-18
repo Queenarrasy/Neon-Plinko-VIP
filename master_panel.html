@@ -722,27 +722,44 @@ function renderReport() {
 
 // ── ACTIONS ───────────────────────────────────────────────────
 
-// Update winrate — mengisi data baru ke DB, memicu Realtime ke game.html
+// Update winrate — menulis ke DB → Realtime kirim event ke game.html player
+// PENTING: TIDAK menyentuh panic_mode — admin harus matikan panic via tombol PANIC
+//          agar winrate yang disimpan tidak langsung ter-override ulang
 async function updateUser(username, k) {
-    const wr = parseFloat(document.getElementById('wr-'+k)?.value)||30;
+    const wr = parseFloat(document.getElementById('wr-'+k)?.value);
     const mx = parseFloat(document.getElementById('mx-'+k)?.value)||1000000;
     const sm = parseInt(document.getElementById('sm-'+k)?.value)||0;
 
+    // Validasi winrate: harus angka 1-100
+    if(isNaN(wr) || wr < 1 || wr > 100){
+        showAlert('WINRATE HARUS ANGKA 1–100!'); return;
+    }
+
+    // Cek apakah player ini sedang dalam panic mode
+    const playerData = allData.p.find(u=>u.username===username);
+    const isPanicNow = playerData && playerData.panic_mode === true;
+
+    // Update: simpan winrate baru + session, TANPA mengubah panic_mode
     const {error} = await _db.from('profiles').update({
         winrate        : wr,
         maxwin_limit   : mx,
         session_minutes: sm,
-        session_timer  : sm,
-        panic_mode     : false
+        session_timer  : sm
+        // panic_mode TIDAK disentuh di sini
     }).eq('username', username);
 
     if(!error) {
-        showAlert('✓ '+username+' DIUPDATE — WR: '+wr+'%', 'ok');
-        // Patch lokal allData supaya badge WR langsung berubah di UI
+        const panicNote = isPanicNow ? ' (WR tersimpan, berlaku setelah PANIC OFF)' : '';
+        showAlert('✓ '+username+' DIUPDATE — WR: '+wr+'%'+panicNote, 'ok');
+        // Patch lokal allData
         const idx = allData.p.findIndex(u=>u.username===username);
-        if(idx>=0) { allData.p[idx].winrate=wr; allData.p[idx].maxwin_limit=mx; allData.p[idx].session_minutes=sm; allData.p[idx].panic_mode=false; }
-        // Refresh badge WR di kartu player ini saja (bukan seluruh list)
-        const badge = document.querySelector(`#pc-${k} .wr-badge`);
+        if(idx>=0){
+            allData.p[idx].winrate=wr;
+            allData.p[idx].maxwin_limit=mx;
+            allData.p[idx].session_minutes=sm;
+        }
+        // Refresh badge WR di kartu player ini
+        const badge = document.querySelector('#pc-'+k+' .wr-badge');
         if(badge){ badge.className='wr-badge '+(wr>=60?'wr-high':wr>=30?'wr-mid':'wr-low'); badge.innerText='WR '+wr+'%'; }
     } else {
         showAlert('ERROR: '+error.message);
