@@ -134,19 +134,19 @@ table.ht tr:last-child td{border-bottom:none}
   background:#010012;margin-bottom:0}
 #cv{display:block;width:100%;height:auto}
 
-/* ── SCORE BAR below canvas ── */
+/* ── SCORE BAR below canvas — compact strip ── */
 .score-bar{
-  display:flex;align-items:stretch;
-  background:rgba(3,0,18,.9);
-  border:1.5px solid rgba(0,51,255,.28);
-  border-top:none;border-radius:0 0 16px 16px;
-  margin-bottom:8px;overflow:hidden;
+  display:flex;align-items:center;
+  background:rgba(3,0,18,.88);
+  border:1.5px solid rgba(0,51,255,.25);
+  border-top:none;border-radius:0 0 14px 14px;
+  margin-bottom:12px;overflow:hidden;padding:5px 0;
 }
-.sb-item{flex:1;text-align:center;padding:6px 8px}
-.sb-item+.sb-item{border-left:1px solid rgba(0,51,255,.18)}
-.sb-lbl{font-size:7.5px;color:rgba(255,255,255,.32);text-transform:uppercase;
-  letter-spacing:.8px;font-weight:900;display:block;margin-bottom:2px}
-.sb-val{font-size:13px;font-weight:900;display:block;line-height:1.1}
+.sb-item{flex:1;text-align:center;padding:3px 8px}
+.sb-item+.sb-item{border-left:1px solid rgba(0,51,255,.15)}
+.sb-lbl{font-size:7px;color:rgba(255,255,255,.28);text-transform:uppercase;
+  letter-spacing:.8px;font-weight:900;display:block;margin-bottom:1px}
+.sb-val{font-size:12px;font-weight:900;display:block;line-height:1.1}
 .sb-val.yl{color:var(--yl);text-shadow:var(--gy)}
 .sb-val.pk{color:var(--pk);text-shadow:var(--gp)}
 .sb-val.bl{color:rgba(80,140,255,1);text-shadow:var(--gb)}
@@ -253,18 +253,16 @@ table.ht tr:last-child td{border-bottom:none}
 }
 @keyframes btnfl2{0%{background-position:0%}100%{background-position:200%}}
 
-/* ── WIN POP ── */
+/* ── WIN POP — muncul di bawah header, tidak di atas canvas ── */
 @keyframes wfl{
   0%  {opacity:0;transform:translateY(0) scale(.35)}
-  22% {opacity:1;transform:translateY(-16px) scale(1.3)}
-  100%{opacity:0;transform:translateY(-80px) scale(1)}
-}
+  22% {opacity:1;transform:translateY(-12px) scale(1.25)}
+  100%{opacity:0;transform:translateY(-55px) scale(1)}}
 .wpop{
   position:fixed;pointer-events:none;
-  font-family:'Outfit',sans-serif;font-weight:900;font-size:22px;
-  color:var(--yl);text-shadow:var(--gy);
-  z-index:850;animation:wfl 1.4s ease forwards
-}
+  font-family:'Outfit',sans-serif;font-weight:900;font-size:20px;
+  color:var(--pk);text-shadow:var(--gp);
+  z-index:850;animation:wfl 1.3s ease forwards}
 
 /* ── MAXWIN OVERLAY ── */
 #mwo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.97);
@@ -806,26 +804,32 @@ function redrawFull(){
 
 /* ──────────────────── DRAW BALL ──────────────────── */
 function drawBall(b){
+  /* trail — pink neon fade */
   for(var ti=0;ti<b.tr.length;ti++){
-    var t=b.tr[ti],p=ti/b.tr.length,a=p*p*.52,r2=BR*(.24+p*.5);
-    /* trail: yellow→pink hue shift */
-    var hue=50-ti*2;
+    var t=b.tr[ti],p=ti/b.tr.length,a=p*p*.55,r2=BR*(.22+p*.48);
+    /* hue: 320 = pink/magenta, shift slightly toward blue */
+    var hue=320+ti*2;
     cx.beginPath();cx.arc(t.x,t.y,r2,0,Math.PI*2);
     cx.fillStyle='hsla('+hue+',100%,65%,'+a+')';
-    cx.shadowColor='hsla('+hue+',100%,65%,.38)';cx.shadowBlur=r2*2;cx.fill();cx.shadowBlur=0;
+    cx.shadowColor='hsla('+hue+',100%,65%,.42)';cx.shadowBlur=r2*2.2;cx.fill();cx.shadowBlur=0;
   }
-  /* aura */
-  var ga=cx.createRadialGradient(b.x,b.y,BR*.5,b.x,b.y,BR*2.8);
-  ga.addColorStop(0,'rgba(255,180,0,.22)');ga.addColorStop(.5,'rgba(255,60,0,.08)');ga.addColorStop(1,'rgba(255,0,80,0)');
+  /* pink aura glow */
+  var ga=cx.createRadialGradient(b.x,b.y,BR*.45,b.x,b.y,BR*2.8);
+  ga.addColorStop(0,'rgba(255,0,119,.28)');
+  ga.addColorStop(.5,'rgba(200,0,100,.1)');
+  ga.addColorStop(1,'rgba(255,0,119,0)');
   cx.beginPath();cx.arc(b.x,b.y,BR*2.8,0,Math.PI*2);cx.fillStyle=ga;cx.fill();
-  /* body */
+  /* body — pink neon */
   var gb=cx.createRadialGradient(b.x-BR*.28,b.y-BR*.3,0,b.x,b.y,BR*1.18);
-  gb.addColorStop(0,'rgba(255,255,195,1)');gb.addColorStop(.28,'rgba(255,205,18,.98)');
-  gb.addColorStop(.62,'rgba(255,115,0,.9)');gb.addColorStop(1,'rgba(185,28,0,.62)');
+  gb.addColorStop(0,'rgba(255,200,220,1)');
+  gb.addColorStop(.25,'rgba(255,50,140,.98)');
+  gb.addColorStop(.58,'rgba(220,0,100,.92)');
+  gb.addColorStop(1,'rgba(140,0,60,.62)');
   cx.beginPath();cx.arc(b.x,b.y,BR,0,Math.PI*2);cx.fillStyle=gb;
-  cx.shadowColor='rgba(255,168,0,.92)';cx.shadowBlur=BR*3.4;cx.fill();cx.shadowBlur=0;
+  cx.shadowColor='rgba(255,0,119,.95)';cx.shadowBlur=BR*3.6;cx.fill();cx.shadowBlur=0;
+  /* specular */
   cx.beginPath();cx.arc(b.x-BR*.26,b.y-BR*.27,BR*.17,0,Math.PI*2);
-  cx.fillStyle='rgba(255,255,255,.8)';cx.fill();
+  cx.fillStyle='rgba(255,255,255,.82)';cx.fill();
 }
 
 /* ──────────────────── PHYSICS ──────────────────── */
@@ -961,9 +965,11 @@ function computeOut(){
 function winPop(txt){
   var el=document.createElement('div');
   el.className='wpop';el.textContent=txt;
-  el.style.left=(10+Math.random()*60)+'%';el.style.top='42%';
+  el.style.left=(15+Math.random()*55)+'%';
+  el.style.bottom='100px';
+  el.style.top='auto';
   document.body.appendChild(el);
-  setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},1500);
+  setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},1400);
 }
 
 /* ──────────────────── HISTORY ──────────────────── */
