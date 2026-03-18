@@ -150,18 +150,24 @@ function getUser(){return typeof getUsername==='function'?getUsername():localSto
 async function loadWdData(){
     const user=getUser();if(!user)return;
     try{
-        const{data}=await _db.from('profiles').select('*').eq('username',user).single();
+        const{data,error}=await _db.from('profiles').select('saldo,bank_name,rekening,nama_lengkap,nomor_telp,nomor_hp').eq('username',user).single();
+        if(error)throw error;
         if(data){
-            currentSaldo=Number(data.saldo);
+            currentSaldo=Number(data.saldo)||0;
             document.getElementById('display-saldo-wd').innerText="IDR "+currentSaldo.toLocaleString('id-ID');
-            if(data.bank_name&&data.rekening){
-                document.getElementById('wd-rek-info').value=`${data.bank_name.toUpperCase()} — ${data.rekening} (${data.nama_lengkap||''})`;
+            const bank=data.bank_name||'';
+            const rek=data.rekening||'';
+            const nama=data.nama_lengkap||'';
+            const hp=data.nomor_hp||data.nomor_telp||'';
+            if(bank&&rek){
+                document.getElementById('wd-rek-info').value=bank.toUpperCase()+' — '+rek+(nama?' ('+nama+')':'')+(hp?' | '+hp:'');
+                document.getElementById('wd-rek-info').style.color='';
             } else {
-                document.getElementById('wd-rek-info').value="REKENING BELUM DISET — Lengkapi di Profil";
-                document.getElementById('wd-rek-info').style.color="var(--pink)";
+                document.getElementById('wd-rek-info').value='REKENING BELUM DISET — Lengkapi di Profil';
+                document.getElementById('wd-rek-info').style.color='var(--pink)';
             }
         }
-    }catch(err){console.error(err);}
+    }catch(err){console.error('loadWdData error:',err);}
 }
 function setWdAmt(v){playSnd('click');document.getElementById('input-amount-wd').value=v;}
 function setMaxWd(){playSnd('click');document.getElementById('input-amount-wd').value=currentSaldo;}
@@ -184,26 +190,38 @@ async function prosesWithdraw(){
 }
 async function loadWdHistory(){
     const user=getUser();
-    const{data}=await _db.from('withdrawals').select('*').eq('username',user).order('created_at',{ascending:false}).limit(20);
+    if(!user)return;
     const body=document.getElementById('wd-history-body');
-    if(data&&data.length>0){
-        body.innerHTML=data.map(i=>{
-            let c="var(--yellow)";
-            if(i.status==='SUKSES')c="#00ff88";
-            if(i.status==='GAGAL')c="var(--pink)";
-            return `<tr>
-                <td style="font-size:15px;font-weight:900;">Rp ${(i.amount||0).toLocaleString()}</td>
-                <td style="font-weight:900;color:${c};">${i.status}</td>
-                <td style="font-size:9px;opacity:.4;">${new Date(i.created_at).toLocaleDateString('id-ID')}</td>
-            </tr>`;
-        }).join('');
-    } else {
-        body.innerHTML='<tr class="empty-row"><td colspan="3">Belum ada riwayat penarikan</td></tr>';
+    if(!body)return;
+    try{
+        const{data,error}=await _db.from('withdrawals').select('*').eq('username',user).order('created_at',{ascending:false}).limit(20);
+        if(error)throw error;
+        if(data&&data.length>0){
+            body.innerHTML=data.map(i=>{
+                let c='var(--yellow)';
+                if(i.status==='SUKSES')c='var(--yellow)';
+                if(i.status==='GAGAL')c='var(--pink)';
+                if(i.status==='PROSES')c='rgba(80,140,255,1)';
+                return `<tr>
+                    <td style="font-size:15px;font-weight:900;">Rp ${(i.amount||0).toLocaleString()}</td>
+                    <td style="font-weight:900;color:${c};">${i.status}</td>
+                    <td style="font-size:9px;opacity:.4;">${new Date(i.created_at).toLocaleDateString('id-ID')}</td>
+                </tr>`;
+            }).join('');
+        } else {
+            body.innerHTML='<tr class="empty-row"><td colspan="3">Belum ada riwayat penarikan</td></tr>';
+        }
+    }catch(err){
+        console.error('loadWdHistory error:',err);
+        body.innerHTML='<tr class="empty-row"><td colspan="3">Gagal memuat riwayat</td></tr>';
     }
 }
 function showModal(t,m){document.getElementById('m-title').innerText=t;document.getElementById('m-msg').innerText=m;document.getElementById('modal-overlay').style.display='flex';}
 function closeModal(){playSnd('click');document.getElementById('modal-overlay').style.display='none';isSubmitting=false;const btn=document.getElementById('btn-wd-submit');btn.disabled=false;btn.innerHTML='<i class="fas fa-paper-plane"></i> KONFIRMASI PENARIKAN';}
-window.onload=()=>{loadWdData();loadWdHistory();};
+window.onload=async function(){
+    try{ await loadWdData(); } catch(e){ console.error('loadWdData error:',e); }
+    try{ await loadWdHistory(); } catch(e){ console.error('loadWdHistory error:',e); }
+};
 </script>
 </body>
 </html>
