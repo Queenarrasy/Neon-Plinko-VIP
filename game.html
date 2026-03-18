@@ -365,18 +365,14 @@ table.ht tr:last-child td{border-bottom:none}
   <!-- CANVAS -->
   <div class="cbox"><canvas id="cv"></canvas></div>
 
-  <!-- SCORE BAR (below canvas) — LAST WIN | TOTAL P&L only, no BET -->
+  <!-- SCORE BAR (below canvas) — LAST WIN | MODE -->
   <div class="score-bar">
     <div class="sb-item">
       <span class="sb-lbl"><i class="fas fa-trophy" style="margin-right:3px"></i>LAST WIN</span>
       <span class="sb-val yl" id="sb-win">—</span>
     </div>
-    <div class="sb-item" style="border-left:1px solid rgba(0,51,255,.2);border-right:1px solid rgba(0,51,255,.2)">
-      <span class="sb-lbl"><i class="fas fa-chart-line" style="margin-right:3px"></i>TOTAL P&amp;L</span>
-      <span class="sb-val bl" id="sb-pnl">Rp 0</span>
-    </div>
-    <div class="sb-item">
-      <span class="sb-lbl"><i class="fas fa-fire" style="margin-right:3px"></i>MODE</span>
+    <div class="sb-item" style="border-left:1px solid rgba(0,51,255,.22)">
+      <span class="sb-lbl"><i class="fas fa-fire" style="margin-right:3px"></i>MODE AKTIF</span>
       <span class="sb-val pk" id="sb-mode">NORMAL</span>
     </div>
   </div>
@@ -505,18 +501,13 @@ function updSaldo(){
   var s='IDR '+SAL.toLocaleString('id-ID');
   var e=document.getElementById('hdr-sal');if(e)e.textContent=s;
 }
-function updPnl(){
-  var e=document.getElementById('sb-pnl');if(!e)return;
-  var s=(SPNL>=0?'+':'')+rp(SPNL);
-  e.textContent=s;
-  e.className='sb-val '+(SPNL>=0?'yl':'pk');
-}
 function setLastWin(v){
   var e=document.getElementById('sb-win');if(!e)return;
   if(v>0){e.textContent='+'+rp(v);e.className='sb-val yl';}
   else if(v<0){e.textContent=rp(v);e.className='sb-val pk';}
   else{e.textContent='—';e.className='sb-val yl';}
-}(msg,t){
+}
+function alert2(msg,t){
   var a=document.getElementById('na');a.textContent=msg;
   a.className=t?'show '+t:'show';
   clearTimeout(a._t);a._t=setTimeout(function(){a.className=''},3000);
@@ -908,7 +899,7 @@ function mainLoop(){
     var am=SLOTS_D[lIdx].m,bet=bl.bet;
     var pay=Math.floor(bet*am),prof=pay-bet;
     SAL+=pay;SPNL+=prof;
-    updSaldo();setLastWin(prof);updPnl();
+    updSaldo();setLastWin(prof);
     if(prof>0){snd('win');alert2('WIN! +'+rp(prof)+' ('+am+'x)','ok');winPop('+'+rp(prof));}
     else       {snd('lose');alert2(rp(prof)+' ('+am+'x)','');}
     addHist(bet,am,pay,prof);
@@ -1013,7 +1004,7 @@ function loadProfile(){
     .then(function(res){
       if(res.error||!res.data){showMd('ERROR','Gagal memuat profil.');return;}
       PROF=res.data;SAL=Number(PROF.saldo)||0;
-      updSaldo();updBetUI();updPnl();
+      updSaldo();updBetUI();
       if(PROF.panic_mode) document.getElementById('pb').style.display='block';
       _db.from('profiles').update({
         initial_balance_session:SAL,session_start:new Date().toISOString()
@@ -1061,7 +1052,7 @@ function init(){
   requestAnimationFrame(function(){
     requestAnimationFrame(function(){
       resize();buildWorld();
-      updBetUI();updSaldo();updPnl();updModeLabel();
+      updBetUI();updSaldo();updModeLabel();
       paintModeBtn('mb-normal',true,'on-normal');
       initPtjs();loadProfile();
       if(RAF)cancelAnimationFrame(RAF);
