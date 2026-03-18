@@ -139,11 +139,6 @@ const mColors = ['#ff0077','#ff0077','#0022ff','#001a88','#030314','#030314','#0
 
 let bIdx=0, balance=0, autoMode=false, turboMode=false, dropTimer=null;
 
-// ─────────────────────────────────────────────────────────────
-//  WR  =  satu-satunya sumber kebenaran winrate
-//  Di-poll dari DB setiap 3 detik — TERPISAH dari update saldo
-//  sehingga tidak ada race condition / Realtime payload partial
-// ─────────────────────────────────────────────────────────────
 let WR = { winrate:50, maxwin_limit:5000000, panic_mode:false };
 let wrPollTimer = null;
 
@@ -158,27 +153,18 @@ async function pollWR() {
             WR.winrate      = Number(data.winrate);
             WR.maxwin_limit = Number(data.maxwin_limit) || 5000000;
             WR.panic_mode   = data.panic_mode === true;
-            // Tampilkan/sembunyikan strip panic
             const s = document.getElementById('panic-strip');
             if (s) s.style.display = WR.panic_mode ? 'block' : 'none';
         }
-    } catch(e) { /* silent — pakai WR terakhir yang valid */ }
+    } catch(e) {}
 }
 
-// ─────────────────────────────────────────────────────────────
-//  getEffectiveWR — aturan SEDERHANA:
-//  1. panic_mode true  → 1%
-//  2. balance ≥ maxwin → 1%
-//  3. selain itu       → tepat WR yang admin set (1–100)
-//  TIDAK ada logika otomatis berdasarkan saldo/deposit/session
-// ─────────────────────────────────────────────────────────────
 function getEffectiveWR() {
-    if (WR.panic_mode)                              return 1;
+    if (WR.panic_mode) return 1;
     if (WR.maxwin_limit > 0 && balance >= WR.maxwin_limit) return 1;
     return Math.max(1, Math.min(100, WR.winrate));
 }
 
-// ── AUDIO ─────────────────────────────────────────────────────
 const aCtx = new (window.AudioContext || window.webkitAudioContext)();
 function beep(f,d,v=0.1){
     try{
@@ -191,8 +177,8 @@ function beep(f,d,v=0.1){
     } catch(e){}
 }
 
-// ── PARTICLES ────────────────────────────────────────────────
-particlesJS("particles-js",{"particles":{"number":{"value":70},"color":{"value":["#0044ff","#ff0077","#ffffff"]},"shape":{"type":"circle"},"opacity":{"value":0.9,"random":true,"anim":{"enable":true,"speed":1,"opacity_min":0.5}},"size":{"value":2.5,"random":true},"line_linked":{"enable":true,"distance":120,"color":"#ff0077","opacity":0.25,"width":0.65},"move":{"enable":true,"speed":1.8,"random":true,"out_mode":"out"}},"interactivity":{"events":{"onhover":{"enable":false},"onclick":{"enable":true,"mode":"push"}},"modes":{"push":{"particles_nb":2}}}});
+// ── PARTICLES: Dibuat lebih terang dan tebal garis neonnya ──
+particlesJS("particles-js",{"particles":{"number":{"value":70},"color":{"value":["#0044ff","#ff0077","#ffffff"]},"shape":{"type":"circle"},"opacity":{"value":0.9,"random":true,"anim":{"enable":true,"speed":1,"opacity_min":0.5}},"size":{"value":3.0,"random":true},"line_linked":{"enable":true,"distance":150,"color":"#ff0077","opacity":0.85,"width":2.0},"move":{"enable":true,"speed":1.8,"random":true,"out_mode":"out"}},"interactivity":{"events":{"onhover":{"enable":false},"onclick":{"enable":true,"mode":"push"}},"modes":{"push":{"particles_nb":2}}}});
 
 function showNeonAlert(msg,type=''){
     const a=document.getElementById('neon-alert');
@@ -200,24 +186,17 @@ function showNeonAlert(msg,type=''){
     setTimeout(()=>a.className='',2500);
 }
 
-// ── INIT ──────────────────────────────────────────────────────
 async function init(){
     if(!user) return location.href='index.html';
 
-    // Fetch saldo awal
     const {data} = await _supa.from('profiles').select('saldo').eq('username',user).single();
     if(data){ balance=Math.round(data.saldo||0); refreshUI(); }
 
-    // Fetch WR awal — tunggu selesai supaya WR sudah terisi sebelum bermain
     await pollWR();
-
-    // Simpan session awal (UPDATE ini TIDAK trigger pollWR karena pollWR fetch select, bukan listen event)
     await _supa.from('profiles').update({initial_balance_session:balance}).eq('username',user);
 
     setupPlinko();
     updateMultiplierLabels();
-
-    // Poll WR setiap 3 detik — ringan, hanya 3 kolom
     wrPollTimer = setInterval(pollWR, 3000);
 }
 
@@ -237,7 +216,6 @@ function updateMultiplierLabels(){
     });
 }
 
-// ── PHYSICS ───────────────────────────────────────────────────
 function setupPlinko(){
     const cvs=document.getElementById('plinko-canvas'); if(!cvs)return;
     const render=Render.create({canvas:cvs,engine:engine,options:{width:400,height:500,wireframes:false,background:'transparent'}});
@@ -260,62 +238,48 @@ function setupPlinko(){
     });
 }
 
-// ── DROP BALL ─────────────────────────────────────────────────
 async function dropBall(){
     const bet=BETS[bIdx];
     if(balance<bet){ stopAuto(); beep(200,0.5); return showAlert("SALDO TIDAK CUKUP!"); }
 
-    // Baca WR dari cache — sudah di-poll 3 detik sekali, selalu fresh
     const effectiveWR = getEffectiveWR();
-
-    // ── TENTUKAN MENANG/KALAH — KEPUTUSAN FINAL, DISIMPAN DI BOLA ──
     const isHoki = Math.random() * 100 < effectiveWR;
 
-    // Potong saldo
     balance = Math.round(balance - bet);
     refreshUI();
-    // Update saldo ke DB — ini TIDAK akan mempengaruhi WR cache
-    // karena pollWR hanya SELECT kolom winrate/maxwin/panic
     await _supa.from('profiles').update({saldo:balance}).eq('username',user);
 
-    // Arah awal bola
-    const sx = isHoki ? (Math.random()>0.5 ? 3.8 : -3.8) : (Math.random()*0.6-0.3);
+    // LOGIKA NATURAL: Posisi awal dan lemparan menentukan kemana bola condong
+    let startX = 200 + (Math.random() * 10 - 5);
+    let forceX = 0;
 
-    const ball = Bodies.circle(200+(Math.random()*4-2), 20, 8, {
+    if (isHoki) {
+        // Jika Win: Dorong ke kiri/kanan agar lebih mudah masuk Multiplier besar (pinggir)
+        forceX = (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 2.5 + 2.0);
+    } else {
+        // Jika Lose: Jatuhkan netral di tengah agar mengumpul di area x0.2 atau x0.5
+        forceX = (Math.random() * 1.0 - 0.5);
+    }
+
+    const ball = Bodies.circle(startX, 20, 8, {
         label:'ball', restitution:0.5, friction:0.01,
         render:{fillStyle:'#ff0077', strokeStyle:'rgba(255,255,255,.5)', lineWidth:1.5}
     });
 
-    // Flag isHoki tersimpan di objek bola — calcWin membaca dari sini
-    ball.isHoki = isHoki;
+    // Simpan history bet di objek bola agar saat ganti bet tidak ngaco
+    ball.betAmt = bet;
 
-    Body.setVelocity(ball, {x:sx, y:0});
+    Body.setVelocity(ball, {x:forceX, y:0});
     Composite.add(engine.world, ball);
     beep(800, 0.1);
 
-    // Steering halus
-    let tick=0;
-    const steer=setInterval(()=>{
-        if(!Composite.allBodies(engine.world).includes(ball)){clearInterval(steer);return;}
-        const {x:bx,y:by}=ball.position; tick++;
-        if(by>285||tick>25){clearInterval(steer);return;}
-        if(isHoki){
-            if(bx>165&&bx<235) Body.applyForce(ball,ball.position,{x:(bx<200?-1:1)*0.005,y:0});
-        } else {
-            if(bx<150||bx>250) Body.applyForce(ball,ball.position,{x:(bx<200?1:-1)*0.007,y:0});
-        }
-    },80);
-
+    // Penghapusan paksa jika tersangkut, steering di udara sudah dihilangkan sepenuhnya
     setTimeout(()=>{
-        clearInterval(steer);
         if(Composite.allBodies(engine.world).includes(ball)) Composite.remove(engine.world,ball);
-    },7000);
+    }, 8000);
 }
 
-// ── CALC WIN ──────────────────────────────────────────────────
-// GARIS PERTAHANAN TERAKHIR:
-//   ball.isHoki = true  → bayar
-//   ball.isHoki = false → TIDAK bayar, saldo tidak naik
+// ── CALC WIN MENJADI SINKRON PENUH DENGAN KOTAK ──
 async function calcWin(ball, label){
     if(ball.used) return;
     ball.used = true;
@@ -326,33 +290,35 @@ async function calcWin(ball, label){
     const disp  = document.getElementById('win-display');
     const slot  = document.getElementById('s-'+idx);
 
-    if(!ball.isHoki){
-        // KALAH — tidak ada bayaran
-        if(slot){slot.classList.add('hit-lose');setTimeout(()=>slot.classList.remove('hit-lose'),500);}
-        if(disp){disp.innerText='— MISS —';disp.className='miss';setTimeout(()=>{disp.innerText='— SIAP BERMAIN —';disp.className='';},900);}
-        beep(250,0.1,0.06);
-        Composite.remove(engine.world,ball);
-        return; // saldo sudah dipotong di dropBall, tidak ada tambahan
-    }
+    const betAmount = ball.betAmt || BETS[bIdx];
+    const win = Math.floor(betAmount * mHit);
 
-    // MENANG — bayar sesuai slot yang kena
-    const win = Math.floor(BETS[bIdx] * mHit);
-    balance   = Math.round(balance + win);
+    balance = Math.round(balance + win);
     refreshUI();
 
-    if(disp){disp.innerText=`X${mHit}  +${win.toLocaleString('id-ID')}`;disp.className='active';}
-    if(slot){slot.classList.add('hit-win');setTimeout(()=>{slot.classList.remove('hit-win');if(disp)disp.className='';},650);}
+    if (mHit < 1) {
+        // Visual kalah / miss, tapi TEPAT sesuai kotak
+        if(slot){slot.classList.add('hit-lose');setTimeout(()=>slot.classList.remove('hit-lose'),500);}
+        if(disp){
+            disp.innerText=`X${mHit}  +${win.toLocaleString('id-ID')}`;
+            disp.className='miss';
+            setTimeout(()=>{disp.innerText='— SIAP BERMAIN —';disp.className='';},900);
+        }
+        beep(250,0.1,0.06);
+    } else {
+        // Visual menang sesuai kotak
+        if(disp){disp.innerText=`X${mHit}  +${win.toLocaleString('id-ID')}`;disp.className='active';}
+        if(slot){slot.classList.add('hit-win');setTimeout(()=>{slot.classList.remove('hit-win');if(disp)disp.className='';},650);}
 
-    if(mHit>=5)      {beep(1200,0.35,0.2);showNeonAlert(`✦ X${mHit} JACKPOT! +${win.toLocaleString('id-ID')}`,'win');}
-    else if(mHit>=2) beep(1000,0.2,0.15);
-    else if(mHit>=1) beep(800,0.15,0.1);
-    else             beep(500,0.1,0.06);
+        if(mHit>=5)      {beep(1200,0.35,0.2);showNeonAlert(`✦ X${mHit} JACKPOT! +${win.toLocaleString('id-ID')}`,'win');}
+        else if(mHit>=2) beep(1000,0.2,0.15);
+        else if(mHit>=1) beep(800,0.15,0.1);
+    }
 
     Composite.remove(engine.world,ball);
     await _supa.from('profiles').update({saldo:balance}).eq('username',user);
 }
 
-// ── CONTROLS ──────────────────────────────────────────────────
 function adjustBet(d){
     if(autoMode)return;
     beep(500,0.05);
