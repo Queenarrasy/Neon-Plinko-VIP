@@ -156,8 +156,8 @@ async function loadWdData(){
         if(data){
             currentSaldo=Number(data.saldo)||0;
             // Kurangi pending WD yang belum diproses
-            const{data:pw}=await _db.from('withdrawals').select('amount').eq('username',user).eq('status','PROSES');
-            pendingWdTotal=(pw||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+            const{data:pw}=await _db.from('withdrawals').select('amount,nominal').eq('username',user).eq('status','PROSES');
+            pendingWdTotal=(pw||[]).reduce((s,x)=>s+Number(x.amount||x.nominal||0),0);
             const available=Math.max(0,currentSaldo-pendingWdTotal);
             const pendingTxt=pendingWdTotal>0?' ('+pendingWdTotal.toLocaleString('id-ID')+' pending)':'';
             document.getElementById('display-saldo-wd').innerText="IDR "+available.toLocaleString('id-ID')+pendingTxt;
@@ -190,8 +190,13 @@ async function prosesWithdraw(){
     try{
         // Insert request WD — TIDAK potong saldo di sini
         // Saldo dipotong SEKALI saja saat admin APPROVE di master panel
+        // Kolom tabel withdrawals: id(uuid-auto), username, amount(numeric), status, nominal(bigint), method
         const{error:e1}=await _db.from('withdrawals').insert([{
-            username:user, amount:amt, nominal:amt, status:'PROSES'
+            username : user,
+            amount   : amt,       // numeric — nilai utama
+            nominal  : amt,       // bigint — backup kolom
+            status   : 'PROSES',
+            method   : 'MANUAL'
         }]);
         if(e1)throw e1;
         playSnd('success');
@@ -217,13 +222,15 @@ async function loadWdHistory(){
         if(error)throw error;
         if(data&&data.length>0){
             body.innerHTML=data.map(i=>{
-                let c='var(--yellow)';
-                if(i.status==='SUKSES')c='var(--yellow)';
-                if(i.status==='GAGAL')c='var(--pink)';
-                if(i.status==='PROSES')c='rgba(80,140,255,1)';
+                // Pakai amount (numeric) atau fallback ke nominal (bigint)
+                const displayAmt = Number(i.amount || i.nominal || 0);
+                let sc='var(--yellow)';
+                if(i.status==='SUKSES') sc='#00ff88';
+                if(i.status==='GAGAL')  sc='var(--pink)';
+                if(i.status==='PROSES') sc='rgba(80,140,255,1)';
                 return `<tr>
-                    <td style="font-size:15px;font-weight:900;">Rp ${(i.amount||0).toLocaleString()}</td>
-                    <td style="font-weight:900;color:${c};">${i.status}</td>
+                    <td style="font-size:14px;font-weight:900;">Rp ${displayAmt.toLocaleString('id-ID')}</td>
+                    <td style="font-weight:900;color:${sc};">${i.status}</td>
                     <td style="font-size:9px;opacity:.4;">${new Date(i.created_at).toLocaleDateString('id-ID')}</td>
                 </tr>`;
             }).join('');
