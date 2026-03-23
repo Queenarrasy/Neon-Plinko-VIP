@@ -96,13 +96,31 @@
 
 <div class="container">
 
-    <!-- PROMO BANNER -->
-    <div class="promo-banner">
-        <div class="promo-title">🎯 VIP NEON EVENT</div>
-        <div class="prizes">
-            <div class="prize-item">CASHBACK<b>5%</b></div>
-            <div class="prize-item">REFERRAL<b>Rp5.000</b></div>
-            <div class="prize-item">MINGGUAN<b>BONUS</b></div>
+    <!-- BEST REWARD TOP REFERRAL LEADERBOARD -->
+    <div class="promo-banner" id="leaderboard-wrap">
+        <div class="promo-title">🏆 BEST REWARD — TOP REFERRAL</div>
+        <div class="prizes" id="lb-prizes">
+            <div class="prize-item" id="lb-1">
+                🥇 JUARA 1
+                <b>$100</b>
+                <span id="lb-name-1" style="display:block;font-size:9px;color:rgba(255,255,255,.55);margin-top:4px;">—</span>
+                <span id="lb-cnt-1" style="display:block;font-size:8px;color:var(--yellow);opacity:.7;"></span>
+            </div>
+            <div class="prize-item" id="lb-2">
+                🥈 JUARA 2
+                <b>$50</b>
+                <span id="lb-name-2" style="display:block;font-size:9px;color:rgba(255,255,255,.55);margin-top:4px;">—</span>
+                <span id="lb-cnt-2" style="display:block;font-size:8px;color:var(--yellow);opacity:.7;"></span>
+            </div>
+            <div class="prize-item" id="lb-3">
+                🥉 JUARA 3
+                <b>$25</b>
+                <span id="lb-name-3" style="display:block;font-size:9px;color:rgba(255,255,255,.55);margin-top:4px;">—</span>
+                <span id="lb-cnt-3" style="display:block;font-size:8px;color:var(--yellow);opacity:.7;"></span>
+            </div>
+        </div>
+        <div style="font-size:8px;opacity:.3;margin-top:12px;letter-spacing:1px;">
+            UPDATE REAL-TIME • PEMENANG DIHUBUNGI ADMIN
         </div>
     </div>
 
@@ -173,7 +191,43 @@ let USERNAME=typeof getUsername==='function'?getUsername():localStorage.getItem(
 particlesJS("particles-js",{"particles":{"number":{"value":65},"color":{"value":"#fbff00"},"shape":{"type":"circle"},"opacity":{"value":0.45,"random":true,"anim":{"enable":true,"speed":0.5,"opacity_min":0.1}},"size":{"value":2.5,"random":true},"line_linked":{"enable":true,"distance":130,"color":"#ff0077","opacity":0.2,"width":0.8},"move":{"enable":true,"speed":1.8,"random":true,"out_mode":"out"}},"interactivity":{"events":{"onhover":{"enable":false},"onclick":{"enable":false}}}});
 function playSnd(id){const s=document.getElementById('snd-'+id);if(s){s.currentTime=0;s.play().catch(()=>{});}}
 function showNeonAlert(msg,ok=false){const a=document.getElementById('neon-alert');a.innerText=msg;a.className=ok?'show success':'show';setTimeout(()=>a.className='',3000);}
-async function initReward(){if(!USERNAME){window.location.href='index.html';return;}loadReferralStats();loadInbox();}
+async function initReward(){
+    if(!USERNAME){window.location.href='index.html';return;}
+    loadTopReferral();
+    loadReferralStats();
+    loadInbox();
+}
+
+async function loadTopReferral(){
+    try{
+        // Hitung referral count per user dari tabel profiles
+        const{data:refs}=await _supabase.from('profiles')
+            .select('referred_by').not('referred_by','is',null);
+        if(!refs||!refs.length) return;
+        const counts={};
+        refs.forEach(r=>{
+            const rb=(r.referred_by||'').trim();
+            if(rb) counts[rb]=(counts[rb]||0)+1;
+        });
+        // Sort descending, ambil top 3
+        const top=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,3);
+        const nameEls=['lb-name-1','lb-name-2','lb-name-3'];
+        const cntEls=['lb-cnt-1','lb-cnt-2','lb-cnt-3'];
+        const prizes=['$100','$50','$25'];
+        top.forEach(([uname,cnt],i)=>{
+            const n=document.getElementById(nameEls[i]);
+            const cv=document.getElementById(cntEls[i]);
+            if(n) n.textContent=uname;
+            if(cv) cv.textContent=cnt+' referral';
+            // Highlight jika user ini
+            if(uname===USERNAME){
+                const box=document.getElementById('lb-'+(i+1));
+                if(box) box.style.background='rgba(251,255,0,.08)';
+                showNeonAlert('🏆 Kamu posisi '+(i+1)+' Top Referral! Hadiah: '+prizes[i],true);
+            }
+        });
+    }catch(e){ console.error('loadTopReferral:',e); }
+}
 async function loadReferralStats(){
     try{
         const{data:myP}=await _supabase.from('profiles').select('referral_code').eq('username',USERNAME).single();
@@ -234,13 +288,26 @@ async function loadInbox(){
 async function claimMail(id,amt){
     playSnd('click');
     try{
+        // CEK STATUS TERBARU dari DB dulu — anti double claim
+        const{data:inbox}=await _supabase.from('inbox').select('status').eq('id',id).single();
+        if(!inbox||inbox.status!=='UNCLAIMED'){
+            showModal("SUDAH DIKLAIM","Hadiah ini sudah pernah diklaim sebelumnya.");
+            loadInbox(); return;
+        }
+        // Update CLAIMED lebih dulu dengan filter eq status='UNCLAIMED' (atomic)
+        const{error:eUp}=await _supabase.from('inbox')
+            .update({status:'CLAIMED'}).eq('id',id).eq('status','UNCLAIMED');
+        if(eUp){ showModal("GAGAL","Hadiah sudah diklaim."); return; }
+        // Baru tambah saldo setelah berhasil update inbox
         const{data:p}=await _supabase.from('profiles').select('saldo').eq('username',USERNAME).single();
-        await _supabase.from('profiles').update({saldo:(p.saldo||0)+amt}).eq('username',USERNAME);
-        await _supabase.from('inbox').update({status:'CLAIMED'}).eq('id',id);
-        playSnd('success');showNeonAlert("HADIAH RP "+amt.toLocaleString()+" MASUK KE SALDO!",true);
+        const{error:eS}=await _supabase.from('profiles').update({saldo:(p.saldo||0)+amt}).eq('username',USERNAME);
+        if(eS){ showModal("ERROR","Saldo gagal ditambah: "+eS.message); return; }
+        playSnd('success');
+        showNeonAlert("HADIAH Rp "+amt.toLocaleString('id-ID')+" MASUK KE SALDO!",true);
         showModal("BERHASIL! 🎉","Hadiah Rp "+amt.toLocaleString('id-ID')+" berhasil masuk ke saldo Anda!");
-        if(typeof syncNeonData==="function")syncNeonData();loadInbox();
-    }catch(e){showModal("ERROR","Gagal mengambil hadiah.");}
+        if(typeof syncNeonData==="function") syncNeonData();
+        loadInbox();
+    }catch(e){ showModal("ERROR","Gagal mengambil hadiah: "+e.message); }
 }
 async function processRefClaim(){
     playSnd('click');
