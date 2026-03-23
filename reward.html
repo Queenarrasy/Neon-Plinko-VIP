@@ -277,8 +277,8 @@ async function loadInbox(){
             list.innerHTML=data.map(m=>`<div class="mail-item">
                 <div style="font-size:10px;color:var(--pink);margin-bottom:7px;font-weight:900;letter-spacing:1px;"><i class="fas fa-bolt"></i> VIP NEON GIFT</div>
                 <div style="font-size:13px;margin-bottom:11px;color:#eee;font-weight:600;">${m.pesan||'Hadiah dari Admin'}</div>
-                <div style="color:var(--yellow);font-weight:900;font-size:24px;margin-bottom:14px;text-shadow:0 0 8px rgba(251,255,0,.4)">Rp ${(m.nominal||0).toLocaleString('id-ID')}</div>
-                <button class="btn-main btn-pink" onclick="claimMail(${m.id},${m.nominal})"><i class="fas fa-hand-sparkles"></i> AMBIL SEKARANG</button>
+                <div style="color:var(--yellow);font-weight:900;font-size:24px;margin-bottom:14px;text-shadow:0 0 8px rgba(251,255,0,.4)">Rp ${Number(m.nominal||0).toLocaleString('id-ID')}</div>
+                <button class="btn-main btn-pink" onclick="claimMail('${m.id}',${m.nominal})"><i class="fas fa-hand-sparkles"></i> AMBIL SEKARANG</button>
             </div>`).join('');
         } else {
             list.innerHTML='<div style="text-align:center;opacity:.5;padding:28px;border:1.5px dashed rgba(0,34,255,.3);border-radius:16px;font-size:12px;"><i class="fas fa-envelope-open" style="font-size:22px;display:block;margin-bottom:9px;color:var(--blue);"></i>Belum ada hadiah masuk</div>';
@@ -286,9 +286,11 @@ async function loadInbox(){
     }catch(e){console.error("Inbox Error:",e.message);}
 }
 async function claimMail(id,amt){
+    id = String(id); // pastikan string untuk query eq()
     playSnd('click');
     try{
         // CEK STATUS TERBARU dari DB dulu — anti double claim
+        // Query dengan id string — Supabase otomatis handle casting bigint
         const{data:inbox}=await _supabase.from('inbox').select('status').eq('id',id).single();
         if(!inbox||inbox.status!=='UNCLAIMED'){
             showModal("SUDAH DIKLAIM","Hadiah ini sudah pernah diklaim sebelumnya.");
