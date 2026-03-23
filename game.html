@@ -452,7 +452,7 @@ var AUTO_TID=null;
 var HIST_OPEN=false;
 var NEW_RESULT=0;
 
-var INT_AUTO=700, INT_TURBO=200;
+var INT_AUTO=480, INT_TURBO=100;
 
 var BSTEPS=[400,600,800,1000,1200,1600,1800,2000,4000,6000,8000,
             10000,12000,16000,18000,20000,25000,30000];
@@ -469,7 +469,7 @@ var MUL={
 var cv=document.getElementById('cv');
 var cx=cv.getContext('2d');
 var ROWS=12;
-var GR=0.34, BOUNCE=0.52, FRIC=0.989, SUBSTEPS=5;
+var GR=0.58, BOUNCE=0.46, FRIC=0.984, SUBSTEPS=3;
 var PR,BR,RG,SLOT_H,SLOT_Y,PAD_TOP;
 var PEGS=[],SLOTS_D=[],BALLS=[];
 var pegPulse=[];
@@ -808,12 +808,12 @@ function physStep(b){
     b.vy += GR*dt;
     b.vx *= Math.pow(FRIC, dt);
     var sp = Math.sqrt(b.vx*b.vx + b.vy*b.vy);
-    if(sp > 18){ b.vx *= 18/sp; b.vy *= 18/sp; }
-    if(b.vy < 0.4) b.vy += 0.18;
+    if(sp > 22){ b.vx *= 22/sp; b.vy *= 22/sp; }
+    if(b.vy < 0.8) b.vy += 0.3;
     b.x += b.vx*dt;
     b.y += b.vy*dt;
-    if(b.x - BR < 1){ b.x = BR+1; b.vx =  Math.abs(b.vx)*BOUNCE + 0.3; }
-    if(b.x + BR > W-1){ b.x = W-1-BR; b.vx = -Math.abs(b.vx)*BOUNCE - 0.3; }
+    if(b.x - BR < 1){ b.x = BR+1; b.vx =  Math.abs(b.vx)*BOUNCE + 0.4; }
+    if(b.x + BR > W-1){ b.x = W-1-BR; b.vx = -Math.abs(b.vx)*BOUNCE - 0.4; }
     for(var pi=0;pi<PEGS.length;pi++){
       var p  = PEGS[pi];
       var dx = b.x - p.x, dy = b.y - p.y;
@@ -821,7 +821,7 @@ function physStep(b){
       var mn = BR + PR;
       if(d < mn && d > 0.001){
         var nx = dx/d, ny = dy/d;
-        var sep = mn - d + 1.2;
+        var sep = mn - d + 1.4;
         b.x += nx * sep;
         b.y += ny * sep;
         if(b.x - BR < 1)   b.x = BR+1;
@@ -830,22 +830,13 @@ function physStep(b){
         if(dot < 0){
           b.vx = (b.vx - 2*dot*nx) * BOUNCE;
           b.vy = (b.vy - 2*dot*ny) * BOUNCE;
-          b.vx += (Math.random() - 0.5) * 1.0;
-          if(b.vy < 0.5) b.vy = 0.5 + Math.random()*0.5;
+          b.vx += (Math.random() - 0.5) * 1.2;
+          if(b.vy < 1.0) b.vy = 1.0 + Math.random()*0.8;
           pegPulse[pi] = 1.0;
         }
       }
     }
     if(SLOTS_D.length && b.y + BR >= SLOT_Y) return true;
-  }
-  if(!b._lastY) b._lastY = b.y;
-  b._stuckCount = (b._stuckCount||0) + 1;
-  if(b._stuckCount % 30 === 0){
-    if(Math.abs(b.y - b._lastY) < 1){
-      b.vy += 1.5;
-      b.vx += (Math.random()-0.5)*2;
-    }
-    b._lastY = b.y;
   }
   return false;
 }
@@ -884,27 +875,35 @@ function mainLoop(){
     }
     if(lIdx===-1) lIdx=Math.floor(SLOTS_D.length/2);
     SLOTS_D[lIdx].glow=1.0;
-    var am=SLOTS_D[lIdx].m,bet=bl.bet;
-    var pay=Math.floor(bet*am),prof=pay-bet;
-    SAL+=pay;SPNL+=prof;
-    updSaldo();setLastWin(prof);
-    
-    /* Notifikasi Kemenangan via Last Win Panel (Pop Up Float dihapus) */
-    if(prof>0){snd('win');} /* Dihapus alert agar tidak menutupi saldo */
-    else       {snd('lose');}
-    
+    var am=SLOTS_D[lIdx].m, bet=bl.bet;
+    var pay=Math.floor(bet*am), prof=pay-bet;
+    SAL+=pay; SPNL+=prof;
+    updSaldo(); setLastWin(prof);
+
+    if(prof>0){ snd('win'); }
+    else       { snd('lose'); }
+
     addHist(bet,am,pay,prof);
-    try{if(typeof _db!=='undefined'){
-      _db.from('profiles').update({saldo:SAL,updated_at:new Date().toISOString()})
-         .eq('username',U).then(function(){}).catch(function(){});
-    }}catch(e){}
-    
-    var mwl=PROF.maxwin_limit||0;
-    if(mwl>0&&SPNL>=mwl){
+
+    /* Simpan saldo ke DB — debounced agar tidak flood saat TURBO */
+    clearTimeout(mainLoop._dbTid);
+    (function(salSnap){
+      mainLoop._dbTid = setTimeout(function(){
+        try{ if(typeof _db!=='undefined' && U){
+          _db.from('profiles').update({saldo:salSnap, updated_at:new Date().toISOString()})
+             .eq('username',U).then(function(){}).catch(function(){});
+        }}catch(e){}
+      }, F_TURBO ? 300 : 80);
+    })(SAL);
+
+    /* Cek maxwin — gunakan Number() untuk pastikan angka 0 tidak falsy */
+    var mwl = Number(PROF.maxwin_limit) || 0;
+    if(mwl > 0 && SPNL >= mwl){
       snd('win');
-      F_AUTO=false;stopAutoLoop();
-      paintModeBtn('mb-auto',false,'on-auto');updDropBtn();
-      document.getElementById('mws').textContent='Kemenangan: '+rp(SPNL)+'\nLimit: '+rp(mwl);
+      F_AUTO=false; stopAutoLoop();
+      paintModeBtn('mb-auto',false,'on-auto'); updDropBtn();
+      document.getElementById('mws').textContent =
+        'Kemenangan sesi: '+rp(SPNL)+'\nLimit maxwin: '+rp(mwl);
       document.getElementById('mwo').classList.add('on');
     }
   }
@@ -922,30 +921,38 @@ function spawnBall(){
   var out=computeOut();
   var tgtX=SLOTS_D[out.slot]?SLOTS_D[out.slot].x+SLOTS_D[out.slot].w/2:cv.width/2;
   var spX=cv.width/2+(Math.random()-.5)*PR*1.6;
-  var bias=(tgtX-spX)*.0085;
-  BALLS.push({x:spX,y:BR+3,vx:bias+(Math.random()-.5)*.42,vy:1.5+Math.random()*.5,tr:[],bet:bet,target:out.slot});
+  var bias=(tgtX-spX)*.022;
+  BALLS.push({x:spX,y:BR+3,vx:bias+(Math.random()-.5)*.38,vy:2.0+Math.random()*.6,tr:[],bet:bet,target:out.slot});
 }
 
 /* ──────────────────── OUTCOME ──────────────────── */
 function computeOut(){
-  var mults=MUL[RISK];
-  // Winrate dari PROF — diupdate real-time saat admin ubah di master panel
-  // panic_mode aktif → paksa winrate 1%
-  var wr=PROF.panic_mode ? 1 : Math.max(1, Math.min(100, Number(PROF.winrate)||30));
-  var mwl=PROF.maxwin_limit||0;
-  if(mwl>0&&SPNL>=mwl){
-    var la=[];for(var i=0;i<mults.length;i++) if(mults[i]<1) la.push(i);
-    var li=la.length?la[Math.floor(Math.random()*la.length)]:6;
-    return{slot:li,mult:mults[li],win:false};
+  var mults = MUL[RISK];
+
+  /* Baca langsung dari PROF yang selalu diupdate Realtime */
+  var isPanic = PROF.panic_mode === true;
+  var wr      = isPanic ? 1 : Math.max(1, Math.min(100, Number(PROF.winrate) || 30));
+  var mwl     = Number(PROF.maxwin_limit) || 0;
+
+  /* Jika sudah capai maxwin → paksa slot kalah */
+  if(mwl > 0 && SPNL >= mwl){
+    var la = [];
+    for(var i=0; i<mults.length; i++) if(mults[i] < 1) la.push(i);
+    var li = la.length ? la[Math.floor(Math.random()*la.length)] : Math.floor(mults.length/2);
+    return {slot:li, mult:mults[li], win:false};
   }
-  if(Math.random()*100<wr){
-    var wa=[];for(var j=0;j<mults.length;j++) if(mults[j]>=1) wa.push(j);
-    var wi=wa.length?wa[Math.floor(Math.random()*wa.length)]:6;
-    return{slot:wi,mult:mults[wi],win:true};
+
+  /* Roll winrate */
+  if(Math.random()*100 < wr){
+    var wa = [];
+    for(var j=0; j<mults.length; j++) if(mults[j] >= 1) wa.push(j);
+    var wi = wa.length ? wa[Math.floor(Math.random()*wa.length)] : Math.floor(mults.length/2);
+    return {slot:wi, mult:mults[wi], win:true};
   } else {
-    var la2=[];for(var k=0;k<mults.length;k++) if(mults[k]<1) la2.push(k);
-    var li2=la2.length?la2[Math.floor(Math.random()*la2.length)]:6;
-    return{slot:li2,mult:mults[li2],win:false};
+    var la2 = [];
+    for(var k=0; k<mults.length; k++) if(mults[k] < 1) la2.push(k);
+    var li2 = la2.length ? la2[Math.floor(Math.random()*la2.length)] : Math.floor(mults.length/2);
+    return {slot:li2, mult:mults[li2], win:false};
   }
 }
 
@@ -976,6 +983,20 @@ function renderHist(){
   b.innerHTML=h;
 }
 
+/* ──────────────────── SESSION TIMER ──────────────────── */
+var SESSION_TID = null;
+function startSessionTimer(minutes){
+  if(SESSION_TID) clearTimeout(SESSION_TID);
+  if(!minutes || minutes <= 0) return;
+  SESSION_TID = setTimeout(function(){
+    F_AUTO = false;
+    stopAutoLoop();
+    paintModeBtn('mb-auto', false, 'on-auto');
+    updDropBtn();
+    showMd('SESI BERAKHIR', 'Waktu bermain Anda telah habis.\nSilakan hubungi admin untuk perpanjangan.');
+  }, minutes * 60 * 1000);
+}
+
 /* ──────────────────── LOAD PROFILE ──────────────────── */
 function loadProfile(){
   var user=(typeof getUsername==='function')?getUsername():localStorage.getItem('neon_user');
@@ -985,32 +1006,66 @@ function loadProfile(){
   _db.from('profiles').select('*').eq('username',U).single()
     .then(function(res){
       if(res.error||!res.data){showMd('ERROR','Gagal memuat profil.');return;}
-      PROF=res.data;SAL=Number(PROF.saldo)||0;
-      updSaldo();updBetUI();
-      if(PROF.panic_mode) document.getElementById('pb').style.display='block';
+      PROF=res.data; SAL=Number(PROF.saldo)||0;
+      updSaldo(); updBetUI();
+      /* Panic mode awal */
+      document.getElementById('pb').style.display = PROF.panic_mode ? 'block' : 'none';
+      /* Session timer awal */
+      var sm = Number(PROF.session_minutes || PROF.session_timer || 0);
+      if(sm > 0) startSessionTimer(sm);
       _db.from('profiles').update({
-        initial_balance_session:SAL,session_start:new Date().toISOString()
+        initial_balance_session:SAL, session_start:new Date().toISOString()
       }).eq('username',U).then(function(){}).catch(function(){});
+
+      /* ── REALTIME LISTENER ── */
       _db.channel('gm-'+U)
         .on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles',filter:'username=eq.'+U},
           function(pl){
             if(!pl.new) return;
-            var n=pl.new;
-            // ── UPDATE PROF (winrate/panic/maxwin) DARI ADMIN ──
-            // SAL TIDAK diupdate dari Realtime — mencegah SAL lama menimpa
-            // saldo lokal yang sedang diproses (bet sudah dipotong, pay belum masuk)
-            var wrChanged  = (n.winrate      != null);
-            var pmChanged  = (n.panic_mode   != null);
-            var mxChanged  = (n.maxwin_limit != null);
-            if(wrChanged||pmChanged||mxChanged){
-                PROF = Object.assign({}, PROF, {
-                    winrate     : n.winrate      != null ? n.winrate      : PROF.winrate,
-                    panic_mode  : n.panic_mode   != null ? n.panic_mode   : PROF.panic_mode,
-                    maxwin_limit: n.maxwin_limit != null ? n.maxwin_limit : PROF.maxwin_limit
-                });
-                document.getElementById('pb').style.display = PROF.panic_mode ? 'block' : 'none';
+            var n = pl.new;
+
+            /* ── UPDATE PROF LENGKAP dari admin (winrate / panic / maxwin / session) ──
+               Gunakan 'in' operator bukan != null agar boolean false & angka 0 juga terdeteksi */
+            var updated = {};
+
+            if('winrate' in n)        updated.winrate         = Number(n.winrate) || 1;
+            if('panic_mode' in n)     updated.panic_mode      = !!n.panic_mode;
+            if('maxwin_limit' in n)   updated.maxwin_limit    = Number(n.maxwin_limit) || 0;
+            if('session_minutes' in n){
+              updated.session_minutes = Number(n.session_minutes) || 0;
+              /* Restart timer hanya jika session berubah */
+              var newSm = updated.session_minutes;
+              if(newSm !== (PROF.session_minutes||0)) startSessionTimer(newSm);
             }
-          }).subscribe();
+            if('session_timer' in n)  updated.session_timer   = Number(n.session_timer) || 0;
+
+            /* Merge update ke PROF — SAL tidak diupdate dari realtime */
+            PROF = Object.assign({}, PROF, updated);
+
+            /* Update panic bar di UI */
+            document.getElementById('pb').style.display = PROF.panic_mode ? 'block' : 'none';
+
+            /* Notifikasi singkat jika winrate/panic berubah */
+            if('winrate' in updated){
+              alert2('Admin: Winrate diupdate → '+PROF.winrate+'%', 'warn');
+            }
+            if('panic_mode' in updated){
+              if(PROF.panic_mode) alert2('⚠ PANIC MODE AKTIF', 'warn');
+              else                alert2('✓ Panic mode dinonaktifkan', 'ok');
+            }
+          }).subscribe(function(status){
+            if(status === 'SUBSCRIBED'){
+              /* Realtime terhubung — refetch PROF terbaru untuk pastikan data sinkron */
+              _db.from('profiles').select('winrate,panic_mode,maxwin_limit,session_minutes,session_timer')
+                .eq('username',U).single()
+                .then(function(r){
+                  if(r.data){
+                    PROF = Object.assign({}, PROF, r.data);
+                    document.getElementById('pb').style.display = PROF.panic_mode ? 'block' : 'none';
+                  }
+                }).catch(function(){});
+            }
+          });
     })
     .catch(function(e){showMd('ERROR','Gagal: '+(e.message||e));});
 }
