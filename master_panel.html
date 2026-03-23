@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script src="config.js"></script>
     <style>
         :root{
             --pink:#ff0077; --blue:#0022ff; --yellow:#fbff00; --bg:#000005;
@@ -258,11 +259,17 @@
 //  │ PLAYERS/    │ Load sekali saat pertama + saat tab dibuka   │
 //  │ GIFT/REPORT │ Tidak ada interval berulang                  │
 //  └─────────────┴──────────────────────────────────────────────┘
+//
+//  KONEKSI: config.js menyediakan _supabase/_db, SUPABASE_URL,
+//  SUPABASE_KEY, getUsername(), syncNeonData(), formatIDR/Rp,
+//  showNeonAlertGlobal() — semua halaman berbagi sumber yang sama.
 // ══════════════════════════════════════════════════════════════════
 
-const SURL = "https://bgffnmwrviyqpeevzjsn.supabase.co";
-const SKEY = "sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani";
-const _db  = supabase.createClient(SURL, SKEY);
+// ── config.js sudah menyediakan _supabase / _db dan konstanta Supabase ──
+// Alias lokal agar kode di bawah tidak perlu diubah
+const SURL = SUPABASE_URL;
+const SKEY = SUPABASE_KEY;
+// _db sudah tersedia dari config.js
 
 let currentTab  = 'players';
 let activeAlpha = 'A';
@@ -893,10 +900,7 @@ function updatePanicUI() {
 
 // ── UI HELPERS ────────────────────────────────────────────────
 function showAlert(msg, type='') {
-    const a = document.getElementById('neon-alert');
-    a.innerText = msg;
-    a.className = type==='ok'?'show ok':'show';
-    setTimeout(()=>{ a.className=''; }, 3500);
+    showNeonAlertGlobal(msg, type === 'ok' ? 'ok' : '');
 }
 
 function askConfirm(msg, cb) {
