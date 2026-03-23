@@ -821,10 +821,21 @@ async function procD(txId, username, net) {
 }
 
 async function procW(txId) {
-    askConfirm('Approve WITHDRAW ini?\nSaldo sudah dipotong dari user.', async ()=>{
+    // Cari data WD dari allData
+    const wd = allData.w.find(x => String(x.id) === String(txId));
+    if(!wd){ showAlert('Data WD tidak ditemukan!'); return; }
+    const username = wd.username;
+    const amt = Number(wd.amount || wd.nominal || 0);
+    askConfirm(`Approve WITHDRAW -${amt.toLocaleString('id-ID')}\nuntuk ${username}?\nSaldo akan dipotong sekarang.`, async ()=>{
+        // Potong saldo SATU KALI di sini saat approve
+        const {data:prof, error:eP} = await _db.from('profiles').select('saldo').eq('username',username).single();
+        if(eP || !prof){ showAlert('Gagal ambil saldo user!'); return; }
+        const newSaldo = Math.max(0, (prof.saldo||0) - amt);
+        const {error:eS} = await _db.from('profiles').update({saldo:newSaldo}).eq('username',username);
+        if(eS){ showAlert('Gagal potong saldo: '+eS.message); return; }
         await _db.from('withdrawals').update({status:'SUKSES'}).eq('id',txId);
-        showAlert('WITHDRAW APPROVED ✓','ok');
-        await fetchWithdrawals(); renderCashier(); updatePendingBadge(); updateStatsBar();
+        showAlert(`WD ${amt.toLocaleString('id-ID')} → ${username} APPROVED ✓`,'ok');
+        await fetchAll(); renderCashier(); updatePendingBadge(); updateStatsBar();
     });
 }
 
@@ -837,12 +848,12 @@ async function rejectDepo(txId, username) {
 }
 
 async function rejectWd(txId, username, amt) {
-    askConfirm(`Tolak WD dan kembalikan\nRp ${Number(amt).toLocaleString('id-ID')} ke ${username}?`, async ()=>{
-        const {data:prof} = await _db.from('profiles').select('saldo').eq('username',username).single();
-        await _db.from('profiles').update({saldo:(prof?.saldo||0)+Number(amt)}).eq('username',username);
+    // Saldo TIDAK perlu dikembalikan — karena belum pernah dipotong dari player
+    // Saldo hanya dipotong saat APPROVE, bukan saat submit WD
+    askConfirm(`Tolak WD Rp ${Number(amt).toLocaleString('id-ID')} dari ${username}?\nSaldo user tidak berubah.`, async ()=>{
         await _db.from('withdrawals').update({status:'GAGAL'}).eq('id',txId);
-        showAlert(`WD DITOLAK — Saldo dikembalikan ✓`,'ok');
-        await fetchAll(); renderCashier(); updatePendingBadge();
+        showAlert(`WD DITOLAK — Saldo ${username} tetap aman ✓`,'ok');
+        await fetchWithdrawals(); renderCashier(); updatePendingBadge();
     });
 }
 
