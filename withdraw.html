@@ -155,12 +155,13 @@ async function loadWdData(){
         if(error)throw error;
         if(data){
             currentSaldo=Number(data.saldo)||0;
-            // Kurangi pending WD yang belum diproses
+            // Saldo sudah real (sudah dipotong saat submit WD)
+            // pendingWdTotal hanya untuk info display, bukan pengurangan
             const{data:pw}=await _db.from('withdrawals').select('amount,nominal').eq('username',user).eq('status','PROSES');
             pendingWdTotal=(pw||[]).reduce((s,x)=>s+Number(x.amount||x.nominal||0),0);
-            const available=Math.max(0,currentSaldo-pendingWdTotal);
-            const pendingTxt=pendingWdTotal>0?' ('+pendingWdTotal.toLocaleString('id-ID')+' pending)':'';
-            document.getElementById('display-saldo-wd').innerText="IDR "+available.toLocaleString('id-ID')+pendingTxt;
+            const pendingTxt=pendingWdTotal>0?' | Pending: Rp '+pendingWdTotal.toLocaleString('id-ID'):'';
+            // Tampilkan saldo aktual DB (sudah dikurangi WD pending)
+            document.getElementById('display-saldo-wd').innerText="IDR "+currentSaldo.toLocaleString('id-ID')+pendingTxt;
             const bank=data.bank_name||'';
             const rek=data.rekening||'';
             const nama=data.nama_lengkap||'';
@@ -176,7 +177,7 @@ async function loadWdData(){
     }catch(err){console.error('loadWdData error:',err);}
 }
 function setWdAmt(v){playSnd('click');document.getElementById('input-amount-wd').value=v;}
-function setMaxWd(){playSnd('click');const av=Math.max(0,currentSaldo-pendingWdTotal);document.getElementById('input-amount-wd').value=av;}
+function setMaxWd(){playSnd('click');document.getElementById('input-amount-wd').value=Math.max(0,currentSaldo);}
 async function prosesWithdraw(){
     if(isSubmitting)return;
     const amt=parseInt(document.getElementById('input-amount-wd').value)||0;
@@ -184,13 +185,35 @@ async function prosesWithdraw(){
     const rek=document.getElementById('wd-rek-info').value;
     if(rek.includes("BELUM DISET")||rek===""){playSnd('error');return showModal("GAGAL","Harap lengkapi nomor rekening di menu Profil sebelum menarik saldo.");}
     if(amt<50000){playSnd('error');return showModal("MINIMAL","Penarikan minimal adalah IDR 50.000");}
-    const available=Math.max(0,currentSaldo-pendingWdTotal);
-    if(amt>available){playSnd('error');return showModal("SALDO KURANG","Saldo tersedia tidak cukup. Mungkin ada WD yang masih pending.");}
+    if(amt>currentSaldo){playSnd('error');return showModal("SALDO KURANG","Saldo tidak mencukupi untuk penarikan sejumlah Rp "+amt.toLocaleString('id-ID')+".");}
     isSubmitting=true;const btn=document.getElementById('btn-wd-submit');btn.disabled=true;btn.innerText="MEMPROSES...";
     try{
-        // Insert request WD — TIDAK potong saldo di sini
-        // Saldo dipotong SEKALI saja saat admin APPROVE di master panel
-        // Kolom tabel withdrawals: id(uuid-auto), username, amount(numeric), status, nominal(bigint), method
+        // ── STEP 1: Ambil saldo terkini dari DB (real-time, bukan cache) ──
+        const{data:freshProf,error:eFresh}=await _db.from('profiles').select('saldo').eq('username',user).single();
+        if(eFresh||!freshProf) throw new Error('Gagal mengambil data saldo terkini.');
+
+        // ── STEP 2: Hitung pending WD terbaru (anti-race-condition) ──
+        const{data:pwFresh}=await _db.from('withdrawals').select('amount,nominal').eq('username',user).eq('status','PROSES');
+        const pendingFresh=(pwFresh||[]).reduce((s,x)=>s+Number(x.amount||x.nominal||0),0);
+        const saldoTerkini=Number(freshProf.saldo)||0;
+        const availableFresh=Math.max(0,saldoTerkini-pendingFresh);
+
+        // ── STEP 3: Validasi ulang saldo tersedia (cegah kecurangan) ──
+        if(amt>availableFresh){
+            playSnd('error');
+            showModal("SALDO TIDAK CUKUP","Saldo tersedia: Rp "+availableFresh.toLocaleString('id-ID')+"\n\nMungkin ada WD lain yang sedang diproses.");
+            isSubmitting=false;btn.disabled=false;btn.innerHTML='<i class="fas fa-paper-plane"></i> KONFIRMASI PENARIKAN';
+            return;
+        }
+
+        // ── STEP 4: Potong saldo LANGSUNG saat submit (bukan saat approve) ──
+        // Ini mencegah pemain bermain menggunakan saldo yang sudah diajukan WD
+        const saldoBaru=saldoTerkini-amt;
+        const{error:ePotong}=await _db.from('profiles').update({saldo:saldoBaru}).eq('username',user);
+        if(ePotong) throw new Error('Gagal memotong saldo: '+ePotong.message);
+
+        // ── STEP 5: Insert request WD dengan status PROSES ──
+        // Kolom: id(uuid-auto), username, amount(numeric), nominal(bigint), status, method
         const{error:e1}=await _db.from('withdrawals').insert([{
             username : user,
             amount   : amt,       // numeric — nilai utama
@@ -198,11 +221,18 @@ async function prosesWithdraw(){
             status   : 'PROSES',
             method   : 'MANUAL'
         }]);
-        if(e1)throw e1;
+        if(e1) {
+            // Rollback: kembalikan saldo jika insert gagal
+            await _db.from('profiles').update({saldo:saldoTerkini}).eq('username',user);
+            throw e1;
+        }
+
         playSnd('success');
         showNeonAlert("PERMINTAAN PENARIKAN TERKIRIM!",true);
-        showModal("SUKSES","Permintaan WD Rp "+amt.toLocaleString('id-ID')+" berhasil dikirim!\nMenunggu persetujuan admin.\nSaldo akan dipotong setelah disetujui.");
+        showModal("SUKSES","Permintaan WD Rp "+amt.toLocaleString('id-ID')+" berhasil dikirim!\n\nSaldo sudah dipotong & menunggu persetujuan admin.\nSaldo dikembalikan otomatis jika ditolak.");
         document.getElementById('input-amount-wd').value='';
+        // Sync saldo ke semua UI via config.js
+        if(typeof syncNeonData==='function') syncNeonData();
         await loadWdData(); await loadWdHistory();
     }catch(err){
         playSnd('error');
