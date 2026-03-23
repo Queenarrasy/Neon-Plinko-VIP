@@ -929,7 +929,9 @@ function spawnBall(){
 /* ──────────────────── OUTCOME ──────────────────── */
 function computeOut(){
   var mults=MUL[RISK];
-  var wr=PROF.panic_mode?Math.min(PROF.winrate||30,5):(PROF.winrate||30);
+  // Winrate dari PROF — diupdate real-time saat admin ubah di master panel
+  // panic_mode aktif → paksa winrate 1%
+  var wr=PROF.panic_mode ? 1 : Math.max(1, Math.min(100, Number(PROF.winrate)||30));
   var mwl=PROF.maxwin_limit||0;
   if(mwl>0&&SPNL>=mwl){
     var la=[];for(var i=0;i<mults.length;i++) if(mults[i]<1) la.push(i);
@@ -992,11 +994,22 @@ function loadProfile(){
       _db.channel('gm-'+U)
         .on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles',filter:'username=eq.'+U},
           function(pl){
-            if(!pl.new)return;
-            SAL=Number(pl.new.saldo)||0;
-            PROF=Object.assign({},PROF,pl.new);
-            updSaldo();
-            document.getElementById('pb').style.display=pl.new.panic_mode?'block':'none';
+            if(!pl.new) return;
+            var n=pl.new;
+            // ── UPDATE PROF (winrate/panic/maxwin) DARI ADMIN ──
+            // SAL TIDAK diupdate dari Realtime — mencegah SAL lama menimpa
+            // saldo lokal yang sedang diproses (bet sudah dipotong, pay belum masuk)
+            var wrChanged  = (n.winrate      != null);
+            var pmChanged  = (n.panic_mode   != null);
+            var mxChanged  = (n.maxwin_limit != null);
+            if(wrChanged||pmChanged||mxChanged){
+                PROF = Object.assign({}, PROF, {
+                    winrate     : n.winrate      != null ? n.winrate      : PROF.winrate,
+                    panic_mode  : n.panic_mode   != null ? n.panic_mode   : PROF.panic_mode,
+                    maxwin_limit: n.maxwin_limit != null ? n.maxwin_limit : PROF.maxwin_limit
+                });
+                document.getElementById('pb').style.display = PROF.panic_mode ? 'block' : 'none';
+            }
           }).subscribe();
     })
     .catch(function(e){showMd('ERROR','Gagal: '+(e.message||e));});
