@@ -350,7 +350,25 @@ table.ht tr:last-child td{border-bottom:none}
 var U=null, PROF={}, SAL=0, SPNL=0, HIST=[];
 var F_NORMAL=true, F_AUTO=false, F_TURBO=false;
 var AUTO_TID=null, HIST_OPEN=false, NEW_RESULT=0;
-var INT_AUTO=1800, INT_TURBO=900;
+
+/* ── Interval spawn AUTO ────────────────────────────────
+   INT_AUTO  : jeda antar spawn bola di mode AUTO normal.
+               1400ms = bola berikutnya muncul saat bola
+               pertama sudah ~40% turun → terasa mengalir,
+               tidak perlu tunggu bola masuk slot dulu.
+   INT_TURBO : jeda lebih rapat 700ms → lebih cepat tapi
+               masih terbaca, tidak kacau.
+──────────────────────────────────────────────────────── */
+var INT_AUTO  = 1400;
+var INT_TURBO = 700;
+
+/* ── Maks bola aktif sekaligus ──────────────────────────
+   Mencegah bola menumpuk terlalu padat di layar.
+   NORMAL : 3 bola  |  TURBO : 5 bola
+──────────────────────────────────────────────────────── */
+var MAX_BALLS_NORMAL = 3;
+var MAX_BALLS_TURBO  = 5;
+
 var BSTEPS=[400,600,800,1000,1200,1600,1800,2000,4000,6000,8000,
             10000,12000,16000,18000,20000,25000,30000];
 var BIDX=3;
@@ -373,7 +391,7 @@ var MAXWIN_PENALIZED_WR = 2;
 /* ════════════════════════════════════════════════════════
    SLOT MULTIPLIERS — Plinko standar
    Sisi luar : 16x / 9x / 3x / 2x  (WIN)
-   Tengah    : 0.3x / 0.5x          (nilai kecil = rugi efektif)
+   Tengah    : 0.3x / 0.5x  (nilai kecil = rugi efektif)
    Tidak ada angka 0x — semua tampil angka bermakna
 ════════════════════════════════════════════════════════ */
 var MUL=[16, 9, 3, 2, 0.5, 0.3, 0.3, 0.3, 0.3, 0.5, 2, 3, 9, 16];
@@ -385,12 +403,22 @@ var cv=document.getElementById('cv');
 var cx=cv.getContext('2d');
 var ROWS=12;
 
-/* Fisika realistis — bola jatuh alami seperti plinko nyata */
-var GR        = 0.42;   /* gravitasi per substep — cukup berat agar terasa nyata */
-var BOUNCE    = 0.52;   /* koefisien pantul saat mengenai peg */
-var FRIC      = 0.988;  /* gesekan udara per frame            */
-var SUBSTEPS  = 3;      /* 3 substep/frame → gerakan smooth & responsif    */
-var SPEED_CAP = 12;     /* batas kecepatan maksimum (px/step) */
+/* ── Parameter fisika bola ──────────────────────────────
+   GR        = 0.30  → gravitasi terasa berat & nyata,
+                        tidak slowmo, tidak terlalu cepat.
+   BOUNCE    = 0.48  → pantul redam cepat, terasa solid
+                        seperti bola plastik di plinko asli.
+   FRIC      = 0.985 → gesekan udara meredam kecepatan
+                        horizontal secara natural.
+   SUBSTEPS  = 4     → 4 kalkulasi fisika per frame,
+                        gerakan sangat halus & akurat.
+   SPEED_CAP = 10    → bola tidak "teleport" saat memantul.
+──────────────────────────────────────────────────────── */
+var GR        = 0.30;
+var BOUNCE    = 0.48;
+var FRIC      = 0.985;
+var SUBSTEPS  = 4;
+var SPEED_CAP = 10;
 
 var PR,BR,RG,SLOT_H,SLOT_Y,PAD_TOP;
 var PEGS=[],SLOTS_D=[],BALLS=[];
@@ -413,7 +441,6 @@ function updSaldo(){
   if(e) e.textContent='IDR '+SAL.toLocaleString('id-ID');
 }
 
-/* Tampilkan profit sesi di score bar */
 function updProfit(){
   var e=document.getElementById('sb-profit');
   if(!e) return;
@@ -491,6 +518,17 @@ function stepBet(d){
 
 /* ════════════════════════════════════════════════════════
    MODE TOGGLE
+   ──────────────────────────────────────────────────────
+   Aturan mode yang berlaku:
+   • NORMAL  = klik manual drop bola satu per satu.
+   • AUTO    = bola spawn otomatis periodik tanpa jeda
+               tunggu bola sebelumnya selesai.
+   • TURBO   = hanya bisa aktif saat AUTO aktif.
+               Menekan TURBO tanpa AUTO → peringatan.
+   • TURBO aktif  → NORMAL otomatis dimatikan.
+   • TURBO mati   → NORMAL otomatis dihidupkan.
+   • AUTO mati    → TURBO ikut mati otomatis.
+   • NORMAL ditekan saat TURBO aktif → TURBO ikut mati.
 ════════════════════════════════════════════════════════ */
 function updModeLabel(){
   var e=document.getElementById('sb-mode');
@@ -504,31 +542,58 @@ function updModeLabel(){
   else if(F_AUTO)   e.className='sb-val bl';
   else              e.className='sb-val pk';
 }
+
 function toggleMode(m){
   if(m==='normal'){
+    /* Jika TURBO aktif, tekan NORMAL → turbo ikut mati */
+    if(F_TURBO){
+      F_TURBO=false;
+      paintModeBtn('mb-turbo',false,'on-turbo');
+    }
     F_NORMAL=!F_NORMAL;
     paintModeBtn('mb-normal',F_NORMAL,'on-normal');
-    updDropBtn();updModeLabel();
+    updDropBtn(); updModeLabel();
+
   } else if(m==='auto'){
     F_AUTO=!F_AUTO;
     paintModeBtn('mb-auto',F_AUTO,'on-auto');
-    if(F_AUTO) startAutoLoop(); else stopAutoLoop();
-    updDropBtn();updModeLabel();
+    if(F_AUTO){
+      startAutoLoop();
+    } else {
+      stopAutoLoop();
+      /* AUTO mati → TURBO ikut mati, NORMAL hidup kembali */
+      if(F_TURBO){
+        F_TURBO=false;
+        paintModeBtn('mb-turbo',false,'on-turbo');
+        F_NORMAL=true;
+        paintModeBtn('mb-normal',true,'on-normal');
+      }
+    }
+    updDropBtn(); updModeLabel();
+
   } else if(m==='turbo'){
+    /* TURBO hanya bisa aktif bila AUTO sudah aktif */
+    if(!F_AUTO && !F_TURBO){
+      alert2('Aktifkan AUTO terlebih dahulu','warn');
+      return;
+    }
     F_TURBO=!F_TURBO;
     paintModeBtn('mb-turbo',F_TURBO,'on-turbo');
-    /* Turbo aktif → matikan Normal; Turbo mati → hidupkan Normal kembali */
     if(F_TURBO){
+      /* TURBO ON → matikan NORMAL */
       F_NORMAL=false;
       paintModeBtn('mb-normal',false,'on-normal');
     } else {
+      /* TURBO OFF → hidupkan NORMAL kembali */
       F_NORMAL=true;
       paintModeBtn('mb-normal',true,'on-normal');
     }
-    if(F_AUTO){stopAutoLoop();startAutoLoop();}
+    /* Restart loop agar pakai interval baru */
+    if(F_AUTO){ stopAutoLoop(); startAutoLoop(); }
     updModeLabel();
   }
 }
+
 function paintModeBtn(id,active,activeClass){
   var el=document.getElementById(id);
   if(!el) return;
@@ -547,25 +612,39 @@ function updDropBtn(){
 
 /* ════════════════════════════════════════════════════════
    AUTO LOOP
+   ──────────────────────────────────────────────────────
+   Bola di-spawn setiap interval tanpa menunggu bola
+   sebelumnya landing. Timer terus berputar; jika bola
+   di layar sudah mencapai MAX_BALLS, spawn dilewati
+   (tidak dibatalkan). Begitu ada bola landing, tick
+   berikutnya langsung mengisi.
 ════════════════════════════════════════════════════════ */
 function startAutoLoop(){
-  var interval=F_TURBO?INT_TURBO:INT_AUTO;
-  var MAX_BALLS = F_TURBO ? 3 : 2;
+  stopAutoLoop();
+  var interval = F_TURBO ? INT_TURBO : INT_AUTO;
+  var maxB     = F_TURBO ? MAX_BALLS_TURBO : MAX_BALLS_NORMAL;
+
   function tick(){
-    if(!F_AUTO){stopAutoLoop();return;}
-    if(SAL<curBet()){
-      stopAutoLoop();
+    if(!F_AUTO){ stopAutoLoop(); return; }
+    if(SAL < curBet()){
+      F_AUTO=false; stopAutoLoop();
+      if(F_TURBO){
+        F_TURBO=false;
+        paintModeBtn('mb-turbo',false,'on-turbo');
+        F_NORMAL=true;
+        paintModeBtn('mb-normal',true,'on-normal');
+      }
+      paintModeBtn('mb-auto',false,'on-auto');
+      updDropBtn(); updModeLabel();
       alert2('Saldo tidak cukup — AUTO berhenti','warn');
       return;
     }
-    if(BALLS.length < MAX_BALLS){
-      spawnBall();
-    }
-    AUTO_TID=setTimeout(tick,interval);
+    if(BALLS.length < maxB) spawnBall();
+    AUTO_TID = setTimeout(tick, interval);
   }
   tick();
 }
-function stopAutoLoop(){clearTimeout(AUTO_TID);AUTO_TID=null;}
+function stopAutoLoop(){ clearTimeout(AUTO_TID); AUTO_TID=null; }
 
 /* ════════════════════════════════════════════════════════
    ACTION BUTTON
@@ -573,8 +652,15 @@ function stopAutoLoop(){clearTimeout(AUTO_TID);AUTO_TID=null;}
 function handleAction(){
   if(!U){showMd('LOGIN','Silakan login untuk bermain.');return;}
   if(F_AUTO){
-    F_AUTO=false;stopAutoLoop();
-    paintModeBtn('mb-auto',false,'on-auto');updDropBtn();
+    F_AUTO=false; stopAutoLoop();
+    if(F_TURBO){
+      F_TURBO=false;
+      paintModeBtn('mb-turbo',false,'on-turbo');
+      F_NORMAL=true;
+      paintModeBtn('mb-normal',true,'on-normal');
+    }
+    paintModeBtn('mb-auto',false,'on-auto');
+    updDropBtn(); updModeLabel();
     return;
   }
   if(SAL<curBet()){alert2('Saldo tidak cukup!','warn');return;}
@@ -607,13 +693,13 @@ function buildWorld(){
 
 /* ════════════════════════════════════════════════════════
    SLOT PALETTE
-   16x/9x → pink   | 3x/2x → biru | 0.5x → kuning | 0.3x → merah gelap (rugi)
+   16x/9x → pink  | 3x/2x → biru | 0.5x → kuning | 0.3x → merah gelap
 ════════════════════════════════════════════════════════ */
 function slotPal(m){
-  if(m>=9)   return{f:'rgba(255,0,119',  s:'#ff0077',t:'rgba(255,180,220,1)'};
-  if(m>=2)   return{f:'rgba(0,51,255',   s:'#0033ff',t:'rgba(180,200,255,1)'};
-  if(m>=1)   return{f:'rgba(251,255,0',  s:'#fbff00',t:'rgba(255,255,180,1)'};
-  return     {f:'rgba(140,0,0',          s:'#8b0000',t:'rgba(255,80,80,0.85)'};
+  if(m>=9)  return{f:'rgba(255,0,119',  s:'#ff0077',t:'rgba(255,180,220,1)'};
+  if(m>=2)  return{f:'rgba(0,51,255',   s:'#0033ff',t:'rgba(180,200,255,1)'};
+  if(m>=1)  return{f:'rgba(251,255,0',  s:'#fbff00',t:'rgba(255,255,180,1)'};
+  return    {f:'rgba(140,0,0',          s:'#8b0000',t:'rgba(255,80,80,0.85)'};
 }
 
 /* ════════════════════════════════════════════════════════
@@ -703,7 +789,7 @@ function redrawFull(){
     cx.strokeStyle=sx;cx.lineWidth=1;
     cx.beginPath();cx.moveTo(0,SLOT_Y);cx.lineTo(W,SLOT_Y);cx.stroke();
   }
-  /* Slot — selalu tampilkan angka bermakna (0.3x/0.5x/2x/3x/9x/16x) */
+  /* Slot — tampilkan angka bermakna (0.3x / 0.5x / 2x / 3x / 9x / 16x) */
   var fsz=Math.max(7,Math.min(10,W*.021));
   cx.font='900 '+fsz+'px Outfit,sans-serif';
   cx.textAlign='center';cx.textBaseline='middle';
@@ -723,7 +809,7 @@ function redrawFull(){
     cx.fillStyle=pal.t;
     cx.shadowColor=gl>0?pal.s:'transparent';
     cx.shadowBlur=gl>0?9:0;
-    var mLabel = (s.m%1===0) ? s.m+'x' : s.m.toFixed(1)+'x';
+    var mLabel=(s.m%1===0)?s.m+'x':s.m.toFixed(1)+'x';
     cx.fillText(mLabel, s.x+s.w/2, s.y+s.h*.52);
     cx.shadowBlur=0;
   }
@@ -757,10 +843,16 @@ function drawBall(b){
 }
 
 /* ════════════════════════════════════════════════════════
-   PHYSICS — REALISTIS
-   1 substep/frame → gerakan halus & natural (tidak kaku)
-   Gravitasi kecil → bola jatuh perlahan seperti aslinya
-   Pantulan 0.58   → terasa kenyal, tidak terlambung lebih
+   PHYSICS — REALISTIS & BERBOBOT
+   ──────────────────────────────────────────────────────
+   4 substep per frame → kalkulasi tumbukan lebih presisi,
+   tidak ada bola menembus peg, gerakan sangat halus.
+
+   GR=0.30 cukup berat sehingga bola terasa berbobot nyata:
+   bukan melayang (slowmo) tapi juga tidak sprint (cartoon).
+
+   Setelah tumbukan peg, impuls acak ±0.7 pada sumbu X
+   membuat lintasan bervariasi alami kiri-kanan.
 ════════════════════════════════════════════════════════ */
 function physStep(b){
   var W=cv.width;
@@ -770,7 +862,8 @@ function physStep(b){
     b.vy *= FRIC;
     var sp=Math.sqrt(b.vx*b.vx+b.vy*b.vy);
     if(sp>SPEED_CAP){b.vx*=SPEED_CAP/sp;b.vy*=SPEED_CAP/sp;}
-    if(b.vy<0.15) b.vy=0.15;
+    /* Bola selalu bergerak ke bawah, tidak pernah stuck */
+    if(b.vy<0.12) b.vy=0.12;
     b.x+=b.vx;
     b.y+=b.vy;
     if(b.x-BR<1){b.x=BR+1;b.vx=Math.abs(b.vx)*BOUNCE;}
@@ -787,8 +880,8 @@ function physStep(b){
         if(dot<0){
           b.vx=(b.vx-2*dot*nx)*BOUNCE;
           b.vy=(b.vy-2*dot*ny)*BOUNCE;
-          b.vx+=(Math.random()-0.5)*0.8;
-          if(b.vy<0.25) b.vy=0.25+Math.random()*0.3;
+          b.vx+=(Math.random()-0.5)*0.7;
+          if(b.vy<0.18) b.vy=0.18+Math.random()*0.25;
           pegPulse[pi]=1.0;
         }
       }
@@ -832,7 +925,6 @@ function mainLoop(){
     var bidx=landed[li], bl=BALLS[bidx];
     BALLS.splice(bidx,1);
 
-    /* Cari index slot yang dimasuki */
     var lIdx=-1;
     for(var ss=0;ss<SLOTS_D.length;ss++){
       if(bl.x>=SLOTS_D[ss].x&&bl.x<SLOTS_D[ss].x+SLOTS_D[ss].w){lIdx=ss;break;}
@@ -842,15 +934,13 @@ function mainLoop(){
 
     /* ── PERHITUNGAN SALDO ──────────────────────────────────
        pay  = bet × multiplier
-       0.3x  → pay=0.3×bet          (kehilangan 70% bet)
-       0.5x  → pay=0.5×bet          (kehilangan 50% bet)
-         2x  → pay=2×bet            (balik modal + profit 1×bet)
-         3x  → pay=3×bet            (profit 2×bet)
-         9x  → pay=9×bet            (profit 8×bet)
-        16x  → pay=16×bet           (profit 15×bet)
-
+       0.3x → pay=0.3×bet  (kehilangan 70% bet)
+       0.5x → pay=0.5×bet  (kehilangan 50% bet)
+         2x → pay=2×bet    (balik modal + profit 1×bet)
+         3x → pay=3×bet    (profit 2×bet)
+         9x → pay=9×bet    (profit 8×bet)
+        16x → pay=16×bet   (profit 15×bet)
        Bet sudah dikurangi saat spawnBall.
-       Sini hanya menambah hasil (pay).
     ─────────────────────────────────────────────────────── */
     var am=SLOTS_D[lIdx].m, bet=bl.bet;
     var pay=Math.floor(bet*am);
@@ -890,8 +980,15 @@ function spawnBall(){
   var bet=curBet();
   if(SAL<bet){
     if(F_AUTO){
-      F_AUTO=false;stopAutoLoop();
-      paintModeBtn('mb-auto',false,'on-auto');updDropBtn();
+      F_AUTO=false; stopAutoLoop();
+      if(F_TURBO){
+        F_TURBO=false;
+        paintModeBtn('mb-turbo',false,'on-turbo');
+        F_NORMAL=true;
+        paintModeBtn('mb-normal',true,'on-normal');
+      }
+      paintModeBtn('mb-auto',false,'on-auto');
+      updDropBtn(); updModeLabel();
     }
     alert2('Saldo tidak cukup!','warn');
     return;
@@ -907,11 +1004,12 @@ function spawnBall(){
   var spX=cv.width/2+(Math.random()-0.5)*PR*1.4;
   var bias=(tgtX-spX)*0.007;
 
+  /* vy awal 1.5 → bola langsung bergerak nyata sejak spawn */
   BALLS.push({
     x   : spX,
     y   : BR+3,
-    vx  : bias+(Math.random()-0.5)*0.5,
-    vy  : 1.8+Math.random()*0.5,
+    vx  : bias+(Math.random()-0.5)*0.4,
+    vy  : 1.5+Math.random()*0.4,
     tr  : [],
     bet : bet,
     target: out.slot
@@ -936,29 +1034,24 @@ function spawnBall(){
         default 30% jika tidak diset
 
    Slot WIN  = mult >= 2x (sisi kiri & kanan papan)
-   Slot LOSE = mult < 1x  (area tengah papan — 0.3x / 0.5x)
+   Slot LOSE = mult < 1x  (area tengah — 0.3x / 0.5x)
 ════════════════════════════════════════════════════════ */
 function computeOut(){
   var isPanic     = PROF.panic_mode===true;
   var maxwinLim   = Number(PROF.maxwin_limit)||0;
   var adminWR     = Math.max(1,Math.min(100,Number(PROF.winrate)||30));
 
-  /* Apakah profit sesi sudah mencapai/melampaui batas maxwin? */
   var isMaxwinHit = (maxwinLim>0) && (SPNL>=maxwinLim);
 
   var wr;
   if(isPanic){
-    /* Admin aktifkan mode panik → hampir selalu kalah */
     wr = 1;
   } else if(isMaxwinHit){
-    /* Maxwin limit tercapai → turunkan winrate diam-diam */
     wr = MAXWIN_PENALIZED_WR;
   } else {
-    /* Kondisi normal → pakai winrate dari admin */
     wr = adminWR;
   }
 
-  /* Pisahkan slot menang (sisi) vs kalah (tengah) */
   var winSlots=[], lossSlots=[];
   for(var i=0;i<MUL.length;i++){
     if(MUL[i]>=2) winSlots.push(i);
@@ -966,11 +1059,9 @@ function computeOut(){
   }
 
   if(Math.random()*100 < wr){
-    /* MENANG — pilih acak dari slot win */
     var wi=winSlots[Math.floor(Math.random()*winSlots.length)];
     return{slot:wi, mult:MUL[wi], win:true};
   } else {
-    /* KALAH — pilih acak dari slot loss (0.3x/0.5x) */
     var li=lossSlots[Math.floor(Math.random()*lossSlots.length)];
     return{slot:li, mult:MUL[li], win:false};
   }
@@ -1000,7 +1091,7 @@ function renderHist(){
   HIST.forEach(function(r){
     var cls=r.prof>=0?'rw':'rl';
     var col=r.prof>=0?'var(--yl)':'var(--pk)';
-    var mLabel = (r.mult%1===0) ? r.mult+'x' : r.mult.toFixed(1)+'x';
+    var mLabel=(r.mult%1===0)?r.mult+'x':r.mult.toFixed(1)+'x';
     h+='<tr class="'+cls+'">'
       +'<td>'+rp(r.bet)+'</td>'
       +'<td style="font-weight:900">'+mLabel+'</td>'
@@ -1063,7 +1154,6 @@ function loadProfile(){
             updated.winrate=Math.max(1,Math.min(100,Number(n.winrate)||1));
           if('panic_mode' in n)
             updated.panic_mode=!!n.panic_mode;
-          /* maxwin_limit diambil real-time dari perubahan admin */
           if('maxwin_limit' in n)
             updated.maxwin_limit=Number(n.maxwin_limit)||0;
           if('session_minutes' in n){
@@ -1077,7 +1167,6 @@ function loadProfile(){
         })
         .subscribe(function(status){
           if(status==='SUBSCRIBED'){
-            /* Ambil nilai terbaru segera setelah koneksi realtime aktif */
             _db.from('profiles')
                .select('winrate,panic_mode,maxwin_limit,session_minutes,session_timer')
                .eq('username',U).single()
