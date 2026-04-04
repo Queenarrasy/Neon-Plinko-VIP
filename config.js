@@ -3,18 +3,14 @@
  * OMEGA V18 — NEON PLINKO VIP
  * CENTRAL ENGINE v3.1
  * ============================================================
- * Tabel yang digunakan:
- * - profiles       (25+ columns)
- * - deposits       (7 columns)
- * - withdrawals    (7 columns)
- * - inbox          (6 columns)
- * - system_config  (3 columns)
+ * Supabase Project : jcxgankdwfwfnbwlkkpz
+ * Tables           : profiles, deposits, withdrawals, inbox, system_config
  * ============================================================
  */
 
 // ── 1. INISIALISASI SUPABASE ──────────────────────────────────
-const SUPABASE_URL = "https://bgffnmwrviyqpeevzjsn.supabase.co";
-const SUPABASE_KEY = "sb_publishable_jT5khcYa5J22ijGDjl9klA_qWkSuani";
+const SUPABASE_URL = "https://jcxgankdwfwfnbwlkkpz.supabase.co";
+const SUPABASE_KEY = "sb_publishable_CaQyWYa_F3LDYEo8BDWAlQ_d0SscfCL";
 const _supabase    = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Alias agar semua halaman bisa pakai _supabase atau _db
@@ -70,8 +66,6 @@ function formatRp(amount) {
 
 /**
  * syncNeonData — sinkronisasi saldo & referral ke semua elemen UI.
- *
- * PERBAIKAN v3.1:
  * - Support elemen di game.html (saldo-chip, saldo-val)
  * - Referral code dikunci permanen dari database
  * - Tidak reset state game yang sedang berjalan
@@ -115,38 +109,33 @@ async function syncNeonData() {
 
         // Map ID elemen → nilai
         const uiMap = {
-            // Saldo — semua halaman
             'saldo-text'        : saldoIDR,
             'display-saldo'     : saldoIDR,
             'display-saldo-wd'  : saldoIDR,
             'profile-saldo'     : saldoIDR,
             'wd-saldo'          : saldoIDR,
-            'saldo-val'         : saldoIDR,   // game.html
-
-            // Username
+            'saldo-val'         : saldoIDR,
             'display-username'  : (data.username || '').toUpperCase(),
             'header-username'   : (data.username || '').toUpperCase(),
-
-            // Referral
             'ref-code'          : currentRef,
         };
 
         for (const [id, value] of Object.entries(uiMap)) {
             const el = document.getElementById(id);
             if (el) {
-                if (el.tagName === 'INPUT') el.value  = value;
+                if (el.tagName === 'INPUT') el.value = value;
                 else                        el.textContent = value;
             }
         }
 
-        // Saldo chip di game.html (mengandung icon, jadi pakai innerHTML)
+        // Saldo chip di game.html
         const chip = document.getElementById('saldo-chip');
         if (chip) {
             chip.innerHTML = '<i class="fas fa-coins" style="margin-right:5px;font-size:10px;"></i>'
                            + saldoIDR;
         }
 
-        // Panic bar di game.html
+        // Panic bar
         const panicBar = document.getElementById('panic-bar');
         if (panicBar) {
             panicBar.style.display = data.panic_mode ? 'block' : 'none';
@@ -170,9 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (user) {
-        // Sync segera
         syncNeonData();
-        // Sync tiap 8 detik (lebih jarang agar tidak konflik dengan realtime di game.html)
         setInterval(syncNeonData, 8000);
     }
 });
@@ -205,7 +192,6 @@ async function setSystemConfig(key, value) {
 // ── 8. NEON ALERT GLOBAL ─────────────────────────────────────
 
 /**
- * Alert neon standar — bisa dipanggil dari halaman mana saja
  * type: ''   = pink/merah (error/info)
  *       'ok' = hijau/biru (sukses)
  */
