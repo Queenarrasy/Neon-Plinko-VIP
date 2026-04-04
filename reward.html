@@ -190,6 +190,7 @@ let USERNAME=getUsername();
 particlesJS("particles-js",{"particles":{"number":{"value":65},"color":{"value":"#fbff00"},"shape":{"type":"circle"},"opacity":{"value":0.45,"random":true,"anim":{"enable":true,"speed":0.5,"opacity_min":0.1}},"size":{"value":2.5,"random":true},"line_linked":{"enable":true,"distance":130,"color":"#ff0077","opacity":0.2,"width":0.8},"move":{"enable":true,"speed":1.8,"random":true,"out_mode":"out"}},"interactivity":{"events":{"onhover":{"enable":false},"onclick":{"enable":false}}}});
 function playSnd(id){const s=document.getElementById('snd-'+id);if(s){s.currentTime=0;s.play().catch(()=>{});}}
 function showNeonAlert(msg,ok=false){showNeonAlertGlobal(msg,ok?'ok':'');}
+
 async function initReward(){
     if(!USERNAME){window.location.href='index.html';return;}
     loadTopReferral();
@@ -197,28 +198,24 @@ async function initReward(){
     loadInbox();
 }
 
+/* ── TOP REFERRAL LEADERBOARD ── */
 async function loadTopReferral(){
     try{
-        // Hitung referral count per user dari tabel profiles
         const{data:refs}=await _supabase.from('profiles')
-            .select('referred_by').not('referred_by','is',null);
+            .select('referred_by').not('referred_by','is',null).neq('referred_by','DIRECT');
         if(!refs||!refs.length) return;
         const counts={};
         refs.forEach(r=>{
             const rb=(r.referred_by||'').trim();
-            if(rb) counts[rb]=(counts[rb]||0)+1;
+            if(rb&&rb!=='DIRECT') counts[rb]=(counts[rb]||0)+1;
         });
-        // Sort descending, ambil top 3
         const top=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,3);
-        const nameEls=['lb-name-1','lb-name-2','lb-name-3'];
-        const cntEls=['lb-cnt-1','lb-cnt-2','lb-cnt-3'];
         const prizes=['$100','$50','$25'];
         top.forEach(([uname,cnt],i)=>{
-            const n=document.getElementById(nameEls[i]);
-            const cv=document.getElementById(cntEls[i]);
+            const n=document.getElementById('lb-name-'+(i+1));
+            const cv=document.getElementById('lb-cnt-'+(i+1));
             if(n) n.textContent=uname;
             if(cv) cv.textContent=cnt+' referral';
-            // Highlight jika user ini
             if(uname===USERNAME){
                 const box=document.getElementById('lb-'+(i+1));
                 if(box) box.style.background='rgba(251,255,0,.08)';
@@ -227,110 +224,206 @@ async function loadTopReferral(){
         });
     }catch(e){ console.error('loadTopReferral:',e); }
 }
+
+/* ── REFERRAL STATS ── */
 async function loadReferralStats(){
     try{
-        const{data:myP}=await _supabase.from('profiles').select('referral_code').eq('username',USERNAME).single();
+        // Ambil referral_code user ini
+        const{data:myP}=await _supabase.from('profiles')
+            .select('referral_code,referred_by_claimed').eq('username',USERNAME).single();
         if(myP&&myP.referral_code){
             document.getElementById('ref-code').innerText=myP.referral_code;
             const base=window.location.origin+window.location.pathname.replace('reward.html','index.html');
             document.getElementById('ref-link').innerText=`${base}?ref=${myP.referral_code}`;
         }
-        const{data:friends}=await _supabase.from('profiles').select('username,created_at').eq('referred_by',USERNAME).order('created_at',{ascending:false});
-        document.getElementById('total-ref').innerText=friends?friends.length:0;
+
+        // Ambil semua teman yang didaftarkan lewat kode referral user ini
+        const{data:friends}=await _supabase.from('profiles')
+            .select('username,created_at')
+            .eq('referred_by',USERNAME)
+            .order('created_at',{ascending:false});
+
+        const totalFriends=friends?friends.length:0;
+        document.getElementById('total-ref').innerText=totalFriends;
+
         if(!friends||friends.length===0){
             document.getElementById('ref-table-body').innerHTML='<tr class="empty-row"><td colspan="3">Belum ada referral</td></tr>';
+            document.getElementById('valid-ref').innerText='0';
+            document.getElementById('bonus-ref').innerText='Rp 0';
+            document.getElementById('claim-status').innerText='Belum ada';
             return;
         }
+
+        // Cek referral valid = sudah deposit min 20.000 status SUKSES
         const uNames=friends.map(f=>f.username);
-        const{data:vDepo}=await _supabase.from('deposits').select('username').in('username',uNames).eq('status','SUKSES').gte('amount',20000);
+        const{data:vDepo}=await _supabase.from('deposits')
+            .select('username')
+            .in('username',uNames)
+            .eq('status','SUKSES')
+            .gte('amount',20000);
         const valids=new Set((vDepo||[]).map(d=>d.username));
-        document.getElementById('valid-ref').innerText=valids.size;
-        const bonus=valids.size*5000;
-        document.getElementById('bonus-ref').innerText="Rp "+bonus.toLocaleString('id-ID');
-        const isMonday=new Date().getDay()===1;
+        const validCount=valids.size;
+
+        // Cek berapa yang sudah diklaim sebelumnya via deposits tabel
+        const{data:claimedBefore}=await _supabase.from('deposits')
+            .select('amount')
+            .eq('username',USERNAME)
+            .eq('method','REFERRAL_BONUS')
+            .eq('status','SUKSES');
+        const totalClaimed=(claimedBefore||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+
+        // Bonus tersedia = valid * 5000 - sudah diklaim
+        const totalBonus=validCount*5000;
+        const bonusTersedia=Math.max(0,totalBonus-totalClaimed);
+
+        document.getElementById('valid-ref').innerText=validCount;
+        document.getElementById('bonus-ref').innerText='Rp '+totalBonus.toLocaleString('id-ID');
+
         const claimEl=document.getElementById('claim-status');
-        if(bonus>0&&isMonday){
-            document.getElementById('btn-claim-ref').disabled=false;
-            document.getElementById('btn-claim-ref').innerHTML='<i class="fas fa-hand-holding-dollar"></i> KLAIM Rp '+bonus.toLocaleString('id-ID');
-            if(claimEl)claimEl.innerText='TERSEDIA';
+        const btnClaim=document.getElementById('btn-claim-ref');
+        if(bonusTersedia>0){
+            btnClaim.disabled=false;
+            btnClaim.innerHTML='<i class="fas fa-hand-holding-dollar"></i> KLAIM Rp '+bonusTersedia.toLocaleString('id-ID');
+            if(claimEl) claimEl.innerText='Rp '+bonusTersedia.toLocaleString('id-ID')+' tersedia';
         } else {
-            if(claimEl)claimEl.innerText=bonus>0?'Senin':'Belum ada';
+            btnClaim.disabled=true;
+            btnClaim.innerHTML='<i class="fas fa-hand-holding-dollar"></i> KLAIM BONUS REFERRAL';
+            if(claimEl) claimEl.innerText=totalBonus>0?'Sudah diklaim semua':'Belum ada';
         }
-        // Render table
+
+        // Render tabel daftar referral
         document.getElementById('ref-table-body').innerHTML=friends.map(f=>{
             const isValid=valids.has(f.username);
             return `<tr>
                 <td><i class="fas fa-user-astronaut" style="margin-right:7px;color:var(--pink)"></i>${f.username}</td>
-                <td style="font-weight:900;color:${isValid?'#00ff88':'var(--yellow)'};">${isValid?'VALID':'PENDING'}</td>
+                <td style="font-weight:900;color:${isValid?'#00ff88':'var(--yellow)'};">${isValid?'VALID ✓':'PENDING'}</td>
                 <td style="font-size:9px;opacity:.4;">${new Date(f.created_at).toLocaleDateString('id-ID')}</td>
             </tr>`;
         }).join('');
-    }catch(e){console.error(e);}
+    }catch(e){console.error('loadReferralStats:',e);}
 }
+
+/* ── INBOX / KOTAK HADIAH ── */
 async function loadInbox(){
     const list=document.getElementById('mail-list');
     try{
-        const{data,error}=await _supabase.from('inbox').select('*').eq('username',USERNAME).eq('status','UNCLAIMED');
+        const{data,error}=await _supabase.from('inbox')
+            .select('*').eq('username',USERNAME).eq('status','UNCLAIMED')
+            .order('created_at',{ascending:false});
         if(error)throw error;
         if(data&&data.length>0){
             list.innerHTML=data.map(m=>`<div class="mail-item">
                 <div style="font-size:10px;color:var(--pink);margin-bottom:7px;font-weight:900;letter-spacing:1px;"><i class="fas fa-bolt"></i> VIP NEON GIFT</div>
                 <div style="font-size:13px;margin-bottom:11px;color:#eee;font-weight:600;">${m.pesan||'Hadiah dari Admin'}</div>
                 <div style="color:var(--yellow);font-weight:900;font-size:24px;margin-bottom:14px;text-shadow:0 0 8px rgba(251,255,0,.4)">Rp ${Number(m.nominal||0).toLocaleString('id-ID')}</div>
-                <button class="btn-main btn-pink" onclick="claimMail('${m.id}',${m.nominal})"><i class="fas fa-hand-sparkles"></i> AMBIL SEKARANG</button>
+                <button class="btn-main btn-pink" onclick="claimMail('${m.id}',${m.nominal})">
+                    <i class="fas fa-hand-sparkles"></i> AMBIL SEKARANG
+                </button>
             </div>`).join('');
         } else {
             list.innerHTML='<div style="text-align:center;opacity:.5;padding:28px;border:1.5px dashed rgba(0,34,255,.3);border-radius:16px;font-size:12px;"><i class="fas fa-envelope-open" style="font-size:22px;display:block;margin-bottom:9px;color:var(--blue);"></i>Belum ada hadiah masuk</div>';
         }
     }catch(e){console.error("Inbox Error:",e.message);}
 }
+
+/* ── KLAIM HADIAH (ATOMIC — anti double claim) ── */
 async function claimMail(id,amt){
-    id = String(id); // pastikan string untuk query eq()
+    id=String(id);
     playSnd('click');
     try{
-        // CEK STATUS TERBARU dari DB dulu — anti double claim
-        // Query dengan id string — Supabase otomatis handle casting bigint
-        const{data:inbox}=await _supabase.from('inbox').select('status').eq('id',id).single();
-        if(!inbox||inbox.status!=='UNCLAIMED'){
+        // Step 1: Cek status terkini dari DB — anti race condition
+        const{data:inbox,error:eCek}=await _supabase.from('inbox')
+            .select('status,nominal').eq('id',id).single();
+        if(eCek||!inbox){showModal("ERROR","Hadiah tidak ditemukan.");return;}
+        if(inbox.status!=='UNCLAIMED'){
             showModal("SUDAH DIKLAIM","Hadiah ini sudah pernah diklaim sebelumnya.");
-            loadInbox(); return;
+            loadInbox();return;
         }
-        // Update CLAIMED lebih dulu dengan filter eq status='UNCLAIMED' (atomic)
-        const{error:eUp}=await _supabase.from('inbox')
-            .update({status:'CLAIMED'}).eq('id',id).eq('status','UNCLAIMED');
-        if(eUp){ showModal("GAGAL","Hadiah sudah diklaim."); return; }
-        // Baru tambah saldo setelah berhasil update inbox
-        const{data:p}=await _supabase.from('profiles').select('saldo').eq('username',USERNAME).single();
-        const{error:eS}=await _supabase.from('profiles').update({saldo:(p.saldo||0)+amt}).eq('username',USERNAME);
-        if(eS){ showModal("ERROR","Saldo gagal ditambah: "+eS.message); return; }
+        // Gunakan nominal dari DB (bukan dari parameter, lebih aman)
+        const nominalAsli=Number(inbox.nominal||amt);
+
+        // Step 2: Update status CLAIMED dulu (atomic dengan filter status=UNCLAIMED)
+        const{error:eUp,count}=await _supabase.from('inbox')
+            .update({status:'CLAIMED'})
+            .eq('id',id)
+            .eq('status','UNCLAIMED')
+            .select();
+        if(eUp){showModal("GAGAL","Gagal klaim: "+eUp.message);return;}
+
+        // Step 3: Tambah saldo setelah berhasil klaim
+        const{data:p,error:eP}=await _supabase.from('profiles')
+            .select('saldo').eq('username',USERNAME).single();
+        if(eP||!p){showModal("ERROR","Gagal ambil saldo.");return;}
+        const{error:eS}=await _supabase.from('profiles')
+            .update({saldo:(p.saldo||0)+nominalAsli}).eq('username',USERNAME);
+        if(eS){showModal("ERROR","Saldo gagal ditambah: "+eS.message);return;}
+
         playSnd('success');
-        showNeonAlert("HADIAH Rp "+amt.toLocaleString('id-ID')+" MASUK KE SALDO!",true);
-        showModal("BERHASIL! 🎉","Hadiah Rp "+amt.toLocaleString('id-ID')+" berhasil masuk ke saldo Anda!");
+        showNeonAlert("HADIAH Rp "+nominalAsli.toLocaleString('id-ID')+" MASUK KE SALDO!",true);
+        showModal("BERHASIL! 🎉","Hadiah Rp "+nominalAsli.toLocaleString('id-ID')+" berhasil masuk ke saldo Anda!");
         if(typeof syncNeonData==="function") syncNeonData();
         loadInbox();
-    }catch(e){ showModal("ERROR","Gagal mengambil hadiah: "+e.message); }
+    }catch(e){showModal("ERROR","Gagal mengambil hadiah: "+e.message);}
 }
+
+/* ── KLAIM BONUS REFERRAL ── */
 async function processRefClaim(){
     playSnd('click');
+    const btn=document.getElementById('btn-claim-ref');
+    btn.disabled=true;
     try{
-        const{data:friends}=await _supabase.from('profiles').select('username').eq('referred_by',USERNAME);
+        // Hitung referral valid
+        const{data:friends}=await _supabase.from('profiles')
+            .select('username').eq('referred_by',USERNAME);
         const uList=(friends||[]).map(f=>f.username);
-        const{data:vDepo}=await _supabase.from('deposits').select('username').in('username',uList).eq('status','SUKSES').gte('amount',20000);
+        if(!uList.length){showModal("INFO","Belum ada referral.");btn.disabled=false;return;}
+
+        const{data:vDepo}=await _supabase.from('deposits')
+            .select('username').in('username',uList).eq('status','SUKSES').gte('amount',20000);
         const validCount=[...new Set((vDepo||[]).map(d=>d.username))].length;
-        const bonus=validCount*5000;
-        if(bonus<=0)return;
+        const totalBonus=validCount*5000;
+
+        // Cek sudah diklaim berapa
+        const{data:claimedBefore}=await _supabase.from('deposits')
+            .select('amount').eq('username',USERNAME).eq('method','REFERRAL_BONUS').eq('status','SUKSES');
+        const totalClaimed=(claimedBefore||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+        const bonusTersedia=Math.max(0,totalBonus-totalClaimed);
+
+        if(bonusTersedia<=0){
+            showModal("INFO","Bonus referral sudah semua diklaim atau belum ada referral valid.");
+            btn.disabled=false;return;
+        }
+
+        // Tambah saldo
         const{data:p}=await _supabase.from('profiles').select('saldo').eq('username',USERNAME).single();
-        await _supabase.from('profiles').update({saldo:p.saldo+bonus}).eq('username',USERNAME);
-        await _supabase.from('deposits').insert([{username:USERNAME,amount:bonus,method:'REFERRAL_BONUS',status:'SUKSES'}]);
-        playSnd('success');showNeonAlert("BONUS REFERRAL BERHASIL DIKLAIM!",true);
-        showModal("SUKSES","Bonus Referral Rp "+bonus.toLocaleString('id-ID')+" telah dicairkan ke saldo!");
-        if(typeof syncNeonData==="function")syncNeonData();loadReferralStats();
-    }catch(e){showModal("GAGAL","Klaim gagal, coba lagi.");}
+        const{error:eS}=await _supabase.from('profiles')
+            .update({saldo:(p.saldo||0)+bonusTersedia}).eq('username',USERNAME);
+        if(eS){showModal("GAGAL","Gagal tambah saldo: "+eS.message);btn.disabled=false;return;}
+
+        // Catat di deposits sebagai histori klaim
+        await _supabase.from('deposits').insert([{
+            username:USERNAME,
+            amount:bonusTersedia,
+            net_receive:bonusTersedia,
+            method:'REFERRAL_BONUS',
+            status:'SUKSES'
+        }]);
+
+        playSnd('success');
+        showNeonAlert("BONUS REFERRAL Rp "+bonusTersedia.toLocaleString('id-ID')+" BERHASIL DIKLAIM!",true);
+        showModal("SUKSES 🎉","Bonus Referral Rp "+bonusTersedia.toLocaleString('id-ID')+" telah masuk ke saldo!");
+        if(typeof syncNeonData==="function") syncNeonData();
+        loadReferralStats();
+    }catch(e){showModal("GAGAL","Klaim gagal: "+e.message);btn.disabled=false;}
 }
+
 function copyRef(){
     playSnd('click');
     const c=document.getElementById('ref-code').innerText;
-    if(c&&c!=='MEMUAT...'){navigator.clipboard.writeText(c).catch(()=>{});showNeonAlert("KODE REFERRAL DISALIN: "+c,true);}
+    if(c&&c!=='MEMUAT...'&&c!=='—'){
+        navigator.clipboard.writeText(c).catch(()=>{});
+        showNeonAlert("KODE REFERRAL DISALIN: "+c,true);
+    }
 }
 function showModal(t,m){document.getElementById('m-title').innerText=t;document.getElementById('m-msg').innerText=m;document.getElementById('modal-overlay').style.display='flex';}
 function closeModal(){playSnd('click');document.getElementById('modal-overlay').style.display='none';}
