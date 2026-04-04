@@ -34,7 +34,7 @@ body{background:var(--bg);color:#fff;font-family:'Outfit',sans-serif;
   font-weight:900;font-size:13px;z-index:9200;letter-spacing:.4px;
   transition:.5s cubic-bezier(.175,.885,.32,1.275);
   box-shadow:var(--gp),0 0 55px rgba(255,0,119,.15)}
-#na.show{top:85px} /* Diturunkan agar tidak menutup header saldo jika muncul error */
+#na.show{top:88px}
 #na.ok{border-color:var(--yl);box-shadow:var(--gy),0 0 55px rgba(251,255,0,.12)}
 #na.warn{border-color:var(--bl);box-shadow:var(--gb)}
 
@@ -96,12 +96,6 @@ body{background:var(--bg);color:#fff;font-family:'Outfit',sans-serif;
   display:none;box-shadow:var(--gp)
 }
 
-/* ── PANIC ── */
-#pb{display:none;background:rgba(255,0,30,.1);border-bottom:1px solid rgba(255,0,119,.32);
-  padding:5px;text-align:center;font-size:9px;font-weight:900;color:var(--pk);
-  letter-spacing:2px;position:relative;z-index:299;animation:pfl 1.2s infinite}
-@keyframes pfl{0%,100%{opacity:1}50%{opacity:.18}}
-
 /* ── HISTORY DRAWER ── */
 #hist-drawer{
   display:none;position:fixed;top:76px;right:10px;
@@ -143,7 +137,6 @@ table.ht tr:last-child td{border-bottom:none}
 .re td{text-align:center;padding:18px!important;opacity:.3;font-size:12px}
 
 /* ── MAIN WRAP ── */
-/* Padding diperkecil agar lebih padat */
 .wrap{position:relative;z-index:10;padding:4px 6px 2px;max-width:480px;margin:0 auto}
 
 /* ── CANVAS BOX ── */
@@ -160,7 +153,7 @@ table.ht tr:last-child td{border-bottom:none}
   background:rgba(3,0,18,.88);
   border:1.5px solid rgba(0,51,255,.25);
   border-top:none;border-radius:0 0 14px 14px;
-  margin-bottom:6px;overflow:hidden;padding:3px 0; /* padding dikurangi */
+  margin-bottom:6px;overflow:hidden;padding:4px 0;
 }
 .sb-item{flex:1;text-align:center;padding:3px 8px}
 .sb-item+.sb-item{border-left:1px solid rgba(0,51,255,.15)}
@@ -175,12 +168,12 @@ table.ht tr:last-child td{border-bottom:none}
 .ctrl{
   background:rgba(3,0,18,.8);
   border:1.5px solid rgba(0,51,255,.22);
-  border-radius:12px;padding:6px 8px;margin-bottom:4px; /* diperkecil */
+  border-radius:12px;padding:8px;margin-bottom:4px;
   box-shadow:inset 0 0 24px rgba(0,0,50,.55)
 }
 
 /* ── MODE ROW: 3 toggle buttons ── */
-.mode-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:6px}
+.mode-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px}
 .mb{
   padding:5px 2px;border-radius:8px;
   border:1.5px solid rgba(0,51,255,.28);
@@ -214,9 +207,9 @@ table.ht tr:last-child td{border-bottom:none}
 .mb.on-turbo i{opacity:1}
 
 /* ── BET ROW ── */
-.brow{display:flex;align-items:center;gap:5px;margin-bottom:6px}
+.brow{display:flex;align-items:center;gap:6px;margin-bottom:6px}
 .bstep{
-  width:36px;height:36px;border-radius:8px;flex-shrink:0;
+  width:38px;height:38px;border-radius:8px;flex-shrink:0;
   border:1.5px solid rgba(255,0,119,.4);
   background:rgba(255,0,119,.1);
   color:var(--pk);font-size:20px;font-weight:900;
@@ -347,8 +340,6 @@ table.ht tr:last-child td{border-bottom:none}
     </table>
   </div>
 </div>
-
-<div id="pb"><i class="fas fa-skull" style="margin-right:6px"></i>⚠ PANIC MODE AKTIF — ODDS DIKUNCI</div>
 
 <div class="wrap">
 
@@ -978,8 +969,6 @@ function loadProfile(){
       if(res.error||!res.data){showMd('ERROR','Gagal memuat profil.');return;}
       PROF=res.data; SAL=Number(PROF.saldo)||0;
       updSaldo(); updBetUI();
-      /* Panic mode awal */
-      document.getElementById('pb').style.display = PROF.panic_mode ? 'block' : 'none';
       /* Session timer awal */
       var sm = Number(PROF.session_minutes || PROF.session_timer || 0);
       if(sm > 0) startSessionTimer(sm);
@@ -1012,17 +1001,7 @@ function loadProfile(){
             /* Merge update ke PROF — SAL tidak diupdate dari realtime */
             PROF = Object.assign({}, PROF, updated);
 
-            /* Update panic bar di UI */
-            document.getElementById('pb').style.display = PROF.panic_mode ? 'block' : 'none';
 
-            /* Notifikasi singkat jika winrate/panic berubah */
-            if('winrate' in updated){
-              alert2('Admin: Winrate diupdate → '+PROF.winrate+'%', 'warn');
-            }
-            if('panic_mode' in updated){
-              if(PROF.panic_mode) alert2('⚠ PANIC MODE AKTIF', 'warn');
-              else                alert2('✓ Panic mode dinonaktifkan', 'ok');
-            }
           }).subscribe(function(status){
             if(status === 'SUBSCRIBED'){
               /* Realtime terhubung — refetch PROF terbaru untuk pastikan data sinkron */
@@ -1031,7 +1010,6 @@ function loadProfile(){
                 .then(function(r){
                   if(r.data){
                     PROF = Object.assign({}, PROF, r.data);
-                    document.getElementById('pb').style.display = PROF.panic_mode ? 'block' : 'none';
                   }
                 }).catch(function(){});
             }
