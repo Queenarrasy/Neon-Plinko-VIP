@@ -316,7 +316,7 @@ async function loadInbox(){
                 <div style="font-size:10px;color:var(--pink);margin-bottom:7px;font-weight:900;letter-spacing:1px;"><i class="fas fa-bolt"></i> VIP NEON GIFT</div>
                 <div style="font-size:13px;margin-bottom:11px;color:#eee;font-weight:600;">${m.pesan||'Hadiah dari Admin'}</div>
                 <div style="color:var(--yellow);font-weight:900;font-size:24px;margin-bottom:14px;text-shadow:0 0 8px rgba(251,255,0,.4)">Rp ${Number(m.nominal||0).toLocaleString('id-ID')}</div>
-                <button class="btn-main btn-pink" onclick="claimMail('${m.id}',${m.nominal})">
+                <button class="btn-main btn-pink btn-claim-mail" onclick="claimMail('${m.id}',${m.nominal})">
                     <i class="fas fa-hand-sparkles"></i> AMBIL SEKARANG
                 </button>
             </div>`).join('');
@@ -326,44 +326,73 @@ async function loadInbox(){
     }catch(e){console.error("Inbox Error:",e.message);}
 }
 
-/* ── KLAIM HADIAH (ATOMIC — anti double claim) ── */
-async function claimMail(id,amt){
-    id=String(id);
+/* ── KLAIM HADIAH (ATOMIC — anti double claim & anti double click) ── */
+const _claimingIds = new Set(); // Guard: cegah klik ganda pada ID yang sama
+
+async function claimMail(id, amt){
+    id = String(id);
+
+    // Guard: jika ID ini sedang diproses, abaikan klik berikutnya
+    if(_claimingIds.has(id)){
+        showNeonAlert("Hadiah sedang diproses, harap tunggu...", false);
+        return;
+    }
+    _claimingIds.add(id);
+
+    // Nonaktifkan semua tombol klaim selama proses berlangsung
+    document.querySelectorAll('.btn-claim-mail').forEach(b => b.disabled = true);
+
     playSnd('click');
     try{
-        // Step 1: Cek status terkini dari DB — anti race condition
-        const{data:inbox,error:eCek}=await _supabase.from('inbox')
-            .select('status,nominal').eq('id',id).single();
-        if(eCek||!inbox){showModal("ERROR","Hadiah tidak ditemukan.");return;}
-        if(inbox.status!=='UNCLAIMED'){
+        // Step 1: Cek status TERKINI dari DB — anti race condition & anti reload lama
+        const{data:inbox, error:eCek} = await _supabase.from('inbox')
+            .select('status, nominal').eq('id', id).single();
+        if(eCek || !inbox){ showModal("ERROR","Hadiah tidak ditemukan."); return; }
+        if(inbox.status !== 'UNCLAIMED'){
             showModal("SUDAH DIKLAIM","Hadiah ini sudah pernah diklaim sebelumnya.");
-            loadInbox();return;
+            loadInbox(); return;
         }
-        // Gunakan nominal dari DB (bukan dari parameter, lebih aman)
-        const nominalAsli=Number(inbox.nominal||amt);
 
-        // Step 2: Update status CLAIMED dulu (atomic dengan filter status=UNCLAIMED)
-        const{error:eUp,count}=await _supabase.from('inbox')
-            .update({status:'CLAIMED'})
-            .eq('id',id)
-            .eq('status','UNCLAIMED')
-            .select();
-        if(eUp){showModal("GAGAL","Gagal klaim: "+eUp.message);return;}
+        // Gunakan nominal dari DB (lebih aman daripada dari parameter HTML)
+        const nominalAsli = Number(inbox.nominal || amt);
 
-        // Step 3: Tambah saldo setelah berhasil klaim
-        const{data:p,error:eP}=await _supabase.from('profiles')
-            .select('saldo').eq('username',USERNAME).single();
-        if(eP||!p){showModal("ERROR","Gagal ambil saldo.");return;}
-        const{error:eS}=await _supabase.from('profiles')
-            .update({saldo:(p.saldo||0)+nominalAsli}).eq('username',USERNAME);
-        if(eS){showModal("ERROR","Saldo gagal ditambah: "+eS.message);return;}
+        // Step 2: Tandai CLAIMED secara atomic (filter status=UNCLAIMED mencegah race condition)
+        // Jika ada proses lain yang sudah klaim duluan, update ini tidak akan berpengaruh
+        const{data:claimedRows, error:eUp} = await _supabase.from('inbox')
+            .update({ status: 'CLAIMED' })
+            .eq('id', id)
+            .eq('status', 'UNCLAIMED')   // ← kunci atomic: hanya jalan jika masih UNCLAIMED
+            .select('id');
+        if(eUp){ showModal("GAGAL","Gagal klaim: " + eUp.message); return; }
+
+        // Jika tidak ada baris yang berubah → sudah diklaim oleh proses lain
+        if(!claimedRows || claimedRows.length === 0){
+            showModal("SUDAH DIKLAIM","Hadiah ini sudah pernah diklaim sebelumnya.");
+            loadInbox(); return;
+        }
+
+        // Step 3: Tambah saldo HANYA setelah status berhasil di-update ke CLAIMED
+        const{data:p, error:eP} = await _supabase.from('profiles')
+            .select('saldo').eq('username', USERNAME).single();
+        if(eP || !p){ showModal("ERROR","Gagal ambil saldo."); return; }
+
+        const{error:eS} = await _supabase.from('profiles')
+            .update({ saldo: (p.saldo || 0) + nominalAsli })
+            .eq('username', USERNAME);
+        if(eS){ showModal("ERROR","Saldo gagal ditambah: " + eS.message); return; }
 
         playSnd('success');
-        showNeonAlert("HADIAH Rp "+nominalAsli.toLocaleString('id-ID')+" MASUK KE SALDO!",true);
-        showModal("BERHASIL! 🎉","Hadiah Rp "+nominalAsli.toLocaleString('id-ID')+" berhasil masuk ke saldo Anda!");
-        if(typeof syncNeonData==="function") syncNeonData();
+        showNeonAlert("HADIAH Rp " + nominalAsli.toLocaleString('id-ID') + " MASUK KE SALDO!", true);
+        showModal("BERHASIL! 🎉","Hadiah Rp " + nominalAsli.toLocaleString('id-ID') + " berhasil masuk ke saldo Anda!");
+        if(typeof syncNeonData === "function") syncNeonData();
         loadInbox();
-    }catch(e){showModal("ERROR","Gagal mengambil hadiah: "+e.message);}
+    } catch(e){
+        showModal("ERROR","Gagal mengambil hadiah: " + e.message);
+    } finally{
+        // Selalu lepas guard agar tidak terkunci selamanya
+        _claimingIds.delete(id);
+        document.querySelectorAll('.btn-claim-mail').forEach(b => b.disabled = false);
+    }
 }
 
 /* ── KLAIM BONUS REFERRAL ── */
