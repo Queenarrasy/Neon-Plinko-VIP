@@ -237,22 +237,6 @@ table.ht tr:last-child td{border-bottom:none}
   box-shadow:inset 0 0 14px rgba(251,255,0,.05)
 }
 
-/* ── RISK ROW ── */
-.rrow{display:flex;gap:4px;margin-bottom:6px}
-.rb{
-  flex:1;padding:6px 2px;border-radius:8px;
-  border:1px solid rgba(0,51,255,.25);
-  background:rgba(0,0,42,.85);
-  color:rgba(255,255,255,.38);font-weight:900;font-size:9px;
-  cursor:pointer;transition:.22s;text-align:center;
-  font-family:'Outfit',sans-serif;text-transform:uppercase;letter-spacing:.4px
-}
-.rb.ar{
-  border-color:var(--bl);color:rgba(100,160,255,1);
-  background:rgba(0,51,255,.12);
-  box-shadow:0 0 8px rgba(0,51,255,.2)
-}
-
 /* ── DROP / STOP BUTTON ── */
 .dbtn{
   width:100%;padding:12px;border-radius:40px;border:none;
@@ -401,12 +385,6 @@ table.ht tr:last-child td{border-bottom:none}
       <button class="bstep" id="btn-p" onclick="stepBet(+1)">+</button>
     </div>
 
-    <div class="rrow">
-      <button class="rb ar" id="rl" onclick="setRisk('low')">LOW</button>
-      <button class="rb"    id="rm" onclick="setRisk('medium')">MEDIUM</button>
-      <button class="rb"    id="rh" onclick="setRisk('high')">HIGH</button>
-    </div>
-
     <button class="dbtn" id="db" onclick="handleAction()">
       <i class="fas fa-circle-dot"></i>&nbsp;&nbsp;DROP BALL
     </button>
@@ -445,8 +423,6 @@ table.ht tr:last-child td{border-bottom:none}
 <script>
 /* ──────────────────── STATE ──────────────────── */
 var U=null, PROF={}, SAL=0, SPNL=0, HIST=[];
-var RISK='low';
-
 var F_NORMAL=true, F_AUTO=false, F_TURBO=false;
 var AUTO_TID=null;
 var HIST_OPEN=false;
@@ -458,12 +434,9 @@ var BSTEPS=[400,600,800,1000,1200,1600,1800,2000,4000,6000,8000,
             10000,12000,16000,18000,20000,25000,30000];
 var BIDX=3;
 
-/* ──────────────────── MULTS ──────────────────── */
-var MUL={
-  low:   [8.5,3,1.5,1.2,1.1,0.7,0.5,0.7,1.1,1.2,1.5,3,8.5],
-  medium:[25, 8,3,  1.8,1.2,0.7,0.4,0.7,1.2,1.8,3,  8, 25 ],
-  high:  [88,24,9,  4,  2,  0.6,0.2,0.6,2,  4,  9, 24, 88 ]
-};
+/* ──────────────────── MULTS (Plinko Asli) ──────────────────── */
+/* Referensi: Stake / BC.Game — 12 baris, simetris, sisi besar tengah kecil */
+var MUL=[16, 9, 2, 1.4, 1.4, 1.2, 1.1, 1.1, 1.2, 1.4, 1.4, 2, 9, 16];
 
 /* ──────────────────── CANVAS / PHYSICS ──────────────────── */
 var cv=document.getElementById('cv');
@@ -536,16 +509,6 @@ function stepBet(d){
   if(F_AUTO){alert2('Stop AUTO dulu untuk ganti bet','warn');return;}
   BIDX=Math.max(0,Math.min(BSTEPS.length-1,BIDX+d));
   updBetUI();
-}
-
-/* ──────────────────── RISK ──────────────────── */
-function setRisk(r){
-  if(F_AUTO){alert2('Stop AUTO dulu untuk ganti risk','warn');return;}
-  RISK=r;
-  document.getElementById('rl').className='rb'+(r==='low'?' ar':'');
-  document.getElementById('rm').className='rb'+(r==='medium'?' ar':'');
-  document.getElementById('rh').className='rb'+(r==='high'?' ar':'');
-  buildWorld();
 }
 
 /* ──────────────────── MODE TOGGLE ──────────────────── */
@@ -649,20 +612,22 @@ function buildWorld(){
   }
   pegPulse = new Array(PEGS.length).fill(0);
 
-  var mults = MUL[RISK], sw = W/mults.length;
+  var mults = MUL, sw = W/mults.length;
   SLOTS_D = [];
   for(var i=0;i<mults.length;i++)
     SLOTS_D.push({x:i*sw, y:SLOT_Y, w:sw, h:SLOT_H, m:mults[i], glow:0});
 }
 
-/* ──────────────────── SLOT COLOR (Pure Strict 3-Neon) ──────────────────── */
+/* ──────────────────── SLOT COLOR (Plinko Asli Palette) ──────────────────── */
 function slotPal(m){
-  /* >= 8 = Pink (Sisi luar / Win Besar) */
-  if(m >= 8) return {f:'rgba(255,0,119',  s:'#ff0077', t:'rgba(255,180,220,1)'};
-  /* >= 1 = Deep Blue (Tengah ke pinggir / Win Sedang) */
-  if(m >= 1) return {f:'rgba(0,51,255',   s:'#0033ff', t:'rgba(180,200,255,1)'};
-  /* < 1 = Yellow (Pusat slot / Lose) */
-             return {f:'rgba(251,255,0',  s:'#fbff00', t:'rgba(255,255,180,1)'};
+  /* >= 9   = Pink neon  — 16x & 9x (Jackpot / Sisi luar) */
+  if(m >= 9)   return {f:'rgba(255,0,119',  s:'#ff0077', t:'rgba(255,180,220,1)'};
+  /* >= 2   = Blue neon  — 2x (Menang sedang) */
+  if(m >= 2)   return {f:'rgba(0,51,255',   s:'#0033ff', t:'rgba(180,200,255,1)'};
+  /* >= 1.2 = Yellow neon — 1.4x, 1.2x (Menang tipis) */
+  if(m >= 1.2) return {f:'rgba(251,255,0',  s:'#fbff00', t:'rgba(255,255,180,1)'};
+  /* < 1.2  = Soft teal  — 1.1x (Hampir impas) */
+               return {f:'rgba(0,200,180',  s:'#00c8b4', t:'rgba(180,255,248,1)'};
 }
 
 /* ──────────────────── DRAW PEG ──────────────────── */
@@ -927,30 +892,35 @@ function spawnBall(){
 
 /* ──────────────────── OUTCOME ──────────────────── */
 function computeOut(){
-  var mults = MUL[RISK];
+  var mults = MUL;
 
   /* Baca langsung dari PROF yang selalu diupdate Realtime */
   var isPanic = PROF.panic_mode === true;
   var wr      = isPanic ? 1 : Math.max(1, Math.min(100, Number(PROF.winrate) || 30));
   var mwl     = Number(PROF.maxwin_limit) || 0;
 
-  /* Jika sudah capai maxwin → paksa slot kalah */
+  /* Jika sudah capai maxwin → paksa slot terkecil (1.1x) agar sesi berhenti naik */
   if(mwl > 0 && SPNL >= mwl){
     var la = [];
-    for(var i=0; i<mults.length; i++) if(mults[i] < 1) la.push(i);
+    for(var i=0; i<mults.length; i++) if(mults[i] < 2) la.push(i);
     var li = la.length ? la[Math.floor(Math.random()*la.length)] : Math.floor(mults.length/2);
     return {slot:li, mult:mults[li], win:false};
   }
 
-  /* Roll winrate */
+  /* Roll winrate:
+     "Menang" = slot dengan mult >= 2x (return signifikan: 2x, 9x, 16x)
+     "Kalah"  = slot dengan mult < 2x  (return tipis: 1.1x, 1.2x, 1.4x)
+     Karena plinko asli tidak punya slot < 1x, kalah = return kecil */
   if(Math.random()*100 < wr){
+    /* Menang: pilih dari slot >= 2x */
     var wa = [];
-    for(var j=0; j<mults.length; j++) if(mults[j] >= 1) wa.push(j);
-    var wi = wa.length ? wa[Math.floor(Math.random()*wa.length)] : Math.floor(mults.length/2);
+    for(var j=0; j<mults.length; j++) if(mults[j] >= 2) wa.push(j);
+    var wi = wa.length ? wa[Math.floor(Math.random()*wa.length)] : 0;
     return {slot:wi, mult:mults[wi], win:true};
   } else {
+    /* Kalah: pilih dari slot < 2x (1.1x, 1.2x, 1.4x — return tipis) */
     var la2 = [];
-    for(var k=0; k<mults.length; k++) if(mults[k] < 1) la2.push(k);
+    for(var k=0; k<mults.length; k++) if(mults[k] < 2) la2.push(k);
     var li2 = la2.length ? la2[Math.floor(Math.random()*la2.length)] : Math.floor(mults.length/2);
     return {slot:li2, mult:mults[li2], win:false};
   }
@@ -1045,7 +1015,14 @@ function loadProfile(){
             /* Update panic bar di UI */
             document.getElementById('pb').style.display = PROF.panic_mode ? 'block' : 'none';
 
-            /* Notifikasi winrate/panic TIDAK ditampilkan ke player */
+            /* Notifikasi singkat jika winrate/panic berubah */
+            if('winrate' in updated){
+              alert2('Admin: Winrate diupdate → '+PROF.winrate+'%', 'warn');
+            }
+            if('panic_mode' in updated){
+              if(PROF.panic_mode) alert2('⚠ PANIC MODE AKTIF', 'warn');
+              else                alert2('✓ Panic mode dinonaktifkan', 'ok');
+            }
           }).subscribe(function(status){
             if(status === 'SUBSCRIBED'){
               /* Realtime terhubung — refetch PROF terbaru untuk pastikan data sinkron */
