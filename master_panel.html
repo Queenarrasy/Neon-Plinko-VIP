@@ -788,30 +788,38 @@ async function sendGift(username, k) {
     const msg = document.getElementById('gm-'+k)?.value?.trim()||'Hadiah Admin';
     if(!amt||amt<=0) return showAlert('MASUKKAN NOMINAL GIFT!');
     try {
-        const {data:prof,error:e1} = await _db.from('profiles').select('saldo').eq('username',username).single();
-        if(e1||!prof) return showAlert('USER TIDAK DITEMUKAN!');
-        const {error:e2} = await _db.from('profiles').update({saldo:(prof.saldo||0)+amt}).eq('username',username);
-        if(e2) return showAlert('ERROR: '+e2.message);
-        await _db.from('inbox').insert([{username,nominal:amt,pesan:msg,status:'UNCLAIMED'}]);
+        // ── HANYA insert ke inbox — saldo TIDAK diubah di sini ──
+        // Saldo baru masuk saat player klik KLAIM di reward.html (anti-double)
+        const {error:eI} = await _db.from('inbox').insert([{
+            username, nominal:amt, pesan:msg, status:'UNCLAIMED'
+        }]);
+        if(eI) return showAlert('ERROR: '+eI.message);
         if(document.getElementById('g-'+k))  document.getElementById('g-'+k).value='';
-        if(document.getElementById('gm-'+k)) document.getElementById('gm-'+k).value='';
-        showAlert('GIFT Rp '+amt.toLocaleString('id-ID')+' → '+username+' ✓','ok');
-        await fetchProfiles(); renderActiveView();
+        if(document.getElementById('gm-'+k)) document.getElementById('gm-'+k).value='VIP Bonus';
+        showAlert('GIFT Rp '+amt.toLocaleString('id-ID')+' → '+username+' ✓ (menunggu klaim player)','ok');
+        renderActiveView();
     } catch(e){ showAlert('ERROR: '+e.message); }
 }
 
 async function sendMass() {
     const amt = parseInt(document.getElementById('mass-amt')?.value)||0;
     if(!amt||amt<=0) return showAlert('MASUKKAN NOMINAL GIFT!');
-    askConfirm(`Kirim Rp ${amt.toLocaleString('id-ID')} ke SEMUA ${allData.p.length} player?`, async ()=>{
+    askConfirm(`Kirim Rp ${amt.toLocaleString('id-ID')} ke SEMUA ${allData.p.length} player?\nSaldo masuk saat player klaim di Reward.`, async ()=>{
         let ok=0;
         for(const u of allData.p){
-            const {error} = await _db.from('profiles').update({saldo:(u.saldo||0)+amt}).eq('username',u.username);
-            if(!error){ await _db.from('inbox').insert([{username:u.username,nominal:amt,pesan:'Mass Gift dari Admin',status:'UNCLAIMED'}]); ok++; }
+            // ── HANYA insert ke inbox — saldo TIDAK diubah di sini ──
+            // Saldo baru masuk saat masing-masing player klik KLAIM
+            const {error} = await _db.from('inbox').insert([{
+                username: u.username,
+                nominal : amt,
+                pesan   : 'Mass Gift dari Admin',
+                status  : 'UNCLAIMED'
+            }]);
+            if(!error) ok++;
         }
         document.getElementById('mass-amt').value='';
-        showAlert(`MASS GIFT TERKIRIM KE ${ok} PLAYER ✓`,'ok');
-        await fetchProfiles(); renderActiveView();
+        showAlert(`MASS GIFT TERKIRIM KE ${ok} PLAYER ✓ (menunggu klaim)`, 'ok');
+        renderActiveView();
     });
 }
 
