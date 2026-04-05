@@ -346,15 +346,11 @@ var U=null, PROF={}, SAL=0, SPNL=0, HIST=[];
 var F_NORMAL=true, F_AUTO=false, F_TURBO=false;
 var AUTO_TID=null, HIST_OPEN=false, NEW_RESULT=0;
 
-/* ── Interval spawn AUTO ────────────────────────────────
-   Disesuaikan agar jarak antar bola saat auto lebih rapat
-──────────────────────────────────────────────────────── */
+/* ── Interval spawn AUTO ──────────────────────────────── */
 var INT_AUTO  = 300;
 var INT_TURBO = 100;
 
-/* ── Maks bola aktif sekaligus ──────────────────────────
-   Maksimal ditingkatkan agar bisa spam bola dengan lancar
-──────────────────────────────────────────────────────── */
+/* ── Maks bola aktif sekaligus ────────────────────────── */
 var MAX_BALLS_NORMAL = 20;
 var MAX_BALLS_TURBO  = 50;
 
@@ -379,15 +375,15 @@ var cv=document.getElementById('cv');
 var cx=cv.getContext('2d');
 var ROWS=12;
 
-/* ── Parameter fisika bola ──────────────────────────────
-   Gerak bola diperhalus, tidak terlalu cepat, mengalir
-   alami. Speed cap diturunkan agar bola tidak loncat.
+/* ── Parameter fisika bola (Diperbarui lebih natural) ──
+   Gravitasi sedikit dinaikkan agar tidak terlalu melayang,
+   Pantulan disesuaikan agar terasa memantul wajar.
 ──────────────────────────────────────────────────────── */
-var GR        = 0.16; 
-var BOUNCE    = 0.5;  
-var FRIC      = 0.99; 
+var GR        = 0.22; 
+var BOUNCE    = 0.45;  
+var FRIC      = 0.985; 
 var SUBSTEPS  = 4;
-var SPEED_CAP = 8;
+var SPEED_CAP = 9;
 
 var PR,BR,RG,SLOT_H,SLOT_Y,PAD_TOP;
 var PEGS=[],SLOTS_D=[],BALLS=[];
@@ -624,15 +620,16 @@ function buildWorld(){
 
 /* ════════════════════════════════════════════════════════
    SLOT PALETTE
-   Gaya Box Klasik Plinko: Solid block Merah ke Kuning
+   Tema Neon: Pink, Deep Blue, Kuning.
+   Hanya menyala ketika bola masuk.
 ════════════════════════════════════════════════════════ */
 function slotPal(m){
-  if(m>=16) return {bg:'#ff003f', text:'#ffffff', shadow:'#a60029'};
-  if(m>=9)  return {bg:'#ff3300', text:'#ffffff', shadow:'#b32400'};
-  if(m>=3)  return {bg:'#ff6600', text:'#ffffff', shadow:'#b34700'};
-  if(m>=2)  return {bg:'#ff9900', text:'#ffffff', shadow:'#b36b00'};
-  if(m>=0.5)return {bg:'#ffcc00', text:'#665200', shadow:'#b38f00'};
-  return    {bg:'#ffe600', text:'#665c00', shadow:'#b3a100'};
+  // Perkalian Besar (Pink Neon)
+  if(m>=9) return { f:'rgba(255,0,119,0.3)', b:'#ff0077' };
+  // Perkalian Sedang (Deep Blue Neon)
+  if(m>=2) return { f:'rgba(0,51,255,0.3)',  b:'#0033ff' };
+  // Perkalian Kecil (Kuning Neon)
+  return   { f:'rgba(251,255,0,0.2)',        b:'#fbff00' };
 }
 
 /* ════════════════════════════════════════════════════════
@@ -714,10 +711,11 @@ function redrawFull(){
   for(var pi=0;pi<PEGS.length;pi++)
     drawPeg(PEGS[pi].x,PEGS[pi].y,pegPulse[pi]||0);
 
-  /* Slot — Box desain 3D solid */
+  /* Slot — Desain Kotak Neon Lembut */
   var fsz=Math.max(8,Math.min(12,W*.022));
   cx.font='900 '+fsz+'px Outfit,sans-serif';
   cx.textAlign='center';cx.textBaseline='middle';
+  
   for(var si=0;si<SLOTS_D.length;si++){
     var s=SLOTS_D[si], pal=slotPal(s.m), gl=s.glow||0;
     var margin = 2;
@@ -725,19 +723,30 @@ function redrawFull(){
     var bw = s.w - margin*2;
     var bh = s.h;
 
-    // Shadow bawah box
-    cx.fillStyle = pal.shadow;
-    cx.fillRect(bx, s.y + 4, bw, bh - 4);
+    // Background kotak default (gelap)
+    cx.fillStyle = '#02000e'; 
+    cx.fillRect(bx, s.y, bw, bh);
 
-    // Box Utama (turun dan berkedip saat kena)
-    var yPop = gl > 0 ? 4 : 0;
-    cx.fillStyle = gl > 0 ? '#ffffff' : pal.bg;
-    cx.fillRect(bx, s.y + yPop, bw, bh - 4);
+    // Efek menyala HANYA ketika bola masuk
+    if (gl > 0) {
+      cx.fillStyle = pal.f; // Fill transparan warna neon
+      cx.fillRect(bx, s.y, bw, bh);
+      cx.shadowColor = pal.b;
+      cx.shadowBlur = 10 * gl; // Efek glow tipis, tidak menyilaukan
+    } else {
+      cx.shadowBlur = 0;
+    }
 
-    // Teks
-    cx.fillStyle = gl > 0 ? pal.bg : pal.text;
+    // Border Kotak (selalu ada, sedikit menebal saat glow)
+    cx.strokeStyle = pal.b;
+    cx.lineWidth = 1 + gl; 
+    cx.strokeRect(bx, s.y, bw, bh);
+    
+    // Teks di tengah
+    cx.shadowBlur = 0; // Matikan shadow teks agar tidak blur
+    cx.fillStyle = gl > 0 ? '#ffffff' : pal.b; // Putih saat menyala, sewarna garis saat diam
     var mLabel=(s.m%1===0)?s.m+'x':s.m.toFixed(1)+'x';
-    cx.fillText(mLabel, s.x+s.w/2, s.y + yPop + (bh-4)*0.5);
+    cx.fillText(mLabel, s.x+s.w/2, s.y + bh*0.5);
   }
 }
 
@@ -769,7 +778,7 @@ function drawBall(b){
 }
 
 /* ════════════════════════════════════════════════════════
-   PHYSICS
+   PHYSICS (Diperbarui Natural)
 ════════════════════════════════════════════════════════ */
 function physStep(b){
   var W=cv.width;
@@ -796,7 +805,8 @@ function physStep(b){
         if(dot<0){
           b.vx=(b.vx-2*dot*nx)*BOUNCE;
           b.vy=(b.vy-2*dot*ny)*BOUNCE;
-          b.vx+=(Math.random()-0.5)*0.5;
+          // Memantul horizontal sedikit acak agar jalurnya natural
+          b.vx+=(Math.random()-0.5)*0.6;
           if(b.vy<0.2) b.vy=0.2+Math.random()*0.2;
           pegPulse[pi]=1.0;
         }
@@ -822,8 +832,7 @@ function mainLoop(){
       var w=Math.sin(t+PEGS[pi2].x*.017+PEGS[pi2].y*.011);
       pegPulse[pi2]=Math.max(pegPulse[pi2],Math.max(0,w*.13));
     }
-    for(var si2=0;si2<SLOTS_D.length;si2++)
-      SLOTS_D[si2].glow=Math.max(SLOTS_D[si2].glow,Math.max(0,Math.sin(t*.6+si2*.46)*.08));
+    // Animasi idle glow pada slot dihapus agar tidak membingungkan
   }
 
   var landed=[];
@@ -845,7 +854,7 @@ function mainLoop(){
       if(bl.x>=SLOTS_D[ss].x&&bl.x<SLOTS_D[ss].x+SLOTS_D[ss].w){lIdx=ss;break;}
     }
     if(lIdx===-1) lIdx=Math.floor(SLOTS_D.length/2);
-    SLOTS_D[lIdx].glow=1.0;
+    SLOTS_D[lIdx].glow=1.0; // Trigger glow saat masuk
 
     var am=SLOTS_D[lIdx].m, bet=bl.bet;
     var pay=Math.floor(bet*am);
@@ -911,7 +920,7 @@ function spawnBall(){
     x   : spX,
     y   : BR+3,
     vx  : bias+(Math.random()-0.5)*0.2,
-    vy  : 0.1+Math.random()*0.2,
+    vy  : 0.5+Math.random()*0.5, // Sedikit dorongan awal agar natural
     tr  : [],
     bet : bet,
     target: out.slot
@@ -1098,7 +1107,7 @@ function init(){
   requestAnimationFrame(function(){
     requestAnimationFrame(function(){
       resize();buildWorld();
-      updBetUI();updSaldo();updModeLabel(); // updProfit dihapus dari inisialisasi awal
+      updBetUI();updSaldo();updModeLabel(); 
       paintModeBtn('mb-normal',true,'on-normal');
       initPtjs();loadProfile();
       if(RAF) cancelAnimationFrame(RAF);
