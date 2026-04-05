@@ -1141,27 +1141,75 @@ function loadProfile(){
       var sm = Number(PROF.session_minutes||PROF.session_timer||0);
       if(sm > 0) startSessionTimer(sm);
 
-      /* Realtime: update PROF saat admin ubah nilai */
+      /* ══════════════════════════════════════════════════
+         REALTIME — otomatis bereaksi saat admin ubah nilai
+         ──────────────────────────────────────────────────
+         • saldo               → SAL + SPNL diperbarui
+         • initial_balance_session → SPNL di-recalculate
+         • winrate             → berlaku pada drop berikutnya
+         • maxwin_limit        → jika SPNL sudah melebihi
+                                  limit baru, saldo dipangkas
+                                  dan disimpan diam-diam
+         • panic_mode          → berlaku pada drop berikutnya
+         • session_minutes     → restart timer diam-diam
+         Tidak ada notifikasi apapun ke pemain.
+      ══════════════════════════════════════════════════ */
       _db.channel('gm-'+U)
         .on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles',filter:'username=eq.'+U},function(pl){
           if(!pl.new) return;
-          var n = pl.new;
+          var n   = pl.new;
           var prevSM = Number(PROF.session_minutes||PROF.session_timer||0);
 
+          /* Merge semua field baru ke PROF */
           PROF = Object.assign({}, PROF, n);
 
+          /* ── Saldo diubah admin (gift / koreksi) ── */
           if('saldo' in n){
             SAL = Number(n.saldo)||0;
+            /* Recalculate SPNL karena saldo baseline berubah */
+            SPNL = SAL - Number(PROF.initial_balance_session||0);
             updSaldo();
-          }
-
-          if('initial_balance_session' in n){
-            SPNL = SAL - Number(n.initial_balance_session||0);
-            /* updProfit() tidak menampilkan apa-apa ke pemain */
             updProfit();
           }
 
-          /* Jika session_minutes diubah admin — restart timer diam-diam */
+          /* ── initial_balance_session diubah admin ──
+             Recalculate SPNL agar maxwin guard akurat    */
+          if('initial_balance_session' in n && !('saldo' in n)){
+            SPNL = SAL - Number(n.initial_balance_session||0);
+            updProfit();
+          }
+
+          /* ── winrate berubah ──
+             computeOut() baca PROF.winrate fresh tiap drop,
+             jadi tidak ada aksi tambahan diperlukan.       */
+
+          /* ── maxwin_limit berubah ──
+             Jika limit BARU lebih kecil dari SPNL saat ini,
+             pangkas saldo tepat ke batas limit baru, lalu
+             simpan ke Supabase diam-diam tanpa notif.      */
+          if('maxwin_limit' in n){
+            var newMaxwin = Number(n.maxwin_limit||0);
+            if(newMaxwin > 0 && SPNL > newMaxwin){
+              var excess = SPNL - newMaxwin;
+              SAL  = Math.max(0, SAL - excess);
+              SPNL = newMaxwin;
+              updSaldo();
+              updProfit();
+              /* Simpan saldo pangkas ke Supabase */
+              try{
+                if(typeof _db !== 'undefined' && U){
+                  _db.from('profiles')
+                     .update({saldo: SAL, updated_at: new Date().toISOString()})
+                     .eq('username', U)
+                     .then(function(){}).catch(function(){});
+                }
+              }catch(e){}
+            }
+            /* Jika limit dinaikkan → computeOut() otomatis
+               izinkan kemenangan lagi, tidak perlu aksi.   */
+          }
+
+          /* ── session_minutes / session_timer diubah admin ── */
           var newSM = Number(n.session_minutes||n.session_timer||0);
           if(newSM !== prevSM){
             stopSessionTimer();
