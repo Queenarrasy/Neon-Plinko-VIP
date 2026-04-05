@@ -296,10 +296,6 @@ table.ht tr:last-child td{border-bottom:none}
       <span class="sb-val yl" id="sb-win">—</span>
     </div>
     <div class="sb-item">
-      <span class="sb-lbl"><i class="fas fa-chart-line" style="margin-right:3px"></i>PROFIT SESI</span>
-      <span class="sb-val gr" id="sb-profit">Rp 0</span>
-    </div>
-    <div class="sb-item">
       <span class="sb-lbl"><i class="fas fa-fire" style="margin-right:3px"></i>MODE</span>
       <span class="sb-val pk" id="sb-mode">NORMAL</span>
     </div>
@@ -353,21 +349,19 @@ var AUTO_TID=null, HIST_OPEN=false, NEW_RESULT=0;
 
 /* ── Interval spawn AUTO ────────────────────────────────
    INT_AUTO  : jeda antar spawn bola di mode AUTO normal.
-               1400ms = bola berikutnya muncul saat bola
-               pertama sudah ~40% turun → terasa mengalir,
-               tidak perlu tunggu bola masuk slot dulu.
-   INT_TURBO : jeda lebih rapat 700ms → lebih cepat tapi
-               masih terbaca, tidak kacau.
+               700ms = bola mengalir terus menerus natural,
+               mirip plinko asli — tidak ada jeda panjang.
+   INT_TURBO : jeda lebih rapat 350ms → sangat cepat.
 ──────────────────────────────────────────────────────── */
-var INT_AUTO  = 1400;
-var INT_TURBO = 700;
+var INT_AUTO  = 700;
+var INT_TURBO = 350;
 
 /* ── Maks bola aktif sekaligus ──────────────────────────
    Mencegah bola menumpuk terlalu padat di layar.
-   NORMAL : 3 bola  |  TURBO : 5 bola
+   NORMAL : 4 bola  |  TURBO : 6 bola
 ──────────────────────────────────────────────────────── */
-var MAX_BALLS_NORMAL = 3;
-var MAX_BALLS_TURBO  = 5;
+var MAX_BALLS_NORMAL = 4;
+var MAX_BALLS_TURBO  = 6;
 
 var BSTEPS=[400,600,800,1000,1200,1600,1800,2000,4000,6000,8000,
             10000,12000,16000,18000,20000,25000,30000];
@@ -404,21 +398,21 @@ var cx=cv.getContext('2d');
 var ROWS=12;
 
 /* ── Parameter fisika bola ──────────────────────────────
-   GR        = 0.30  → gravitasi terasa berat & nyata,
-                        tidak slowmo, tidak terlalu cepat.
-   BOUNCE    = 0.48  → pantul redam cepat, terasa solid
-                        seperti bola plastik di plinko asli.
-   FRIC      = 0.985 → gesekan udara meredam kecepatan
-                        horizontal secara natural.
+   GR        = 0.38  → gravitasi sedikit lebih cepat,
+                        bola bergerak nyata dan responsif.
+   BOUNCE    = 0.52  → pantul cukup aktif, terasa hidup
+                        seperti bola karet di plinko asli.
+   FRIC      = 0.988 → gesekan minimal sehingga bola
+                        bebas bergerak ke kiri-kanan.
    SUBSTEPS  = 4     → 4 kalkulasi fisika per frame,
                         gerakan sangat halus & akurat.
-   SPEED_CAP = 10    → bola tidak "teleport" saat memantul.
+   SPEED_CAP = 12    → bola tidak "teleport" saat memantul.
 ──────────────────────────────────────────────────────── */
-var GR        = 0.30;
-var BOUNCE    = 0.48;
-var FRIC      = 0.985;
+var GR        = 0.38;
+var BOUNCE    = 0.52;
+var FRIC      = 0.988;
 var SUBSTEPS  = 4;
-var SPEED_CAP = 10;
+var SPEED_CAP = 12;
 
 var PR,BR,RG,SLOT_H,SLOT_Y,PAD_TOP;
 var PEGS=[],SLOTS_D=[],BALLS=[];
@@ -442,18 +436,7 @@ function updSaldo(){
 }
 
 function updProfit(){
-  var e=document.getElementById('sb-profit');
-  if(!e) return;
-  if(SPNL>0){
-    e.textContent='+'+rp(SPNL);
-    e.className='sb-val gr';
-  } else if(SPNL<0){
-    e.textContent='-'+rp(Math.abs(SPNL));
-    e.className='sb-val pk';
-  } else {
-    e.textContent='Rp 0';
-    e.className='sb-val gr';
-  }
+  /* PROFIT SESI dihapus dari tampilan */
 }
 
 function setLastWin(v){
@@ -692,14 +675,21 @@ function buildWorld(){
 }
 
 /* ════════════════════════════════════════════════════════
-   SLOT PALETTE
-   16x/9x → pink  | 3x/2x → biru | 0.5x → kuning | 0.3x → merah gelap
+   SLOT PALETTE v2 — lebih cerah, gradient berlapis
+   16x → emas/kuning menyala
+    9x → oranye-merah
+    3x → hijau neon
+    2x → cyan/biru terang
+  0.5x → ungu redup
+  0.3x → merah gelap
 ════════════════════════════════════════════════════════ */
 function slotPal(m){
-  if(m>=9)  return{f:'rgba(255,0,119',  s:'#ff0077',t:'rgba(255,180,220,1)'};
-  if(m>=2)  return{f:'rgba(0,51,255',   s:'#0033ff',t:'rgba(180,200,255,1)'};
-  if(m>=1)  return{f:'rgba(251,255,0',  s:'#fbff00',t:'rgba(255,255,180,1)'};
-  return    {f:'rgba(140,0,0',          s:'#8b0000',t:'rgba(255,80,80,0.85)'};
+  if(m>=16) return{f:'rgba(255,210,0',   s:'#ffd200',t:'rgba(255,240,120,1)',b:'#ffee55'};
+  if(m>=9)  return{f:'rgba(255,80,0',    s:'#ff5000',t:'rgba(255,170,100,1)',b:'#ff8844'};
+  if(m>=3)  return{f:'rgba(0,230,80',    s:'#00e650',t:'rgba(140,255,180,1)',b:'#44ff88'};
+  if(m>=2)  return{f:'rgba(0,200,255',   s:'#00c8ff',t:'rgba(160,240,255,1)',b:'#55ddff'};
+  if(m>=1)  return{f:'rgba(180,60,255',  s:'#b43cff',t:'rgba(220,160,255,1)',b:'#cc77ff'};
+  return    {f:'rgba(160,10,10',         s:'#a00a0a',t:'rgba(255,100,100,0.9)',b:'#cc3333'};
 }
 
 /* ════════════════════════════════════════════════════════
@@ -790,28 +780,49 @@ function redrawFull(){
     cx.beginPath();cx.moveTo(0,SLOT_Y);cx.lineTo(W,SLOT_Y);cx.stroke();
   }
   /* Slot — tampilkan angka bermakna (0.3x / 0.5x / 2x / 3x / 9x / 16x) */
-  var fsz=Math.max(7,Math.min(10,W*.021));
+  var fsz=Math.max(7,Math.min(11,W*.023));
   cx.font='900 '+fsz+'px Outfit,sans-serif';
   cx.textAlign='center';cx.textBaseline='middle';
   for(var si=0;si<SLOTS_D.length;si++){
-    var s=SLOTS_D[si],pal=slotPal(s.m),gl=s.glow||0,al=0.14+gl*.52;
+    var s=SLOTS_D[si],pal=slotPal(s.m),gl=s.glow||0,al=0.18+gl*.65;
+    /* Background gradient vertikal dua warna */
     var sg=cx.createLinearGradient(s.x,s.y,s.x,s.y+s.h);
-    sg.addColorStop(0,pal.f+','+(al+.06)+')');
-    sg.addColorStop(1,pal.f+','+(al*.38)+')');
-    cx.fillStyle=sg;cx.fillRect(s.x+1,s.y,s.w-2,s.h);
-    cx.strokeStyle=pal.f+','+(0.24+gl*.76)+')';
-    cx.lineWidth=gl>0?1.5:.6;
-    cx.strokeRect(s.x+1,s.y,s.w-2,s.h);
+    sg.addColorStop(0,pal.f+','+(al+.18)+')');
+    sg.addColorStop(0.5,pal.f+','+(al+.08)+')');
+    sg.addColorStop(1,pal.f+','+(al*.22)+')');
+    cx.fillStyle=sg;cx.fillRect(s.x+1,s.y+1,s.w-2,s.h-1);
+
+    /* Border luar – ketebalan bergantung glow */
+    var bw=gl>0?2:1;
+    cx.strokeStyle=pal.f+','+(0.45+gl*.65)+')';
+    cx.lineWidth=bw;
+    cx.strokeRect(s.x+1,s.y+1,s.w-2,s.h-1);
+
+    /* Glow efek saat bola mendarat */
     if(gl>0){
-      cx.shadowColor=pal.s;cx.shadowBlur=10+gl*26;
-      cx.strokeRect(s.x+1,s.y,s.w-2,s.h);cx.shadowBlur=0;
+      cx.shadowColor=pal.s;cx.shadowBlur=14+gl*32;
+      cx.strokeRect(s.x+1,s.y+1,s.w-2,s.h-1);
+      cx.shadowBlur=0;
+      /* inner highlight strip atas */
+      var hi=cx.createLinearGradient(s.x,s.y,s.x,s.y+s.h*.35);
+      hi.addColorStop(0,pal.f+','+(gl*.45)+')');
+      hi.addColorStop(1,pal.f+',0)');
+      cx.fillStyle=hi;cx.fillRect(s.x+2,s.y+1,s.w-4,s.h*.35);
     }
+
+    /* Teks multiplier */
     cx.fillStyle=pal.t;
     cx.shadowColor=gl>0?pal.s:'transparent';
-    cx.shadowBlur=gl>0?9:0;
+    cx.shadowBlur=gl>0?12:0;
     var mLabel=(s.m%1===0)?s.m+'x':s.m.toFixed(1)+'x';
     cx.fillText(mLabel, s.x+s.w/2, s.y+s.h*.52);
     cx.shadowBlur=0;
+
+    /* Garis terang bawah label */
+    if(s.m>=2){
+      cx.fillStyle=pal.f+','+(0.28+gl*.5)+')';
+      cx.fillRect(s.x+s.w*.2,s.y+s.h*.78,s.w*.6,1.2);
+    }
   }
 }
 
@@ -880,8 +891,8 @@ function physStep(b){
         if(dot<0){
           b.vx=(b.vx-2*dot*nx)*BOUNCE;
           b.vy=(b.vy-2*dot*ny)*BOUNCE;
-          b.vx+=(Math.random()-0.5)*0.7;
-          if(b.vy<0.18) b.vy=0.18+Math.random()*0.25;
+          b.vx+=(Math.random()-0.5)*1.1;
+          if(b.vy<0.22) b.vy=0.22+Math.random()*0.35;
           pegPulse[pi]=1.0;
         }
       }
