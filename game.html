@@ -150,7 +150,6 @@ table.ht tr:last-child td{border-bottom:none}
 .sb-val.yl{color:var(--yl);text-shadow:var(--gy)}
 .sb-val.pk{color:var(--pk);text-shadow:var(--gp)}
 .sb-val.bl{color:rgba(80,140,255,1);text-shadow:var(--gb)}
-.sb-val.gr{color:rgba(80,255,140,1);text-shadow:0 0 8px rgba(80,255,140,.45)}
 
 .ctrl{
   background:rgba(3,0,18,.8);
@@ -296,10 +295,6 @@ table.ht tr:last-child td{border-bottom:none}
       <span class="sb-val yl" id="sb-win">—</span>
     </div>
     <div class="sb-item">
-      <span class="sb-lbl"><i class="fas fa-chart-line" style="margin-right:3px"></i>PROFIT SESI</span>
-      <span class="sb-val gr" id="sb-profit">Rp 0</span>
-    </div>
-    <div class="sb-item">
       <span class="sb-lbl"><i class="fas fa-fire" style="margin-right:3px"></i>MODE</span>
       <span class="sb-val pk" id="sb-mode">NORMAL</span>
     </div>
@@ -360,7 +355,7 @@ var BSTEPS=[400,600,800,1000,1200,1600,1800,2000,4000,6000,8000,
             10000,12000,16000,18000,20000,25000,30000];
 var BIDX=3;
 
-// Penyesuaian Multiplier agar lebih menantang
+// Slot Multiplier
 var MUL=[16, 9, 3, 2, 0.5, 0.3, 0.3, 0.3, 0.3, 0.5, 2, 3, 9, 16];
 
 /* ════════════════════════════════════════════════════════
@@ -370,11 +365,11 @@ var cv=document.getElementById('cv');
 var cx=cv.getContext('2d');
 var ROWS=12;
 
-var GR        = 0.30;
-var BOUNCE    = 0.48;
-var FRIC      = 0.985;
-var SUBSTEPS  = 4;
-var SPEED_CAP = 10;
+var GR        = 0.14;   
+var BOUNCE    = 0.38;   
+var FRIC      = 0.992;  
+var SUBSTEPS  = 8;      
+var SPEED_CAP = 7;      
 
 var PR,BR,RG,SLOT_H,SLOT_Y,PAD_TOP;
 var PEGS=[],SLOTS_D=[],BALLS=[];
@@ -397,20 +392,8 @@ function updSaldo(){
   if(e) e.textContent='IDR '+SAL.toLocaleString('id-ID');
 }
 
-function updProfit(){
-  var e=document.getElementById('sb-profit');
-  if(!e) return;
-  if(SPNL>0){
-    e.textContent='+'+rp(SPNL);
-    e.className='sb-val gr';
-  } else if(SPNL<0){
-    e.textContent='-'+rp(Math.abs(SPNL));
-    e.className='sb-val pk';
-  } else {
-    e.textContent='Rp 0';
-    e.className='sb-val gr';
-  }
-}
+// Fungsi updProfit kini kosong untuk menghilangkan tampilan profit sesi di layar pemain
+function updProfit(){}
 
 function setLastWin(v){
   var e=document.getElementById('sb-win');
@@ -500,32 +483,14 @@ function toggleMode(m){
   } else if(m==='auto'){
     F_AUTO=!F_AUTO;
     paintModeBtn('mb-auto',F_AUTO,'on-auto');
-    if(F_AUTO){
-      startAutoLoop();
-    } else {
-      stopAutoLoop();
-      if(F_TURBO){
-        F_TURBO=false;
-        paintModeBtn('mb-turbo',false,'on-turbo');
-        F_NORMAL=true;
-        paintModeBtn('mb-normal',true,'on-normal');
-      }
-    }
+    if(F_AUTO) startAutoLoop(); else stopAutoLoop();
     updDropBtn(); updModeLabel();
   } else if(m==='turbo'){
-    if(!F_AUTO && !F_TURBO){
-      alert2('Aktifkan AUTO terlebih dahulu','warn');
-      return;
-    }
+    if(!F_AUTO && !F_TURBO){alert2('Aktifkan AUTO terlebih dahulu','warn');return;}
     F_TURBO=!F_TURBO;
     paintModeBtn('mb-turbo',F_TURBO,'on-turbo');
-    if(F_TURBO){
-      F_NORMAL=false;
-      paintModeBtn('mb-normal',false,'on-normal');
-    } else {
-      F_NORMAL=true;
-      paintModeBtn('mb-normal',true,'on-normal');
-    }
+    if(F_TURBO){ F_NORMAL=false; paintModeBtn('mb-normal',false,'on-normal'); } 
+    else { F_NORMAL=true; paintModeBtn('mb-normal',true,'on-normal'); }
     if(F_AUTO){ stopAutoLoop(); startAutoLoop(); }
     updModeLabel();
   }
@@ -554,20 +519,12 @@ function startAutoLoop(){
   stopAutoLoop();
   var interval = F_TURBO ? INT_TURBO : INT_AUTO;
   var maxB     = F_TURBO ? MAX_BALLS_TURBO : MAX_BALLS_NORMAL;
-
   function tick(){
     if(!F_AUTO){ stopAutoLoop(); return; }
     if(SAL < curBet()){
       F_AUTO=false; stopAutoLoop();
-      if(F_TURBO){
-        F_TURBO=false;
-        paintModeBtn('mb-turbo',false,'on-turbo');
-        F_NORMAL=true;
-        paintModeBtn('mb-normal',true,'on-normal');
-      }
       paintModeBtn('mb-auto',false,'on-auto');
-      updDropBtn(); updModeLabel();
-      alert2('Saldo tidak cukup — AUTO berhenti','warn');
+      updDropBtn(); alert2('Saldo tidak cukup','warn');
       return;
     }
     if(BALLS.length < maxB) spawnBall();
@@ -577,37 +534,20 @@ function startAutoLoop(){
 }
 function stopAutoLoop(){ clearTimeout(AUTO_TID); AUTO_TID=null; }
 
-/* ════════════════════════════════════════════════════════
-   ACTION BUTTON
-════════════════════════════════════════════════════════ */
 function handleAction(){
-  if(!U){showMd('LOGIN','Silakan login untuk bermain.');return;}
-  if(F_AUTO){
-    F_AUTO=false; stopAutoLoop();
-    if(F_TURBO){
-      F_TURBO=false;
-      paintModeBtn('mb-turbo',false,'on-turbo');
-      F_NORMAL=true;
-      paintModeBtn('mb-normal',true,'on-normal');
-    }
-    paintModeBtn('mb-auto',false,'on-auto');
-    updDropBtn(); updModeLabel();
-    return;
-  }
+  if(!U){showMd('LOGIN','Silakan login.');return;}
+  if(F_AUTO){ toggleMode('auto'); return; }
   if(SAL<curBet()){alert2('Saldo tidak cukup!','warn');return;}
   spawnBall();
 }
 
 /* ════════════════════════════════════════════════════════
-   BUILD WORLD
+   BUILD WORLD & RENDER
 ════════════════════════════════════════════════════════ */
 function buildWorld(){
   var W=cv.width, H=cv.height;
-  SLOT_H  = Math.max(26,H*0.09);
-  SLOT_Y  = H-SLOT_H;
-  PAD_TOP = H*0.055;
-  var pegAreaH=SLOT_Y-PAD_TOP-H*0.08;
-  RG=pegAreaH/(ROWS-1);
+  SLOT_H=Math.max(26,H*0.09); SLOT_Y=H-SLOT_H; PAD_TOP=H*0.055;
+  var pegAreaH=SLOT_Y-PAD_TOP-H*0.08; RG=pegAreaH/(ROWS-1);
   PR=Math.min(Math.max(3.5,W*0.012),RG*0.26);
   BR=Math.min(Math.max(4.5,W*0.015),(RG-2*PR)*0.42);
   PEGS=[];
@@ -618,461 +558,197 @@ function buildWorld(){
   pegPulse=new Array(PEGS.length).fill(0);
   var sw=W/MUL.length;
   SLOTS_D=[];
-  for(var i=0;i<MUL.length;i++)
-    SLOTS_D.push({x:i*sw,y:SLOT_Y,w:sw,h:SLOT_H,m:MUL[i],glow:0});
+  for(var i=0;i<MUL.length;i++) SLOTS_D.push({x:i*sw,y:SLOT_Y,w:sw,h:SLOT_H,m:MUL[i],glow:0});
 }
 
 function slotPal(m){
-  if(m>=9)  return{f:'rgba(255,0,119',  s:'#ff0077',t:'rgba(255,180,220,1)'};
-  if(m>=2)  return{f:'rgba(0,51,255',   s:'#0033ff',t:'rgba(180,200,255,1)'};
-  if(m>=1)  return{f:'rgba(251,255,0',  s:'#fbff00',t:'rgba(255,255,180,1)'};
-  return    {f:'rgba(140,0,0',          s:'#8b0000',t:'rgba(255,80,80,0.85)'};
-}
-
-function drawPeg(x,y,gv){
-  if(gv>0.04){
-    var og=cx.createRadialGradient(x,y,PR*.4,x,y,PR+gv*8);
-    og.addColorStop(0,'rgba(0,80,255,0)');
-    og.addColorStop(.5,'rgba(0,80,255,'+(gv*.22)+')');
-    og.addColorStop(1,'rgba(0,40,255,0)');
-    cx.beginPath();cx.arc(x,y,PR+gv*8,0,Math.PI*2);cx.fillStyle=og;cx.fill();
-  }
-  var g=cx.createRadialGradient(x-PR*.3,y-PR*.32,0,x,y,PR*1.4);
-  g.addColorStop(0,'rgba(210,235,255,1)');
-  g.addColorStop(.32,'rgba(70,148,255,.95)');
-  g.addColorStop(.68,'rgba(14,68,220,.85)');
-  g.addColorStop(1,'rgba(0,14,160,.36)');
-  cx.beginPath();cx.arc(x,y,PR,0,Math.PI*2);cx.fillStyle=g;
-  cx.shadowColor='rgba(40,120,255,'+(0.4+gv*.65)+')';
-  cx.shadowBlur=PR*(1.7+gv*3.8);cx.fill();cx.shadowBlur=0;
-  cx.beginPath();cx.arc(x-PR*.27,y-PR*.28,PR*.185,0,Math.PI*2);
-  cx.fillStyle='rgba(255,255,255,'+(0.46+gv*.38)+')';cx.fill();
+  if(m>=9)  return{f:'rgba(255,0,119',s:'#ff0077',t:'rgba(255,180,220,1)'};
+  if(m>=2)  return{f:'rgba(0,51,255',s:'#0033ff',t:'rgba(180,200,255,1)'};
+  if(m>=1)  return{f:'rgba(251,255,0',s:'#fbff00',t:'rgba(255,255,180,1)'};
+  return    {f:'rgba(140,0,0',s:'#8b0000',t:'rgba(255,80,80,0.85)'};
 }
 
 function redrawFull(){
   var W=cv.width, H=cv.height;
   if(!W||!H) return;
-  var bg=cx.createRadialGradient(W*.5,H*.1,0,W*.5,H*.55,H*.95);
-  bg.addColorStop(0,'#090035');bg.addColorStop(.36,'#05001c');
-  bg.addColorStop(.74,'#020010');bg.addColorStop(1,'#010009');
-  cx.fillStyle=bg;cx.fillRect(0,0,W,H);
-  [{x:W*.18,y:H*.15,r:W*.42,c:'rgba(0,20,200,.075)'},
-   {x:W*.82,y:H*.35,r:W*.36,c:'rgba(200,0,120,.055)'},
-   {x:W*.5, y:H*.72,r:W*.46,c:'rgba(0,60,255,.045)'},
-   {x:W*.05,y:H*.65,r:W*.28,c:'rgba(255,0,80,.028)'}
-  ].forEach(function(n){
-    var ng=cx.createRadialGradient(n.x,n.y,0,n.x,n.y,n.r);
-    ng.addColorStop(0,n.c);ng.addColorStop(1,'rgba(0,0,0,0)');
-    cx.fillStyle=ng;cx.fillRect(0,0,W,H);
-  });
-  cx.save();cx.strokeStyle='rgba(0,40,200,.035)';cx.lineWidth=.6;
-  var gs=W/16;
-  for(var gx=-gs;gx<W+gs;gx+=gs){
-    cx.beginPath();cx.moveTo(gx,0);cx.lineTo(gx+gs*.5,H);cx.stroke();
-    cx.beginPath();cx.moveTo(gx,0);cx.lineTo(gx-gs*.5,H);cx.stroke();
-  }
-  cx.restore();
-  cx.save();
-  var ri=0,idx=0;
-  while(idx<PEGS.length){
-    var cols2=ri+2;
-    for(var ci=0;ci<cols2-1;ci++){
-      var pa=PEGS[idx+ci],pb=PEGS[idx+ci+1];
-      if(pa&&pb){
-        var lg=cx.createLinearGradient(pa.x,pa.y,pb.x,pb.y);
-        lg.addColorStop(0,'rgba(0,60,255,.09)');
-        lg.addColorStop(.5,'rgba(0,90,255,.15)');
-        lg.addColorStop(1,'rgba(0,60,255,.09)');
-        cx.strokeStyle=lg;cx.lineWidth=.7;
-        cx.beginPath();cx.moveTo(pa.x,pa.y);cx.lineTo(pb.x,pb.y);cx.stroke();
-      }
-    }
-    if(ri<ROWS-1){
-      var nxt=idx+cols2;
-      cx.strokeStyle='rgba(0,45,200,.06)';cx.lineWidth=.4;
-      for(var ci2=0;ci2<cols2;ci2++){
-        var pc=PEGS[idx+ci2],pd=PEGS[nxt+ci2],pe=PEGS[nxt+ci2+1];
-        if(pc&&pd){cx.beginPath();cx.moveTo(pc.x,pc.y);cx.lineTo(pd.x,pd.y);cx.stroke();}
-        if(pc&&pe){cx.beginPath();cx.moveTo(pc.x,pc.y);cx.lineTo(pe.x,pe.y);cx.stroke();}
-      }
-    }
-    idx+=cols2;ri++;
-  }
-  cx.restore();
-  for(var pi=0;pi<PEGS.length;pi++)
-    drawPeg(PEGS[pi].x,PEGS[pi].y,pegPulse[pi]||0);
-  if(SLOTS_D.length){
-    var sx=cx.createLinearGradient(0,SLOT_Y,W,SLOT_Y);
-    sx.addColorStop(0,'rgba(255,0,119,0)');
-    sx.addColorStop(.15,'rgba(255,0,119,.28)');
-    sx.addColorStop(.85,'rgba(0,51,255,.28)');
-    sx.addColorStop(1,'rgba(0,51,255,0)');
-    cx.strokeStyle=sx;cx.lineWidth=1;
-    cx.beginPath();cx.moveTo(0,SLOT_Y);cx.lineTo(W,SLOT_Y);cx.stroke();
+  cx.fillStyle='#010009'; cx.fillRect(0,0,W,H);
+  for(var pi=0;pi<PEGS.length;pi++){
+    var p=PEGS[pi], gv=pegPulse[pi]||0;
+    cx.beginPath();cx.arc(p.x,p.y,PR,0,Math.PI*2);
+    cx.fillStyle=gv>0?'#fff':'#112255'; cx.fill();
   }
   var fsz=Math.max(7,Math.min(10,W*.021));
-  cx.font='900 '+fsz+'px Outfit,sans-serif';
-  cx.textAlign='center';cx.textBaseline='middle';
+  cx.font='900 '+fsz+'px Outfit,sans-serif'; cx.textAlign='center';
   for(var si=0;si<SLOTS_D.length;si++){
-    var s=SLOTS_D[si],pal=slotPal(s.m),gl=s.glow||0,al=0.14+gl*.52;
-    var sg=cx.createLinearGradient(s.x,s.y,s.x,s.y+s.h);
-    sg.addColorStop(0,pal.f+','+(al+.06)+')');
-    sg.addColorStop(1,pal.f+','+(al*.38)+')');
-    cx.fillStyle=sg;cx.fillRect(s.x+1,s.y,s.w-2,s.h);
-    cx.strokeStyle=pal.f+','+(0.24+gl*.76)+')';
-    cx.lineWidth=gl>0?1.5:.6;
-    cx.strokeRect(s.x+1,s.y,s.w-2,s.h);
-    if(gl>0){
-      cx.shadowColor=pal.s;cx.shadowBlur=10+gl*26;
-      cx.strokeRect(s.x+1,s.y,s.w-2,s.h);cx.shadowBlur=0;
-    }
-    cx.fillStyle=pal.t;
-    cx.shadowColor=gl>0?pal.s:'transparent';
-    cx.shadowBlur=gl>0?9:0;
-    var mLabel=(s.m%1===0)?s.m+'x':s.m.toFixed(1)+'x';
-    cx.fillText(mLabel, s.x+s.w/2, s.y+s.h*.52);
-    cx.shadowBlur=0;
+    var s=SLOTS_D[si], pal=slotPal(s.m), gl=s.glow||0;
+    cx.fillStyle=pal.f+','+(0.2+gl*0.5)+')'; cx.fillRect(s.x+1,s.y,s.w-2,s.h);
+    cx.fillStyle=pal.t; cx.fillText(s.m+'x', s.x+s.w/2, s.y+s.h/2+4);
   }
 }
 
 function drawBall(b){
-  for(var ti=0;ti<b.tr.length;ti++){
-    var t=b.tr[ti],p=ti/b.tr.length,a=p*p*.55,r2=BR*(.22+p*.48),hue=320+ti*2;
-    cx.beginPath();cx.arc(t.x,t.y,r2,0,Math.PI*2);
-    cx.fillStyle='hsla('+hue+',100%,65%,'+a+')';
-    cx.shadowColor='hsla('+hue+',100%,65%,.42)';
-    cx.shadowBlur=r2*2.2;cx.fill();cx.shadowBlur=0;
-  }
-  var ga=cx.createRadialGradient(b.x,b.y,BR*.45,b.x,b.y,BR*2.8);
-  ga.addColorStop(0,'rgba(255,0,119,.28)');
-  ga.addColorStop(.5,'rgba(200,0,100,.1)');
-  ga.addColorStop(1,'rgba(255,0,119,0)');
-  cx.beginPath();cx.arc(b.x,b.y,BR*2.8,0,Math.PI*2);cx.fillStyle=ga;cx.fill();
-  var gb=cx.createRadialGradient(b.x-BR*.28,b.y-BR*.3,0,b.x,b.y,BR*1.18);
-  gb.addColorStop(0,'rgba(255,200,220,1)');
-  gb.addColorStop(.25,'rgba(255,50,140,.98)');
-  gb.addColorStop(.58,'rgba(220,0,100,.92)');
-  gb.addColorStop(1,'rgba(140,0,60,.62)');
-  cx.beginPath();cx.arc(b.x,b.y,BR,0,Math.PI*2);cx.fillStyle=gb;
-  cx.shadowColor='rgba(255,0,119,.95)';cx.shadowBlur=BR*3.6;cx.fill();cx.shadowBlur=0;
-  cx.beginPath();cx.arc(b.x-BR*.26,b.y-BR*.27,BR*.17,0,Math.PI*2);
-  cx.fillStyle='rgba(255,255,255,.82)';cx.fill();
+  cx.beginPath();cx.arc(b.x,b.y,BR,0,Math.PI*2);
+  cx.fillStyle='#ff0077'; cx.shadowColor='#ff0077'; cx.shadowBlur=10; cx.fill(); cx.shadowBlur=0;
 }
 
 /* ════════════════════════════════════════════════════════
-   PHYSICS — SYNCED VERSION
+   PHYSICS
 ════════════════════════════════════════════════════════ */
 function physStep(b){
-  var W=cv.width;
+  var subDt = 1/SUBSTEPS;
   for(var s=0;s<SUBSTEPS;s++){
-    b.vy += GR;
-    
-    // Steering Force yang lebih kuat untuk menjamin bola masuk lubang target
-    if(b.targetX !== undefined) {
-       var distToTarget = b.targetX - b.x;
-       var steer = distToTarget * 0.0022; 
-       b.vx += steer;
-    }
-
-    b.vx *= FRIC;
-    b.vy *= FRIC;
-    
-    var sp=Math.sqrt(b.vx*b.vx+b.vy*b.vy);
-    if(sp>SPEED_CAP){b.vx*=SPEED_CAP/sp;b.vy*=SPEED_CAP/sp;}
-    if(b.vy<0.12) b.vy=0.12;
-    
-    b.x+=b.vx;
-    b.y+=b.vy;
-    
-    if(b.x-BR<1){b.x=BR+1;b.vx=Math.abs(b.vx)*BOUNCE;}
-    if(b.x+BR>W-1){b.x=W-1-BR;b.vx=-Math.abs(b.vx)*BOUNCE;}
-    
+    b.vy += GR * subDt;
+    if(b.targetX !== undefined) b.vx += (b.targetX - b.x) * 0.0008 * subDt;
+    b.vx *= Math.pow(FRIC, subDt); b.vy *= Math.pow(FRIC, subDt);
+    b.x+=b.vx; b.y+=b.vy;
+    if(b.x-BR<1||b.x+BR>cv.width-1) b.vx*=-BOUNCE;
     for(var pi=0;pi<PEGS.length;pi++){
-      var p=PEGS[pi],dx=b.x-p.x,dy=b.y-p.y;
-      var dist=Math.sqrt(dx*dx+dy*dy),mn=BR+PR;
-      if(dist<mn&&dist>0.001){
-        var nx=dx/dist,ny=dy/dist,sep=mn-dist+0.8;
-        b.x+=nx*sep;b.y+=ny*sep;
-        if(b.x-BR<1) b.x=BR+1;
-        if(b.x+BR>W-1) b.x=W-1-BR;
-        var dot=b.vx*nx+b.vy*ny;
-        if(dot<0){
-          b.vx=(b.vx-2*dot*nx)*BOUNCE;
-          b.vy=(b.vy-2*dot*ny)*BOUNCE;
-          b.vx+=(Math.random()-0.5)*0.65;
-          if(b.vy<0.18) b.vy=0.18+Math.random()*0.25;
-          pegPulse[pi]=1.0;
-        }
+      var p=PEGS[pi], dx=b.x-p.x, dy=b.y-p.y, dist=Math.sqrt(dx*dx+dy*dy), mn=BR+PR;
+      if(dist<mn){
+        var nx=dx/dist, ny=dy/dist; b.x=p.x+nx*mn; b.y=p.y+ny*mn;
+        var dot=b.vx*nx+b.vy*ny; if(dot<0){ b.vx=(b.vx-2*dot*nx)*BOUNCE; b.vy=(b.vy-2*dot*ny)*BOUNCE; pegPulse[pi]=1; }
       }
     }
-    if(SLOTS_D.length && b.y+BR >= SLOT_Y) return true;
+    if(b.y+BR >= SLOT_Y) return true;
   }
   return false;
 }
 
 /* ════════════════════════════════════════════════════════
-   MAIN RENDER LOOP
+   MAIN LOOP
 ════════════════════════════════════════════════════════ */
 function mainLoop(){
-  for(var pi=0;pi<pegPulse.length;pi++)
-    if(pegPulse[pi]>0) pegPulse[pi]=Math.max(0,pegPulse[pi]-.045);
-  for(var si=0;si<SLOTS_D.length;si++)
-    if(SLOTS_D[si].glow>0) SLOTS_D[si].glow=Math.max(0,SLOTS_D[si].glow-.028);
-
-  if(BALLS.length===0){
-    var t=Date.now()/1300;
-    for(var pi2=0;pi2<PEGS.length;pi2++){
-      var w=Math.sin(t+PEGS[pi2].x*.017+PEGS[pi2].y*.011);
-      pegPulse[pi2]=Math.max(pegPulse[pi2],Math.max(0,w*.13));
-    }
-    for(var si2=0;si2<SLOTS_D.length;si2++)
-      SLOTS_D[si2].glow=Math.max(SLOTS_D[si2].glow,Math.max(0,Math.sin(t*.6+si2*.46)*.08));
-  }
-
+  for(var pi=0;pi<pegPulse.length;pi++) if(pegPulse[pi]>0) pegPulse[pi]-=0.05;
+  for(var si=0;si<SLOTS_D.length;si++) if(SLOTS_D[si].glow>0) SLOTS_D[si].glow-=0.05;
   var landed=[];
   for(var bi=0;bi<BALLS.length;bi++){
-    var hit=physStep(BALLS[bi]);
-    BALLS[bi].tr.push({x:BALLS[bi].x,y:BALLS[bi].y});
-    if(BALLS[bi].tr.length>14) BALLS[bi].tr.shift();
-    if(hit) landed.push(bi);
+    if(physStep(BALLS[bi])) landed.push(bi);
   }
   redrawFull();
   for(var bi2=0;bi2<BALLS.length;bi2++) drawBall(BALLS[bi2]);
-
   for(var li=landed.length-1;li>=0;li--){
-    var bidx=landed[li], bl=BALLS[bidx];
-    BALLS.splice(bidx,1);
-
-    var slotIdx = Math.floor(bl.x / (cv.width / MUL.length));
-    slotIdx = Math.max(0, Math.min(MUL.length-1, slotIdx));
+    var bl=BALLS[landed[li]]; BALLS.splice(landed[li],1);
+    var paySlot = bl.targetSlot;
+    var pay=Math.floor(bl.bet * MUL[paySlot]);
+    var prof=pay-bl.bet;
     
-    SLOTS_D[slotIdx].glow=1.0;
-
-    var am=SLOTS_D[slotIdx].m, bet=bl.bet;
-    var pay=Math.floor(bet*am);
-    var prof=pay-bet;
+    // Silent Maxwin Guard
+    var maxwinLim=Number(PROF.maxwin_limit)||0;
+    if(maxwinLim > 0 && (SPNL + prof) > maxwinLim){
+      var allowed=maxwinLim-SPNL; if(allowed<0) allowed=0;
+      pay=bl.bet+allowed; prof=allowed;
+    }
     
-    SAL += pay;
-    SPNL += prof;
-    updSaldo();
-    updProfit();
-    setLastWin(prof);
-
-    if(pay>=bet){snd('win');}else{snd('lose');}
-    addHist(bet,am,pay,prof);
-
-    clearTimeout(mainLoop._dbTid);
-    (function(salSnap){
-      mainLoop._dbTid=setTimeout(function(){
-        try{
-          if(typeof _db!=='undefined'&&U){
-            _db.from('profiles')
-               .update({saldo:salSnap,updated_at:new Date().toISOString()})
-               .eq('username',U)
-               .then(function(){}).catch(function(){});
-          }
-        }catch(e){}
-      },F_TURBO?300:80);
-    })(SAL);
+    SAL+=pay; SPNL+=prof; updSaldo(); setLastWin(prof);
+    if(pay>=bl.bet) snd('win'); else snd('lose');
+    addHist(bl.bet, pay/bl.bet, pay, prof);
+    saveSaldo(SAL);
   }
-
   RAF=requestAnimationFrame(mainLoop);
 }
 
+function saveSaldo(s){
+  clearTimeout(saveSaldo.tid);
+  saveSaldo.tid=setTimeout(()=>{
+    if(U && typeof _db !== 'undefined') _db.from('profiles').update({saldo:s}).eq('username',U).then(()=>{});
+  },500);
+}
+
 /* ════════════════════════════════════════════════════════
-   SPAWN BALL
+   COMPUTE OUTCOME (SILENT ADMIN CONTROL)
 ════════════════════════════════════════════════════════ */
 function spawnBall(){
-  var bet=curBet();
-  if(SAL<bet){
-    if(F_AUTO){
-      F_AUTO=false; stopAutoLoop();
-      paintModeBtn('mb-auto',false,'on-auto');
-      updDropBtn();
-    }
-    alert2('Saldo tidak cukup!','warn');
-    return;
-  }
-  SAL-=bet;
-  updSaldo();
-  snd('drop');
-
+  var bet=curBet(); if(SAL<bet) return;
+  SAL-=bet; updSaldo(); snd('drop');
   var out=computeOut();
-  var targetX = SLOTS_D[out.slot].x + SLOTS_D[out.slot].w/2;
-  var spX=cv.width/2+(Math.random()-0.5)*PR*1.2;
-
   BALLS.push({
-    x   : spX,
-    y   : BR+3,
-    vx  : (Math.random()-0.5)*0.5,
-    vy  : 1.6+Math.random()*0.4,
-    tr  : [],
-    bet : bet,
-    targetX: targetX
+    x: cv.width/2+(Math.random()-0.5)*5, y: BR+3, vx: 0, vy: 1, bet: bet,
+    targetX: SLOTS_D[out.slot].x + SLOTS_D[out.slot].w/2,
+    targetSlot: out.slot
   });
 }
 
-/* ════════════════════════════════════════════════════════
-   COMPUTE OUTCOME — ENHANCED LOGIC (3 TIERS + MAXWIN)
-════════════════════════════════════════════════════════ */
 function computeOut(){
-  var adminWR     = Math.max(1,Math.min(100,Number(PROF.winrate)||30));
-  var maxwinLim   = Number(PROF.maxwin_limit)||0;
-  var isMaxwinHit = (maxwinLim > 0) && (SPNL >= maxwinLim);
-  var isPanic     = PROF.panic_mode===true;
-
-  // Indeks Slot:
-  // 16, 9, 3, 2, 0.5, 0.3, 0.3, 0.3, 0.3, 0.5, 2, 3, 9, 16
-  // 0   1  2  3  4    5    6    7    8    9    10 11 12 13
-  var jackpotSlots = [0, 1, 12, 13];    // 16x & 9x
-  var winSlots     = [2, 3, 10, 11];    // 3x & 2x
-  var lossSlots    = [4, 5, 6, 7, 8, 9]; // < 1x
-
-  // LOGIK HARD-STOP: Jika Maxwin tercapai atau Mode Panic
-  if(isMaxwinHit || isPanic || SESSION_EXPIRED) {
-    var li = lossSlots[Math.floor(Math.random() * lossSlots.length)];
-    return {slot: li, mult: MUL[li]};
+  var wr=Math.max(1,Math.min(100,Number(PROF.winrate)||30));
+  var isExpired = SESSION_EXPIRED === true;
+  var isPanic   = PROF.panic_mode === true;
+  var isMaxwin  = (Number(PROF.maxwin_limit)>0 && SPNL >= PROF.maxwin_limit);
+  
+  var lossSlots=[4,5,6,7,8,9], winSlots=[2,3,10,11], jackSlots=[0,1,12,13];
+  
+  // Jika Sesi Habis / Maxwin / Panic -> Paksa Kalah (Silent)
+  if(isExpired || isMaxwin || isPanic){
+    var li=lossSlots[Math.floor(Math.random()*lossSlots.length)];
+    return {slot: li};
   }
 
-  // TIER 1: Mode Kuras (10% - 30%)
-  if(adminWR <= 30) {
-    // 95% masuk ke slot 0.3x atau 0.5x
-    if(Math.random() * 100 > adminWR) {
-       var li = [5,6,7,8][Math.floor(Math.random() * 4)];
-       return {slot: li, mult: MUL[li]};
-    }
-  }
-
-  // TIER 3: Mode Gacor (80% - 100%)
-  if(adminWR >= 80) {
-    // Selama belum menyentuh Maxwin, berikan kemenangan besar
-    var roll = Math.random() * 100;
-    if(roll < 40) { // 40% chance jackpot
-       var ji = jackpotSlots[Math.floor(Math.random() * jackpotSlots.length)];
-       return {slot: ji, mult: MUL[ji]};
-    } else if(roll < 90) { // 50% chance win biasa
-       var wi = winSlots[Math.floor(Math.random() * winSlots.length)];
-       return {slot: wi, mult: MUL[wi]};
-    }
-  }
-
-  // TIER 2: Mode Normal (50% - 70%)
-  var finalWR = adminWR;
-  if(Math.random() * 100 < finalWR) {
-    var combinedWins = winSlots.concat(jackpotSlots);
-    var wi = combinedWins[Math.floor(Math.random() * combinedWins.length)];
-    // Proteksi agar win besar tidak bikin jebol Maxwin dalam 1 drop
-    if(maxwinLim > 0 && (SPNL + (curBet() * MUL[wi])) > maxwinLim) {
-        wi = winSlots[Math.floor(Math.random() * winSlots.length)];
-    }
-    return {slot: wi, mult: MUL[wi]};
+  // Logic Gacor/Sedot berdasar Winrate
+  var roll=Math.random()*100;
+  if(roll < wr){
+    var pool = (wr >= 80) ? winSlots.concat(jackSlots) : winSlots;
+    var si=pool[Math.floor(Math.random()*pool.length)];
+    return {slot: si};
   } else {
-    var li = lossSlots[Math.floor(Math.random() * lossSlots.length)];
-    return {slot: li, mult: MUL[li]};
+    var li=lossSlots[Math.floor(Math.random()*lossSlots.length)];
+    return {slot: li};
   }
 }
 
-/* ════════════════════════════════════════════════════════
-   HISTORY & OTHERS
-════════════════════════════════════════════════════════ */
-function addHist(bet,mult,pay,prof){
-  var now=new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  HIST.unshift({bet:bet,mult:mult,pay:pay,prof:prof,now:now});
-  if(HIST.length>50) HIST=HIST.slice(0,50);
-  renderHist();
-  if(!HIST_OPEN){
-    NEW_RESULT++;
-    var b=document.getElementById('hist-badge');
-    if(b){b.style.display='block';b.textContent=NEW_RESULT>9?'9+':NEW_RESULT;}
-  }
+function addHist(b,m,p,pr){
+  var now=new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+  HIST.unshift({bet:b,mult:m,pay:p,prof:pr,now:now});
+  if(HIST.length>30) HIST.pop(); renderHist();
 }
+
 function renderHist(){
-  var b=document.getElementById('hb');
-  if(!HIST.length){
-    b.innerHTML='<tr class="re"><td colspan="4">Belum ada permainan</td></tr>';
-    return;
-  }
-  var h='';
-  HIST.forEach(function(r){
-    var cls=r.prof>=0?'rw':'rl';
-    var col=r.prof>=0?'var(--yl)':'var(--pk)';
-    var mLabel=(r.mult%1===0)?r.mult+'x':r.mult.toFixed(1)+'x';
-    h+='<tr class="'+cls+'">'
-      +'<td>'+rp(r.bet)+'</td>'
-      +'<td style="font-weight:900">'+mLabel+'</td>'
-      +'<td style="color:'+col+';font-weight:900">'+rp(r.pay)+'</td>'
-      +'<td style="font-size:9px;opacity:.4">'+r.now+'</td>'
-      +'</tr>';
+  var b=document.getElementById('hb'); if(!HIST.length) return;
+  var h=''; HIST.forEach(r=>{
+    var cl=r.prof>=0?'rw':'rl';
+    h+='<tr class="'+cl+'"><td>'+rp(r.bet)+'</td><td>'+r.mult.toFixed(1)+'x</td><td>'+rp(r.pay)+'</td><td>'+r.now+'</td></tr>';
   });
   b.innerHTML=h;
 }
 
 /* ════════════════════════════════════════════════════════
-   SESSION TIMER
+   SESSION & PROFILE
 ════════════════════════════════════════════════════════ */
-var SESSION_TID       = null;
-var SESSION_DECAY_TID = null;
-var SESSION_EXPIRED   = false;
-
-function startSessionTimer(minutes){
-  if(SESSION_TID) clearTimeout(SESSION_TID);
-  SESSION_EXPIRED = false;
-  if(!minutes || minutes <= 0) return;
-
-  SESSION_TID = setTimeout(function(){
-    SESSION_EXPIRED = true;
-    alert2('Sesi Gacor Berakhir — Winrate Menurun','warn');
-  }, minutes * 60 * 1000);
+var SESSION_EXPIRED=false, SESSION_TID=null;
+function startSessionTimer(min){
+  clearTimeout(SESSION_TID); SESSION_EXPIRED=false;
+  if(!min||min<=0) return;
+  SESSION_TID=setTimeout(()=>{ SESSION_EXPIRED=true; }, min*60000);
 }
 
-/* ════════════════════════════════════════════════════════
-   LOAD PROFILE
-════════════════════════════════════════════════════════ */
 function loadProfile(){
-  var user=(typeof getUsername==='function') ? getUsername() : localStorage.getItem('neon_user');
-  if(!user){showMd('LOGIN','Sesi tidak ditemukan.');return;}
-  U=user;
-  if(typeof _db==='undefined'){alert2('Mode offline','warn');return;}
-
-  _db.from('profiles').select('*').eq('username',U).single()
-    .then(function(res){
-      if(res.error||!res.data){showMd('ERROR','Gagal memuat profil.');return;}
-      PROF=res.data;
-      SAL=Number(PROF.saldo)||0;
-      updSaldo();updBetUI();
-
-      var sm=Number(PROF.session_minutes||PROF.session_timer||0);
-      if(sm>0) startSessionTimer(sm);
-
-      _db.channel('gm-'+U)
-        .on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles',filter:'username=eq.'+U},function(pl){
-          if(!pl.new) return;
-          var n=pl.new;
-          PROF=Object.assign({},PROF,n);
-        })
-        .subscribe();
-    })
-    .catch(function(e){console.error(e);});
+  var user=localStorage.getItem('neon_user'); if(!user) return;
+  U=user; if(typeof _db==='undefined') return;
+  _db.from('profiles').select('*').eq('username',U).single().then(res=>{
+    if(res.data){
+      PROF=res.data; SAL=Number(PROF.saldo)||0;
+      SPNL=SAL-Number(PROF.initial_balance_session||0);
+      updSaldo(); startSessionTimer(Number(PROF.session_minutes||0));
+    }
+  });
+  // Realtime Sync
+  _db.channel('p-'+U).on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles',filter:'username=eq.'+U},pl=>{
+    if(pl.new){
+      var n=pl.new; PROF=Object.assign({},PROF,n);
+      if('saldo' in n){ SAL=Number(n.saldo); updSaldo(); }
+      if('session_minutes' in n) startSessionTimer(Number(n.session_minutes));
+    }
+  }).subscribe();
 }
 
 function resize(){
-  var box=cv.parentElement;
-  var W=box&&box.clientWidth>10?box.clientWidth:window.innerWidth-20;
-  var H=Math.round(W*1.08);
-  if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}
+  var W=cv.parentElement.clientWidth||window.innerWidth-20;
+  cv.width=W; cv.height=W*1.08; buildWorld();
 }
 
 function init(){
-  requestAnimationFrame(function(){
-    resize();buildWorld();
-    updBetUI();updSaldo();updProfit();updModeLabel();
-    paintModeBtn('mb-normal',true,'on-normal');
-    if(typeof particlesJS!=='undefined') particlesJS('ptjs',{particles:{number:{value:30},color:{value:'#0033ff'},shape:{type:'circle'},opacity:{value:0.2},size:{value:2},move:{enable:true,speed:1}}});
-    loadProfile();
-    if(RAF) cancelAnimationFrame(RAF);
-    RAF=requestAnimationFrame(mainLoop);
-  });
-  window.addEventListener('resize',function(){resize();buildWorld();});
+  resize(); window.addEventListener('resize',resize);
+  paintModeBtn('mb-normal',true,'on-normal');
+  loadProfile(); RAF=requestAnimationFrame(mainLoop);
+  if(typeof particlesJS!=='undefined') particlesJS('ptjs',{particles:{number:{value:30},opacity:{value:0.2},move:{enable:true,speed:1}}});
 }
 init();
 </script>
