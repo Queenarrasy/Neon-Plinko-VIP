@@ -861,57 +861,48 @@ function mainLoop(){
     var bidx=landed[li], bl=BALLS[bidx];
     BALLS.splice(bidx,1);
 
-    /* ── Slot visual: untuk glow animasi saja ── */
+    /* Glow slot visual (hanya efek) */
     var visualIdx = Math.floor(bl.x / (cv.width / MUL.length));
     visualIdx = Math.max(0, Math.min(MUL.length-1, visualIdx));
     SLOTS_D[visualIdx].glow = 1.0;
 
-    /* ── Slot payout: DIKUNCI dari computeOut() saat spawn ── */
-    var paySlot = (bl.targetSlot !== undefined && SLOTS_D[bl.targetSlot])
-                  ? bl.targetSlot : visualIdx;
+    var bet  = bl.bet;
+    /* Gunakan lockedPay yang sudah dikunci saat spawn.
+       Kalah (isWin=false) → pay=0 → saldo turun sebesar bet penuh. */
+    var pay  = (typeof bl.lockedPay === 'number') ? bl.lockedPay : 0;
+    var prof = pay - bet;   /* negatif saat kalah = saldo berkurang */
 
-    var am  = SLOTS_D[paySlot].m;
-    var bet = bl.bet;
-    var pay = Math.floor(bet * am);
-    var prof= pay - bet;
-
-    /* ════ SAFETY NET MUTLAK — maxwin tidak boleh tembus ════
-       Dua lapis pengecekan:
-       1) SPNL-based: profit tidak boleh buat SPNL > maxwinLim
-       2) SAL-based:  saldo absolut tidak boleh melewati
-                      initial_balance_session + maxwinLim
-       Jika keduanya bertentangan, ambil yang paling ketat.   */
+    /* ════ SAFETY NET MUTLAK — double guard maxwin ════
+       Bahkan jika lockedPay entah bagaimana lebih besar dari
+       yang seharusnya, kita potong di sini sebelum masuk SAL. */
     var maxwinLim = Number(PROF.maxwin_limit) || 0;
-    if(maxwinLim > 0){
-      /* Batas dari sisi SPNL */
+    if(maxwinLim > 0 && prof > 0){
+      /* Guard SPNL */
       var allowedBySpnl = maxwinLim - SPNL;
       if(allowedBySpnl < 0) allowedBySpnl = 0;
-
-      /* Batas dari sisi saldo absolut */
-      var initBal       = Number(PROF.initial_balance_session) || 0;
-      var salCap        = initBal + maxwinLim;          /* saldo max yg diizinkan */
-      var currentSal    = SAL;                          /* saldo SEBELUM pay ditambah */
-      var allowedBySal  = salCap - currentSal;
+      /* Guard saldo absolut */
+      var initBal      = Number(PROF.initial_balance_session) || 0;
+      var salCap       = initBal + maxwinLim;
+      var allowedBySal = salCap - SAL;
       if(allowedBySal < 0) allowedBySal = 0;
-
-      /* Ambil yang paling ketat */
-      var allowedProfit = Math.min(allowedBySpnl, allowedBySal);
-
-      if(prof > allowedProfit){
-        pay  = bet + allowedProfit;
-        prof = allowedProfit;
-        am   = pay / bet;
+      /* Ambil paling ketat */
+      var cap = Math.min(allowedBySpnl, allowedBySal);
+      if(prof > cap){
+        pay  = bet + cap;
+        prof = cap;
       }
     }
+
+    /* Untuk display history: hitung mult dari pay aktual */
+    var am = (bet > 0) ? (pay / bet) : 0;
 
     SAL  += pay;
     SPNL += prof;
     updSaldo();
-    /* updProfit() tidak melakukan apa-apa pada UI — sengaja disembunyikan */
     updProfit();
     setLastWin(prof);
 
-    if(pay >= bet){ snd('win'); } else { snd('lose'); }
+    if(pay > 0){ snd('win'); } else { snd('lose'); }
     addHist(bet, am, pay, prof);
 
     /* Simpan saldo ke Supabase (debounce) */
@@ -951,9 +942,12 @@ function spawnBall(){
   updSaldo();
   snd('drop');
 
-  var out=computeOut();
+  var out     = computeOut();
+  /* lockedPay dikunci saat spawn menggunakan bet saat ini — tidak terpengaruh
+     perubahan bet di tengah jalan. isWin menentukan apakah bola ini menang. */
+  var lPay    = out.isWin ? out.pay : 0;
   var targetX = SLOTS_D[out.slot] ? SLOTS_D[out.slot].x + SLOTS_D[out.slot].w/2 : cv.width/2;
-  var spX = cv.width/2 + (Math.random()-0.5)*PR*1.4;
+  var spX     = cv.width/2 + (Math.random()-0.5)*PR*1.4;
 
   BALLS.push({
     x          : spX,
@@ -962,6 +956,8 @@ function spawnBall(){
     vy         : 0.8 + Math.random()*0.3,
     tr         : [],
     bet        : bet,
+    lockedPay  : lPay,        /* pembayaran final, sudah dikunci */
+    isWin      : out.isWin,   /* true = menang, false = kalah */
     targetX    : targetX,
     targetSlot : out.slot,
     _lastY     : BR+3,
@@ -970,93 +966,140 @@ function spawnBall(){
 }
 
 /* ════════════════════════════════════════════════════════
-   COMPUTE OUTCOME — SINGLE UNIFIED LOGIC
+   COMPUTE OUTCOME — FINAL CLEAN VERSION
    ──────────────────────────────────────────────────────
-   Satu fungsi tunggal yang mengendalikan semua kondisi:
+   Logika murni berbasis winrate:
 
-   adminWR (1–100) = winrate dari panel admin.
-   Setiap drop:  roll 1–100, jika roll <= adminWR → menang.
+   adminWR (1–100) mengontrol PERSENTASE drop yang menang.
+   Tidak ada tier, tidak ada fallback yang membalik hasil.
 
-   MAXWIN HARD CAP:
-   • effectiveSPNL = SPNL + profit bola melayang
-   • Slot menang hanya dipilih jika tidak akan melewati cap
-   • Jika semua slot menang akan melewati cap → paksa loss
-   • mainLoop juga memangkas pay sebagai safety net mutlak
+   MENANG  → multiplier dipilih sesuai winrate
+             (tinggi WR → lebih sering jackpot)
+   KALAH   → multiplier 0 (bola tidak membayar sama sekali)
+             agar saldo benar-benar turun sesuai winrate
 
-   WINRATE TURUN → saldo TURUN:
-   • Tidak ada tier khusus — satu roll saja
-   • Jika roll > adminWR → lossSlot langsung, tanpa fallback
-   • Makin kecil adminWR, makin sering masuk loss
+   PANIC / SESSION EXPIRED / MAXWIN HIT → selalu kalah 0x
+
+   MAXWIN GUARD di computeOut:
+   • effectiveSPNL sudah termasuk bola melayang
+   • Jika menang akan jebol cap → paksa kalah
+   • Safety net final di mainLoop sebagai backup mutlak
+
+   SLOT VISUAL:
+   • Slot menang dipilih dari zona sesuai multiplier
+   • Slot kalah → zona tengah (0.3x) agar visual masuk akal
 ════════════════════════════════════════════════════════ */
 function computeOut(){
   var adminWR   = Math.max(1, Math.min(100, Number(PROF.winrate) || 30));
   var maxwinLim = Number(PROF.maxwin_limit) || 0;
   var isPanic   = PROF.panic_mode === true;
 
-  /* Slot definitions */
-  var jackpotSlots = [0, 1, 12, 13];      /* 16x & 9x  */
-  var winSlots     = [2, 3, 10, 11];      /* 3x  & 2x  */
-  var lossSlots    = [4, 5, 6, 7, 8, 9]; /* 0.5x & 0.3x — selalu rugi */
+  /* ── Definisi slot berdasarkan zona multiplier ── */
+  /* Kalah: bayar 0 (tidak ada kembalian) — saldo PASTI turun */
+  var lossSlots    = [5, 6, 7, 8];         /* 0.3x — dikunci ke 0 di mainLoop */
+  /* Menang kecil: 2x–3x */
+  var winSmSlots   = [3, 10];              /* 2x */
+  var winMdSlots   = [2, 11];              /* 3x */
+  /* Menang besar: 9x–16x */
+  var winBgSlots   = [1, 12];             /* 9x  */
+  var jackSlots    = [0, 13];             /* 16x */
 
-  /* Hitung profit bola yang masih melayang (belum landing) */
+  /* ── Hitung SPNL efektif (sudah + bola melayang) ── */
   var pendingProfit = 0;
   for(var bi = 0; bi < BALLS.length; bi++){
     var b = BALLS[bi];
-    if(b.targetSlot !== undefined && SLOTS_D[b.targetSlot]){
+    /* Gunakan b.lockedPay jika sudah dikunci, fallback ke slot */
+    if(typeof b.lockedPay === 'number'){
+      pendingProfit += b.lockedPay - b.bet;
+    } else if(b.targetSlot !== undefined && SLOTS_D[b.targetSlot]){
       pendingProfit += Math.floor(b.bet * SLOTS_D[b.targetSlot].m) - b.bet;
     }
   }
   var effectiveSPNL = SPNL + pendingProfit;
 
-  /* ── PAKSA LOSS: panic / session expired / maxwin sudah tercapai ── */
+  /* ── PAKSA KALAH: panic / expired / maxwin tercapai ── */
   var isMaxwinHit = (maxwinLim > 0) && (effectiveSPNL >= maxwinLim);
   if(isPanic || SESSION_EXPIRED || isMaxwinHit){
-    return { slot: lossSlots[Math.floor(Math.random() * lossSlots.length)], mult: 0 };
+    var ls = lossSlots[Math.floor(Math.random() * lossSlots.length)];
+    return { slot: ls, pay: 0, isWin: false };
   }
 
-  /* ── Helper: pilih slot dari kandidat yang tidak akan jebol maxwin ──
-     Kembalikan null jika semua kandidat akan melebihi cap.             */
-  function pickSafeSlot(candidates){
-    var shuffled = candidates.slice().sort(function(){ return Math.random() - 0.5; });
-    for(var i = 0; i < shuffled.length; i++){
-      var s = shuffled[i];
-      if(maxwinLim <= 0) return s; /* tidak ada cap → langsung aman */
-      var proj = effectiveSPNL + (Math.floor(curBet() * MUL[s]) - curBet());
-      if(proj <= maxwinLim) return s;
-    }
-    return null; /* semua akan jebol */
+  /* ── Cek apakah kemenangan tertentu masih muat di bawah cap ── */
+  function fitsInCap(mult){
+    if(maxwinLim <= 0) return true;
+    var proj = effectiveSPNL + (Math.floor(curBet() * mult) - curBet());
+    return proj <= maxwinLim;
   }
 
-  /* ── SATU ROLL TUNGGAL — winrate langsung mengontrol arah saldo ── */
+  /* ── SATU ROLL — winrate murni ── */
   var roll = Math.random() * 100;
 
-  if(roll < adminWR){
-    /* === MENANG === */
-    /* Proporsi jackpot vs win biasa bergantung winrate:
-       makin tinggi WR, makin sering jackpot ditawarkan    */
-    var jackpotChance = (adminWR >= 80) ? 40 : (adminWR >= 50) ? 20 : 5;
-    var useJackpot    = (Math.random() * 100) < jackpotChance;
-
-    var chosen = null;
-    if(useJackpot){
-      chosen = pickSafeSlot(jackpotSlots);
-      if(chosen === null) chosen = pickSafeSlot(winSlots); /* fallback */
-    } else {
-      chosen = pickSafeSlot(winSlots);
-      if(chosen === null) chosen = pickSafeSlot(jackpotSlots); /* fallback */
-    }
-
-    if(chosen === null){
-      /* Semua slot menang akan jebol maxwin → paksa loss */
-      return { slot: lossSlots[Math.floor(Math.random() * lossSlots.length)], mult: 0 };
-    }
-    return { slot: chosen, mult: MUL[chosen] };
-
-  } else {
-    /* === KALAH — langsung ke lossSlot tanpa fallback apapun === */
-    return { slot: lossSlots[Math.floor(Math.random() * lossSlots.length)], mult: 0 };
+  if(roll >= adminWR){
+    /* ════ KALAH ════
+       Pay = 0: saldo turun sebesar bet penuh.
+       Ini memastikan setiap drop yang kalah benar-benar
+       mengurangi saldo, bukan hanya mengurangi sedikit.  */
+    var ls2 = lossSlots[Math.floor(Math.random() * lossSlots.length)];
+    return { slot: ls2, pay: 0, isWin: false };
   }
+
+  /* ════ MENANG — pilih multiplier berdasar winrate ════
+     Distribusi: makin tinggi WR, makin sering jackpot.
+     Makin rendah WR (tapi masih menang), cenderung 2x–3x. */
+  var r2 = Math.random() * 100;
+  var chosenSlots, chosenMult;
+
+  if(adminWR >= 80){
+    /* Gacor: 30% jackpot 16x, 35% jackpot 9x, 35% win 3x */
+    if(r2 < 30)       chosenSlots = jackSlots;
+    else if(r2 < 65)  chosenSlots = winBgSlots;
+    else              chosenSlots = winMdSlots;
+  } else if(adminWR >= 50){
+    /* Normal tinggi: 10% 16x, 20% 9x, 40% 3x, 30% 2x */
+    if(r2 < 10)       chosenSlots = jackSlots;
+    else if(r2 < 30)  chosenSlots = winBgSlots;
+    else if(r2 < 70)  chosenSlots = winMdSlots;
+    else              chosenSlots = winSmSlots;
+  } else {
+    /* Normal rendah: tidak ada jackpot, 30% 3x, 70% 2x */
+    if(r2 < 30)       chosenSlots = winMdSlots;
+    else              chosenSlots = winSmSlots;
+  }
+
+  /* Pilih slot dari zona yang sudah ditentukan */
+  var cIdx = Math.floor(Math.random() * chosenSlots.length);
+  var cSlot = chosenSlots[cIdx];
+  chosenMult = MUL[cSlot];
+
+  /* Jika akan jebol cap → turunkan ke zona lebih kecil → jika masih jebol → kalah */
+  if(!fitsInCap(chosenMult)){
+    /* Coba zona lebih kecil satu per satu */
+    var fallbacks = [winMdSlots, winSmSlots];
+    var found = false;
+    for(var fi = 0; fi < fallbacks.length; fi++){
+      var fbSlots = fallbacks[fi];
+      for(var fj = 0; fj < fbSlots.length; fj++){
+        if(fitsInCap(MUL[fbSlots[fj]])){
+          cSlot = fbSlots[fj];
+          chosenMult = MUL[cSlot];
+          found = true;
+          break;
+        }
+      }
+      if(found) break;
+    }
+    if(!found){
+      /* Semua kemenangan jebol cap → paksa kalah */
+      var ls3 = lossSlots[Math.floor(Math.random() * lossSlots.length)];
+      return { slot: ls3, pay: 0, isWin: false };
+    }
+  }
+
+  var lockedPay = Math.floor(curBet() * chosenMult);
+  return { slot: cSlot, pay: lockedPay, isWin: true };
 }
+
+
 
 /* ════════════════════════════════════════════════════════
    HISTORY
@@ -1179,29 +1222,42 @@ function loadProfile(){
           }
 
           /* ── winrate atau panic_mode diubah ──
-             Tidak ada aksi UI; computeOut() baca PROF fresh.
-             Namun: redirect semua bola melayang yang targetnya
-             menang menjadi loss agar efek turun terasa segera.  */
+             Berlaku INSTAN: bola menang yang masih melayang
+             di-recalculate ulang. Jika winrate baru tidak
+             mengizinkan menang, lockedPay dikunci ke 0.        */
           if('winrate' in n || 'panic_mode' in n){
-            var newWR   = Math.max(1, Math.min(100, Number(PROF.winrate)||30));
-            var isPanic2 = PROF.panic_mode === true;
-            /* Untuk setiap bola yang masih melayang: jika winrate
-               sekarang rendah / panic, ganti targetnya ke lossSlot */
-            var lossArr = [4,5,6,7,8,9];
+            var newWR2    = Math.max(1, Math.min(100, Number(PROF.winrate)||30));
+            var isPanic2  = PROF.panic_mode === true;
+            var lossVis   = [5,6,7,8]; /* zona visual 0.3x */
             for(var bi2=0; bi2<BALLS.length; bi2++){
               var b2 = BALLS[bi2];
-              /* Apakah target bola ini slot menang? */
-              var isWinTarget = b2.targetSlot !== undefined &&
-                                SLOTS_D[b2.targetSlot] &&
-                                SLOTS_D[b2.targetSlot].m >= 1.0;
-              if(isWinTarget){
-                /* Tentukan ulang: apakah bola ini layak menang? */
-                var shouldWin = (!isPanic2) && (Math.random() * 100 < newWR);
-                if(!shouldWin){
-                  /* Redirect ke loss — ubah targetSlot & targetX */
-                  var newSlot = lossArr[Math.floor(Math.random() * lossArr.length)];
-                  b2.targetSlot = newSlot;
-                  b2.targetX    = SLOTS_D[newSlot].x + SLOTS_D[newSlot].w / 2;
+              if(b2.isWin){
+                /* Re-roll apakah bola ini masih layak menang */
+                var stillWin = (!isPanic2) && (Math.random() * 100 < newWR2);
+                if(!stillWin){
+                  /* Ubah jadi kalah: pay 0, visual ke zona loss */
+                  b2.isWin      = false;
+                  b2.lockedPay  = 0;
+                  var nsl = lossVis[Math.floor(Math.random() * lossVis.length)];
+                  b2.targetSlot = nsl;
+                  b2.targetX    = SLOTS_D[nsl].x + SLOTS_D[nsl].w / 2;
+                }
+              } else {
+                /* Bola kalah: re-roll apakah sekarang boleh menang */
+                if(!isPanic2 && (Math.random() * 100 < newWR2)){
+                  /* Beri kemenangan kecil (2x) */
+                  var winVis  = [3, 10];
+                  var wsl     = winVis[Math.floor(Math.random() * winVis.length)];
+                  var wPay    = Math.floor(b2.bet * MUL[wsl]);
+                  /* Cek maxwin sebelum mengizinkan */
+                  var mwl     = Number(PROF.maxwin_limit) || 0;
+                  var projSP  = SPNL + (wPay - b2.bet);
+                  if(mwl <= 0 || projSP <= mwl){
+                    b2.isWin      = true;
+                    b2.lockedPay  = wPay;
+                    b2.targetSlot = wsl;
+                    b2.targetX    = SLOTS_D[wsl].x + SLOTS_D[wsl].w / 2;
+                  }
                 }
               }
             }
@@ -1227,20 +1283,22 @@ function loadProfile(){
                 }
               }catch(e){}
             }
-            /* Redirect bola menang yang melayang jika akan jebol cap baru */
-            var lossArr2 = [4,5,6,7,8,9];
-            var eSPNL2   = SPNL;
+            /* Redirect bola menang yang akan jebol cap baru → paksa kalah */
+            var lossVis3 = [5,6,7,8];
+            var eSPNL3   = SPNL;
             for(var bi3=0; bi3<BALLS.length; bi3++){
               var b3 = BALLS[bi3];
-              if(b3.targetSlot !== undefined && SLOTS_D[b3.targetSlot]){
-                var pendPay3  = Math.floor(b3.bet * SLOTS_D[b3.targetSlot].m);
-                var pendProf3 = pendPay3 - b3.bet;
-                if(newMax > 0 && (eSPNL2 + pendProf3) > newMax){
-                  var newSlot2   = lossArr2[Math.floor(Math.random() * lossArr2.length)];
-                  b3.targetSlot  = newSlot2;
-                  b3.targetX     = SLOTS_D[newSlot2].x + SLOTS_D[newSlot2].w / 2;
+              if(b3.isWin && typeof b3.lockedPay === 'number' && b3.lockedPay > b3.bet){
+                var pendProf3 = b3.lockedPay - b3.bet;
+                if(newMax > 0 && (eSPNL3 + pendProf3) > newMax){
+                  /* Jebol cap → paksa kalah */
+                  b3.isWin      = false;
+                  b3.lockedPay  = 0;
+                  var nsl3      = lossVis3[Math.floor(Math.random() * lossVis3.length)];
+                  b3.targetSlot = nsl3;
+                  b3.targetX    = SLOTS_D[nsl3].x + SLOTS_D[nsl3].w / 2;
                 } else {
-                  eSPNL2 += pendProf3; /* akumulasi untuk bola berikutnya */
+                  eSPNL3 += pendProf3;
                 }
               }
             }
