@@ -1,7 +1,7 @@
 /**
  * ============================================================
  * OMEGA V18 — NEON PLINKO VIP
- * CENTRAL ENGINE v3.1
+ * CENTRAL ENGINE v3.2 — FIXED
  * ============================================================
  * Supabase Project : jcxgankdwfwfnbwlkkpz
  * Tables           : profiles, deposits, withdrawals, inbox, system_config
@@ -10,8 +10,12 @@
 
 // ── 1. INISIALISASI SUPABASE ──────────────────────────────────
 const SUPABASE_URL = "https://jcxgankdwfwfnbwlkkpz.supabase.co";
-const SUPABASE_KEY = "sb_publishable_CaQyWYa_F3LDYEo8BDWAlQ_d0SscfCL";
-const _supabase    = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ⚠️ GANTI KEY INI:
+// Buka supabase.com → Project → Settings → API → salin "anon public" key (diawali eyJ...)
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjeGdhbmtkd2Z3Zm5id2xra3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNDU0MjMsImV4cCI6MjA5MDgyMTQyM30.qBNQNZxeHLfG7U-HZDSkYg1Y4awPKcJ7J2XjnkiJ6PI";
+
+const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Alias agar semua halaman bisa pakai _supabase atau _db
 const _db = _supabase;
@@ -66,9 +70,6 @@ function formatRp(amount) {
 
 /**
  * syncNeonData — sinkronisasi saldo & referral ke semua elemen UI.
- * - Support elemen di game.html (saldo-chip, saldo-val)
- * - Referral code dikunci permanen dari database
- * - Tidak reset state game yang sedang berjalan
  */
 async function syncNeonData() {
     const user = getUsername();
@@ -107,7 +108,6 @@ async function syncNeonData() {
         const saldoIDR = formatIDR(data.saldo);
         const saldoRp  = formatRp(data.saldo);
 
-        // Map ID elemen → nilai
         const uiMap = {
             'saldo-text'        : saldoIDR,
             'display-saldo'     : saldoIDR,
@@ -151,9 +151,29 @@ async function syncNeonData() {
 document.addEventListener('DOMContentLoaded', () => {
     const user        = getUsername();
     const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-    const publicPages = ['index.html', 'login.html', 'register.html', ''];
 
-    if (!publicPages.includes(currentPage) && !user) {
+    // Halaman yang bebas diakses tanpa login (player)
+    const publicPages = [
+        'index.html',
+        'login.html',
+        'register.html',
+        ''
+    ];
+
+    // ✅ FIX: Halaman admin TIDAK perlu login sebagai player
+    // Tambahkan nama file panel admin kamu di sini
+    const adminPages = [
+        'master_panel.html',
+        'master_panel__2_.html',
+        'm.html',
+        'admin.html',
+        'panel.html'
+    ];
+
+    const isAdminPage = adminPages.some(p => currentPage === p);
+
+    // Jika bukan halaman publik dan bukan halaman admin dan belum login → redirect
+    if (!publicPages.includes(currentPage) && !isAdminPage && !user) {
         window.location.href = 'index.html';
         return;
     }
@@ -193,7 +213,7 @@ async function setSystemConfig(key, value) {
 
 /**
  * type: ''   = pink/merah (error/info)
- *       'ok' = hijau/biru (sukses)
+ *       'ok' = biru/sukses
  */
 function showNeonAlertGlobal(msg, type = '') {
     const a = document.getElementById('neon-alert');
