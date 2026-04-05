@@ -8,7 +8,37 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
-    <script src="config.js"></script>
+    <script>
+    // ══════════════════════════════════════════════════════
+    //  OMEGA V18 — INLINE CONFIG (tidak butuh config.js)
+    //  ⚠️ GANTI SUPABASE_KEY dengan anon key dari:
+    //  supabase.com → Project → Settings → API → anon public
+    // ══════════════════════════════════════════════════════
+    const SUPABASE_URL = "https://jcxgankdwfwfnbwlkkpz.supabase.co";
+    const SUPABASE_"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjeGdhbmtkd2Z3Zm5id2xra3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNDU0MjMsImV4cCI6MjA5MDgyMTQyM30.qBNQNZxeHLfG7U-HZDSkYg1Y4awPKcJ7J2XjnkiJ6PI"; // ← WAJIB GANTI
+
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const _db = _supabase;
+
+    function showNeonAlertGlobal(msg, type = '') {
+        const a = document.getElementById('neon-alert');
+        if (!a) return;
+        a.innerText = msg;
+        a.className = type === 'ok' ? 'show ok' : 'show';
+        clearTimeout(a._t);
+        a._t = setTimeout(() => { a.className = ''; }, 3500);
+    }
+
+    function getUsername() {
+        return localStorage.getItem('neon_user')
+            || localStorage.getItem('user_session')
+            || localStorage.getItem('username')
+            || null;
+    }
+
+    function formatIDR(v) { return "IDR " + Math.floor(v||0).toLocaleString('id-ID'); }
+    function formatRp(v)  { return "Rp "  + Math.floor(v||0).toLocaleString('id-ID'); }
+    </script>
     <style>
         :root{
             --pink:#ff0077; --blue:#0022ff; --yellow:#fbff00; --bg:#000005;
@@ -164,6 +194,9 @@
 
 <div id="particles-js"></div>
 <div id="neon-alert">SYSTEM NOTIFICATION</div>
+
+<!-- DEBUG STATUS — hilang otomatis jika koneksi OK -->
+<div id="debug-status" style="display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);width:90%;max-width:360px;background:rgba(0,0,15,.97);border:1.5px solid var(--pink);padding:12px 16px;border-radius:12px;text-align:center;font-size:11px;font-weight:700;z-index:9990;line-height:1.6;"></div>
 
 <div id="confirm-overlay">
     <div class="confirm-box">
@@ -1236,7 +1269,43 @@ function switchTab(t, el) {
 }
 
 // ── START ─────────────────────────────────────────────────────
+
+// ── DEBUG: Tampilkan status koneksi di layar ────────────────
+async function debugCheck() {
+    const dbgEl = document.getElementById('debug-status');
+    if (!dbgEl) return;
+
+    // Cek apakah key sudah diganti
+    if (SUPABASE_KEY === 'GANTI_ANON_KEY_DISINI' || SUPABASE_KEY.startsWith('GANTI')) {
+        dbgEl.style.display = 'block';
+        dbgEl.style.background = 'rgba(255,0,0,.15)';
+        dbgEl.style.borderColor = 'var(--pink)';
+        dbgEl.innerHTML = '<b style="color:var(--pink);">⚠ SUPABASE KEY BELUM DIGANTI!</b><br>'
+            + '<span style="font-size:9px;opacity:.7;">Buka file ini, cari GANTI_ANON_KEY_DISINI, ganti dengan anon key dari:<br>'
+            + 'supabase.com → Project → Settings → API → anon public</span>';
+        return;
+    }
+
+    try {
+        const { data, error } = await _db.from('profiles').select('username').limit(1);
+        if (error) {
+            dbgEl.style.display = 'block';
+            dbgEl.style.background = 'rgba(255,0,0,.1)';
+            dbgEl.style.borderColor = 'var(--pink)';
+            dbgEl.innerHTML = '<b style="color:var(--pink);">✕ KONEKSI GAGAL</b><br>'
+                + '<span style="font-size:9px;opacity:.7;">Error: ' + error.message + '<br>'
+                + 'Kemungkinan: Key salah atau RLS aktif di tabel profiles.</span>';
+        } else {
+            dbgEl.style.display = 'none';
+        }
+    } catch(e) {
+        dbgEl.style.display = 'block';
+        dbgEl.innerHTML = '<b style="color:var(--pink);">✕ ERROR: ' + e.message + '</b>';
+    }
+}
+
 init();
+debugCheck();
 </script>
 </body>
 </html>
