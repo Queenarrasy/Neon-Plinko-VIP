@@ -925,12 +925,22 @@ function mainLoop(){
     var bidx=landed[li], bl=BALLS[bidx];
     BALLS.splice(bidx,1);
 
-    var lIdx=-1;
+    /* ── SLOT VISUAL: slot fisik tempat bola benar-benar masuk
+       (hanya untuk efek glow & animasi — BUKAN untuk payout) ── */
+    var visualIdx=-1;
     for(var ss=0;ss<SLOTS_D.length;ss++){
-      if(bl.x>=SLOTS_D[ss].x&&bl.x<SLOTS_D[ss].x+SLOTS_D[ss].w){lIdx=ss;break;}
+      if(bl.x>=SLOTS_D[ss].x&&bl.x<SLOTS_D[ss].x+SLOTS_D[ss].w){visualIdx=ss;break;}
     }
-    if(lIdx===-1) lIdx=Math.floor(SLOTS_D.length/2);
-    SLOTS_D[lIdx].glow=1.0;
+    if(visualIdx===-1) visualIdx=Math.floor(SLOTS_D.length/2);
+    SLOTS_D[visualIdx].glow=1.0;
+
+    /* ── PAYOUT SLOT: SELALU pakai slot yang dipilih computeOut()
+       saat bola di-spawn. Ini yang menentukan menang/kalah sesuai
+       winrate admin. Fisika plinko hanya untuk animasi visual.
+       bl.target sudah diset di spawnBall() dari computeOut().slot ── */
+    var lIdx = (bl.target !== undefined && SLOTS_D[bl.target])
+               ? bl.target
+               : visualIdx;
 
     /* ── PERHITUNGAN SALDO ──────────────────────────────────
        pay  = bet × multiplier
@@ -1002,7 +1012,9 @@ function spawnBall(){
     ? SLOTS_D[out.slot].x+SLOTS_D[out.slot].w/2
     : cv.width/2;
   var spX=cv.width/2+(Math.random()-0.5)*PR*1.4;
-  var bias=(tgtX-spX)*0.007;
+  /* Bias diperkuat agar bola lebih condong ke arah slot target
+     secara visual — payout tetap dikunci ke out.slot */
+  var bias=(tgtX-spX)*0.018;
 
   /* vy awal 1.5 → bola langsung bergerak nyata sejak spawn */
   BALLS.push({
