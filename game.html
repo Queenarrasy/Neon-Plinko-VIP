@@ -351,21 +351,8 @@ var U=null, PROF={}, SAL=0, SPNL=0, HIST=[];
 var F_NORMAL=true, F_AUTO=false, F_TURBO=false;
 var AUTO_TID=null, HIST_OPEN=false, NEW_RESULT=0;
 
-/* ── Interval spawn AUTO ────────────────────────────────
-   INT_AUTO  : jeda antar spawn bola di mode AUTO normal.
-               1400ms = bola berikutnya muncul saat bola
-               pertama sudah ~40% turun → terasa mengalir,
-               tidak perlu tunggu bola masuk slot dulu.
-   INT_TURBO : jeda lebih rapat 700ms → lebih cepat tapi
-               masih terbaca, tidak kacau.
-──────────────────────────────────────────────────────── */
 var INT_AUTO  = 1400;
 var INT_TURBO = 700;
-
-/* ── Maks bola aktif sekaligus ──────────────────────────
-   Mencegah bola menumpuk terlalu padat di layar.
-   NORMAL : 3 bola  |  TURBO : 5 bola
-──────────────────────────────────────────────────────── */
 var MAX_BALLS_NORMAL = 3;
 var MAX_BALLS_TURBO  = 5;
 
@@ -373,27 +360,7 @@ var BSTEPS=[400,600,800,1000,1200,1600,1800,2000,4000,6000,8000,
             10000,12000,16000,18000,20000,25000,30000];
 var BIDX=3;
 
-/* ════════════════════════════════════════════════════════
-   MAXWIN CONFIG
-   ──────────────────────────────────────────────────────
-   Ketika profit sesi (SPNL) mencapai atau melebihi
-   nilai maxwin_limit yang diset admin di Supabase,
-   winrate otomatis diturunkan ke MAXWIN_PENALIZED_WR.
-   Game tetap berjalan normal — pemain tidak tahu.
-
-   MAXWIN_PENALIZED_WR : winrate fallback (%) saat maxwin
-                         tercapai. Default = 2%.
-                         Admin bisa ubah langsung di sini
-                         atau jadikan kolom DB tersendiri.
-════════════════════════════════════════════════════════ */
 var MAXWIN_PENALIZED_WR = 2;
-
-/* ════════════════════════════════════════════════════════
-   SLOT MULTIPLIERS — Plinko standar
-   Sisi luar : 16x / 9x / 3x / 2x  (WIN)
-   Tengah    : 0.3x / 0.5x  (nilai kecil = rugi efektif)
-   Tidak ada angka 0x — semua tampil angka bermakna
-════════════════════════════════════════════════════════ */
 var MUL=[16, 9, 3, 2, 0.5, 0.3, 0.3, 0.3, 0.3, 0.5, 2, 3, 9, 16];
 
 /* ════════════════════════════════════════════════════════
@@ -403,17 +370,6 @@ var cv=document.getElementById('cv');
 var cx=cv.getContext('2d');
 var ROWS=12;
 
-/* ── Parameter fisika bola ──────────────────────────────
-   GR        = 0.30  → gravitasi terasa berat & nyata,
-                        tidak slowmo, tidak terlalu cepat.
-   BOUNCE    = 0.48  → pantul redam cepat, terasa solid
-                        seperti bola plastik di plinko asli.
-   FRIC      = 0.985 → gesekan udara meredam kecepatan
-                        horizontal secara natural.
-   SUBSTEPS  = 4     → 4 kalkulasi fisika per frame,
-                        gerakan sangat halus & akurat.
-   SPEED_CAP = 10    → bola tidak "teleport" saat memantul.
-──────────────────────────────────────────────────────── */
 var GR        = 0.30;
 var BOUNCE    = 0.48;
 var FRIC      = 0.985;
@@ -518,17 +474,6 @@ function stepBet(d){
 
 /* ════════════════════════════════════════════════════════
    MODE TOGGLE
-   ──────────────────────────────────────────────────────
-   Aturan mode yang berlaku:
-   • NORMAL  = klik manual drop bola satu per satu.
-   • AUTO    = bola spawn otomatis periodik tanpa jeda
-               tunggu bola sebelumnya selesai.
-   • TURBO   = hanya bisa aktif saat AUTO aktif.
-               Menekan TURBO tanpa AUTO → peringatan.
-   • TURBO aktif  → NORMAL otomatis dimatikan.
-   • TURBO mati   → NORMAL otomatis dihidupkan.
-   • AUTO mati    → TURBO ikut mati otomatis.
-   • NORMAL ditekan saat TURBO aktif → TURBO ikut mati.
 ════════════════════════════════════════════════════════ */
 function updModeLabel(){
   var e=document.getElementById('sb-mode');
@@ -545,7 +490,6 @@ function updModeLabel(){
 
 function toggleMode(m){
   if(m==='normal'){
-    /* Jika TURBO aktif, tekan NORMAL → turbo ikut mati */
     if(F_TURBO){
       F_TURBO=false;
       paintModeBtn('mb-turbo',false,'on-turbo');
@@ -553,7 +497,6 @@ function toggleMode(m){
     F_NORMAL=!F_NORMAL;
     paintModeBtn('mb-normal',F_NORMAL,'on-normal');
     updDropBtn(); updModeLabel();
-
   } else if(m==='auto'){
     F_AUTO=!F_AUTO;
     paintModeBtn('mb-auto',F_AUTO,'on-auto');
@@ -561,7 +504,6 @@ function toggleMode(m){
       startAutoLoop();
     } else {
       stopAutoLoop();
-      /* AUTO mati → TURBO ikut mati, NORMAL hidup kembali */
       if(F_TURBO){
         F_TURBO=false;
         paintModeBtn('mb-turbo',false,'on-turbo');
@@ -570,9 +512,7 @@ function toggleMode(m){
       }
     }
     updDropBtn(); updModeLabel();
-
   } else if(m==='turbo'){
-    /* TURBO hanya bisa aktif bila AUTO sudah aktif */
     if(!F_AUTO && !F_TURBO){
       alert2('Aktifkan AUTO terlebih dahulu','warn');
       return;
@@ -580,15 +520,12 @@ function toggleMode(m){
     F_TURBO=!F_TURBO;
     paintModeBtn('mb-turbo',F_TURBO,'on-turbo');
     if(F_TURBO){
-      /* TURBO ON → matikan NORMAL */
       F_NORMAL=false;
       paintModeBtn('mb-normal',false,'on-normal');
     } else {
-      /* TURBO OFF → hidupkan NORMAL kembali */
       F_NORMAL=true;
       paintModeBtn('mb-normal',true,'on-normal');
     }
-    /* Restart loop agar pakai interval baru */
     if(F_AUTO){ stopAutoLoop(); startAutoLoop(); }
     updModeLabel();
   }
@@ -612,12 +549,6 @@ function updDropBtn(){
 
 /* ════════════════════════════════════════════════════════
    AUTO LOOP
-   ──────────────────────────────────────────────────────
-   Bola di-spawn setiap interval tanpa menunggu bola
-   sebelumnya landing. Timer terus berputar; jika bola
-   di layar sudah mencapai MAX_BALLS, spawn dilewati
-   (tidak dibatalkan). Begitu ada bola landing, tick
-   berikutnya langsung mengisi.
 ════════════════════════════════════════════════════════ */
 function startAutoLoop(){
   stopAutoLoop();
@@ -691,10 +622,6 @@ function buildWorld(){
     SLOTS_D.push({x:i*sw,y:SLOT_Y,w:sw,h:SLOT_H,m:MUL[i],glow:0});
 }
 
-/* ════════════════════════════════════════════════════════
-   SLOT PALETTE
-   16x/9x → pink  | 3x/2x → biru | 0.5x → kuning | 0.3x → merah gelap
-════════════════════════════════════════════════════════ */
 function slotPal(m){
   if(m>=9)  return{f:'rgba(255,0,119',  s:'#ff0077',t:'rgba(255,180,220,1)'};
   if(m>=2)  return{f:'rgba(0,51,255',   s:'#0033ff',t:'rgba(180,200,255,1)'};
@@ -702,9 +629,6 @@ function slotPal(m){
   return    {f:'rgba(140,0,0',          s:'#8b0000',t:'rgba(255,80,80,0.85)'};
 }
 
-/* ════════════════════════════════════════════════════════
-   DRAW PEG
-════════════════════════════════════════════════════════ */
 function drawPeg(x,y,gv){
   if(gv>0.04){
     var og=cx.createRadialGradient(x,y,PR*.4,x,y,PR+gv*8);
@@ -725,9 +649,6 @@ function drawPeg(x,y,gv){
   cx.fillStyle='rgba(255,255,255,'+(0.46+gv*.38)+')';cx.fill();
 }
 
-/* ════════════════════════════════════════════════════════
-   FULL REDRAW
-════════════════════════════════════════════════════════ */
 function redrawFull(){
   var W=cv.width, H=cv.height;
   if(!W||!H) return;
@@ -789,7 +710,6 @@ function redrawFull(){
     cx.strokeStyle=sx;cx.lineWidth=1;
     cx.beginPath();cx.moveTo(0,SLOT_Y);cx.lineTo(W,SLOT_Y);cx.stroke();
   }
-  /* Slot — tampilkan angka bermakna (0.3x / 0.5x / 2x / 3x / 9x / 16x) */
   var fsz=Math.max(7,Math.min(10,W*.021));
   cx.font='900 '+fsz+'px Outfit,sans-serif';
   cx.textAlign='center';cx.textBaseline='middle';
@@ -815,9 +735,6 @@ function redrawFull(){
   }
 }
 
-/* ════════════════════════════════════════════════════════
-   DRAW BALL
-════════════════════════════════════════════════════════ */
 function drawBall(b){
   for(var ti=0;ti<b.tr.length;ti++){
     var t=b.tr[ti],p=ti/b.tr.length,a=p*p*.55,r2=BR*(.22+p*.48),hue=320+ti*2;
@@ -843,31 +760,34 @@ function drawBall(b){
 }
 
 /* ════════════════════════════════════════════════════════
-   PHYSICS — REALISTIS & BERBOBOT
-   ──────────────────────────────────────────────────────
-   4 substep per frame → kalkulasi tumbukan lebih presisi,
-   tidak ada bola menembus peg, gerakan sangat halus.
-
-   GR=0.30 cukup berat sehingga bola terasa berbobot nyata:
-   bukan melayang (slowmo) tapi juga tidak sprint (cartoon).
-
-   Setelah tumbukan peg, impuls acak ±0.7 pada sumbu X
-   membuat lintasan bervariasi alami kiri-kanan.
+   PHYSICS — SYNCED VERSION
 ════════════════════════════════════════════════════════ */
 function physStep(b){
   var W=cv.width;
   for(var s=0;s<SUBSTEPS;s++){
     b.vy += GR;
+    
+    /* STEERING FORCE: 
+       Secara halus membimbing bola ke arah targetX 
+       agar visual masuk ke kotak yang benar sesuai RNG */
+    if(b.targetX !== undefined) {
+       var steer = (b.targetX - b.x) * 0.0016; 
+       b.vx += steer;
+    }
+
     b.vx *= FRIC;
     b.vy *= FRIC;
+    
     var sp=Math.sqrt(b.vx*b.vx+b.vy*b.vy);
     if(sp>SPEED_CAP){b.vx*=SPEED_CAP/sp;b.vy*=SPEED_CAP/sp;}
-    /* Bola selalu bergerak ke bawah, tidak pernah stuck */
     if(b.vy<0.12) b.vy=0.12;
+    
     b.x+=b.vx;
     b.y+=b.vy;
+    
     if(b.x-BR<1){b.x=BR+1;b.vx=Math.abs(b.vx)*BOUNCE;}
     if(b.x+BR>W-1){b.x=W-1-BR;b.vx=-Math.abs(b.vx)*BOUNCE;}
+    
     for(var pi=0;pi<PEGS.length;pi++){
       var p=PEGS[pi],dx=b.x-p.x,dy=b.y-p.y;
       var dist=Math.sqrt(dx*dx+dy*dy),mn=BR+PR;
@@ -880,13 +800,13 @@ function physStep(b){
         if(dot<0){
           b.vx=(b.vx-2*dot*nx)*BOUNCE;
           b.vy=(b.vy-2*dot*ny)*BOUNCE;
-          b.vx+=(Math.random()-0.5)*0.7;
+          b.vx+=(Math.random()-0.5)*0.65;
           if(b.vy<0.18) b.vy=0.18+Math.random()*0.25;
           pegPulse[pi]=1.0;
         }
       }
     }
-    if(SLOTS_D.length&&b.y+BR>=SLOT_Y) return true;
+    if(SLOTS_D.length && b.y+BR >= SLOT_Y) return true;
   }
   return false;
 }
@@ -920,43 +840,23 @@ function mainLoop(){
   redrawFull();
   for(var bi2=0;bi2<BALLS.length;bi2++) drawBall(BALLS[bi2]);
 
-  /* Proses bola yang mendarat di slot */
   for(var li=landed.length-1;li>=0;li--){
     var bidx=landed[li], bl=BALLS[bidx];
     BALLS.splice(bidx,1);
 
-    /* ── SLOT VISUAL: slot fisik tempat bola benar-benar masuk
-       (hanya untuk efek glow & animasi — BUKAN untuk payout) ── */
-    var visualIdx=-1;
-    for(var ss=0;ss<SLOTS_D.length;ss++){
-      if(bl.x>=SLOTS_D[ss].x&&bl.x<SLOTS_D[ss].x+SLOTS_D[ss].w){visualIdx=ss;break;}
-    }
-    if(visualIdx===-1) visualIdx=Math.floor(SLOTS_D.length/2);
-    SLOTS_D[visualIdx].glow=1.0;
+    /* DETEKSI POSISI FISIK: 
+       Pembayaran ditentukan tepat di mana bola mendarat secara visual */
+    var slotIdx = Math.floor(bl.x / (cv.width / MUL.length));
+    slotIdx = Math.max(0, Math.min(MUL.length-1, slotIdx));
+    
+    SLOTS_D[slotIdx].glow=1.0;
 
-    /* ── PAYOUT SLOT: SELALU pakai slot yang dipilih computeOut()
-       saat bola di-spawn. Ini yang menentukan menang/kalah sesuai
-       winrate admin. Fisika plinko hanya untuk animasi visual.
-       bl.target sudah diset di spawnBall() dari computeOut().slot ── */
-    var lIdx = (bl.target !== undefined && SLOTS_D[bl.target])
-               ? bl.target
-               : visualIdx;
-
-    /* ── PERHITUNGAN SALDO ──────────────────────────────────
-       pay  = bet × multiplier
-       0.3x → pay=0.3×bet  (kehilangan 70% bet)
-       0.5x → pay=0.5×bet  (kehilangan 50% bet)
-         2x → pay=2×bet    (balik modal + profit 1×bet)
-         3x → pay=3×bet    (profit 2×bet)
-         9x → pay=9×bet    (profit 8×bet)
-        16x → pay=16×bet   (profit 15×bet)
-       Bet sudah dikurangi saat spawnBall.
-    ─────────────────────────────────────────────────────── */
-    var am=SLOTS_D[lIdx].m, bet=bl.bet;
+    var am=SLOTS_D[slotIdx].m, bet=bl.bet;
     var pay=Math.floor(bet*am);
     var prof=pay-bet;
-    SAL+=pay;
-    SPNL+=prof;
+    
+    SAL += pay;
+    SPNL += prof;
     updSaldo();
     updProfit();
     setLastWin(prof);
@@ -964,7 +864,6 @@ function mainLoop(){
     if(pay>=bet){snd('win');}else{snd('lose');}
     addHist(bet,am,pay,prof);
 
-    /* Simpan saldo ke Supabase (debounce agar tidak flood) */
     clearTimeout(mainLoop._dbTid);
     (function(salSnap){
       mainLoop._dbTid=setTimeout(function(){
@@ -1008,77 +907,50 @@ function spawnBall(){
   snd('drop');
 
   var out=computeOut();
-  var tgtX=SLOTS_D[out.slot]
-    ? SLOTS_D[out.slot].x+SLOTS_D[out.slot].w/2
-    : cv.width/2;
-  var spX=cv.width/2+(Math.random()-0.5)*PR*1.4;
-  /* Bias diperkuat agar bola lebih condong ke arah slot target
-     secara visual — payout tetap dikunci ke out.slot */
-  var bias=(tgtX-spX)*0.018;
+  
+  /* Ambil titik tengah slot target secara presisi */
+  var targetX = SLOTS_D[out.slot].x + SLOTS_D[out.slot].w/2;
+  
+  var spX=cv.width/2+(Math.random()-0.5)*PR*1.2;
 
-  /* vy awal 1.5 → bola langsung bergerak nyata sejak spawn */
   BALLS.push({
     x   : spX,
     y   : BR+3,
-    vx  : bias+(Math.random()-0.5)*0.4,
-    vy  : 1.5+Math.random()*0.4,
+    vx  : (Math.random()-0.5)*0.5,
+    vy  : 1.6+Math.random()*0.4,
     tr  : [],
     bet : bet,
-    target: out.slot
+    targetX: targetX
   });
 }
 
 /* ════════════════════════════════════════════════════════
-   COMPUTE OUTCOME — WINRATE + MAXWIN LIMIT
-   ──────────────────────────────────────────────────────
-   Urutan prioritas winrate:
-
-   1. panic_mode = true (dari admin)
-      → winrate dipaksa 1% — hampir selalu kalah
-
-   2. maxwin_limit aktif  DAN  SPNL >= maxwin_limit
-      → winrate diturunkan otomatis ke MAXWIN_PENALIZED_WR
-        (default 2%) tanpa pemberitahuan ke pemain
-        game tetap berjalan, hanya peluang menang dikecilkan
-
-   3. Normal
-      → gunakan kolom `winrate` dari Supabase (1–100)
-        default 30% jika tidak diset
-
-   Slot WIN  = mult >= 2x (sisi kiri & kanan papan)
-   Slot LOSE = mult < 1x  (area tengah — 0.3x / 0.5x)
+   COMPUTE OUTCOME
 ════════════════════════════════════════════════════════ */
 function computeOut(){
   var isPanic     = PROF.panic_mode===true;
   var maxwinLim   = Number(PROF.maxwin_limit)||0;
   var adminWR     = Math.max(1,Math.min(100,Number(PROF.winrate)||30));
-
   var isMaxwinHit = (maxwinLim>0) && (SPNL>=maxwinLim);
 
   var wr;
-  if(isPanic){
-    wr = 1;
-  } else if(isMaxwinHit){
-    wr = MAXWIN_PENALIZED_WR;
-  } else if(SESSION_EXPIRED){
-    /* Sesi habis — gunakan WR decay (turun terus, game tetap jalan) */
-    wr = Math.max(SESSION_DECAY_MIN, SESSION_DECAY_WR);
-  } else {
-    wr = adminWR;
-  }
+  if(isPanic) wr = 1;
+  else if(isMaxwinHit) wr = MAXWIN_PENALIZED_WR;
+  else if(SESSION_EXPIRED) wr = Math.max(SESSION_DECAY_MIN, SESSION_DECAY_WR);
+  else wr = adminWR;
 
   var winSlots=[], lossSlots=[];
   for(var i=0;i<MUL.length;i++){
     if(MUL[i]>=2) winSlots.push(i);
-    else           lossSlots.push(i);
+    else lossSlots.push(i);
   }
 
   if(Math.random()*100 < wr){
     var wi=winSlots[Math.floor(Math.random()*winSlots.length)];
-    return{slot:wi, mult:MUL[wi], win:true};
+    return{slot:wi, mult:MUL[wi]};
   } else {
     var li=lossSlots[Math.floor(Math.random()*lossSlots.length)];
-    return{slot:li, mult:MUL[li], win:false};
+    return{slot:li, mult:MUL[li]};
   }
 }
 
@@ -1119,25 +991,16 @@ function renderHist(){
 
 /* ════════════════════════════════════════════════════════
    SESSION TIMER
-   ──────────────────────────────────────────────────────
-   Ketika session_minutes > 0, timer mulai menghitung.
-   Saat waktu habis, game TIDAK dihentikan — melainkan
-   SESSION_EXPIRED = true sehingga computeOut() secara
-   otomatis menurunkan winrate semakin rendah setiap
-   DECAY_INTERVAL_MS (default 30 detik), hingga minimum
-   SESSION_DECAY_MIN (default 1%).
-   Pemain tidak tahu — game terus berjalan normal.
 ════════════════════════════════════════════════════════ */
 var SESSION_TID       = null;
 var SESSION_DECAY_TID = null;
 var SESSION_EXPIRED   = false;
-var SESSION_DECAY_WR  = 30;   /* WR saat sesi baru habis (akan turun terus) */
-var SESSION_DECAY_STEP= 3;    /* Turun X% setiap interval */
-var SESSION_DECAY_MIN = 1;    /* Batas bawah winrate sesi habis */
-var SESSION_DECAY_INTERVAL_MS = 30000; /* 30 detik per penurunan */
+var SESSION_DECAY_WR  = 30;
+var SESSION_DECAY_STEP= 3;
+var SESSION_DECAY_MIN = 1;
+var SESSION_DECAY_INTERVAL_MS = 30000;
 
 function startSessionTimer(minutes){
-  /* Bersihkan timer lama */
   if(SESSION_TID)       clearTimeout(SESSION_TID);
   if(SESSION_DECAY_TID) clearInterval(SESSION_DECAY_TID);
   SESSION_EXPIRED  = false;
@@ -1146,21 +1009,15 @@ function startSessionTimer(minutes){
   if(!minutes || minutes <= 0) return;
 
   SESSION_TID = setTimeout(function(){
-    /* Sesi habis — aktifkan mode decay, game TETAP BERJALAN */
     SESSION_EXPIRED  = true;
-    SESSION_DECAY_WR = Math.max(SESSION_DECAY_MIN,
-                        Math.min(100, Number(PROF.winrate)||30));
-
-    /* Turunkan WR secara bertahap setiap interval */
+    SESSION_DECAY_WR = Math.max(SESSION_DECAY_MIN, Math.min(100, Number(PROF.winrate)||30));
     SESSION_DECAY_TID = setInterval(function(){
-      SESSION_DECAY_WR = Math.max(SESSION_DECAY_MIN,
-                          SESSION_DECAY_WR - SESSION_DECAY_STEP);
+      SESSION_DECAY_WR = Math.max(SESSION_DECAY_MIN, SESSION_DECAY_WR - SESSION_DECAY_STEP);
       if(SESSION_DECAY_WR <= SESSION_DECAY_MIN){
         clearInterval(SESSION_DECAY_TID);
         SESSION_DECAY_TID = null;
       }
     }, SESSION_DECAY_INTERVAL_MS);
-
   }, minutes * 60 * 1000);
 }
 
@@ -1170,12 +1027,10 @@ function stopSessionDecay(){
 }
 
 /* ════════════════════════════════════════════════════════
-   LOAD PROFILE & REALTIME SUPABASE
+   LOAD PROFILE
 ════════════════════════════════════════════════════════ */
 function loadProfile(){
-  var user=(typeof getUsername==='function')
-    ? getUsername()
-    : localStorage.getItem('neon_user');
+  var user=(typeof getUsername==='function') ? getUsername() : localStorage.getItem('neon_user');
   if(!user){showMd('LOGIN','Sesi tidak ditemukan. Harap login kembali.');return;}
   U=user;
   if(typeof _db==='undefined'){alert2('Mode offline','warn');return;}
@@ -1195,7 +1050,6 @@ function loadProfile(){
         session_start:new Date().toISOString()
       }).eq('username',U).then(function(){}).catch(function(){});
 
-      /* ── Realtime: update PROF ketika admin ubah nilai ── */
       _db.channel('gm-'+U)
         .on('postgres_changes',{
           event:'UPDATE',schema:'public',
@@ -1203,12 +1057,9 @@ function loadProfile(){
         },function(pl){
           if(!pl.new) return;
           var n=pl.new, updated={};
-          if('winrate' in n)
-            updated.winrate=Math.max(1,Math.min(100,Number(n.winrate)||1));
-          if('panic_mode' in n)
-            updated.panic_mode=!!n.panic_mode;
-          if('maxwin_limit' in n)
-            updated.maxwin_limit=Number(n.maxwin_limit)||0;
+          if('winrate' in n) updated.winrate=Math.max(1,Math.min(100,Number(n.winrate)||1));
+          if('panic_mode' in n) updated.panic_mode=!!n.panic_mode;
+          if('maxwin_limit' in n) updated.maxwin_limit=Number(n.maxwin_limit)||0;
           if('session_minutes' in n){
             updated.session_minutes=Number(n.session_minutes)||0;
             if(updated.session_minutes!==(PROF.session_minutes||0)){
@@ -1216,8 +1067,7 @@ function loadProfile(){
               startSessionTimer(updated.session_minutes);
             }
           }
-          if('session_timer' in n)
-            updated.session_timer=Number(n.session_timer)||0;
+          if('session_timer' in n) updated.session_timer=Number(n.session_timer)||0;
           PROF=Object.assign({},PROF,updated);
         })
         .subscribe(function(status){
@@ -1233,9 +1083,6 @@ function loadProfile(){
     .catch(function(e){showMd('ERROR','Gagal: '+(e.message||e));});
 }
 
-/* ════════════════════════════════════════════════════════
-   RESIZE
-════════════════════════════════════════════════════════ */
 function resize(){
   var box=cv.parentElement;
   var W=box&&box.clientWidth>10?box.clientWidth:window.innerWidth-20;
@@ -1243,9 +1090,6 @@ function resize(){
   if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}
 }
 
-/* ════════════════════════════════════════════════════════
-   PARTICLES
-════════════════════════════════════════════════════════ */
 function initPtjs(){
   if(typeof particlesJS==='undefined') return;
   particlesJS('ptjs',{
@@ -1262,9 +1106,6 @@ function initPtjs(){
   });
 }
 
-/* ════════════════════════════════════════════════════════
-   INIT
-════════════════════════════════════════════════════════ */
 function init(){
   requestAnimationFrame(function(){
     requestAnimationFrame(function(){
