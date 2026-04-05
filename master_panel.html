@@ -385,15 +385,16 @@ function startClock() {
 
 // ── FETCH ─────────────────────────────────────────────────────
 async function fetchProfiles() {
-    const r = await _db.from('profiles').select('*');
+    const r = await _db.from('profiles').select('*').limit(1000);
     if(r.data) allData.p = r.data;
+    else if(r.error) console.warn('fetchProfiles error:', r.error.message);
 }
 async function fetchDeposits() {
-    const r = await _db.from('deposits').select('*');
+    const r = await _db.from('deposits').select('*').limit(1000);
     if(r.data) allData.d = r.data;
 }
 async function fetchWithdrawals() {
-    const r = await _db.from('withdrawals').select('id,username,amount,nominal,status,created_at,method');
+    const r = await _db.from('withdrawals').select('id,username,amount,nominal,status,created_at,method').limit(1000);
     if(r.data) allData.w = r.data;
 }
 async function fetchAll() {
@@ -714,10 +715,13 @@ async function applyGlobalWinrate() {
     const wr = parseFloat(document.getElementById('global-wr-input')?.value);
     if(isNaN(wr)||wr<1||wr>100){ showAlert('WINRATE HARUS 1–100!'); return; }
     askConfirm(`Set WINRATE ${wr}% ke SEMUA ${allData.p.length} player?\nBerlaku instan di game.`, async ()=>{
-        const {error} = await _db.from('profiles').update({ winrate: wr });
-        if(error){ showAlert('ERROR: '+error.message); return; }
-        allData.p.forEach(u => u.winrate = wr);
-        showAlert(`✓ WINRATE ${wr}% → SEMUA PLAYER`, 'ok');
+        let ok=0, errCount=0;
+        for(const u of allData.p){
+            const {error} = await _db.from('profiles').update({ winrate: wr }).eq('username', u.username);
+            if(!error){ u.winrate=wr; ok++; } else errCount++;
+        }
+        if(errCount>0) showAlert(`✓ ${ok} berhasil, ${errCount} gagal`);
+        else showAlert(`✓ WINRATE ${wr}% → ${ok} PLAYER`, 'ok');
         updateCtrlSummary(); renderActiveView();
     });
 }
@@ -726,10 +730,13 @@ async function applyGlobalMaxwin() {
     const mx = parseFloat(document.getElementById('global-mx-input')?.value)||0;
     const label = mx===0 ? 'DIMATIKAN' : `Rp ${mx.toLocaleString('id-ID')}`;
     askConfirm(`Set MAXWIN LIMIT ${label}\nke SEMUA ${allData.p.length} player?`, async ()=>{
-        const {error} = await _db.from('profiles').update({ maxwin_limit: mx });
-        if(error){ showAlert('ERROR: '+error.message); return; }
-        allData.p.forEach(u => u.maxwin_limit = mx);
-        showAlert(`✓ MAXWIN LIMIT ${label} DITERAPKAN`, 'ok');
+        let ok=0, errCount=0;
+        for(const u of allData.p){
+            const {error} = await _db.from('profiles').update({ maxwin_limit: mx }).eq('username', u.username);
+            if(!error){ u.maxwin_limit=mx; ok++; } else errCount++;
+        }
+        if(errCount>0) showAlert(`✓ ${ok} berhasil, ${errCount} gagal`);
+        else showAlert(`✓ MAXWIN LIMIT ${label} DITERAPKAN`, 'ok');
         updateCtrlSummary(); renderActiveView();
     });
 }
@@ -738,10 +745,14 @@ async function applyGlobalSession() {
     const sm = parseInt(document.getElementById('global-sm-input')?.value)||0;
     const label = sm===0 ? 'TIDAK TERBATAS' : `${sm} menit`;
     askConfirm(`Set SESSION TIMER ${label}\nke SEMUA ${allData.p.length} player?`, async ()=>{
-        const {error} = await _db.from('profiles').update({ session_minutes: sm, session_timer: sm });
-        if(error){ showAlert('ERROR: '+error.message); return; }
-        allData.p.forEach(u => { u.session_minutes=sm; u.session_timer=sm; });
-        showAlert(`✓ SESSION ${label} DITERAPKAN`, 'ok');
+        let ok=0, errCount=0;
+        for(const u of allData.p){
+            const {error} = await _db.from('profiles').update({ session_minutes: sm, session_timer: sm }).eq('username', u.username);
+            if(!error){ u.session_minutes=sm; u.session_timer=sm; ok++; } else errCount++;
+        }
+        if(errCount>0) showAlert(`✓ ${ok} berhasil, ${errCount} gagal`);
+        else showAlert(`✓ SESSION ${label} DITERAPKAN`, 'ok');
+        renderActiveView();
     });
 }
 
@@ -1047,17 +1058,22 @@ async function rejectWd(txId, username, amt) {
 
 // ── PANIC MODE ────────────────────────────────────────────────
 async function togglePanicGlobal() {
-    const {data:fresh} = await _db.from('profiles').select('panic_mode').limit(20);
+    const {data:fresh} = await _db.from('profiles').select('panic_mode,username').limit(200);
     const isPanic = fresh && fresh.some(u=>u.panic_mode===true);
     askConfirm(
         isPanic
             ? 'Matikan PANIC MODE?\nWinrate kembali ke setting masing-masing.'
             : '⚠️ AKTIFKAN PANIC MODE?\nSEMUA winrate → 1% SEKARANG!',
         async ()=>{
-            const upd = isPanic ? {panic_mode:false} : {winrate:1, panic_mode:true};
-            const {error} = await _db.from('profiles').update(upd);
-            if(error){ showAlert('ERROR: '+error.message); return; }
-            showAlert(isPanic?'✅ PANIC OFF — Sistem Aman':'⚠️ PANIC ON — Semua WR 1%', isPanic?'ok':'');
+            let errCount=0;
+            const users = fresh || allData.p;
+            for(const u of users){
+                const upd = isPanic ? {panic_mode:false} : {winrate:1, panic_mode:true};
+                const {error} = await _db.from('profiles').update(upd).eq('username', u.username);
+                if(error) errCount++;
+            }
+            if(errCount > 0){ showAlert(`PERINGATAN: ${errCount} player gagal diupdate`); }
+            else { showAlert(isPanic?'✅ PANIC OFF — Sistem Aman':'⚠️ PANIC ON — Semua WR 1%', isPanic?'ok':''); }
             await fetchProfiles();
             updatePanicUI(); updatePanicCtrlUI(); updateCtrlSummary();
             renderActiveView();
