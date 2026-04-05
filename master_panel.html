@@ -75,7 +75,7 @@
         .alpha-btn:hover{border-color:rgba(0,34,255,.5);color:var(--blue);}
         .alpha-btn.active{border-color:var(--pink);color:var(--pink);background:rgba(255,0,119,.08);box-shadow:0 0 7px rgba(255,0,119,.3);}
 
-        .main-container{height:calc(100svh - 195px);overflow-y:auto;overflow-x:hidden;padding:12px;padding-bottom:40px;position:relative;z-index:10;scrollbar-width:thin;scrollbar-color:var(--blue) #000;-webkit-overflow-scrolling:touch;}
+        .main-container{height:calc(100svh - 195px);overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:12px;padding-bottom:40px;position:relative;z-index:10;scrollbar-width:thin;scrollbar-color:var(--blue) #000;}
         .main-container::-webkit-scrollbar{width:4px;}
         .main-container::-webkit-scrollbar-track{background:#000;}
         .main-container::-webkit-scrollbar-thumb{background:var(--blue);border-radius:2px;}
@@ -184,7 +184,7 @@
 
 <div id="particles-js"></div>
 <div id="neon-alert">SYSTEM NOTIFICATION</div>
-<div id="debug-status" style="display:none;position:fixed;top:85px;left:50%;transform:translateX(-50%);width:92%;max-width:400px;background:rgba(0,0,10,.99);border:2px solid var(--pink);padding:16px;border-radius:14px;text-align:center;font-size:11px;font-weight:700;z-index:9995;line-height:1.7;box-shadow:0 0 30px rgba(255,0,119,.5);"></div>
+<div id="debug-status" style="display:none;position:fixed;top:88px;left:50%;transform:translateX(-50%);width:92%;max-width:400px;background:rgba(0,0,10,.99);border:2px solid var(--pink);padding:16px;border-radius:14px;text-align:center;font-size:11px;font-weight:700;z-index:9995;line-height:1.7;box-shadow:0 0 30px rgba(255,0,119,.6);"></div>
 
 <div id="confirm-overlay">
     <div class="confirm-box">
@@ -409,23 +409,22 @@ async function fetchProfiles() {
     const r = await _db.from('profiles').select('*').limit(1000);
     if(r.data) {
         allData.p = r.data;
-        const d = document.getElementById('debug-status');
-        if(d) d.style.display='none';
+        const dbg = document.getElementById('debug-status');
+        if(dbg) dbg.style.display='none';
     } else if(r.error) {
         console.warn('fetchProfiles error:', r.error.message);
-        const d = document.getElementById('debug-status');
-        if(d){
-            d.style.display='block';
-            d.innerHTML = `<div style="font-size:15px;margin-bottom:6px;">⚠️</div>`
-                + `<b style="color:var(--pink);font-size:13px;">KONEKSI DATABASE GAGAL</b><br>`
-                + `<span style="font-size:10px;color:rgba(255,200,200,.8);">${r.error.message}</span><br>`
-                + `<div style="margin:10px 0;padding:8px;background:rgba(255,0,119,.08);border:1px solid rgba(255,0,119,.25);border-radius:8px;font-size:9px;color:rgba(255,255,255,.6);line-height:1.7;">`
-                + `Supabase RLS belum dikonfigurasi.<br>`
-                + `Buka <b style="color:var(--yellow)">Supabase → SQL Editor</b> dan jalankan file <b style="color:var(--yellow)">supabase_fix_v2.sql</b>`
-                + `</div>`
-                + `<button onclick="document.getElementById('debug-status').style.display='none';init();" `
-                + `style="background:linear-gradient(90deg,var(--pink),#cc0044);color:#fff;border:none;padding:10px 24px;border-radius:8px;font-weight:900;cursor:pointer;font-size:12px;touch-action:manipulation;letter-spacing:1px;box-shadow:0 0 12px rgba(255,0,119,.4);">`
-                + `🔄 COBA LAGI</button>`;
+        const dbg = document.getElementById('debug-status');
+        if(dbg){
+            dbg.style.display='block';
+            dbg.innerHTML='<div style="font-size:22px;margin-bottom:8px;">⚠️</div>'
+                +'<b style="color:#ff0077;font-size:14px;display:block;margin-bottom:6px;">KONEKSI DATABASE GAGAL</b>'
+                +'<div style="font-size:10px;color:rgba(255,150,150,.9);background:rgba(255,0,0,.1);border:1px solid rgba(255,0,0,.2);border-radius:8px;padding:8px;margin:8px 0;">'
+                +r.error.message+'</div>'
+                +'<div style="font-size:10px;color:rgba(255,255,255,.55);margin-bottom:12px;line-height:1.6;">'
+                +'Buka <b style="color:#fbff00">Supabase → SQL Editor</b><br>Jalankan file <b style="color:#fbff00">supabase_fix_v2.sql</b>'
+                +'</div>'
+                +'<button onclick="document.getElementById('debug-status').style.display='none';init();" '
+                +'style="background:linear-gradient(90deg,#ff0077,#cc0044);color:#fff;border:none;padding:12px 28px;border-radius:10px;font-weight:900;cursor:pointer;font-size:13px;touch-action:manipulation;letter-spacing:1px;">🔄 COBA LAGI</button>';
         }
     }
 }
@@ -444,7 +443,7 @@ async function fetchAll() {
 // ── INIT ──────────────────────────────────────────────────────
 async function init() {
     const vp = document.getElementById('view-players');
-    if(vp && !allData.p.length) vp.innerHTML = `<div style="text-align:center;padding:60px 20px;"><div style="font-size:36px;margin-bottom:14px;animation:panicPulse 1s infinite;">⚡</div><div style="font-size:13px;color:var(--yellow);font-weight:900;letter-spacing:2px;">MEMUAT DATA...</div><div style="font-size:9px;color:rgba(255,255,255,.3);margin-top:8px;">Menghubungkan ke Supabase</div></div>`;
+    if(vp && !allData.p.length) vp.innerHTML = '<div style="text-align:center;padding:60px 20px;"><div style="font-size:40px;margin-bottom:14px;display:block;animation:panicPulse 1s infinite;">⚡</div><div style="font-size:13px;color:#fbff00;font-weight:900;letter-spacing:2px;text-shadow:0 0 8px rgba(251,255,0,.7);">MEMUAT DATA...</div><div style="font-size:9px;color:rgba(255,255,255,.3);margin-top:8px;letter-spacing:1px;">MENGHUBUNGKAN KE SUPABASE</div></div>';
     try {
         await fetchAll();
         allData.p.forEach(u => { prevSaldo[u.username] = u.saldo || 0; });
@@ -1302,16 +1301,9 @@ async function debugCheck() {
 
 init();
 debugCheck();
-
-// Auto-refresh fallback setiap 30 detik jika WebSocket realtime putus
-setInterval(async () => {
-    try {
-        await fetchAll();
-        updateStatsBar();
-        updatePendingBadge();
-        if(currentTab !== 'players') renderActiveView();
-    } catch(e) {}
-}, 30000);
+setInterval(async()=>{
+    try{ await fetchAll(); updateStatsBar(); updatePendingBadge(); }catch(e){}
+},30000);
 </script>
 </body>
 </html>
