@@ -255,7 +255,7 @@
         <!-- GLOBAL MAXWIN LIMIT -->
         <div class="ctrl-card">
             <div class="ctrl-title"><i class="fas fa-trophy" style="color:var(--yellow);"></i> SET MAXWIN LIMIT GLOBAL</div>
-            <p class="info-text" style="margin-bottom:10px;">Jika profit sesi player ≥ limit ini, winrate diturunkan otomatis ke 2% di game. Set 0 untuk menonaktifkan.</p>
+            <p class="info-text" style="margin-bottom:10px;">Jika profit sesi player ≥ limit ini, winrate diturunkan otomatis ke 2% di game. Game tetap berjalan, player tidak tahu. Set 0 untuk menonaktifkan.</p>
             <input type="number" id="global-mx-input" class="big-input" placeholder="1000000" min="0" value="1000000">
             <div class="global-presets">
                 <button class="gp-btn" onclick="setGlobalMXPreset(0)">OFF</button>
@@ -273,7 +273,7 @@
         <!-- GLOBAL SESSION TIMER -->
         <div class="ctrl-card">
             <div class="ctrl-title"><i class="fas fa-hourglass-half" style="color:var(--yellow);"></i> SET SESSION TIMER GLOBAL</div>
-            <p class="info-text" style="margin-bottom:10px;">Durasi sesi bermain (menit) untuk semua player. 0 = tidak ada batas waktu.</p>
+            <p class="info-text" style="margin-bottom:10px;">Durasi sesi bermain (menit) untuk semua player. Saat waktu habis, <b style="color:var(--yellow)">game TIDAK berhenti</b> — winrate otomatis turun terus setiap 30 detik hingga minimum 1%. Player tidak tahu. Set 0 untuk tidak ada batas waktu.</p>
             <input type="number" id="global-sm-input" class="big-input" placeholder="0" min="0" value="0">
             <div class="global-presets">
                 <button class="gp-btn" onclick="setGlobalSMPreset(0)">∞</button>
@@ -324,12 +324,13 @@
                         <th><i class="fas fa-user"></i> PLAYER</th>
                         <th>WR</th>
                         <th>MAXWIN</th>
+                        <th><i class="fas fa-hourglass-half"></i> SESI</th>
                         <th>SALDO</th>
                         <th>PNL</th>
                     </tr>
                 </thead>
                 <tbody id="live-body">
-                    <tr><td colspan="5" style="text-align:center;padding:30px;opacity:.4;font-size:11px;">Memuat data...</td></tr>
+                    <tr><td colspan="6" style="text-align:center;padding:30px;opacity:.4;font-size:11px;">Memuat data...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -461,10 +462,11 @@ function patchLiveRow(u) {
             cells[1].innerHTML = `<span class="wr-badge ${wrc}">${wr}%</span>`;
         }
         if(cells[2]) cells[2].innerHTML = buildMxCell(mx, diff);
-        if(cells[3]) cells[3].innerText = live.toLocaleString('id-ID');
-        if(cells[4]) {
-            cells[4].className = diff > 0 ? 'status-up' : (diff < 0 ? 'status-down' : 'status-zero');
-            cells[4].innerText = (diff >= 0 ? '+' : '') + diff.toLocaleString('id-ID');
+        if(cells[3]) cells[3].innerHTML = buildSmCell(Number(full.session_minutes||full.session_timer||0));
+        if(cells[4]) cells[4].innerText = live.toLocaleString('id-ID');
+        if(cells[5]) {
+            cells[5].className = diff > 0 ? 'status-up' : (diff < 0 ? 'status-down' : 'status-zero');
+            cells[5].innerText = (diff >= 0 ? '+' : '') + diff.toLocaleString('id-ID');
         }
         if(changed) {
             row.className = live > prev ? 'flash-up' : 'flash-down';
@@ -480,6 +482,13 @@ function buildMxCell(mx, spnl) {
     const hit = pct >= 100 ? '<span style="color:var(--pink);font-size:8px;font-weight:900;"> ⚠</span>' : '';
     return `<span style="font-size:9px;color:rgba(255,255,255,.45);">${(mx/1000).toFixed(0)}K</span>${hit}
         <div class="maxwin-bar-wrap"><div class="maxwin-bar" style="width:${pct}%;background:${barColor};"></div></div>`;
+}
+
+function buildSmCell(sm) {
+    if(!sm || sm === 0) return '<span style="color:rgba(255,255,255,.2);font-size:9px;">∞</span>';
+    const h = Math.floor(sm/60), m = sm%60;
+    const label = h > 0 ? `${h}j${m>0?' '+m+'m':''}` : `${m}m`;
+    return `<span style="font-size:9px;font-weight:900;color:var(--yellow);text-shadow:var(--gy);">${label}</span>`;
 }
 
 // ── REALTIME KASIR ────────────────────────────────────────────
@@ -577,6 +586,14 @@ function renderPlayers() {
             </div>`;
         }
 
+        // Session badge
+        let smBadge = '';
+        if(sm > 0) {
+            const sh = Math.floor(sm/60), smin = sm%60;
+            const smLabel = sh > 0 ? `${sh}j${smin>0?' '+smin+'m':''}` : `${smin}m`;
+            smBadge = `<span class="wr-badge" style="background:rgba(251,255,0,.08);color:var(--yellow);border:1px solid rgba(251,255,0,.22);">⏱ ${smLabel}</span>`;
+        }
+
         return `<div class="card" style="${isPanic?'border-color:rgba(255,0,119,.55);':''}" id="pc-${k}">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
                 <div style="flex:1;min-width:0;">
@@ -584,6 +601,7 @@ function renderPlayers() {
                         <span class="player-name">${u.username}</span>
                         <span class="wr-badge ${wrClass}">WR ${wr}%</span>
                         ${isPanic?'<span class="wr-badge wr-low">⚠ PANIC</span>':''}
+                        ${smBadge}
                     </div>
                     <div style="font-size:8px;opacity:.38;margin-top:2px;">${u.nama_lengkap||''} · ${u.bank_name||''}</div>
                     ${mxProgress}
@@ -613,8 +631,8 @@ function renderPlayers() {
                     <label><i class="fas fa-trophy"></i> Maxwin Rp</label>
                     <input type="number" id="mx-${k}" value="${mx}">
                 </div>
-                <div class="field field-full">
-                    <label><i class="fas fa-hourglass-half"></i> Session (Menit) — 0 = tidak terbatas</label>
+                <div class="field field-full" style="border-color:rgba(251,255,0,.3);">
+                    <label style="color:var(--yellow);"><i class="fas fa-hourglass-half"></i> Session Timer (Menit) — 0 = ∞ · Habis → WR turun otomatis</label>
                     <input type="number" id="sm-${k}" value="${sm}">
                 </div>
             </div>
@@ -641,6 +659,7 @@ function updateCtrlSummary() {
     const maxwinHits  = allData.p.filter(u=>{ const mx=Number(u.maxwin_limit||0); const sp=Number(u.saldo||0)-Number(u.initial_balance_session||0); return mx>0&&sp>=mx; }).length;
     const noMaxwin    = allData.p.filter(u=>!u.maxwin_limit||u.maxwin_limit==0).length;
     const totalSaldo  = allData.p.reduce((s,u)=>s+(u.saldo||0),0);
+    const withSession = allData.p.filter(u=>(Number(u.session_minutes||u.session_timer||0))>0).length;
 
     el.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
         <div style="background:rgba(0,0,0,.5);border:1px solid rgba(0,34,255,.18);border-radius:10px;padding:10px;text-align:center;">
@@ -655,15 +674,21 @@ function updateCtrlSummary() {
             <div style="font-size:7px;opacity:.4;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Maxwin Hit</div>
             <div style="font-size:20px;font-weight:900;color:${maxwinHits>0?'var(--pink)':'var(--green)'};">${maxwinHits}</div>
         </div>
-        <div style="background:rgba(0,0,0,.5);border:1px solid rgba(0,34,255,.18);border-radius:10px;padding:10px;text-align:center;">
-            <div style="font-size:7px;opacity:.4;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">No Maxwin</div>
-            <div style="font-size:20px;font-weight:900;color:var(--yellow);">${noMaxwin}</div>
+        <div style="background:rgba(0,0,0,.5);border:1px solid rgba(251,255,0,.18);border-radius:10px;padding:10px;text-align:center;">
+            <div style="font-size:7px;opacity:.4;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Ada Timer Sesi</div>
+            <div style="font-size:20px;font-weight:900;color:${withSession>0?'var(--yellow)':'rgba(255,255,255,.3)'};">${withSession}</div>
         </div>
     </div>
     <div style="font-size:9px;color:rgba(255,255,255,.32);line-height:1.8;">
         Panic Mode: <b style="color:${isPanic?'var(--pink)':'var(--green)'}">${isPanic?'⚠ AKTIF':'✅ AMAN'}</b> &nbsp;|&nbsp;
         Total Saldo: <b style="color:var(--yellow)">${(totalSaldo/1000000).toFixed(2)}JT</b> &nbsp;|&nbsp;
-        Maxwin Hit: <b style="color:${maxwinHits>0?'var(--pink)':'var(--green)'};">${maxwinHits} player</b>
+        Maxwin Hit: <b style="color:${maxwinHits>0?'var(--pink)':'var(--green)'};">${maxwinHits} player</b> &nbsp;|&nbsp;
+        Timer Sesi: <b style="color:var(--yellow);">${withSession} player</b>
+    </div>
+    <div style="margin-top:10px;padding:9px 12px;background:rgba(251,255,0,.04);border:1px solid rgba(251,255,0,.18);border-radius:8px;font-size:9px;color:rgba(255,255,255,.45);line-height:1.7;">
+        <b style="color:var(--yellow);">ℹ️ Cara kerja Session Timer:</b><br>
+        Saat waktu habis → game <b style="color:var(--green)">TETAP BERJALAN</b>, tapi WR turun otomatis setiap 30 detik.<br>
+        Decay: −3% per 30 detik → min 1%. Player tidak tahu. Reset sesi = timer mulai ulang.
     </div>`;
 }
 
@@ -740,7 +765,7 @@ function renderLive() {
     const body   = document.getElementById('live-body');
     if(!body) return;
     if(!sorted.length){
-        body.innerHTML='<tr><td colspan="5" style="text-align:center;padding:25px;opacity:.4;font-size:11px;">Belum ada data</td></tr>';
+        body.innerHTML='<tr><td colspan="6" style="text-align:center;padding:25px;opacity:.4;font-size:11px;">Belum ada data</td></tr>';
         return;
     }
     body.innerHTML = sorted.map(u => {
@@ -751,8 +776,10 @@ function renderLive() {
         const dc    = diff>0?'status-up':(diff<0?'status-down':'status-zero');
         const wr    = u.winrate ?? '?';
         const mx    = Number(u.maxwin_limit||0);
+        const sm    = Number(u.session_minutes||u.session_timer||0);
         const isPanic = u.panic_mode;
         prevSaldo[u.username] = live;
+        const smCell = buildSmCell(sm);
         return `<tr id="lr-${k}">
             <td>
                 <b style="color:var(--yellow);text-shadow:var(--gy);font-size:12px;">${u.username}${isPanic?' ⚠':''}</b>
@@ -760,6 +787,7 @@ function renderLive() {
             </td>
             <td><span class="wr-badge ${wr>=60?'wr-high':wr>=30?'wr-mid':'wr-low'}">${wr}%</span></td>
             <td>${buildMxCell(mx, diff)}</td>
+            <td>${smCell}</td>
             <td style="font-weight:900;">${live.toLocaleString('id-ID')}</td>
             <td class="${dc}">${diff>=0?'+':''}${diff.toLocaleString('id-ID')}</td>
         </tr>`;
