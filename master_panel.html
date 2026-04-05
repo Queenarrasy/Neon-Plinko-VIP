@@ -1,1151 +1,1241 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>NEON PLINKO VIP</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
-<script src="config.js"></script>
-<style>
-:root{
-  --pk:#ff0077; --bl:#0033ff; --yl:#fbff00;
-  --bg:#02000e;
-  --gp:0 0 10px #ff0077,0 0 28px rgba(255,0,119,.35);
-  --gb:0 0 10px #0033ff,0 0 28px rgba(0,51,255,.35);
-  --gy:0 0 10px #fbff00,0 0 28px rgba(251,255,0,.35);
-}
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{background:var(--bg);color:#fff;font-family:'Outfit',sans-serif;
-  min-height:100vh;overflow-x:hidden;padding-bottom:74px}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+    <title>OMEGA V18 — ELITE COMMAND CENTER</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script src="config.js"></script>
+    <style>
+        :root{
+            --pink:#ff0077; --blue:#0022ff; --yellow:#fbff00; --bg:#000005;
+            --gp:0 0 8px rgba(255,0,119,.7),0 0 22px rgba(255,0,119,.25);
+            --gb:0 0 8px rgba(0,34,255,.7),0 0 22px rgba(0,34,255,.25);
+            --gy:0 0 8px rgba(251,255,0,.7),0 0 22px rgba(251,255,0,.25);
+            --green:#00ff88;
+            --card:rgba(0,0,40,.72); --border:rgba(0,34,255,.32);
+        }
+        *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+        body{background:var(--bg);color:#fff;font-family:'Outfit',sans-serif;height:100vh;overflow:hidden;}
+        #particles-js{position:fixed;width:100%;height:100%;z-index:0;background:radial-gradient(circle at center,#000022,#000);}
 
-#ptjs{position:fixed;inset:0;z-index:0;pointer-events:none;
-  background:radial-gradient(ellipse 150% 80% at 50% 0%,#090030 0%,#04000f 50%,#010009 100%)}
+        #neon-alert{position:fixed;top:-120px;left:50%;transform:translateX(-50%);width:86%;max-width:340px;background:rgba(0,0,15,.97);border:1.5px solid var(--pink);border-top:2px solid var(--yellow);color:#fff;padding:14px 20px;border-radius:14px;text-align:center;font-weight:900;z-index:9999;font-family:'Outfit',sans-serif;font-size:13px;letter-spacing:.5px;transition:.55s cubic-bezier(.175,.885,.32,1.275);box-shadow:0 0 16px rgba(255,0,119,.4);}
+        #neon-alert.show{top:12px;}
+        #neon-alert.ok{border-color:var(--blue);box-shadow:0 0 16px rgba(0,34,255,.4);}
 
-#na{position:fixed;top:-110px;left:50%;transform:translateX(-50%);
-  width:90%;max-width:340px;background:rgba(3,0,24,.98);
-  border:1.5px solid var(--pk);border-top:2.5px solid var(--yl);
-  color:#fff;padding:12px 18px;border-radius:16px;text-align:center;
-  font-weight:900;font-size:13px;z-index:9200;letter-spacing:.4px;
-  transition:.5s cubic-bezier(.175,.885,.32,1.275);
-  box-shadow:var(--gp),0 0 55px rgba(255,0,119,.15)}
-#na.show{top:88px}
-#na.ok{border-color:var(--yl);box-shadow:var(--gy),0 0 55px rgba(251,255,0,.12)}
-#na.warn{border-color:var(--bl);box-shadow:var(--gb)}
+        .header{background:rgba(0,0,22,.97);padding:10px 16px;border-bottom:1.5px solid var(--blue);display:flex;justify-content:space-between;align-items:center;backdrop-filter:blur(20px);position:relative;z-index:100;box-shadow:0 0 12px rgba(0,34,255,.25);}
+        .logo-text{font-family:'Cinzel Decorative',serif;color:var(--pink);font-size:16px;text-shadow:var(--gp);}
+        .logo-text span{color:var(--yellow);text-shadow:var(--gy);}
+        .logo-sub{font-size:8px;color:rgba(255,255,255,.3);font-family:'Outfit',sans-serif;margin-left:5px;letter-spacing:1px;text-transform:uppercase;}
+        #header-clock{font-size:11px;font-weight:900;color:rgba(255,255,255,.55);letter-spacing:1px;margin-right:10px;}
 
-.hdr{
-  height:76px;padding:0 14px;
-  display:flex;align-items:center;justify-content:space-between;gap:10px;
-  background:rgba(3,0,22,.99);
-  border-bottom:1.5px solid rgba(0,51,255,.5);
-  position:sticky;top:0;z-index:300;
-  backdrop-filter:blur(24px);
-  box-shadow:0 2px 22px rgba(0,51,255,.22)
-}
-.logo{
-  font-family:'Cinzel Decorative',serif;
-  font-size:11px;font-weight:900;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  line-height:1.2;letter-spacing:1px;flex-shrink:0;
-}
-.logo span:nth-child(1){color:var(--pk);text-shadow:var(--gp);}
-.logo span:nth-child(2){color:var(--bl);text-shadow:var(--gb);}
-.logo span:nth-child(3){color:var(--yl);text-shadow:var(--gy);}
+        .panic-btn{background:rgba(0,0,0,.8);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.2);padding:7px 13px;border-radius:8px;font-weight:900;cursor:pointer;transition:.3s;font-size:10px;letter-spacing:1px;font-family:'Outfit',sans-serif;text-transform:uppercase;}
+        .panic-active{background:var(--pink)!important;box-shadow:0 0 14px rgba(255,0,119,.7)!important;border-color:#fff!important;color:#fff!important;animation:panicPulse 1s infinite;}
+        @keyframes panicPulse{0%{transform:scale(1);box-shadow:0 0 10px rgba(255,0,119,.7)}50%{transform:scale(1.05);box-shadow:0 0 28px rgba(255,0,119,.9)}100%{transform:scale(1);box-shadow:0 0 10px rgba(255,0,119,.7)}}
 
-.hdr-saldo{
-  position:absolute;left:50%;transform:translateX(-50%);
-  background:rgba(3,0,22,.85);
-  border:1.5px solid var(--bl);
-  border-top:2px solid var(--pk);
-  border-bottom:2px solid var(--yl);
-  border-radius:12px;
-  padding:6px 16px;
-  text-align:center;
-  min-width:130px;
-  box-shadow:0 0 15px rgba(0,51,255,.25),inset 0 0 10px rgba(255,0,119,.15);
-}
-.hdr-sal-lbl{font-size:8px;color:rgba(255,255,255,.45);letter-spacing:1.5px;
-  text-transform:uppercase;font-weight:900;display:block;line-height:1;margin-bottom:3px}
-.hdr-sal-val{font-size:16px;font-weight:900;color:var(--yl);
-  text-shadow:var(--gy);letter-spacing:.5px;display:block;line-height:1.1}
+        #panic-bar{display:none;background:rgba(255,0,119,.12);border-bottom:1px solid rgba(255,0,119,.4);padding:5px 18px;text-align:center;font-size:9px;font-weight:900;color:var(--pink);letter-spacing:2px;text-shadow:var(--gp);animation:panicPulse 1.2s infinite;position:relative;z-index:100;}
 
-.hist-btn{
-  flex-shrink:0;width:38px;height:38px;border-radius:10px;
-  background:rgba(0,51,255,.15);border:1.5px solid rgba(0,51,255,.4);
-  color:rgba(0,153,255,.9);font-size:16px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  transition:.2s;position:relative
-}
-.hist-btn:active{background:rgba(0,51,255,.35);box-shadow:var(--gb)}
-#hist-badge{
-  position:absolute;top:-4px;right:-4px;
-  background:var(--pk);color:#fff;
-  font-size:8px;font-weight:900;line-height:1;
-  padding:2px 4px;border-radius:50px;
-  display:none;box-shadow:var(--gp)
-}
+        #stats-bar{display:flex;gap:0;background:rgba(0,0,10,.95);border-bottom:1px solid rgba(0,34,255,.2);position:relative;z-index:99;}
+        .stat-pill{flex:1;padding:6px 4px;text-align:center;border-right:1px solid rgba(0,34,255,.12);}
+        .stat-pill:last-child{border-right:none;}
+        .stat-pill .sp-val{font-size:11px;font-weight:900;color:var(--yellow);text-shadow:var(--gy);display:block;}
+        .stat-pill .sp-lbl{font-size:7px;color:rgba(255,255,255,.3);letter-spacing:.5px;text-transform:uppercase;}
 
-#hist-drawer{
-  display:none;position:fixed;top:76px;right:10px;
-  width:min(340px, calc(100vw - 20px));
-  background:rgba(3,0,22,.98);
-  border:1.5px solid rgba(0,51,255,.5);
-  border-top:2px solid var(--pk);
-  border-radius:0 0 16px 16px;
-  z-index:800;
-  box-shadow:0 8px 30px rgba(0,51,255,.3),0 0 60px rgba(255,0,119,.1);
-  animation:drawerIn .25s ease;
-  overflow:hidden;
-}
-#hist-drawer.open{display:block}
-@keyframes drawerIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
-.hd-header{
-  padding:10px 14px 6px;display:flex;align-items:center;justify-content:space-between;
-  border-bottom:1px solid rgba(255,0,119,.2);
-}
-.hd-title{font-size:11px;font-weight:900;color:var(--pk);text-shadow:var(--gp);
-  text-transform:uppercase;letter-spacing:1px}
-.hd-close{background:none;border:none;color:rgba(255,255,255,.45);
-  font-size:16px;cursor:pointer;padding:2px 6px}
-.hd-scroll{max-height:240px;overflow-y:auto;
-  scrollbar-width:thin;scrollbar-color:var(--pk) rgba(0,0,0,.5)}
-.hd-scroll::-webkit-scrollbar{width:3px}
-.hd-scroll::-webkit-scrollbar-track{background:rgba(0,0,0,.5)}
-.hd-scroll::-webkit-scrollbar-thumb{background:var(--pk);border-radius:2px}
-table.ht{width:100%;border-collapse:collapse}
-table.ht th{padding:7px 12px;font-size:8px;font-weight:900;color:var(--pk);
-  text-transform:uppercase;letter-spacing:1px;
-  border-bottom:1px solid rgba(255,0,119,.18);background:rgba(3,0,16,.95);
-  text-align:left;position:sticky;top:0;z-index:5}
-table.ht td{padding:8px 12px;font-size:11px;font-weight:700;
-  border-bottom:1px solid rgba(0,51,255,.08)}
-table.ht tr:last-child td{border-bottom:none}
-.rw td{color:var(--yl);text-shadow:0 0 6px rgba(251,255,0,.3)}
-.rl td{color:rgba(255,0,119,.7)}
-.re td{text-align:center;padding:18px!important;opacity:.3;font-size:12px}
+        .nav-tabs{display:flex;background:rgba(0,0,0,.92);border-bottom:1px solid rgba(0,34,255,.28);overflow-x:auto;scrollbar-width:none;position:relative;z-index:100;}
+        .nav-tabs::-webkit-scrollbar{display:none;}
+        .tab-link{flex:1;padding:11px 6px;text-align:center;color:rgba(255,255,255,.3);cursor:pointer;font-size:9px;font-weight:900;text-transform:uppercase;white-space:nowrap;transition:.3s;letter-spacing:.5px;min-width:55px;font-family:'Outfit',sans-serif;}
+        .tab-link.active{color:var(--yellow);border-bottom:2px solid var(--yellow);text-shadow:var(--gy);background:rgba(251,255,0,.03);}
+        .tab-link i{display:block;font-size:15px;margin-bottom:3px;}
 
-.wrap{position:relative;z-index:10;padding:4px 6px 2px;max-width:480px;margin:0 auto}
+        .alpha-bar{display:grid;grid-template-columns:repeat(9,1fr);gap:3px;padding:6px 10px;background:#000;border-bottom:1px solid rgba(0,34,255,.18);position:relative;z-index:100;}
+        .alpha-btn{background:rgba(0,0,28,.85);border:1px solid rgba(0,34,255,.18);color:rgba(255,255,255,.45);font-size:9px;padding:5px 0;border-radius:4px;cursor:pointer;text-align:center;transition:.2s;line-height:1.3;font-family:'Outfit',sans-serif;}
+        .alpha-btn:hover{border-color:rgba(0,34,255,.5);color:var(--blue);}
+        .alpha-btn.active{border-color:var(--pink);color:var(--pink);background:rgba(255,0,119,.08);box-shadow:0 0 7px rgba(255,0,119,.3);}
 
-.cbox{width:100%;border-radius:18px;overflow:hidden;
-  border:1.5px solid rgba(0,51,255,.42);
-  box-shadow:0 0 40px rgba(0,40,255,.18),0 0 80px rgba(0,20,255,.08),
-             inset 0 0 55px rgba(0,0,50,.98);
-  background:#010012;margin-bottom:0}
-#cv{display:block;width:100%;height:auto}
+        .main-container{height:calc(100vh - 195px);overflow-y:auto;padding:12px;padding-bottom:25px;position:relative;z-index:10;scrollbar-width:thin;scrollbar-color:var(--blue) #000;}
+        .main-container::-webkit-scrollbar{width:4px;}
+        .main-container::-webkit-scrollbar-track{background:#000;}
+        .main-container::-webkit-scrollbar-thumb{background:var(--blue);border-radius:2px;}
 
-.score-bar{
-  display:flex;align-items:center;
-  background:rgba(3,0,18,.88);
-  border:1.5px solid rgba(0,51,255,.25);
-  border-top:none;border-radius:0 0 14px 14px;
-  margin-bottom:6px;overflow:hidden;padding:4px 0;
-}
-.sb-item{flex:1;text-align:center;padding:3px 8px}
-.sb-item+.sb-item{border-left:1px solid rgba(0,51,255,.15)}
-.sb-lbl{font-size:7px;color:rgba(255,255,255,.28);text-transform:uppercase;
-  letter-spacing:.8px;font-weight:900;display:block;margin-bottom:1px}
-.sb-val{font-size:12px;font-weight:900;display:block;line-height:1.1}
-.sb-val.yl{color:var(--yl);text-shadow:var(--gy)}
-.sb-val.pk{color:var(--pk);text-shadow:var(--gp)}
-.sb-val.bl{color:rgba(80,140,255,1);text-shadow:var(--gb)}
-.sb-val.gr{color:rgba(80,255,140,1);text-shadow:0 0 8px rgba(80,255,140,.45)}
+        .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;backdrop-filter:blur(6px);}
+        .card-pink{border-color:rgba(255,0,119,.3);}
 
-.ctrl{
-  background:rgba(3,0,18,.8);
-  border:1.5px solid rgba(0,51,255,.22);
-  border-radius:12px;padding:8px;margin-bottom:4px;
-  box-shadow:inset 0 0 24px rgba(0,0,50,.55)
-}
+        .sec-title{font-size:9px;font-weight:900;color:var(--pink);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;display:flex;align-items:center;gap:6px;font-family:'Outfit',sans-serif;text-shadow:var(--gp);}
+        .sec-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(255,0,119,.28),transparent);}
 
-.mode-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px}
-.mb{
-  padding:5px 2px;border-radius:8px;
-  border:1.5px solid rgba(0,51,255,.28);
-  background:rgba(0,0,40,.85);
-  color:rgba(255,255,255,.35);
-  font-weight:900;font-size:9px;cursor:pointer;transition:.22s;
-  text-align:center;font-family:'Outfit',sans-serif;
-  text-transform:uppercase;letter-spacing:.5px;line-height:1.2
-}
-.mb i{display:block;font-size:12px;margin-bottom:2px;opacity:.55}
-.mb.on-normal{border-color:var(--pk);color:var(--pk);background:rgba(255,0,119,.12);
-  box-shadow:0 0 12px rgba(255,0,119,.2),inset 0 0 10px rgba(255,0,119,.06)}
-.mb.on-normal i{opacity:1}
-.mb.on-auto{border-color:var(--bl);color:rgba(100,160,255,1);background:rgba(0,51,255,.14);
-  box-shadow:0 0 12px rgba(0,51,255,.28),inset 0 0 10px rgba(0,51,255,.08)}
-.mb.on-auto i{opacity:1}
-.mb.on-turbo{border-color:var(--yl);color:var(--yl);background:rgba(251,255,0,.1);
-  box-shadow:0 0 12px rgba(251,255,0,.22),inset 0 0 10px rgba(251,255,0,.05)}
-.mb.on-turbo i{opacity:1}
+        .player-name{color:var(--yellow);font-size:14px;font-weight:900;text-shadow:var(--gy);}
 
-.brow{display:flex;align-items:center;gap:6px;margin-bottom:6px}
-.bstep{
-  width:38px;height:38px;border-radius:8px;flex-shrink:0;
-  border:1.5px solid rgba(255,0,119,.4);
-  background:rgba(255,0,119,.1);
-  color:var(--pk);font-size:20px;font-weight:900;
-  cursor:pointer;transition:.18s;
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 0 8px rgba(255,0,119,.1)
-}
-.bstep:active{background:rgba(255,0,119,.28);box-shadow:var(--gp)}
-.bstep:disabled{opacity:.22;cursor:not-allowed;background:rgba(0,0,0,.3)}
-.bet-disp{
-  flex:1;background:rgba(0,0,0,.65);
-  border:1.5px solid rgba(251,255,0,.32);border-radius:8px;
-  color:var(--yl);font-size:16px;font-weight:900;
-  padding:4px 8px;text-align:center;
-  font-family:'Outfit',sans-serif;text-shadow:var(--gy);
-  cursor:default;user-select:none;min-height:36px;
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:inset 0 0 14px rgba(251,255,0,.05)
-}
+        .input-group{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 0;}
+        .field{background:rgba(0,0,0,.75);border:1px solid rgba(0,34,255,.28);padding:8px 10px;border-radius:8px;}
+        .field label{font-size:7px;color:var(--yellow);display:block;margin-bottom:4px;font-weight:900;letter-spacing:1px;text-transform:uppercase;text-shadow:var(--gy);}
+        .field input{width:100%;background:transparent;border:none;color:#fff;font-size:14px;font-weight:900;outline:none;text-align:center;font-family:'Outfit',sans-serif;}
+        .field-full{grid-column:span 2;}
 
-.dbtn{
-  width:100%;padding:12px;border-radius:40px;border:none;
-  background:linear-gradient(90deg,#aa0033,var(--pk),var(--bl),#0055ee,var(--pk),#aa0033);
-  background-size:300%;
-  color:#fff;font-weight:900;font-size:13px;cursor:pointer;
-  box-shadow:0 0 18px rgba(255,0,119,.42),0 0 40px rgba(0,51,255,.2);
-  letter-spacing:2px;text-transform:uppercase;font-family:'Outfit',sans-serif;
-  animation:btnfl 3.5s linear infinite;transition:.2s
-}
-@keyframes btnfl{0%{background-position:0%}100%{background-position:300%}}
-.dbtn:active{transform:scale(.97)}
-.dbtn:disabled{opacity:.3;cursor:not-allowed;animation:none;filter:grayscale(1)}
-.dbtn.stopping{
-  background:linear-gradient(90deg,#550011,var(--pk),#550011);
-  background-size:200%;animation:btnfl2 1.5s linear infinite;
-  box-shadow:0 0 18px rgba(255,0,119,.55)
-}
-@keyframes btnfl2{0%{background-position:0%}100%{background-position:200%}}
+        .btn-action{width:100%;padding:10px;border-radius:8px;border:none;font-weight:900;margin-top:9px;cursor:pointer;transition:.2s;text-transform:uppercase;font-size:9px;letter-spacing:1px;font-family:'Outfit',sans-serif;}
+        .btn-save{background:var(--yellow);color:#000;box-shadow:0 0 8px rgba(251,255,0,.3);}
+        .btn-gift{background:linear-gradient(90deg,var(--pink),#b400dc);color:#fff;box-shadow:0 0 10px rgba(255,0,119,.35);}
+        .btn-approve{background:linear-gradient(90deg,var(--blue),#0055ff);color:#fff;box-shadow:0 0 10px rgba(0,34,255,.35);}
+        .btn-reject{background:linear-gradient(90deg,#2a2a2a,#444);color:#fff;}
+        .btn-green{background:linear-gradient(90deg,#00aa55,#00ff88);color:#000;box-shadow:0 0 10px rgba(0,255,136,.3);}
+        .btn-orange{background:linear-gradient(90deg,#ff6600,#ff9900);color:#fff;box-shadow:0 0 10px rgba(255,100,0,.3);}
+        .btn-action:active{transform:scale(.97);}
 
-#mdo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.93);
-  z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(10px)}
-.mdb{width:88%;max-width:320px;background:rgba(3,0,22,.99);
-  border:1.5px solid var(--pk);border-top:2.5px solid var(--yl);
-  border-radius:20px;padding:24px;text-align:center;
-  box-shadow:var(--gp);animation:zin .3s ease}
-@keyframes zin{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
-.mdb h3{font-size:15px;font-weight:900;color:var(--pk);text-shadow:var(--gp);
-  margin-bottom:10px;text-transform:uppercase;letter-spacing:1px}
-.mdb p{font-size:13px;color:rgba(255,255,255,.7);line-height:1.6}
-.mbtn{width:100%;padding:13px;border-radius:50px;border:none;
-  background:linear-gradient(90deg,var(--bl),var(--pk));
-  color:#fff;font-weight:900;font-size:13px;cursor:pointer;
-  margin-top:16px;font-family:'Outfit',sans-serif;
-  text-transform:uppercase;letter-spacing:1px;
-  box-shadow:0 0 14px rgba(255,0,119,.3)}
+        /* WR PRESET BUTTONS */
+        .wr-presets{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin:6px 0 8px;}
+        .wr-preset-btn{background:rgba(0,0,0,.7);border:1px solid rgba(255,0,119,.22);color:rgba(255,255,255,.6);font-size:8px;font-weight:900;padding:5px 2px;border-radius:5px;cursor:pointer;text-align:center;transition:.2s;font-family:'Outfit',sans-serif;}
+        .wr-preset-btn:hover{border-color:var(--pink);color:var(--pink);background:rgba(255,0,119,.1);}
+        .wr-preset-btn:active{transform:scale(.94);}
 
-.nav{position:fixed;bottom:0;left:0;width:100%;height:68px;
-  background:rgba(3,0,20,.99);display:flex;justify-content:space-around;
-  align-items:center;border-top:1.5px solid rgba(0,51,255,.45);
-  backdrop-filter:blur(20px);z-index:1000;padding-bottom:4px;
-  box-shadow:0 -3px 20px rgba(0,51,255,.18)}
-.ni{color:rgba(255,255,255,.28);text-decoration:none;text-align:center;
-  font-size:9px;font-weight:900;flex:1;transition:.3s;
-  letter-spacing:.5px;text-transform:uppercase}
-.ni.ac{color:var(--pk);text-shadow:var(--gp)}
-.ni i{font-size:18px;display:block;margin-bottom:3px}
-</style>
+        /* MAXWIN PROGRESS BAR */
+        .maxwin-bar-wrap{background:rgba(0,0,0,.5);border-radius:4px;height:5px;margin-top:3px;overflow:hidden;}
+        .maxwin-bar{height:100%;border-radius:4px;transition:width .5s;}
+
+        /* LIVE TABLE */
+        .monitor-table{width:100%;border-collapse:collapse;font-size:11px;}
+        .monitor-table th{color:var(--pink);text-align:left;padding:9px 7px;border-bottom:1px solid rgba(255,0,119,.25);font-size:8px;letter-spacing:1px;text-transform:uppercase;text-shadow:var(--gp);}
+        .monitor-table td{padding:9px 7px;border-bottom:1px solid rgba(0,34,255,.1);font-size:11px;transition:background .3s;}
+        .monitor-table tr:hover td{background:rgba(0,34,255,.05);}
+        .status-up{color:var(--green);font-weight:900;text-shadow:0 0 6px rgba(0,255,136,.5);}
+        .status-down{color:var(--pink);font-weight:900;text-shadow:var(--gp);}
+        .status-zero{color:rgba(255,255,255,.25);}
+        @keyframes flashGreen{0%{background:rgba(0,255,136,.18)}100%{background:transparent}}
+        @keyframes flashRed{0%{background:rgba(255,0,119,.18)}100%{background:transparent}}
+        .flash-up td{animation:flashGreen .7s ease;}
+        .flash-down td{animation:flashRed .7s ease;}
+
+        .live-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+        .live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px rgba(0,255,136,.7);animation:livePulse 1s infinite;}
+        @keyframes livePulse{0%,100%{opacity:1}50%{opacity:.3}}
+        #rt-status{font-size:8px;padding:3px 8px;border-radius:50px;font-weight:900;letter-spacing:1px;}
+        .rt-ok{background:rgba(0,255,136,.1);color:var(--green);border:1px solid rgba(0,255,136,.3);}
+        .rt-err{background:rgba(255,0,119,.1);color:var(--pink);border:1px solid rgba(255,0,119,.3);}
+
+        /* REPORT */
+        .report-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+        .report-box{background:rgba(0,0,0,.65);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;}
+        .report-val{font-size:15px;font-weight:900;margin-top:7px;}
+
+        /* MASS GIFT */
+        .mass-gift-box{background:rgba(255,0,119,.06);border:1px solid rgba(255,0,119,.35);border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 0 10px rgba(255,0,119,.1);}
+        .mass-input{width:100%;background:#000;border:1px solid rgba(0,34,255,.4);border-radius:8px;color:var(--yellow);font-size:20px;font-weight:900;padding:11px;text-align:center;outline:none;margin:9px 0;font-family:'Outfit',sans-serif;}
+
+        .pending-badge{display:inline-block;background:var(--pink);color:#fff;font-size:8px;font-weight:900;padding:2px 7px;border-radius:50px;margin-left:5px;animation:panicPulse 2s infinite;box-shadow:0 0 8px rgba(255,0,119,.5);}
+        .btn-flex{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+
+        .wr-badge{display:inline-block;padding:2px 7px;border-radius:50px;font-size:8px;font-weight:900;letter-spacing:.5px;}
+        .wr-high{background:rgba(0,255,136,.12);color:var(--green);border:1px solid rgba(0,255,136,.3);}
+        .wr-mid{background:rgba(251,255,0,.1);color:var(--yellow);border:1px solid rgba(251,255,0,.25);}
+        .wr-low{background:rgba(255,0,119,.12);color:var(--pink);border:1px solid rgba(255,0,119,.25);}
+
+        /* CONTROL TAB */
+        .ctrl-card{background:rgba(0,0,30,.85);border:1px solid rgba(0,34,255,.35);border-radius:16px;padding:16px;margin-bottom:14px;}
+        .ctrl-card.pink-border{border-color:rgba(255,0,119,.4);background:rgba(30,0,10,.85);}
+        .ctrl-card.green-border{border-color:rgba(0,255,136,.22);background:rgba(0,20,10,.85);}
+        .ctrl-title{font-size:10px;font-weight:900;color:var(--yellow);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;text-shadow:var(--gy);display:flex;align-items:center;gap:7px;}
+        .big-input{width:100%;background:rgba(0,0,0,.8);border:1.5px solid rgba(0,34,255,.4);border-radius:10px;color:var(--yellow);font-size:24px;font-weight:900;padding:13px;text-align:center;outline:none;font-family:'Outfit',sans-serif;}
+        .big-input:focus{border-color:var(--pink);box-shadow:0 0 10px rgba(255,0,119,.2);}
+        .global-presets{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin:9px 0;}
+        .gp-btn{background:rgba(0,0,0,.7);border:1px solid rgba(0,34,255,.3);color:rgba(255,255,255,.65);font-size:10px;font-weight:900;padding:8px 2px;border-radius:7px;cursor:pointer;text-align:center;transition:.2s;font-family:'Outfit',sans-serif;}
+        .gp-btn:hover{border-color:var(--yellow);color:var(--yellow);background:rgba(251,255,0,.07);}
+        .gp-btn:active{transform:scale(.95);}
+        .info-text{font-size:9px;color:rgba(255,255,255,.32);line-height:1.6;letter-spacing:.3px;}
+        .status-indicator{display:flex;align-items:center;gap:8px;font-size:10px;font-weight:900;padding:9px 12px;border-radius:8px;margin-bottom:10px;}
+        .si-green{background:rgba(0,255,136,.07);border:1px solid rgba(0,255,136,.22);color:var(--green);}
+        .si-red{background:rgba(255,0,119,.07);border:1px solid rgba(255,0,119,.25);color:var(--pink);}
+        .si-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+        .si-green .si-dot{background:var(--green);box-shadow:0 0 6px rgba(0,255,136,.8);}
+        .si-red .si-dot{background:var(--pink);animation:panicPulse 1s infinite;}
+
+        /* CONFIRM MODAL */
+        #confirm-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:9998;align-items:center;justify-content:center;backdrop-filter:blur(12px);}
+        .confirm-box{background:rgba(0,0,15,.99);border:1.5px solid var(--pink);border-top:2px solid var(--yellow);border-radius:22px;padding:26px;width:88%;max-width:300px;text-align:center;box-shadow:0 0 18px rgba(255,0,119,.3);animation:zoomIn .3s ease;}
+        @keyframes zoomIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+        #confirm-title{font-size:15px;font-weight:900;color:var(--pink);text-shadow:var(--gp);margin-bottom:11px;text-transform:uppercase;letter-spacing:1px;}
+        #confirm-msg{font-size:12px;color:#ddd;margin:0 0 18px;line-height:1.65;font-weight:600;white-space:pre-line;}
+        .confirm-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+        .btn-no{background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.15);padding:11px;border-radius:8px;cursor:pointer;font-weight:900;font-family:'Outfit',sans-serif;text-transform:uppercase;font-size:10px;}
+        .btn-yes{background:linear-gradient(90deg,var(--pink),#aa0044);color:#fff;border:none;padding:11px;border-radius:8px;cursor:pointer;font-weight:900;box-shadow:0 0 10px rgba(255,0,119,.4);font-family:'Outfit',sans-serif;text-transform:uppercase;font-size:10px;}
+    </style>
 </head>
 <body>
 
-<div id="ptjs"></div>
-<div id="na">—</div>
+<div id="particles-js"></div>
+<div id="neon-alert">SYSTEM NOTIFICATION</div>
 
-<audio id="au-drop" src="https://cdn.pixabay.com/audio/2022/03/10/audio_c36394595e.mp3" preload="auto"></audio>
-<audio id="au-win"  src="https://cdn.pixabay.com/audio/2021/08/04/audio_062564a02d.mp3" preload="auto"></audio>
-<audio id="au-lose" src="https://cdn.pixabay.com/audio/2022/03/15/audio_c8b417f73c.mp3" preload="auto"></audio>
-
-<div class="hdr">
-  <div class="logo">
-    <span>NEON</span><span>PLINKO</span><span>VIP</span>
-  </div>
-  <div class="hdr-saldo">
-    <span class="hdr-sal-lbl">SALDO AKTIF</span>
-    <span class="hdr-sal-val" id="hdr-sal">IDR 0</span>
-  </div>
-  <button class="hist-btn" id="hist-icon-btn" onclick="toggleHistDrawer()" title="Riwayat Permainan">
-    <i class="fas fa-clock-rotate-left"></i>
-    <span id="hist-badge">●</span>
-  </button>
+<div id="confirm-overlay">
+    <div class="confirm-box">
+        <h3 id="confirm-title">KONFIRMASI</h3>
+        <p id="confirm-msg"></p>
+        <div class="confirm-btns">
+            <button class="btn-no" onclick="closeConfirm()">BATAL</button>
+            <button class="btn-yes" id="btn-confirm-yes">YA, LANJUT</button>
+        </div>
+    </div>
 </div>
 
-<div id="hist-drawer">
-  <div class="hd-header">
-    <span class="hd-title"><i class="fas fa-clock-rotate-left" style="margin-right:6px"></i>Riwayat Permainan</span>
-    <button class="hd-close" onclick="toggleHistDrawer()"><i class="fas fa-xmark"></i></button>
-  </div>
-  <div class="hd-scroll">
-    <table class="ht">
-      <thead><tr><th>BET</th><th>MULT</th><th>HASIL</th><th>JAM</th></tr></thead>
-      <tbody id="hb"><tr class="re"><td colspan="4">Belum ada permainan</td></tr></tbody>
-    </table>
-  </div>
+<!-- HEADER -->
+<div class="header">
+    <div>
+        <span class="logo-text">OMEGA <span>V18</span></span>
+        <span class="logo-sub">CMD</span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+        <span id="header-clock">--:--:--</span>
+        <div id="panic-indicator" style="display:none;width:9px;height:9px;border-radius:50%;background:var(--pink);box-shadow:0 0 10px rgba(255,0,119,.8);animation:panicPulse .8s infinite;"></div>
+        <button id="panic-master" class="panic-btn" onclick="togglePanicGlobal()">
+            <i class="fas fa-skull"></i> PANIC
+        </button>
+    </div>
 </div>
 
-<div class="wrap">
-  <div class="cbox"><canvas id="cv"></canvas></div>
+<div id="panic-bar"><i class="fas fa-skull" style="margin-right:5px;"></i>⚠ PANIC MODE AKTIF — SEMUA WINRATE 1%</div>
 
-  <div class="score-bar">
-    <div class="sb-item">
-      <span class="sb-lbl"><i class="fas fa-trophy" style="margin-right:3px"></i>LAST WIN</span>
-      <span class="sb-val yl" id="sb-win">—</span>
-    </div>
-    <div class="sb-item">
-      <span class="sb-lbl"><i class="fas fa-chart-line" style="margin-right:3px"></i>PROFIT SESI</span>
-      <span class="sb-val gr" id="sb-profit">Rp 0</span>
-    </div>
-    <div class="sb-item">
-      <span class="sb-lbl"><i class="fas fa-fire" style="margin-right:3px"></i>MODE</span>
-      <span class="sb-val pk" id="sb-mode">NORMAL</span>
-    </div>
-  </div>
-
-  <div class="ctrl">
-    <div class="mode-row">
-      <button class="mb on-normal" id="mb-normal" onclick="toggleMode('normal')">
-        <i class="fas fa-hand-pointer"></i>NORMAL
-      </button>
-      <button class="mb" id="mb-auto" onclick="toggleMode('auto')">
-        <i class="fas fa-play-circle"></i>AUTO
-      </button>
-      <button class="mb" id="mb-turbo" onclick="toggleMode('turbo')">
-        <i class="fas fa-bolt"></i>TURBO
-      </button>
-    </div>
-    <div class="brow">
-      <button class="bstep" id="btn-m" onclick="stepBet(-1)">−</button>
-      <div class="bet-disp" id="bet-disp">Rp 1.000</div>
-      <button class="bstep" id="btn-p" onclick="stepBet(+1)">+</button>
-    </div>
-    <button class="dbtn" id="db" onclick="handleAction()">
-      <i class="fas fa-circle-dot"></i>&nbsp;&nbsp;DROP BALL
-    </button>
-  </div>
+<div id="stats-bar">
+    <div class="stat-pill"><span class="sp-val" id="sb-players">—</span><span class="sp-lbl">Players</span></div>
+    <div class="stat-pill"><span class="sp-val" id="sb-saldo">—</span><span class="sp-lbl">Total Saldo</span></div>
+    <div class="stat-pill"><span class="sp-val" id="sb-pending">—</span><span class="sp-lbl">Pending TX</span></div>
+    <div class="stat-pill"><span class="sp-val" id="sb-profit">—</span><span class="sp-lbl">Profit Hari Ini</span></div>
 </div>
 
-<div id="mdo">
-  <div class="mdb">
-    <h3 id="mt2">INFO</h3><p id="mm"></p>
-    <button class="mbtn" onclick="closeMd()">MENGERTI</button>
-  </div>
+<!-- TABS -->
+<div class="nav-tabs">
+    <div class="tab-link active" onclick="switchTab('players',this)"><i class="fas fa-users"></i>PLAYERS</div>
+    <div class="tab-link" onclick="switchTab('control',this)"><i class="fas fa-sliders"></i>CONTROL</div>
+    <div class="tab-link" onclick="switchTab('live',this)"><i class="fas fa-satellite-dish"></i>LIVE</div>
+    <div class="tab-link" onclick="switchTab('cashier',this)">
+        <i class="fas fa-vault"></i>KASIR
+        <span id="pending-count" class="pending-badge" style="display:none;">0</span>
+    </div>
+    <div class="tab-link" onclick="switchTab('gift',this)"><i class="fas fa-gift"></i>GIFT</div>
+    <div class="tab-link" onclick="switchTab('report',this)"><i class="fas fa-chart-pie"></i>REPORT</div>
 </div>
 
-<div class="nav">
-  <a href="game.html"     class="ni ac"><i class="fas fa-gamepad"></i>PLAY</a>
-  <a href="deposit.html"  class="ni"><i class="fas fa-wallet"></i>DEPO</a>
-  <a href="withdraw.html" class="ni"><i class="fas fa-money-bill-transfer"></i>WD</a>
-  <a href="reward.html"   class="ni"><i class="fas fa-gift"></i>REWARD</a>
-  <a href="profil.html"   class="ni"><i class="fas fa-user-shield"></i>PROFIL</a>
+<div id="alpha-nav" class="alpha-bar"></div>
+
+<div class="main-container">
+    <div id="view-players" class="tab-content"></div>
+
+    <!-- ═══════════════════════════════════════════ CONTROL TAB ═══ -->
+    <div id="view-control" class="tab-content" style="display:none;">
+
+        <!-- PANIC MODE -->
+        <div class="ctrl-card pink-border">
+            <div class="ctrl-title"><i class="fas fa-skull" style="color:var(--pink);"></i> PANIC MODE GLOBAL</div>
+            <div id="panic-status-ctrl" class="status-indicator si-green">
+                <div class="si-dot"></div>
+                <span>SISTEM AMAN — Winrate Normal</span>
+            </div>
+            <p class="info-text">Aktifkan untuk memaksa SEMUA player winrate → 1% secara instan. Game langsung merespons via Realtime.</p>
+            <button class="btn-action btn-reject" id="panic-ctrl-btn" onclick="togglePanicGlobal()" style="margin-top:10px;">
+                <i class="fas fa-skull"></i> TOGGLE PANIC MODE
+            </button>
+        </div>
+
+        <!-- GLOBAL WINRATE -->
+        <div class="ctrl-card">
+            <div class="ctrl-title"><i class="fas fa-percent" style="color:var(--yellow);"></i> SET WINRATE GLOBAL</div>
+            <p class="info-text" style="margin-bottom:10px;">Terapkan winrate yang sama ke SEMUA player sekaligus. Berlaku instan di game via Supabase Realtime.</p>
+            <input type="number" id="global-wr-input" class="big-input" placeholder="30" min="1" max="100" value="30">
+            <div class="global-presets">
+                <button class="gp-btn" onclick="setGlobalWRPreset(1)">1%</button>
+                <button class="gp-btn" onclick="setGlobalWRPreset(10)">10%</button>
+                <button class="gp-btn" onclick="setGlobalWRPreset(30)">30%</button>
+                <button class="gp-btn" onclick="setGlobalWRPreset(50)">50%</button>
+                <button class="gp-btn" onclick="setGlobalWRPreset(80)">80%</button>
+                <button class="gp-btn" onclick="setGlobalWRPreset(100)">100%</button>
+            </div>
+            <button class="btn-action btn-save" onclick="applyGlobalWinrate()">
+                <i class="fas fa-bolt"></i> TERAPKAN KE SEMUA PLAYER
+            </button>
+        </div>
+
+        <!-- GLOBAL MAXWIN LIMIT -->
+        <div class="ctrl-card">
+            <div class="ctrl-title"><i class="fas fa-trophy" style="color:var(--yellow);"></i> SET MAXWIN LIMIT GLOBAL</div>
+            <p class="info-text" style="margin-bottom:10px;">Jika profit sesi player ≥ limit ini, winrate diturunkan otomatis ke 2% di game. Game tetap berjalan, player tidak tahu. Set 0 untuk menonaktifkan.</p>
+            <input type="number" id="global-mx-input" class="big-input" placeholder="1000000" min="0" value="1000000">
+            <div class="global-presets">
+                <button class="gp-btn" onclick="setGlobalMXPreset(0)">OFF</button>
+                <button class="gp-btn" onclick="setGlobalMXPreset(500000)">500K</button>
+                <button class="gp-btn" onclick="setGlobalMXPreset(1000000)">1JT</button>
+                <button class="gp-btn" onclick="setGlobalMXPreset(2000000)">2JT</button>
+                <button class="gp-btn" onclick="setGlobalMXPreset(5000000)">5JT</button>
+                <button class="gp-btn" onclick="setGlobalMXPreset(10000000)">10JT</button>
+            </div>
+            <button class="btn-action btn-approve" onclick="applyGlobalMaxwin()">
+                <i class="fas fa-bolt"></i> TERAPKAN KE SEMUA PLAYER
+            </button>
+        </div>
+
+        <!-- GLOBAL SESSION TIMER -->
+        <div class="ctrl-card">
+            <div class="ctrl-title"><i class="fas fa-hourglass-half" style="color:var(--yellow);"></i> SET SESSION TIMER GLOBAL</div>
+            <p class="info-text" style="margin-bottom:10px;">Durasi sesi bermain (menit) untuk semua player. Saat waktu habis, <b style="color:var(--yellow)">game TIDAK berhenti</b> — winrate otomatis turun terus setiap 30 detik hingga minimum 1%. Player tidak tahu. Set 0 untuk tidak ada batas waktu.</p>
+            <input type="number" id="global-sm-input" class="big-input" placeholder="0" min="0" value="0">
+            <div class="global-presets">
+                <button class="gp-btn" onclick="setGlobalSMPreset(0)">∞</button>
+                <button class="gp-btn" onclick="setGlobalSMPreset(15)">15m</button>
+                <button class="gp-btn" onclick="setGlobalSMPreset(30)">30m</button>
+                <button class="gp-btn" onclick="setGlobalSMPreset(60)">1j</button>
+                <button class="gp-btn" onclick="setGlobalSMPreset(120)">2j</button>
+                <button class="gp-btn" onclick="setGlobalSMPreset(240)">4j</button>
+            </div>
+            <button class="btn-action btn-orange" onclick="applyGlobalSession()">
+                <i class="fas fa-bolt"></i> TERAPKAN KE SEMUA PLAYER
+            </button>
+        </div>
+
+        <!-- RESET SESSION PROFIT -->
+        <div class="ctrl-card green-border">
+            <div class="ctrl-title"><i class="fas fa-rotate" style="color:var(--green);"></i> RESET SESSION PROFIT</div>
+            <p class="info-text" style="margin-bottom:10px;">Reset <b style="color:var(--yellow)">initial_balance_session</b> semua player ke saldo saat ini. PNL sesi kembali ke 0 — maxwin limit mulai dihitung ulang dari awal.</p>
+            <button class="btn-action btn-green" onclick="resetAllSessions()">
+                <i class="fas fa-rotate-right"></i> RESET SESI SEMUA PLAYER
+            </button>
+        </div>
+
+        <!-- STATUS RINGKASAN -->
+        <div class="ctrl-card">
+            <div class="ctrl-title"><i class="fas fa-circle-info" style="color:var(--blue);"></i> STATUS SISTEM SEKARANG</div>
+            <div id="ctrl-summary" style="font-size:11px;line-height:1.8;color:rgba(255,255,255,.65);">Memuat...</div>
+        </div>
+
+    </div>
+
+    <!-- LIVE TAB -->
+    <div id="view-live" class="tab-content" style="display:none;">
+        <div class="live-header">
+            <div style="display:flex;align-items:center;gap:8px;">
+                <div class="live-dot"></div>
+                <span style="font-size:9px;font-weight:900;color:var(--pink);text-shadow:var(--gp);letter-spacing:2px;text-transform:uppercase;">Live Saldo Monitor</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span id="rt-status" class="rt-ok">● REALTIME</span>
+                <span id="live-clock" style="font-size:9px;color:rgba(255,255,255,.3);">--:--:--</span>
+            </div>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;border-radius:14px;">
+            <table class="monitor-table">
+                <thead>
+                    <tr>
+                        <th><i class="fas fa-user"></i> PLAYER</th>
+                        <th>WR</th>
+                        <th>MAXWIN</th>
+                        <th><i class="fas fa-hourglass-half"></i> SESI</th>
+                        <th>SALDO</th>
+                        <th>PNL</th>
+                    </tr>
+                </thead>
+                <tbody id="live-body">
+                    <tr><td colspan="6" style="text-align:center;padding:30px;opacity:.4;font-size:11px;">Memuat data...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div style="font-size:8px;opacity:.25;text-align:right;margin-top:5px;letter-spacing:1px;">DATA DIPERBARUI INSTAN VIA SUPABASE REALTIME</div>
+    </div>
+
+    <div id="view-cashier" class="tab-content" style="display:none;"></div>
+    <div id="view-gift"    class="tab-content" style="display:none;"></div>
+    <div id="view-report"  class="tab-content" style="display:none;"></div>
 </div>
 
 <script>
-/* ════════════════════════════════════════════════════════
-   STATE GLOBAL
-════════════════════════════════════════════════════════ */
-var U=null, PROF={}, SAL=0, SPNL=0, HIST=[];
-var F_NORMAL=true, F_AUTO=false, F_TURBO=false;
-var AUTO_TID=null, HIST_OPEN=false, NEW_RESULT=0;
+// ══════════════════════════════════════════════════════════════════
+//  OMEGA V18 MASTER PANEL — FULL ENGINE
+//  Koneksi: config.js menyediakan _db, SUPABASE_URL, SUPABASE_KEY,
+//  showNeonAlertGlobal(), getUsername(), formatIDR/Rp
+// ══════════════════════════════════════════════════════════════════
 
-var INT_AUTO  = 1400;
-var INT_TURBO = 700;
-var MAX_BALLS_NORMAL = 3;
-var MAX_BALLS_TURBO  = 5;
+const SURL = SUPABASE_URL;
+const SKEY = SUPABASE_KEY;
 
-var BSTEPS=[400,600,800,1000,1200,1600,1800,2000,4000,6000,8000,
-            10000,12000,16000,18000,20000,25000,30000];
-var BIDX=3;
+let currentTab  = 'players';
+let activeAlpha = 'A';
+let allData     = { p: [], d: [], w: [] };
+let prevSaldo   = {};
+let prevWinrate = {};
+let rtProfiles  = null;
+let rtCashier   = null;
 
-// Penyesuaian Multiplier agar lebih menantang
-var MUL=[16, 9, 3, 2, 0.5, 0.3, 0.3, 0.3, 0.3, 0.5, 2, 3, 9, 16];
-
-/* ════════════════════════════════════════════════════════
-   CANVAS & PHYSICS
-════════════════════════════════════════════════════════ */
-var cv=document.getElementById('cv');
-var cx=cv.getContext('2d');
-var ROWS=12;
-
-/* Fisika realistis — bola terasa berat & alami, tidak cepat */
-var GR        = 0.14;   /* gravitasi lebih ringan & natural */
-var BOUNCE    = 0.38;   /* pantul redam, tidak melenting berlebihan */
-var FRIC      = 0.992;  /* gesekan halus, momentum natural */
-var SUBSTEPS  = 8;      /* 8 sub-kalkulasi/frame → gerakan sangat halus */
-var SPEED_CAP = 7;      /* batas kecepatan lebih rendah → tidak sprint */
-
-var PR,BR,RG,SLOT_H,SLOT_Y,PAD_TOP;
-var PEGS=[],SLOTS_D=[],BALLS=[];
-var pegPulse=[];
-var RAF=null;
-
-/* ════════════════════════════════════════════════════════
-   HELPERS
-════════════════════════════════════════════════════════ */
-function snd(id){
-  var a=document.getElementById('au-'+id);
-  if(a){a.currentTime=0;a.play().catch(function(){});}
-}
-function rp(n){return 'Rp '+(Math.abs(n)||0).toLocaleString('id-ID');}
-function curBet(){return BSTEPS[BIDX]||1000;}
-function updBetUI(){document.getElementById('bet-disp').textContent=rp(curBet());}
-
-function updSaldo(){
-  var e=document.getElementById('hdr-sal');
-  if(e) e.textContent='IDR '+SAL.toLocaleString('id-ID');
+// ── KEY HELPER ────────────────────────────────────────────────
+function safeKey(u) {
+    return btoa(unescape(encodeURIComponent(u))).replace(/[^a-zA-Z0-9]/g,'_');
 }
 
-function updProfit(){
-  var e=document.getElementById('sb-profit');
-  if(!e) return;
-  if(SPNL>0){
-    e.textContent='+'+rp(SPNL);
-    e.className='sb-val gr';
-  } else if(SPNL<0){
-    e.textContent='-'+rp(Math.abs(SPNL));
-    e.className='sb-val pk';
-  } else {
-    e.textContent='Rp 0';
-    e.className='sb-val gr';
-  }
-}
+// ── PARTICLES ─────────────────────────────────────────────────
+particlesJS("particles-js",{
+    "particles":{"number":{"value":70},"color":{"value":["#ff0077","#0044ff","#ffffff"]},"shape":{"type":"circle"},"opacity":{"value":0.85,"random":true,"anim":{"enable":true,"speed":1,"opacity_min":0.4}},"size":{"value":2.2,"random":true},"line_linked":{"enable":true,"distance":130,"color":"#0033ff","opacity":0.25,"width":0.65},"move":{"enable":true,"speed":1.6,"random":true,"out_mode":"out"}},
+    "interactivity":{"events":{"onhover":{"enable":false},"onclick":{"enable":true,"mode":"push"}},"modes":{"push":{"particles_nb":2}}}
+});
 
-function setLastWin(v){
-  var e=document.getElementById('sb-win');
-  if(!e) return;
-  if(v>0){e.textContent='+'+rp(v);e.className='sb-val yl';}
-  else if(v<0){e.textContent='-'+rp(Math.abs(v));e.className='sb-val pk';}
-  else{e.textContent='—';e.className='sb-val yl';}
-}
-
-var _alertLast=0;
-function alert2(msg,t){
-  var now=Date.now();
-  if((F_TURBO||F_AUTO)&&(now-_alertLast)<600) return;
-  _alertLast=now;
-  var a=document.getElementById('na');
-  a.textContent=msg;
-  a.className=t?'show '+t:'show';
-  clearTimeout(a._t);
-  a._t=setTimeout(function(){a.className='';},2500);
-}
-function showMd(t,m){
-  document.getElementById('mt2').textContent=t;
-  document.getElementById('mm').textContent=m;
-  document.getElementById('mdo').style.display='flex';
-}
-function closeMd(){document.getElementById('mdo').style.display='none';}
-
-/* ════════════════════════════════════════════════════════
-   HISTORY DRAWER
-════════════════════════════════════════════════════════ */
-function toggleHistDrawer(){
-  HIST_OPEN=!HIST_OPEN;
-  var d=document.getElementById('hist-drawer');
-  if(HIST_OPEN){
-    d.classList.add('open');
-    NEW_RESULT=0;
-    var b=document.getElementById('hist-badge');
-    if(b) b.style.display='none';
-  } else {
-    d.classList.remove('open');
-  }
-}
-document.addEventListener('click',function(e){
-  if(!HIST_OPEN) return;
-  var d=document.getElementById('hist-drawer');
-  var btn=document.getElementById('hist-icon-btn');
-  if(d&&!d.contains(e.target)&&btn&&!btn.contains(e.target)){
-    HIST_OPEN=false;
-    d.classList.remove('open');
-  }
-},true);
-
-/* ════════════════════════════════════════════════════════
-   BET STEP
-════════════════════════════════════════════════════════ */
-function stepBet(d){
-  if(F_AUTO){alert2('Stop AUTO dulu untuk ganti bet','warn');return;}
-  BIDX=Math.max(0,Math.min(BSTEPS.length-1,BIDX+d));
-  updBetUI();
-}
-
-/* ════════════════════════════════════════════════════════
-   MODE TOGGLE
-════════════════════════════════════════════════════════ */
-function updModeLabel(){
-  var e=document.getElementById('sb-mode');
-  if(!e) return;
-  var parts=[];
-  if(F_NORMAL) parts.push('NORMAL');
-  if(F_AUTO)   parts.push('AUTO');
-  if(F_TURBO)  parts.push('TURBO');
-  e.textContent=parts.length?parts.join('+'):'—';
-  if(F_TURBO)       e.className='sb-val yl';
-  else if(F_AUTO)   e.className='sb-val bl';
-  else              e.className='sb-val pk';
-}
-
-function toggleMode(m){
-  if(m==='normal'){
-    if(F_TURBO){
-      F_TURBO=false;
-      paintModeBtn('mb-turbo',false,'on-turbo');
+// ── CLOCK ─────────────────────────────────────────────────────
+function startClock() {
+    function tick() {
+        const now = new Date().toLocaleTimeString('id-ID');
+        const hc = document.getElementById('header-clock');
+        const lc = document.getElementById('live-clock');
+        if(hc) hc.innerText = now;
+        if(lc) lc.innerText = now;
     }
-    F_NORMAL=!F_NORMAL;
-    paintModeBtn('mb-normal',F_NORMAL,'on-normal');
-    updDropBtn(); updModeLabel();
-  } else if(m==='auto'){
-    F_AUTO=!F_AUTO;
-    paintModeBtn('mb-auto',F_AUTO,'on-auto');
-    if(F_AUTO){
-      startAutoLoop();
-    } else {
-      stopAutoLoop();
-      if(F_TURBO){
-        F_TURBO=false;
-        paintModeBtn('mb-turbo',false,'on-turbo');
-        F_NORMAL=true;
-        paintModeBtn('mb-normal',true,'on-normal');
-      }
-    }
-    updDropBtn(); updModeLabel();
-  } else if(m==='turbo'){
-    if(!F_AUTO && !F_TURBO){
-      alert2('Aktifkan AUTO terlebih dahulu','warn');
-      return;
-    }
-    F_TURBO=!F_TURBO;
-    paintModeBtn('mb-turbo',F_TURBO,'on-turbo');
-    if(F_TURBO){
-      F_NORMAL=false;
-      paintModeBtn('mb-normal',false,'on-normal');
-    } else {
-      F_NORMAL=true;
-      paintModeBtn('mb-normal',true,'on-normal');
-    }
-    if(F_AUTO){ stopAutoLoop(); startAutoLoop(); }
-    updModeLabel();
-  }
+    tick(); setInterval(tick, 1000);
 }
 
-function paintModeBtn(id,active,activeClass){
-  var el=document.getElementById(id);
-  if(!el) return;
-  el.className='mb'+(active?' '+activeClass:'');
+// ── FETCH ─────────────────────────────────────────────────────
+async function fetchProfiles() {
+    const r = await _db.from('profiles').select('*').limit(1000);
+    if(r.data) allData.p = r.data;
+    else if(r.error) console.warn('fetchProfiles error:', r.error.message);
 }
-function updDropBtn(){
-  var btn=document.getElementById('db');
-  if(F_AUTO){
-    btn.className='dbtn stopping';
-    btn.innerHTML='<i class="fas fa-stop-circle"></i>&nbsp;&nbsp;STOP AUTO';
-  } else {
-    btn.className='dbtn';
-    btn.innerHTML='<i class="fas fa-circle-dot"></i>&nbsp;&nbsp;DROP BALL';
-  }
+async function fetchDeposits() {
+    const r = await _db.from('deposits').select('*').limit(1000);
+    if(r.data) allData.d = r.data;
 }
-
-/* ════════════════════════════════════════════════════════
-   AUTO LOOP
-════════════════════════════════════════════════════════ */
-function startAutoLoop(){
-  stopAutoLoop();
-  var interval = F_TURBO ? INT_TURBO : INT_AUTO;
-  var maxB     = F_TURBO ? MAX_BALLS_TURBO : MAX_BALLS_NORMAL;
-
-  function tick(){
-    if(!F_AUTO){ stopAutoLoop(); return; }
-    if(SAL < curBet()){
-      F_AUTO=false; stopAutoLoop();
-      if(F_TURBO){
-        F_TURBO=false;
-        paintModeBtn('mb-turbo',false,'on-turbo');
-        F_NORMAL=true;
-        paintModeBtn('mb-normal',true,'on-normal');
-      }
-      paintModeBtn('mb-auto',false,'on-auto');
-      updDropBtn(); updModeLabel();
-      alert2('Saldo tidak cukup — AUTO berhenti','warn');
-      return;
-    }
-    if(BALLS.length < maxB) spawnBall();
-    AUTO_TID = setTimeout(tick, interval);
-  }
-  tick();
+async function fetchWithdrawals() {
+    const r = await _db.from('withdrawals').select('id,username,amount,nominal,status,created_at,method').limit(1000);
+    if(r.data) allData.w = r.data;
 }
-function stopAutoLoop(){ clearTimeout(AUTO_TID); AUTO_TID=null; }
-
-/* ════════════════════════════════════════════════════════
-   ACTION BUTTON
-════════════════════════════════════════════════════════ */
-function handleAction(){
-  if(!U){showMd('LOGIN','Silakan login untuk bermain.');return;}
-  if(F_AUTO){
-    F_AUTO=false; stopAutoLoop();
-    if(F_TURBO){
-      F_TURBO=false;
-      paintModeBtn('mb-turbo',false,'on-turbo');
-      F_NORMAL=true;
-      paintModeBtn('mb-normal',true,'on-normal');
-    }
-    paintModeBtn('mb-auto',false,'on-auto');
-    updDropBtn(); updModeLabel();
-    return;
-  }
-  if(SAL<curBet()){alert2('Saldo tidak cukup!','warn');return;}
-  spawnBall();
+async function fetchAll() {
+    await Promise.all([fetchProfiles(), fetchDeposits(), fetchWithdrawals()]);
 }
 
-/* ════════════════════════════════════════════════════════
-   BUILD WORLD
-════════════════════════════════════════════════════════ */
-function buildWorld(){
-  var W=cv.width, H=cv.height;
-  SLOT_H  = Math.max(26,H*0.09);
-  SLOT_Y  = H-SLOT_H;
-  PAD_TOP = H*0.055;
-  var pegAreaH=SLOT_Y-PAD_TOP-H*0.08;
-  RG=pegAreaH/(ROWS-1);
-  PR=Math.min(Math.max(3.5,W*0.012),RG*0.26);
-  BR=Math.min(Math.max(4.5,W*0.015),(RG-2*PR)*0.42);
-  PEGS=[];
-  for(var r=0;r<ROWS;r++){
-    var cols=r+2, span=(cols-1)*RG, x0=(W-span)/2, y=PAD_TOP+r*RG;
-    for(var c=0;c<cols;c++) PEGS.push({x:x0+c*RG,y:y});
-  }
-  pegPulse=new Array(PEGS.length).fill(0);
-  var sw=W/MUL.length;
-  SLOTS_D=[];
-  for(var i=0;i<MUL.length;i++)
-    SLOTS_D.push({x:i*sw,y:SLOT_Y,w:sw,h:SLOT_H,m:MUL[i],glow:0});
+// ── INIT ──────────────────────────────────────────────────────
+async function init() {
+    try {
+        await fetchAll();
+        allData.p.forEach(u => { prevSaldo[u.username] = u.saldo || 0; });
+        updatePanicUI();
+        updateStatsBar();
+        renderAlpha();
+        renderActiveView();
+        updatePendingBadge();
+        startClock();
+        startRealtimeProfiles();
+        startRealtimeCashier();
+    } catch(e) { showAlert('Gagal memuat: ' + e.message); }
 }
 
-function slotPal(m){
-  if(m>=9)  return{f:'rgba(255,0,119',  s:'#ff0077',t:'rgba(255,180,220,1)'};
-  if(m>=2)  return{f:'rgba(0,51,255',   s:'#0033ff',t:'rgba(180,200,255,1)'};
-  if(m>=1)  return{f:'rgba(251,255,0',  s:'#fbff00',t:'rgba(255,255,180,1)'};
-  return    {f:'rgba(140,0,0',          s:'#8b0000',t:'rgba(255,80,80,0.85)'};
+// ══════════════════════════════════════════════════════════════
+//  REALTIME PROFILES — Live saldo + WR + Maxwin instan
+// ══════════════════════════════════════════════════════════════
+function startRealtimeProfiles() {
+    if(rtProfiles) { _db.removeChannel(rtProfiles); rtProfiles = null; }
+    rtProfiles = _db.channel('rt-profiles-all')
+        .on('postgres_changes', { event:'UPDATE', schema:'public', table:'profiles' }, payload => {
+            const updated = payload.new;
+            if(!updated || !updated.username) return;
+            const idx = allData.p.findIndex(u => u.username === updated.username);
+            if(idx >= 0) allData.p[idx] = { ...allData.p[idx], ...updated };
+            else allData.p.push(updated);
+            // Update live row instan
+            patchLiveRow(updated);
+            updateStatsBar();
+            // Refresh UI jika panic, winrate, atau maxwin berubah
+            const needsRefresh = 'panic_mode' in updated || 'winrate' in updated || 'maxwin_limit' in updated;
+            if(needsRefresh){
+                updatePanicUI();
+                updatePanicCtrlUI();
+                updateCtrlSummary();
+                // Refresh card player agar badge WR & progress bar maxwin ikut update
+                if(currentTab === 'players') renderPlayers();
+                if(currentTab === 'gift')    renderGift();
+            }
+        })
+        .subscribe(status => {
+            const el = document.getElementById('rt-status');
+            if(!el) return;
+            if(status === 'SUBSCRIBED') { el.className='rt-ok'; el.innerText='● REALTIME'; }
+            else if(status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') { el.className='rt-err'; el.innerText='✕ OFFLINE'; }
+        });
 }
 
-function drawPeg(x,y,gv){
-  if(gv>0.04){
-    var og=cx.createRadialGradient(x,y,PR*.4,x,y,PR+gv*8);
-    og.addColorStop(0,'rgba(0,80,255,0)');
-    og.addColorStop(.5,'rgba(0,80,255,'+(gv*.22)+')');
-    og.addColorStop(1,'rgba(0,40,255,0)');
-    cx.beginPath();cx.arc(x,y,PR+gv*8,0,Math.PI*2);cx.fillStyle=og;cx.fill();
-  }
-  var g=cx.createRadialGradient(x-PR*.3,y-PR*.32,0,x,y,PR*1.4);
-  g.addColorStop(0,'rgba(210,235,255,1)');
-  g.addColorStop(.32,'rgba(70,148,255,.95)');
-  g.addColorStop(.68,'rgba(14,68,220,.85)');
-  g.addColorStop(1,'rgba(0,14,160,.36)');
-  cx.beginPath();cx.arc(x,y,PR,0,Math.PI*2);cx.fillStyle=g;
-  cx.shadowColor='rgba(40,120,255,'+(0.4+gv*.65)+')';
-  cx.shadowBlur=PR*(1.7+gv*3.8);cx.fill();cx.shadowBlur=0;
-  cx.beginPath();cx.arc(x-PR*.27,y-PR*.28,PR*.185,0,Math.PI*2);
-  cx.fillStyle='rgba(255,255,255,'+(0.46+gv*.38)+')';cx.fill();
-}
+function patchLiveRow(u) {
+    if(currentTab !== 'live') return;
+    const rowId = 'lr-' + safeKey(u.username);
+    const row   = document.getElementById(rowId);
+    const full  = allData.p.find(p => p.username === u.username) || u;
+    const live  = Number(full.saldo || 0);
+    const start = Number(full.initial_balance_session || 0);
+    const diff  = live - (start > 0 ? start : live); // SPNL = 0 jika baseline belum diset
+    const wr    = (full.winrate != null) ? Number(full.winrate) : '?';
+    const mx    = Number(full.maxwin_limit || 0);
+    const prev    = prevSaldo[u.username] ?? live;
+    const changed = live !== prev;
+    prevSaldo[u.username]   = live;
+    prevWinrate[u.username] = wr;
 
-function redrawFull(){
-  var W=cv.width, H=cv.height;
-  if(!W||!H) return;
-  var bg=cx.createRadialGradient(W*.5,H*.1,0,W*.5,H*.55,H*.95);
-  bg.addColorStop(0,'#090035');bg.addColorStop(.36,'#05001c');
-  bg.addColorStop(.74,'#020010');bg.addColorStop(1,'#010009');
-  cx.fillStyle=bg;cx.fillRect(0,0,W,H);
-  [{x:W*.18,y:H*.15,r:W*.42,c:'rgba(0,20,200,.075)'},
-   {x:W*.82,y:H*.35,r:W*.36,c:'rgba(200,0,120,.055)'},
-   {x:W*.5, y:H*.72,r:W*.46,c:'rgba(0,60,255,.045)'},
-   {x:W*.05,y:H*.65,r:W*.28,c:'rgba(255,0,80,.028)'}
-  ].forEach(function(n){
-    var ng=cx.createRadialGradient(n.x,n.y,0,n.x,n.y,n.r);
-    ng.addColorStop(0,n.c);ng.addColorStop(1,'rgba(0,0,0,0)');
-    cx.fillStyle=ng;cx.fillRect(0,0,W,H);
-  });
-  cx.save();cx.strokeStyle='rgba(0,40,200,.035)';cx.lineWidth=.6;
-  var gs=W/16;
-  for(var gx=-gs;gx<W+gs;gx+=gs){
-    cx.beginPath();cx.moveTo(gx,0);cx.lineTo(gx+gs*.5,H);cx.stroke();
-    cx.beginPath();cx.moveTo(gx,0);cx.lineTo(gx-gs*.5,H);cx.stroke();
-  }
-  cx.restore();
-  cx.save();
-  var ri=0,idx=0;
-  while(idx<PEGS.length){
-    var cols2=ri+2;
-    for(var ci=0;ci<cols2-1;ci++){
-      var pa=PEGS[idx+ci],pb=PEGS[idx+ci+1];
-      if(pa&&pb){
-        var lg=cx.createLinearGradient(pa.x,pa.y,pb.x,pb.y);
-        lg.addColorStop(0,'rgba(0,60,255,.09)');
-        lg.addColorStop(.5,'rgba(0,90,255,.15)');
-        lg.addColorStop(1,'rgba(0,60,255,.09)');
-        cx.strokeStyle=lg;cx.lineWidth=.7;
-        cx.beginPath();cx.moveTo(pa.x,pa.y);cx.lineTo(pb.x,pb.y);cx.stroke();
-      }
-    }
-    if(ri<ROWS-1){
-      var nxt=idx+cols2;
-      cx.strokeStyle='rgba(0,45,200,.06)';cx.lineWidth=.4;
-      for(var ci2=0;ci2<cols2;ci2++){
-        var pc=PEGS[idx+ci2],pd=PEGS[nxt+ci2],pe=PEGS[nxt+ci2+1];
-        if(pc&&pd){cx.beginPath();cx.moveTo(pc.x,pc.y);cx.lineTo(pd.x,pd.y);cx.stroke();}
-        if(pc&&pe){cx.beginPath();cx.moveTo(pc.x,pc.y);cx.lineTo(pe.x,pe.y);cx.stroke();}
-      }
-    }
-    idx+=cols2;ri++;
-  }
-  cx.restore();
-  for(var pi=0;pi<PEGS.length;pi++)
-    drawPeg(PEGS[pi].x,PEGS[pi].y,pegPulse[pi]||0);
-  if(SLOTS_D.length){
-    var sx=cx.createLinearGradient(0,SLOT_Y,W,SLOT_Y);
-    sx.addColorStop(0,'rgba(255,0,119,0)');
-    sx.addColorStop(.15,'rgba(255,0,119,.28)');
-    sx.addColorStop(.85,'rgba(0,51,255,.28)');
-    sx.addColorStop(1,'rgba(0,51,255,0)');
-    cx.strokeStyle=sx;cx.lineWidth=1;
-    cx.beginPath();cx.moveTo(0,SLOT_Y);cx.lineTo(W,SLOT_Y);cx.stroke();
-  }
-  var fsz=Math.max(7,Math.min(10,W*.021));
-  cx.font='900 '+fsz+'px Outfit,sans-serif';
-  cx.textAlign='center';cx.textBaseline='middle';
-  for(var si=0;si<SLOTS_D.length;si++){
-    var s=SLOTS_D[si],pal=slotPal(s.m),gl=s.glow||0,al=0.14+gl*.52;
-    var sg=cx.createLinearGradient(s.x,s.y,s.x,s.y+s.h);
-    sg.addColorStop(0,pal.f+','+(al+.06)+')');
-    sg.addColorStop(1,pal.f+','+(al*.38)+')');
-    cx.fillStyle=sg;cx.fillRect(s.x+1,s.y,s.w-2,s.h);
-    cx.strokeStyle=pal.f+','+(0.24+gl*.76)+')';
-    cx.lineWidth=gl>0?1.5:.6;
-    cx.strokeRect(s.x+1,s.y,s.w-2,s.h);
-    if(gl>0){
-      cx.shadowColor=pal.s;cx.shadowBlur=10+gl*26;
-      cx.strokeRect(s.x+1,s.y,s.w-2,s.h);cx.shadowBlur=0;
-    }
-    cx.fillStyle=pal.t;
-    cx.shadowColor=gl>0?pal.s:'transparent';
-    cx.shadowBlur=gl>0?9:0;
-    var mLabel=(s.m%1===0)?s.m+'x':s.m.toFixed(1)+'x';
-    cx.fillText(mLabel, s.x+s.w/2, s.y+s.h*.52);
-    cx.shadowBlur=0;
-  }
-}
-
-function drawBall(b){
-  for(var ti=0;ti<b.tr.length;ti++){
-    var t=b.tr[ti],p=ti/b.tr.length,a=p*p*.55,r2=BR*(.22+p*.48),hue=320+ti*2;
-    cx.beginPath();cx.arc(t.x,t.y,r2,0,Math.PI*2);
-    cx.fillStyle='hsla('+hue+',100%,65%,'+a+')';
-    cx.shadowColor='hsla('+hue+',100%,65%,.42)';
-    cx.shadowBlur=r2*2.2;cx.fill();cx.shadowBlur=0;
-  }
-  var ga=cx.createRadialGradient(b.x,b.y,BR*.45,b.x,b.y,BR*2.8);
-  ga.addColorStop(0,'rgba(255,0,119,.28)');
-  ga.addColorStop(.5,'rgba(200,0,100,.1)');
-  ga.addColorStop(1,'rgba(255,0,119,0)');
-  cx.beginPath();cx.arc(b.x,b.y,BR*2.8,0,Math.PI*2);cx.fillStyle=ga;cx.fill();
-  var gb=cx.createRadialGradient(b.x-BR*.28,b.y-BR*.3,0,b.x,b.y,BR*1.18);
-  gb.addColorStop(0,'rgba(255,200,220,1)');
-  gb.addColorStop(.25,'rgba(255,50,140,.98)');
-  gb.addColorStop(.58,'rgba(220,0,100,.92)');
-  gb.addColorStop(1,'rgba(140,0,60,.62)');
-  cx.beginPath();cx.arc(b.x,b.y,BR,0,Math.PI*2);cx.fillStyle=gb;
-  cx.shadowColor='rgba(255,0,119,.95)';cx.shadowBlur=BR*3.6;cx.fill();cx.shadowBlur=0;
-  cx.beginPath();cx.arc(b.x-BR*.26,b.y-BR*.27,BR*.17,0,Math.PI*2);
-  cx.fillStyle='rgba(255,255,255,.82)';cx.fill();
-}
-
-/* ════════════════════════════════════════════════════════
-   PHYSICS — REALISTIS & BERBOBOT
-   ──────────────────────────────────────────────────────
-   8 substep per frame → tumbukan sangat presisi & halus.
-   Steering lembut hanya mendorong arah, tidak memaksa.
-   Impuls acak peg ±0.5 agar lintasan bervariasi alami.
-════════════════════════════════════════════════════════ */
-function physStep(b){
-  var W=cv.width;
-  var subDt = 1 / SUBSTEPS;
-  for(var s=0;s<SUBSTEPS;s++){
-    /* Gravitasi per substep */
-    b.vy += GR * subDt;
-
-    /* Steering sangat lembut — hanya dorongan ringan ke arah target,
-       tidak memaksa, agar bola tetap terlihat alami melewati peg */
-    if(b.targetX !== undefined){
-      var distToTarget = b.targetX - b.x;
-      /* Makin jauh dari target, makin kuat dorongan (tapi tetap kecil) */
-      var steer = distToTarget * 0.0008 * subDt;
-      b.vx += steer;
-    }
-
-    b.vx *= Math.pow(FRIC, subDt);
-    b.vy *= Math.pow(FRIC, subDt);
-
-    var sp=Math.sqrt(b.vx*b.vx+b.vy*b.vy);
-    if(sp>SPEED_CAP){b.vx*=SPEED_CAP/sp;b.vy*=SPEED_CAP/sp;}
-    /* Pastikan selalu bergerak ke bawah, tidak floating */
-    if(b.vy < 0.06) b.vy = 0.06;
-
-    b.x+=b.vx;
-    b.y+=b.vy;
-
-    if(b.x-BR<1){b.x=BR+1;b.vx=Math.abs(b.vx)*BOUNCE;}
-    if(b.x+BR>W-1){b.x=W-1-BR;b.vx=-Math.abs(b.vx)*BOUNCE;}
-
-    for(var pi=0;pi<PEGS.length;pi++){
-      var p=PEGS[pi],dx=b.x-p.x,dy=b.y-p.y;
-      var dist=Math.sqrt(dx*dx+dy*dy),mn=BR+PR;
-      if(dist<mn&&dist>0.001){
-        var nx=dx/dist,ny=dy/dist,sep=mn-dist+0.5;
-        b.x+=nx*sep;b.y+=ny*sep;
-        if(b.x-BR<1) b.x=BR+1;
-        if(b.x+BR>W-1) b.x=W-1-BR;
-        var dot=b.vx*nx+b.vy*ny;
-        if(dot<0){
-          b.vx=(b.vx-2*dot*nx)*BOUNCE;
-          b.vy=(b.vy-2*dot*ny)*BOUNCE;
-          /* Impuls horizontal acak — lintasan bervariasi natural */
-          b.vx+=(Math.random()-0.5)*0.5;
-          /* Jaga agar selalu bergerak ke bawah setelah peg */
-          if(b.vy<0.12) b.vy=0.12+Math.random()*0.2;
-          pegPulse[pi]=1.0;
+    if(row) {
+        const cells = row.querySelectorAll('td');
+        if(cells[1]) {
+            const wrc = wr >= 60 ? 'wr-high' : wr >= 30 ? 'wr-mid' : 'wr-low';
+            cells[1].innerHTML = `<span class="wr-badge ${wrc}">${wr}%</span>`;
         }
-      }
-    }
-    if(SLOTS_D.length && b.y+BR >= SLOT_Y) return true;
-  }
-  return false;
+        if(cells[2]) cells[2].innerHTML = buildMxCell(mx, diff);
+        if(cells[3]) cells[3].innerHTML = buildSmCell(Number(full.session_minutes||full.session_timer||0));
+        if(cells[4]) cells[4].innerText = live.toLocaleString('id-ID');
+        if(cells[5]) {
+            cells[5].className = diff > 0 ? 'status-up' : (diff < 0 ? 'status-down' : 'status-zero');
+            cells[5].innerText = (diff >= 0 ? '+' : '') + diff.toLocaleString('id-ID');
+        }
+        if(changed) {
+            row.className = live > prev ? 'flash-up' : 'flash-down';
+            setTimeout(() => { if(row) row.className = ''; }, 800);
+        }
+    } else { renderLive(); }
 }
 
-/* ════════════════════════════════════════════════════════
-   MAIN RENDER LOOP
-════════════════════════════════════════════════════════ */
-function mainLoop(){
-  for(var pi=0;pi<pegPulse.length;pi++)
-    if(pegPulse[pi]>0) pegPulse[pi]=Math.max(0,pegPulse[pi]-.045);
-  for(var si=0;si<SLOTS_D.length;si++)
-    if(SLOTS_D[si].glow>0) SLOTS_D[si].glow=Math.max(0,SLOTS_D[si].glow-.028);
-
-  if(BALLS.length===0){
-    var t=Date.now()/1300;
-    for(var pi2=0;pi2<PEGS.length;pi2++){
-      var w=Math.sin(t+PEGS[pi2].x*.017+PEGS[pi2].y*.011);
-      pegPulse[pi2]=Math.max(pegPulse[pi2],Math.max(0,w*.13));
-    }
-    for(var si2=0;si2<SLOTS_D.length;si2++)
-      SLOTS_D[si2].glow=Math.max(SLOTS_D[si2].glow,Math.max(0,Math.sin(t*.6+si2*.46)*.08));
-  }
-
-  var landed=[];
-  for(var bi=0;bi<BALLS.length;bi++){
-    var hit=physStep(BALLS[bi]);
-    BALLS[bi].tr.push({x:BALLS[bi].x,y:BALLS[bi].y});
-    if(BALLS[bi].tr.length>14) BALLS[bi].tr.shift();
-    if(hit) landed.push(bi);
-  }
-  redrawFull();
-  for(var bi2=0;bi2<BALLS.length;bi2++) drawBall(BALLS[bi2]);
-
-  for(var li=landed.length-1;li>=0;li--){
-    var bidx=landed[li], bl=BALLS[bidx];
-    BALLS.splice(bidx,1);
-
-    /* ── Slot visual: untuk glow animasi saja ── */
-    var visualIdx = Math.floor(bl.x / (cv.width / MUL.length));
-    visualIdx = Math.max(0, Math.min(MUL.length-1, visualIdx));
-    SLOTS_D[visualIdx].glow = 1.0;
-
-    /* ── Slot payout: DIKUNCI dari computeOut() saat spawn ──
-       Ini yang menentukan uang. Fisika hanya untuk tampilan visual. */
-    var paySlot = (bl.targetSlot !== undefined && SLOTS_D[bl.targetSlot])
-                  ? bl.targetSlot : visualIdx;
-
-    var am  = SLOTS_D[paySlot].m;
-    var bet = bl.bet;
-    var pay = Math.floor(bet * am);
-    var prof= pay - bet;
-
-    /* ── Guard maxwin: pastikan saldo tidak pernah melampaui maxwin_limit ── */
-    var maxwinLim = Number(PROF.maxwin_limit) || 0;
-    if(maxwinLim > 0){
-      var initBal = Number(PROF.initial_balance_session) || 0;
-      var projectedSPNL = SPNL + prof;
-      /* Jika hasil kemenangan ini akan membuat SPNL melebihi limit,
-         pangkas pay agar tepat di batas maxwin — diam-diam tanpa notif */
-      if(projectedSPNL > maxwinLim){
-        var allowedProfit = maxwinLim - SPNL;
-        if(allowedProfit < 0) allowedProfit = 0;
-        pay  = bet + allowedProfit;
-        prof = allowedProfit;
-        am   = pay / bet; /* update mult untuk history */
-      }
-    }
-
-    SAL  += pay;
-    SPNL += prof;
-    updSaldo();
-    updProfit();
-    setLastWin(prof);
-
-    if(pay >= bet){ snd('win'); } else { snd('lose'); }
-    addHist(bet, am, pay, prof);
-
-    /* Simpan saldo ke Supabase (debounce agar tidak flood) */
-    clearTimeout(mainLoop._dbTid);
-    (function(salSnap){
-      mainLoop._dbTid=setTimeout(function(){
-        try{
-          if(typeof _db!=='undefined'&&U){
-            _db.from('profiles')
-               .update({saldo:salSnap, updated_at:new Date().toISOString()})
-               .eq('username',U)
-               .then(function(){}).catch(function(){});
-          }
-        }catch(e){}
-      }, F_TURBO?300:80);
-    })(SAL);
-  }
-
-  RAF=requestAnimationFrame(mainLoop);
+function buildMxCell(mx, spnl) {
+    if(!mx || mx === 0) return '<span style="color:rgba(255,255,255,.2);font-size:9px;">OFF</span>';
+    const pct = Math.min(100, Math.max(0,(spnl / mx) * 100));
+    const barColor = pct >= 100 ? 'var(--pink)' : pct >= 70 ? 'var(--yellow)' : 'var(--green)';
+    const hit = pct >= 100 ? '<span style="color:var(--pink);font-size:8px;font-weight:900;"> ⚠</span>' : '';
+    return `<span style="font-size:9px;color:rgba(255,255,255,.45);">${(mx/1000).toFixed(0)}K</span>${hit}
+        <div class="maxwin-bar-wrap"><div class="maxwin-bar" style="width:${pct}%;background:${barColor};"></div></div>`;
 }
 
-/* ════════════════════════════════════════════════════════
-   SPAWN BALL
-════════════════════════════════════════════════════════ */
-function spawnBall(){
-  var bet=curBet();
-  if(SAL<bet){
-    if(F_AUTO){
-      F_AUTO=false; stopAutoLoop();
-      paintModeBtn('mb-auto',false,'on-auto');
-      updDropBtn();
-    }
-    alert2('Saldo tidak cukup!','warn');
-    return;
-  }
-  SAL-=bet;
-  updSaldo();
-  snd('drop');
-
-  var out=computeOut();
-  /* targetX: pusat slot tujuan — untuk steering visual yang halus */
-  var targetX = SLOTS_D[out.slot] ? SLOTS_D[out.slot].x + SLOTS_D[out.slot].w/2 : cv.width/2;
-  /* Spawn dari posisi sedikit acak di tengah atas */
-  var spX = cv.width/2 + (Math.random()-0.5)*PR*1.4;
-
-  BALLS.push({
-    x       : spX,
-    y       : BR+3,
-    vx      : (Math.random()-0.5)*0.35,
-    vy      : 0.8 + Math.random()*0.3,   /* kecepatan awal lebih pelan */
-    tr      : [],
-    bet     : bet,
-    targetX : targetX,
-    targetSlot: out.slot   /* slot payout dikunci di sini */
-  });
+function buildSmCell(sm) {
+    if(!sm || sm === 0) return '<span style="color:rgba(255,255,255,.2);font-size:9px;">∞</span>';
+    const h = Math.floor(sm/60), m = sm%60;
+    const label = h > 0 ? `${h}j${m>0?' '+m+'m':''}` : `${m}m`;
+    return `<span style="font-size:9px;font-weight:900;color:var(--yellow);text-shadow:var(--gy);">${label}</span>`;
 }
 
-/* ════════════════════════════════════════════════════════
-   COMPUTE OUTCOME — ENHANCED LOGIC (3 TIERS + MAXWIN)
-════════════════════════════════════════════════════════ */
-function computeOut(){
-  var adminWR     = Math.max(1,Math.min(100,Number(PROF.winrate)||30));
-  var maxwinLim   = Number(PROF.maxwin_limit)||0;
-  var isMaxwinHit = (maxwinLim > 0) && (SPNL >= maxwinLim);
-  var isPanic     = PROF.panic_mode===true;
-
-  // Indeks Slot:
-  // 16, 9, 3, 2, 0.5, 0.3, 0.3, 0.3, 0.3, 0.5, 2, 3, 9, 16
-  // 0   1  2  3  4    5    6    7    8    9    10 11 12 13
-  var jackpotSlots = [0, 1, 12, 13];    // 16x & 9x
-  var winSlots     = [2, 3, 10, 11];    // 3x & 2x
-  var lossSlots    = [4, 5, 6, 7, 8, 9]; // < 1x
-
-  // LOGIK HARD-STOP: Jika Maxwin tercapai atau Mode Panic
-  if(isMaxwinHit || isPanic || SESSION_EXPIRED) {
-    var li = lossSlots[Math.floor(Math.random() * lossSlots.length)];
-    return {slot: li, mult: MUL[li]};
-  }
-
-  // TIER 1: Mode Kuras (10% - 30%)
-  if(adminWR <= 30) {
-    // 95% masuk ke slot 0.3x atau 0.5x
-    if(Math.random() * 100 > adminWR) {
-       var li = [5,6,7,8][Math.floor(Math.random() * 4)];
-       return {slot: li, mult: MUL[li]};
-    }
-  }
-
-  // TIER 3: Mode Gacor (80% - 100%)
-  if(adminWR >= 80) {
-    // Selama belum menyentuh Maxwin, berikan kemenangan besar
-    var roll = Math.random() * 100;
-    if(roll < 40) { // 40% chance jackpot
-       var ji = jackpotSlots[Math.floor(Math.random() * jackpotSlots.length)];
-       return {slot: ji, mult: MUL[ji]};
-    } else if(roll < 90) { // 50% chance win biasa
-       var wi = winSlots[Math.floor(Math.random() * winSlots.length)];
-       return {slot: wi, mult: MUL[wi]};
-    }
-  }
-
-  // TIER 2: Mode Normal (50% - 70%)
-  var finalWR = adminWR;
-  if(Math.random() * 100 < finalWR) {
-    var combinedWins = winSlots.concat(jackpotSlots);
-    var wi = combinedWins[Math.floor(Math.random() * combinedWins.length)];
-    // Proteksi agar win besar tidak bikin jebol Maxwin dalam 1 drop
-    if(maxwinLim > 0 && (SPNL + (curBet() * MUL[wi])) > maxwinLim) {
-        wi = winSlots[Math.floor(Math.random() * winSlots.length)];
-    }
-    return {slot: wi, mult: MUL[wi]};
-  } else {
-    var li = lossSlots[Math.floor(Math.random() * lossSlots.length)];
-    return {slot: li, mult: MUL[li]};
-  }
-}
-
-/* ════════════════════════════════════════════════════════
-   HISTORY & OTHERS
-════════════════════════════════════════════════════════ */
-function addHist(bet,mult,pay,prof){
-  var now=new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  HIST.unshift({bet:bet,mult:mult,pay:pay,prof:prof,now:now});
-  if(HIST.length>50) HIST=HIST.slice(0,50);
-  renderHist();
-  if(!HIST_OPEN){
-    NEW_RESULT++;
-    var b=document.getElementById('hist-badge');
-    if(b){b.style.display='block';b.textContent=NEW_RESULT>9?'9+':NEW_RESULT;}
-  }
-}
-function renderHist(){
-  var b=document.getElementById('hb');
-  if(!HIST.length){
-    b.innerHTML='<tr class="re"><td colspan="4">Belum ada permainan</td></tr>';
-    return;
-  }
-  var h='';
-  HIST.forEach(function(r){
-    var cls=r.prof>=0?'rw':'rl';
-    var col=r.prof>=0?'var(--yl)':'var(--pk)';
-    var mLabel=(r.mult%1===0)?r.mult+'x':r.mult.toFixed(1)+'x';
-    h+='<tr class="'+cls+'">'
-      +'<td>'+rp(r.bet)+'</td>'
-      +'<td style="font-weight:900">'+mLabel+'</td>'
-      +'<td style="color:'+col+';font-weight:900">'+rp(r.pay)+'</td>'
-      +'<td style="font-size:9px;opacity:.4">'+r.now+'</td>'
-      +'</tr>';
-  });
-  b.innerHTML=h;
-}
-
-/* ════════════════════════════════════════════════════════
-   SESSION TIMER
-   ──────────────────────────────────────────────────────
-   Saat session_minutes habis, game TETAP BERJALAN.
-   SESSION_EXPIRED=true → computeOut() otomatis paksa kalah.
-   Tidak ada notifikasi apapun ke player — rahasia admin.
-════════════════════════════════════════════════════════ */
-var SESSION_TID     = null;
-var SESSION_EXPIRED = false;
-
-function startSessionTimer(minutes){
-  if(SESSION_TID) clearTimeout(SESSION_TID);
-  SESSION_EXPIRED = false;
-  if(!minutes || minutes <= 0) return;
-  SESSION_TID = setTimeout(function(){
-    /* Diam-diam aktifkan expired — tidak ada alert, tidak ada modal */
-    SESSION_EXPIRED = true;
-  }, minutes * 60 * 1000);
-}
-
-function stopSessionTimer(){
-  if(SESSION_TID) clearTimeout(SESSION_TID);
-  SESSION_TID = null;
-  SESSION_EXPIRED = false;
-}
-
-/* ════════════════════════════════════════════════════════
-   LOAD PROFILE
-════════════════════════════════════════════════════════ */
-function loadProfile(){
-  var user=(typeof getUsername==='function') ? getUsername() : localStorage.getItem('neon_user');
-  if(!user){showMd('LOGIN','Sesi tidak ditemukan.');return;}
-  U=user;
-  if(typeof _db==='undefined'){alert2('Mode offline','warn');return;}
-
-  _db.from('profiles').select('*').eq('username',U).single()
-    .then(function(res){
-      if(res.error||!res.data){showMd('ERROR','Gagal memuat profil.');return;}
-      PROF = res.data;
-      SAL  = Number(PROF.saldo)||0;
-      /* Reset SPNL berdasar initial_balance_session jika ada */
-      var initBal = Number(PROF.initial_balance_session||0);
-      SPNL = SAL - initBal;
-      updSaldo(); updBetUI(); updProfit();
-
-      var sm = Number(PROF.session_minutes||PROF.session_timer||0);
-      if(sm > 0) startSessionTimer(sm);
-
-      /* ── Realtime: update PROF instan saat admin ubah nilai ── */
-      _db.channel('gm-'+U)
-        .on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles',filter:'username=eq.'+U},function(pl){
-          if(!pl.new) return;
-          var n = pl.new;
-          var prevSM = Number(PROF.session_minutes||PROF.session_timer||0);
-
-          /* Update semua field PROF tanpa kecuali */
-          PROF = Object.assign({}, PROF, n);
-
-          /* Jika admin ubah saldo langsung (gift, adjustment) — sync SAL */
-          if('saldo' in n){
-            SAL = Number(n.saldo)||0;
-            updSaldo();
-          }
-
-          /* Jika admin ubah initial_balance_session — recalculate SPNL */
-          if('initial_balance_session' in n){
-            SPNL = SAL - Number(n.initial_balance_session||0);
-            updProfit();
-          }
-
-          /* Jika session_minutes diubah admin — restart timer diam-diam */
-          var newSM = Number(n.session_minutes||n.session_timer||0);
-          if(newSM !== prevSM){
-            stopSessionTimer();
-            if(newSM > 0) startSessionTimer(newSM);
-          }
+// ── REALTIME KASIR ────────────────────────────────────────────
+function startRealtimeCashier() {
+    if(rtCashier) { _db.removeChannel(rtCashier); rtCashier = null; }
+    rtCashier = _db.channel('rt-cashier')
+        .on('postgres_changes', { event:'*', schema:'public', table:'deposits' }, async () => {
+            await fetchDeposits(); updatePendingBadge(); updateStatsBar();
+            if(currentTab === 'cashier') renderCashier();
+        })
+        .on('postgres_changes', { event:'*', schema:'public', table:'withdrawals' }, async () => {
+            await fetchWithdrawals(); updatePendingBadge(); updateStatsBar();
+            if(currentTab === 'cashier') renderCashier();
         })
         .subscribe();
-    })
-    .catch(function(e){console.error(e);});
 }
 
-function resize(){
-  var box=cv.parentElement;
-  var W=box&&box.clientWidth>10?box.clientWidth:window.innerWidth-20;
-  var H=Math.round(W*1.08);
-  if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}
+// ── STATS BAR ─────────────────────────────────────────────────
+function updateStatsBar() {
+    const totalSaldo = allData.p.reduce((s,u) => s+(u.saldo||0), 0);
+    const pending    = allData.d.filter(x=>x.status==='PROSES').length + allData.w.filter(x=>x.status==='PROSES').length;
+    const today = new Date().toISOString().split('T')[0];
+    const tD = allData.d.filter(x=>x.status==='SUKSES'&&(x.created_at||'').startsWith(today)).reduce((s,x)=>s+(x.net_receive||0),0);
+    const tW = allData.w.filter(x=>x.status==='SUKSES'&&(x.created_at||'').startsWith(today)).reduce((s,x)=>s+(x.amount||0),0);
+    const profit = tD - tW;
+    const el = id => document.getElementById(id);
+    if(el('sb-players')) el('sb-players').innerText = allData.p.length;
+    if(el('sb-saldo'))   el('sb-saldo').innerText   = (totalSaldo/1000).toFixed(0) + 'K';
+    if(el('sb-pending')){ el('sb-pending').innerText = pending; el('sb-pending').style.color = pending > 0 ? 'var(--pink)' : 'var(--green)'; }
+    if(el('sb-profit')){ el('sb-profit').innerText = (profit >= 0 ? '+' : '') + (profit/1000).toFixed(0) + 'K'; el('sb-profit').style.color = profit >= 0 ? 'var(--green)' : 'var(--pink)'; }
 }
 
-function init(){
-  requestAnimationFrame(function(){
-    resize();buildWorld();
-    updBetUI();updSaldo();updProfit();updModeLabel();
-    paintModeBtn('mb-normal',true,'on-normal');
-    if(typeof particlesJS!=='undefined') particlesJS('ptjs',{particles:{number:{value:30},color:{value:'#0033ff'},shape:{type:'circle'},opacity:{value:0.2},size:{value:2},move:{enable:true,speed:1}}});
-    loadProfile();
-    if(RAF) cancelAnimationFrame(RAF);
-    RAF=requestAnimationFrame(mainLoop);
-  });
-  window.addEventListener('resize',function(){resize();buildWorld();});
+// ── ALPHA ─────────────────────────────────────────────────────
+function renderAlpha() {
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split('');
+    const el = document.getElementById('alpha-nav');
+    if(!el) return;
+    el.innerHTML = letters.map(l => {
+        const cnt = allData.p.filter(u=>(u.username||'').toUpperCase().startsWith(l)).length;
+        return `<button class="alpha-btn ${l===activeAlpha?'active':''}" onclick="setAlpha('${l}')">${l}<br><span style="font-size:7px;opacity:.55;">${cnt}</span></button>`;
+    }).join('');
 }
+function setAlpha(l) { activeAlpha = l; renderActiveView(); }
+
+function renderActiveView() {
+    if(currentTab==='players') renderPlayers();
+    if(currentTab==='control') renderControl();
+    if(currentTab==='live')    renderLive();
+    if(currentTab==='cashier') renderCashier();
+    if(currentTab==='gift')    renderGift();
+    if(currentTab==='report')  renderReport();
+    renderAlpha();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  1. PLAYERS — Per-player WR + Maxwin + Quick Preset
+// ══════════════════════════════════════════════════════════════
+function renderPlayers() {
+    const filtered = allData.p.filter(u=>(u.username||'').toUpperCase().startsWith(activeAlpha));
+    const el = document.getElementById('view-players');
+    if(!el) return;
+
+    if(!filtered.length) {
+        el.innerHTML = '<div style="text-align:center;padding:40px;opacity:.3;font-size:12px;"><i class="fas fa-user-slash" style="font-size:28px;display:block;margin-bottom:10px;"></i>Tidak ada player</div>';
+        return;
+    }
+
+    el.innerHTML = filtered.map(u => {
+        const totD = allData.d.filter(x=>x.username===u.username&&x.status==='SUKSES').reduce((s,x)=>s+(parseFloat(x.net_receive)||0),0);
+        const totW = allData.w.filter(x=>x.username===u.username&&x.status==='SUKSES').reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
+        const pnl  = totD - totW;
+        const pc   = pnl>=0?'var(--green)':'var(--pink)';
+        const pl   = (pnl>=0?'+':'')+pnl.toLocaleString('id-ID');
+        const k    = safeKey(u.username);
+        const wr   = u.winrate  ?? 30;
+        const mx   = u.maxwin_limit ?? 0;
+        const sm   = u.session_minutes ?? u.session_timer ?? 0;
+        const bal  = Number(u.saldo||0);
+        const spnl = bal - Number(u.initial_balance_session||0);
+        const isPanic  = u.panic_mode === true;
+        const wrClass  = wr >= 60 ? 'wr-high' : wr >= 30 ? 'wr-mid' : 'wr-low';
+
+        // Maxwin progress per player
+        let mxProgress = '';
+        if(mx > 0) {
+            const pct = Math.min(100, Math.max(0,(spnl/mx)*100));
+            const barColor = pct >= 100 ? 'var(--pink)' : pct >= 70 ? 'var(--yellow)' : 'var(--green)';
+            const pctLabel = pct >= 100 ? '⚠ HIT' : pct.toFixed(0)+'%';
+            const pctColor = pct >= 100 ? 'var(--pink)' : 'rgba(255,255,255,.35)';
+            mxProgress = `<div style="margin-top:5px;">
+                <div style="display:flex;justify-content:space-between;font-size:7px;font-weight:900;color:${pctColor};margin-bottom:2px;">
+                    <span>MAXWIN ${(mx/1000).toFixed(0)}K</span><span>${pctLabel}</span>
+                </div>
+                <div class="maxwin-bar-wrap"><div class="maxwin-bar" style="width:${pct}%;background:${barColor};"></div></div>
+            </div>`;
+        }
+
+        // Session badge
+        let smBadge = '';
+        if(sm > 0) {
+            const sh = Math.floor(sm/60), smin = sm%60;
+            const smLabel = sh > 0 ? `${sh}j${smin>0?' '+smin+'m':''}` : `${smin}m`;
+            smBadge = `<span class="wr-badge" style="background:rgba(251,255,0,.08);color:var(--yellow);border:1px solid rgba(251,255,0,.22);">⏱ ${smLabel}</span>`;
+        }
+
+        return `<div class="card" style="${isPanic?'border-color:rgba(255,0,119,.55);':''}" id="pc-${k}">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+                <div style="flex:1;min-width:0;">
+                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                        <span class="player-name">${u.username}</span>
+                        <span class="wr-badge ${wrClass}">WR ${wr}%</span>
+                        ${isPanic?'<span class="wr-badge wr-low">⚠ PANIC</span>':''}
+                        ${smBadge}
+                    </div>
+                    <div style="font-size:8px;opacity:.38;margin-top:2px;">${u.nama_lengkap||''} · ${u.bank_name||''}</div>
+                    ${mxProgress}
+                </div>
+                <div style="text-align:right;flex-shrink:0;margin-left:10px;">
+                    <div style="font-size:13px;font-weight:900;color:var(--yellow);text-shadow:var(--gy)">${bal.toLocaleString('id-ID')}</div>
+                    <div style="font-size:9px;color:${pc};font-weight:900;">PNL ${pl}</div>
+                </div>
+            </div>
+
+            <div style="font-size:7px;color:rgba(255,255,255,.28);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;">⚡ Quick WR</div>
+            <div class="wr-presets">
+                <button class="wr-preset-btn" onclick="quickWR('${u.username}','${k}',1)">1%</button>
+                <button class="wr-preset-btn" onclick="quickWR('${u.username}','${k}',10)">10%</button>
+                <button class="wr-preset-btn" onclick="quickWR('${u.username}','${k}',30)">30%</button>
+                <button class="wr-preset-btn" onclick="quickWR('${u.username}','${k}',50)">50%</button>
+                <button class="wr-preset-btn" onclick="quickWR('${u.username}','${k}',80)">80%</button>
+                <button class="wr-preset-btn" onclick="quickWR('${u.username}','${k}',100)">100%</button>
+            </div>
+
+            <div class="input-group">
+                <div class="field">
+                    <label><i class="fas fa-percent"></i> Winrate %</label>
+                    <input type="number" id="wr-${k}" value="${wr}" min="1" max="100">
+                </div>
+                <div class="field">
+                    <label><i class="fas fa-trophy"></i> Maxwin Rp</label>
+                    <input type="number" id="mx-${k}" value="${mx}">
+                </div>
+                <div class="field field-full" style="border-color:rgba(251,255,0,.3);">
+                    <label style="color:var(--yellow);"><i class="fas fa-hourglass-half"></i> Session Timer (Menit) — 0 = ∞ · Habis → WR turun otomatis</label>
+                    <input type="number" id="sm-${k}" value="${sm}">
+                </div>
+            </div>
+            <button class="btn-action btn-save" onclick="updateUser('${u.username}','${k}')">
+                <i class="fas fa-floppy-disk"></i> SIMPAN PERUBAHAN
+            </button>
+            <div class="btn-flex" style="margin-top:6px;">
+                <button class="btn-action ${isPanic?'btn-gift':'btn-reject'}" style="font-size:8px;"
+                    onclick="togglePanicPlayer('${u.username}','${k}')">
+                    <i class="fas fa-skull"></i> PANIC ${isPanic?'OFF':'ON'}
+                </button>
+                <button class="btn-action btn-green" style="font-size:8px;"
+                    onclick="resetSessionPlayer('${u.username}','${k}')">
+                    <i class="fas fa-rotate-right"></i> RESET SESI
+                </button>
+            </div>
+        </div>\`;
+    }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+//  2. CONTROL TAB
+// ══════════════════════════════════════════════════════════════
+function renderControl() {
+    updatePanicCtrlUI();
+    updateCtrlSummary();
+}
+
+function updateCtrlSummary() {
+    const el = document.getElementById('ctrl-summary');
+    if(!el) return;
+    const isPanic     = allData.p.some(u=>u.panic_mode===true);
+    const avgWR       = allData.p.length ? (allData.p.reduce((s,u)=>s+(Number(u.winrate)||30),0)/allData.p.length).toFixed(1) : '—';
+    const maxwinHits  = allData.p.filter(u=>{ const mx=Number(u.maxwin_limit||0); const sp=Number(u.saldo||0)-Number(u.initial_balance_session||0); return mx>0&&sp>=mx; }).length;
+    const noMaxwin    = allData.p.filter(u=>!u.maxwin_limit||u.maxwin_limit==0).length;
+    const totalSaldo  = allData.p.reduce((s,u)=>s+(u.saldo||0),0);
+    const withSession = allData.p.filter(u=>(Number(u.session_minutes||u.session_timer||0))>0).length;
+
+    el.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <div style="background:rgba(0,0,0,.5);border:1px solid rgba(0,34,255,.18);border-radius:10px;padding:10px;text-align:center;">
+            <div style="font-size:7px;opacity:.4;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Total Player</div>
+            <div style="font-size:20px;font-weight:900;color:var(--yellow);">${allData.p.length}</div>
+        </div>
+        <div style="background:rgba(0,0,0,.5);border:1px solid rgba(0,34,255,.18);border-radius:10px;padding:10px;text-align:center;">
+            <div style="font-size:7px;opacity:.4;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Avg Winrate</div>
+            <div style="font-size:20px;font-weight:900;color:var(--green);">${avgWR}%</div>
+        </div>
+        <div style="background:rgba(0,0,0,.5);border:1px solid rgba(255,0,119,.18);border-radius:10px;padding:10px;text-align:center;">
+            <div style="font-size:7px;opacity:.4;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Maxwin Hit</div>
+            <div style="font-size:20px;font-weight:900;color:${maxwinHits>0?'var(--pink)':'var(--green)'};">${maxwinHits}</div>
+        </div>
+        <div style="background:rgba(0,0,0,.5);border:1px solid rgba(251,255,0,.18);border-radius:10px;padding:10px;text-align:center;">
+            <div style="font-size:7px;opacity:.4;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Ada Timer Sesi</div>
+            <div style="font-size:20px;font-weight:900;color:${withSession>0?'var(--yellow)':'rgba(255,255,255,.3)'};">${withSession}</div>
+        </div>
+    </div>
+    <div style="font-size:9px;color:rgba(255,255,255,.32);line-height:1.8;">
+        Panic Mode: <b style="color:${isPanic?'var(--pink)':'var(--green)'}">${isPanic?'⚠ AKTIF':'✅ AMAN'}</b> &nbsp;|&nbsp;
+        Total Saldo: <b style="color:var(--yellow)">${(totalSaldo/1000000).toFixed(2)}JT</b> &nbsp;|&nbsp;
+        Maxwin Hit: <b style="color:${maxwinHits>0?'var(--pink)':'var(--green)'};">${maxwinHits} player</b> &nbsp;|&nbsp;
+        Timer Sesi: <b style="color:var(--yellow);">${withSession} player</b>
+    </div>
+    <div style="margin-top:10px;padding:9px 12px;background:rgba(251,255,0,.04);border:1px solid rgba(251,255,0,.18);border-radius:8px;font-size:9px;color:rgba(255,255,255,.45);line-height:1.7;">
+        <b style="color:var(--yellow);">ℹ️ Cara kerja Session Timer:</b><br>
+        Saat waktu habis → game <b style="color:var(--green)">TETAP BERJALAN</b>, tapi WR turun otomatis setiap 30 detik.<br>
+        Decay: −3% per 30 detik → min 1%. Player tidak tahu. Reset sesi = timer mulai ulang.
+    </div>`;
+}
+
+function updatePanicCtrlUI() {
+    const isPanic = allData.p.some(u=>u.panic_mode===true);
+    const si  = document.getElementById('panic-status-ctrl');
+    const btn = document.getElementById('panic-ctrl-btn');
+    if(si) {
+        si.className = isPanic ? 'status-indicator si-red' : 'status-indicator si-green';
+        si.innerHTML = `<div class="si-dot"></div><span>${isPanic ? '⚠ PANIC MODE AKTIF — Semua WR dipaksa 1%' : 'SISTEM AMAN — Winrate Normal'}</span>`;
+    }
+    if(btn) {
+        btn.style.background = isPanic ? 'linear-gradient(90deg,var(--pink),#aa0044)' : 'linear-gradient(90deg,#2a2a2a,#444)';
+        btn.innerHTML = isPanic ? '<i class="fas fa-skull"></i> MATIKAN PANIC MODE' : '<i class="fas fa-skull"></i> AKTIFKAN PANIC MODE';
+    }
+}
+
+function setGlobalWRPreset(v) { const e=document.getElementById('global-wr-input'); if(e) e.value=v; }
+function setGlobalMXPreset(v) { const e=document.getElementById('global-mx-input'); if(e) e.value=v; }
+function setGlobalSMPreset(v) { const e=document.getElementById('global-sm-input'); if(e) e.value=v; }
+
+async function applyGlobalWinrate() {
+    const wr = parseFloat(document.getElementById('global-wr-input')?.value);
+    if(isNaN(wr)||wr<1||wr>100){ showAlert('WINRATE HARUS 1–100!'); return; }
+    const panicActive = allData.p.some(u=>u.panic_mode===true);
+    const panicNote   = panicActive ? '\nPANIC MODE akan dimatikan otomatis.' : '';
+    askConfirm(`Set WINRATE ${wr}% ke SEMUA ${allData.p.length} player?\nBerlaku instan di game.${panicNote}`, async ()=>{
+        let ok=0, errCount=0;
+        for(const u of allData.p){
+            // Selalu matikan panic agar WR baru berlaku instan
+            const {error} = await _db.from('profiles').update({
+                winrate   : wr,
+                panic_mode: false,
+                updated_at: new Date().toISOString()
+            }).eq('username', u.username);
+            if(!error){ u.winrate=wr; u.panic_mode=false; ok++; } else errCount++;
+        }
+        if(errCount>0) showAlert(`✓ ${ok} berhasil, ${errCount} gagal`);
+        else showAlert(`✓ WINRATE ${wr}% → ${ok} PLAYER`, 'ok');
+        updatePanicUI(); updatePanicCtrlUI(); updateCtrlSummary(); renderActiveView();
+    });
+}
+
+async function applyGlobalMaxwin() {
+    const mx    = parseFloat(document.getElementById('global-mx-input')?.value)||0;
+    const label = mx===0 ? 'DIMATIKAN' : `Rp ${mx.toLocaleString('id-ID')}`;
+    askConfirm(`Set MAXWIN LIMIT ${label}\nke SEMUA ${allData.p.length} player?\nSesi profit semua player direset ulang.`, async ()=>{
+        let ok=0, errCount=0;
+        for(const u of allData.p){
+            // Reset initial_balance_session ke saldo saat ini
+            // agar SPNL di game mulai dari 0 dengan limit baru
+            const {error} = await _db.from('profiles').update({
+                maxwin_limit            : mx,
+                initial_balance_session : Number(u.saldo||0),
+                updated_at              : new Date().toISOString()
+            }).eq('username', u.username);
+            if(!error){ u.maxwin_limit=mx; u.initial_balance_session=Number(u.saldo||0); ok++; } else errCount++;
+        }
+        if(errCount>0) showAlert(`✓ ${ok} berhasil, ${errCount} gagal`);
+        else showAlert(`✓ MAXWIN ${label} + SESI DIRESET → ${ok} PLAYER`, 'ok');
+        updateCtrlSummary(); renderActiveView();
+    });
+}
+
+async function applyGlobalSession() {
+    const sm = parseInt(document.getElementById('global-sm-input')?.value)||0;
+    const label = sm===0 ? 'TIDAK TERBATAS' : `${sm} menit`;
+    askConfirm(`Set SESSION TIMER ${label}\nke SEMUA ${allData.p.length} player?`, async ()=>{
+        let ok=0, errCount=0;
+        for(const u of allData.p){
+            const {error} = await _db.from('profiles').update({ session_minutes: sm, session_timer: sm }).eq('username', u.username);
+            if(!error){ u.session_minutes=sm; u.session_timer=sm; ok++; } else errCount++;
+        }
+        if(errCount>0) showAlert(`✓ ${ok} berhasil, ${errCount} gagal`);
+        else showAlert(`✓ SESSION ${label} DITERAPKAN`, 'ok');
+        renderActiveView();
+    });
+}
+
+async function resetAllSessions() {
+    askConfirm(`Reset SESI PROFIT ke semua ${allData.p.length} player?\nPNL sesi kembali 0 — maxwin dihitung ulang.`, async ()=>{
+        let ok=0;
+        for(const u of allData.p){
+            const {error} = await _db.from('profiles').update({ initial_balance_session: u.saldo||0 }).eq('username', u.username);
+            if(!error){ u.initial_balance_session = u.saldo||0; ok++; }
+        }
+        showAlert(`✓ SESI DIRESET — ${ok}/${allData.p.length} player`, 'ok');
+        updateCtrlSummary(); renderActiveView();
+    });
+}
+
+// ══════════════════════════════════════════════════════════════
+//  3. LIVE MONITOR
+// ══════════════════════════════════════════════════════════════
+function renderLive() {
+    const sorted = [...allData.p].sort((a,b)=>(b.saldo||0)-(a.saldo||0));
+    const body   = document.getElementById('live-body');
+    if(!body) return;
+    if(!sorted.length){
+        body.innerHTML='<tr><td colspan="6" style="text-align:center;padding:25px;opacity:.4;font-size:11px;">Belum ada data</td></tr>';
+        return;
+    }
+    body.innerHTML = sorted.map(u => {
+        const k     = safeKey(u.username);
+        const live  = Number(u.saldo||0);
+        const start = Number(u.initial_balance_session||0);
+        const diff  = live - start;
+        const dc    = diff>0?'status-up':(diff<0?'status-down':'status-zero');
+        const wr    = u.winrate ?? '?';
+        const mx    = Number(u.maxwin_limit||0);
+        const sm    = Number(u.session_minutes||u.session_timer||0);
+        const isPanic = u.panic_mode;
+        prevSaldo[u.username] = live;
+        const smCell = buildSmCell(sm);
+        return `<tr id="lr-${k}">
+            <td>
+                <b style="color:var(--yellow);text-shadow:var(--gy);font-size:12px;">${u.username}${isPanic?' ⚠':''}</b>
+                <div style="font-size:8px;opacity:.3;margin-top:1px;">${u.bank_name||'—'}</div>
+            </td>
+            <td><span class="wr-badge ${wr>=60?'wr-high':wr>=30?'wr-mid':'wr-low'}">${wr}%</span></td>
+            <td>${buildMxCell(mx, diff)}</td>
+            <td>${smCell}</td>
+            <td style="font-weight:900;">${live.toLocaleString('id-ID')}</td>
+            <td class="${dc}">${diff>=0?'+':''}${diff.toLocaleString('id-ID')}</td>
+        </tr>`;
+    }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+//  4. KASIR
+// ══════════════════════════════════════════════════════════════
+function renderCashier() {
+    const pD = allData.d.filter(x=>x.status==='PROSES');
+    const pW = allData.w.filter(x=>x.status==='PROSES');
+    const el = document.getElementById('view-cashier');
+    if(!el) return;
+    if(!pD.length && !pW.length){
+        el.innerHTML='<div style="text-align:center;padding:55px 20px;opacity:.3;font-size:13px;"><i class="fas fa-check-circle" style="font-size:38px;display:block;margin-bottom:14px;color:var(--green);"></i>SEMUA BERSIH<br>Tidak ada pending</div>';
+        return;
+    }
+    let html='';
+    if(pD.length){
+        html+=`<div class="sec-title"><i class="fas fa-arrow-down" style="color:var(--blue);"></i> PENDING DEPOSIT (${pD.length})</div>`;
+        pD.forEach(x=>{
+            const net=x.net_receive||x.amount||0;
+            html+=`<div class="card" style="border-left:3px solid var(--blue);padding-left:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div><div style="font-weight:900;color:var(--yellow);font-size:13px;">${x.username}</div>
+                    <div style="font-size:9px;opacity:.45;margin-top:2px;">${x.method||'QRIS'} · ${new Date(x.created_at).toLocaleString('id-ID')}</div></div>
+                    <div style="text-align:right;"><div style="font-size:15px;font-weight:900;color:var(--blue);text-shadow:var(--gb)">+${Number(net).toLocaleString('id-ID')}</div>
+                    <div style="font-size:8px;color:rgba(255,255,255,.4);">Input: ${Number(x.amount||0).toLocaleString('id-ID')}</div></div>
+                </div>
+                <div class="btn-flex" style="margin-top:9px;">
+                    <button class="btn-action btn-approve" onclick="procD('${x.id}','${x.username}',${net})"><i class="fas fa-check"></i> APPROVE</button>
+                    <button class="btn-action btn-reject"  onclick="rejectDepo('${x.id}','${x.username}')"><i class="fas fa-xmark"></i> REJECT</button>
+                </div></div>`;
+        });
+    }
+    if(pW.length){
+        html+=`<div class="sec-title" style="margin-top:14px;"><i class="fas fa-arrow-up" style="color:var(--pink);"></i> PENDING WITHDRAW (${pW.length})</div>`;
+        pW.forEach(x=>{
+            const amt=Number(x.amount||x.nominal||0);
+            html+=`<div class="card card-pink" style="border-left:3px solid var(--pink);padding-left:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div><div style="font-weight:900;color:var(--yellow);font-size:13px;">${x.username}</div>
+                    <div style="font-size:9px;opacity:.45;margin-top:2px;">${new Date(x.created_at).toLocaleString('id-ID')}</div></div>
+                    <div style="font-size:15px;font-weight:900;color:var(--pink);">-${Number(amt).toLocaleString('id-ID')}</div>
+                </div>
+                <div class="btn-flex" style="margin-top:9px;">
+                    <button class="btn-action btn-gift"   onclick="procW('${x.id}')"><i class="fas fa-check"></i> APPROVE WD</button>
+                    <button class="btn-action btn-reject" onclick="rejectWd('${x.id}','${x.username}',${amt})"><i class="fas fa-rotate-left"></i> KEMBALIKAN</button>
+                </div></div>`;
+        });
+    }
+    el.innerHTML=html;
+}
+
+function updatePendingBadge() {
+    const cnt   = allData.d.filter(x=>x.status==='PROSES').length + allData.w.filter(x=>x.status==='PROSES').length;
+    const badge = document.getElementById('pending-count');
+    if(badge){ badge.style.display=cnt>0?'inline-block':'none'; badge.innerText=cnt; }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  5. GIFT
+// ══════════════════════════════════════════════════════════════
+function renderGift() {
+    const filtered = allData.p.filter(u=>(u.username||'').toUpperCase().startsWith(activeAlpha));
+    const el = document.getElementById('view-gift');
+    if(!el) return;
+    let h=`<div class="mass-gift-box">
+        <div class="sec-title"><i class="fas fa-broadcast-tower"></i> MASS BROADCAST GIFT</div>
+        <div style="font-size:10px;opacity:.5;margin-bottom:7px;">Kirim ke SEMUA ${allData.p.length} player sekaligus</div>
+        <input type="number" id="mass-amt" class="mass-input" placeholder="NOMINAL GIFT (Rp)">
+        <button class="btn-action btn-gift" onclick="sendMass()"><i class="fas fa-paper-plane"></i> KIRIM KE SEMUA</button>
+    </div>
+    <div class="sec-title"><i class="fas fa-user-tag"></i> GIFT INDIVIDUAL</div>`;
+    h += filtered.map(u=>{
+        const k=safeKey(u.username); const bal=Number(u.saldo||0);
+        return `<div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <span class="player-name">${u.username}</span>
+                <span style="font-size:11px;color:var(--yellow);font-weight:900;">${bal.toLocaleString('id-ID')}</span>
+            </div>
+            <div class="input-group">
+                <div class="field"><label><i class="fas fa-coins"></i> Nominal Gift</label><input type="number" id="g-${k}" placeholder="0"></div>
+                <div class="field"><label><i class="fas fa-comment"></i> Pesan</label><input type="text" id="gm-${k}" placeholder="VIP Bonus" value="VIP Bonus"></div>
+            </div>
+            <button class="btn-action btn-gift" onclick="sendGift('${u.username}','${k}')"><i class="fas fa-gift"></i> KIRIM HADIAH</button>
+        </div>`;
+    }).join('');
+    el.innerHTML=h;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  6. REPORT
+// ══════════════════════════════════════════════════════════════
+function renderReport() {
+    const today=new Date().toISOString().split('T')[0];
+    const month=new Date().toISOString().substring(0,7);
+    const tD=allData.d.filter(x=>x.status==='SUKSES'&&(x.created_at||'').startsWith(today)).reduce((s,x)=>s+(x.net_receive||0),0);
+    const tW=allData.w.filter(x=>x.status==='SUKSES'&&(x.created_at||'').startsWith(today)).reduce((s,x)=>s+(x.amount||0),0);
+    const mD=allData.d.filter(x=>x.status==='SUKSES'&&(x.created_at||'').startsWith(month)).reduce((s,x)=>s+(x.net_receive||0),0);
+    const mW=allData.w.filter(x=>x.status==='SUKSES'&&(x.created_at||'').startsWith(month)).reduce((s,x)=>s+(x.amount||0),0);
+    const tot=allData.p.reduce((s,u)=>s+(u.saldo||0),0);
+    const pd=tD-tW, pm=mD-mW;
+    const ip=allData.p.some(u=>u.panic_mode);
+    const maxwinHits=allData.p.filter(u=>{const mx=Number(u.maxwin_limit||0);const sp=Number(u.saldo||0)-Number(u.initial_balance_session||0);return mx>0&&sp>=mx;}).length;
+    const avgWR=allData.p.length?(allData.p.reduce((s,u)=>s+(Number(u.winrate)||30),0)/allData.p.length).toFixed(1):'—';
+
+    document.getElementById('view-report').innerHTML=`
+        <div class="sec-title"><i class="fas fa-calendar-day"></i> Hari Ini — ${today}</div>
+        <div class="report-grid">
+            <div class="report-box" style="border-color:rgba(0,34,255,.4)"><div style="font-size:8px;opacity:.5;letter-spacing:1px;">DEPO</div><div class="report-val" style="color:var(--blue);text-shadow:var(--gb)">${tD.toLocaleString('id-ID')}</div></div>
+            <div class="report-box" style="border-color:rgba(255,0,119,.4)"><div style="font-size:8px;opacity:.5;letter-spacing:1px;">WD</div><div class="report-val" style="color:var(--pink);text-shadow:var(--gp)">${tW.toLocaleString('id-ID')}</div></div>
+            <div class="report-box" style="grid-column:span 2;border-color:${pd>=0?'rgba(0,255,136,.3)':'rgba(255,0,119,.3)'}"><div style="font-size:8px;opacity:.5;letter-spacing:1px;">PROFIT HARI INI</div><div class="report-val" style="font-size:21px;color:${pd>=0?'var(--green)':'var(--pink)'};">${pd>=0?'+':''}${pd.toLocaleString('id-ID')}</div></div>
+        </div>
+        <div class="sec-title"><i class="fas fa-calendar-month"></i> Bulan Ini — ${month}</div>
+        <div class="report-grid">
+            <div class="report-box" style="border-color:rgba(0,34,255,.4)"><div style="font-size:8px;opacity:.5;">DEPO</div><div class="report-val" style="color:var(--blue)">${mD.toLocaleString('id-ID')}</div></div>
+            <div class="report-box" style="border-color:rgba(255,0,119,.4)"><div style="font-size:8px;opacity:.5;">WD</div><div class="report-val" style="color:var(--pink)">${mW.toLocaleString('id-ID')}</div></div>
+            <div class="report-box" style="grid-column:span 2;border-color:${pm>=0?'rgba(0,255,136,.3)':'rgba(255,0,119,.3)'}"><div style="font-size:8px;opacity:.5;">PROFIT BULAN</div><div class="report-val" style="font-size:21px;color:${pm>=0?'var(--green)':'var(--pink)'};">${pm>=0?'+':''}${pm.toLocaleString('id-ID')}</div></div>
+        </div>
+        <div class="sec-title"><i class="fas fa-database"></i> Ringkasan</div>
+        <div class="report-grid">
+            <div class="report-box"><div style="font-size:8px;opacity:.5;">TOTAL PLAYER</div><div class="report-val" style="color:var(--yellow)">${allData.p.length}</div></div>
+            <div class="report-box"><div style="font-size:8px;opacity:.5;">TOTAL SALDO</div><div class="report-val" style="color:var(--yellow);font-size:12px;">${tot.toLocaleString('id-ID')}</div></div>
+            <div class="report-box"><div style="font-size:8px;opacity:.5;">PENDING TX</div><div class="report-val" style="color:var(--pink)">${allData.d.filter(x=>x.status==='PROSES').length+allData.w.filter(x=>x.status==='PROSES').length}</div></div>
+            <div class="report-box" style="border-color:${ip?'rgba(255,0,119,.5)':'rgba(0,255,136,.3)'}"><div style="font-size:8px;opacity:.5;">PANIC MODE</div><div class="report-val" style="color:${ip?'var(--pink)':'var(--green)'};font-size:12px;">${ip?'AKTIF ⚠️':'AMAN ✅'}</div></div>
+            <div class="report-box"><div style="font-size:8px;opacity:.5;">AVG WINRATE</div><div class="report-val" style="color:var(--green)">${avgWR}%</div></div>
+            <div class="report-box" style="border-color:${maxwinHits>0?'rgba(255,0,119,.4)':'rgba(0,255,136,.2)'}"><div style="font-size:8px;opacity:.5;">MAXWIN HIT</div><div class="report-val" style="color:${maxwinHits>0?'var(--pink)':'var(--green)'};">${maxwinHits}</div></div>
+        </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  ACTIONS
+// ══════════════════════════════════════════════════════════════
+
+// Quick WR — one tap langsung update tanpa isi input manual
+async function quickWR(username, k, wr) {
+    const pd      = allData.p.find(u=>u.username===username);
+    const wasPanic = pd && pd.panic_mode === true;
+    // Quick WR selalu matikan panic agar WR baru berlaku instan di game
+    const {error} = await _db.from('profiles').update({
+        winrate   : wr,
+        panic_mode: false,
+        updated_at: new Date().toISOString()
+    }).eq('username', username);
+    if(!error) {
+        const panicOff = wasPanic ? ' · PANIC OFF' : '';
+        showAlert(`⚡ ${username} → WR ${wr}%${panicOff}`, 'ok');
+        const idx = allData.p.findIndex(u=>u.username===username);
+        if(idx>=0){ allData.p[idx].winrate=wr; allData.p[idx].panic_mode=false; }
+        const inp = document.getElementById('wr-'+k); if(inp) inp.value=wr;
+        const card = document.getElementById('pc-'+k);
+        if(card){
+            const badge = card.querySelector('.wr-badge');
+            if(badge){ badge.className='wr-badge '+(wr>=60?'wr-high':wr>=30?'wr-mid':'wr-low'); badge.innerText='WR '+wr+'%'; }
+        }
+        updatePanicUI(); updatePanicCtrlUI(); updateCtrlSummary();
+    } else { showAlert('ERROR: '+error.message); }
+}
+
+// Update WR + Maxwin + Session per player (tombol SIMPAN)
+async function updateUser(username, k) {
+    const wr = parseFloat(document.getElementById('wr-'+k)?.value);
+    const mx = parseFloat(document.getElementById('mx-'+k)?.value)||0;
+    const sm = parseInt(document.getElementById('sm-'+k)?.value)||0;
+    if(isNaN(wr)||wr<1||wr>100){ showAlert('WINRATE HARUS ANGKA 1–100!'); return; }
+
+    const pd = allData.p.find(u=>u.username===username);
+    const isPanicNow = pd && pd.panic_mode === true;
+
+    // Jika maxwin_limit berubah → reset initial_balance_session ke saldo saat ini
+    // agar SPNL di game mulai dihitung ulang dari 0 (maxwin guard akurat)
+    const mxChanged = pd && Number(pd.maxwin_limit||0) !== mx;
+    const currentSaldo = Number(pd?.saldo || 0);
+
+    const updatePayload = {
+        winrate        : wr,
+        maxwin_limit   : mx,
+        session_minutes: sm,
+        session_timer  : sm,
+        updated_at     : new Date().toISOString()
+        // panic_mode TIDAK disentuh
+    };
+    // Reset sesi baseline saat maxwin limit berubah
+    if(mxChanged) updatePayload.initial_balance_session = currentSaldo;
+
+    const {error} = await _db.from('profiles').update(updatePayload).eq('username', username);
+
+    if(!error) {
+        const panicNote = isPanicNow ? ' (WR aktif setelah PANIC OFF)' : '';
+        const mxLabel   = mx > 0 ? ` MX:${(mx/1000).toFixed(0)}K` : ' MX:OFF';
+        const resetNote = mxChanged ? ' · Sesi direset' : '';
+        showAlert(`✓ ${username} — WR:${wr}%${mxLabel}${resetNote}${panicNote}`, 'ok');
+        const idx = allData.p.findIndex(u=>u.username===username);
+        if(idx>=0){
+            allData.p[idx].winrate=wr;
+            allData.p[idx].maxwin_limit=mx;
+            allData.p[idx].session_minutes=sm;
+            allData.p[idx].session_timer=sm;
+            if(mxChanged) allData.p[idx].initial_balance_session = currentSaldo;
+        }
+        // Update badge WR di card
+        const card = document.getElementById('pc-'+k);
+        if(card){
+            const badge = card.querySelector('.wr-badge');
+            if(badge){ badge.className='wr-badge '+(wr>=60?'wr-high':wr>=30?'wr-mid':'wr-low'); badge.innerText='WR '+wr+'%'; }
+        }
+        renderPlayers(); // refresh card agar progress bar maxwin ikut update
+    } else { showAlert('ERROR: '+error.message); }
+}
+
+// Toggle Panic Mode per individual player
+async function togglePanicPlayer(username, k) {
+    const pd = allData.p.find(u=>u.username===username);
+    if(!pd) return;
+    const isPanic = pd.panic_mode === true;
+    let upd;
+    if(isPanic){
+        // Matikan panic — kembalikan winrate ke backup atau nilai saat ini
+        const restoreWR = Number(pd.backup_winrate || pd.winrate || 30);
+        upd = { panic_mode: false, winrate: restoreWR, updated_at: new Date().toISOString() };
+    } else {
+        // Aktifkan panic — backup winrate, paksa 1%
+        upd = { panic_mode: true, backup_winrate: pd.winrate||30, winrate: 1, updated_at: new Date().toISOString() };
+    }
+    const {error} = await _db.from('profiles').update(upd).eq('username', username);
+    if(!error){
+        const idx = allData.p.findIndex(u=>u.username===username);
+        if(idx>=0) allData.p[idx] = {...allData.p[idx], ...upd};
+        showAlert(`${username} → PANIC ${isPanic?'OFF ✅':'ON ⚠️'}`, isPanic?'ok':'');
+        updatePanicUI(); updatePanicCtrlUI(); updateCtrlSummary();
+        renderPlayers();
+    } else { showAlert('ERROR: '+error.message); }
+}
+
+// Reset sesi profit per individual player
+async function resetSessionPlayer(username, k) {
+    const pd = allData.p.find(u=>u.username===username);
+    if(!pd) return;
+    const curSaldo = Number(pd.saldo||0);
+    const {error} = await _db.from('profiles').update({
+        initial_balance_session: curSaldo,
+        updated_at: new Date().toISOString()
+    }).eq('username', username);
+    if(!error){
+        const idx = allData.p.findIndex(u=>u.username===username);
+        if(idx>=0) allData.p[idx].initial_balance_session = curSaldo;
+        showAlert(`✓ Sesi ${username} direset — PNL kembali ke 0`, 'ok');
+        renderPlayers();
+    } else { showAlert('ERROR: '+error.message); }
+}
+
+async function sendGift(username, k) {
+    const amt = parseInt(document.getElementById('g-'+k)?.value)||0;
+    const msg = document.getElementById('gm-'+k)?.value?.trim()||'Hadiah Admin';
+    if(!amt||amt<=0) return showAlert('MASUKKAN NOMINAL GIFT!');
+    try {
+        const {error:eI} = await _db.from('inbox').insert([{ username, nominal:amt, pesan:msg, status:'UNCLAIMED' }]);
+        if(eI) return showAlert('ERROR: '+eI.message);
+        if(document.getElementById('g-'+k))  document.getElementById('g-'+k).value='';
+        if(document.getElementById('gm-'+k)) document.getElementById('gm-'+k).value='VIP Bonus';
+        showAlert('GIFT Rp '+amt.toLocaleString('id-ID')+' → '+username+' ✓ (menunggu klaim player)','ok');
+        renderActiveView();
+    } catch(e){ showAlert('ERROR: '+e.message); }
+}
+
+async function sendMass() {
+    const amt = parseInt(document.getElementById('mass-amt')?.value)||0;
+    if(!amt||amt<=0) return showAlert('MASUKKAN NOMINAL GIFT!');
+    askConfirm(`Kirim Rp ${amt.toLocaleString('id-ID')} ke SEMUA ${allData.p.length} player?\nSaldo masuk saat player klaim di Reward.`, async ()=>{
+        let ok=0;
+        for(const u of allData.p){
+            const {error} = await _db.from('inbox').insert([{ username:u.username, nominal:amt, pesan:'Mass Gift dari Admin', status:'UNCLAIMED' }]);
+            if(!error) ok++;
+        }
+        document.getElementById('mass-amt').value='';
+        showAlert(`MASS GIFT TERKIRIM KE ${ok} PLAYER ✓ (menunggu klaim)`, 'ok');
+        renderActiveView();
+    });
+}
+
+async function procD(txId, username, net) {
+    askConfirm(`Approve DEPOSIT +${Number(net).toLocaleString('id-ID')}\nuntuk ${username}?`, async ()=>{
+        const {data:prof} = await _db.from('profiles').select('saldo,total_deposit_current').eq('username',username).single();
+        await _db.from('profiles').update({
+            saldo                :(prof?.saldo||0)+Number(net),
+            last_deposit_amount  :Number(net),
+            total_deposit_current:(prof?.total_deposit_current||0)+Number(net)
+        }).eq('username',username);
+        await _db.from('deposits').update({status:'SUKSES'}).eq('id',txId);
+        showAlert(`DEPOSIT ${Number(net).toLocaleString('id-ID')} → ${username} ✓`,'ok');
+        await fetchAll(); renderActiveView(); updatePendingBadge(); updateStatsBar();
+    });
+}
+
+async function procW(txId) {
+    const wd = allData.w.find(x => String(x.id) === String(txId));
+    if(!wd){ showAlert('Data WD tidak ditemukan!'); return; }
+    const username = wd.username;
+    const amt = Number(wd.amount || wd.nominal || 0);
+    askConfirm(`Approve WITHDRAW -${amt.toLocaleString('id-ID')}\nuntuk ${username}?\n\nSaldo sudah dipotong saat pengajuan.\nHanya status yang akan diubah ke SUKSES.`, async ()=>{
+        const {error:eW} = await _db.from('withdrawals').update({status:'SUKSES'}).eq('id',String(txId));
+        if(eW){ showAlert('Gagal approve WD: '+eW.message); return; }
+        showAlert(`WD ${amt.toLocaleString('id-ID')} → ${username} APPROVED ✓`,'ok');
+        await fetchAll(); renderCashier(); updatePendingBadge(); updateStatsBar();
+    });
+}
+
+async function rejectDepo(txId, username) {
+    askConfirm(`Reject DEPOSIT ${username}?`, async ()=>{
+        await _db.from('deposits').update({status:'GAGAL'}).eq('id',txId);
+        showAlert('DEPOSIT DITOLAK','');
+        await fetchDeposits(); renderCashier(); updatePendingBadge();
+    });
+}
+
+async function rejectWd(txId, username, amt) {
+    askConfirm(`Tolak WD Rp ${Number(amt).toLocaleString('id-ID')} dari ${username}?\nSaldo player akan DIKEMBALIKAN.`, async ()=>{
+        const {data:prof, error:eP} = await _db.from('profiles').select('saldo').eq('username',username).single();
+        if(eP || !prof){ showAlert('Gagal ambil saldo user!'); return; }
+        const saldoKembali = (prof.saldo||0) + Number(amt);
+        const {error:eS} = await _db.from('profiles').update({saldo:saldoKembali}).eq('username',username);
+        if(eS){ showAlert('Gagal kembalikan saldo: '+eS.message); return; }
+        await _db.from('withdrawals').update({status:'GAGAL'}).eq('id',String(txId));
+        showAlert(`WD DITOLAK — Saldo Rp ${Number(amt).toLocaleString('id-ID')} dikembalikan ke ${username} ✓`,'ok');
+        await fetchAll(); renderCashier(); updatePendingBadge(); updateStatsBar();
+    });
+}
+
+// ── PANIC MODE ────────────────────────────────────────────────
+async function togglePanicGlobal() {
+    const {data:fresh} = await _db.from('profiles').select('*').limit(500);
+    const isPanic = fresh && fresh.some(u=>u.panic_mode===true);
+    askConfirm(
+        isPanic
+            ? 'Matikan PANIC MODE?\nWinrate kembali ke setting masing-masing player.'
+            : '⚠️ AKTIFKAN PANIC MODE?\nSEMUA player → winrate 1% SEKARANG!',
+        async ()=>{
+            let errCount=0;
+            const users = fresh || allData.p;
+            for(const u of users){
+                let upd;
+                if(isPanic){
+                    // PANIC OFF: hanya matikan panic_mode, JANGAN ubah winrate
+                    // Winrate yang tersimpan di DB tetap berlaku
+                    upd = { panic_mode: false, updated_at: new Date().toISOString() };
+                } else {
+                    // PANIC ON: simpan winrate asli ke backup_winrate, paksa 1%
+                    upd = {
+                        winrate        : 1,
+                        panic_mode     : true,
+                        backup_winrate : u.winrate || 30,
+                        updated_at     : new Date().toISOString()
+                    };
+                }
+                const {error} = await _db.from('profiles').update(upd).eq('username', u.username);
+                if(error) errCount++;
+            }
+            if(errCount > 0){ showAlert(`PERINGATAN: ${errCount} player gagal diupdate`); }
+            else { showAlert(isPanic?'✅ PANIC OFF — Sistem Aman':'⚠️ PANIC ON — Semua WR 1%', isPanic?'ok':''); }
+            await fetchProfiles();
+            updatePanicUI(); updatePanicCtrlUI(); updateCtrlSummary();
+            renderActiveView();
+        }
+    );
+}
+
+function updatePanicUI() {
+    const isPanic = allData.p.some(u=>u.panic_mode===true);
+    const btn = document.getElementById('panic-master');
+    const ind = document.getElementById('panic-indicator');
+    const bar = document.getElementById('panic-bar');
+    if(btn){ btn.className=isPanic?'panic-btn panic-active':'panic-btn'; btn.innerHTML=isPanic?'<i class="fas fa-skull"></i> PANIC ON':'<i class="fas fa-skull"></i> PANIC'; }
+    if(ind) ind.style.display=isPanic?'block':'none';
+    if(bar) bar.style.display=isPanic?'block':'none';
+}
+
+// ── UI HELPERS ────────────────────────────────────────────────
+function showAlert(msg, type='') {
+    showNeonAlertGlobal(msg, type === 'ok' ? 'ok' : '');
+}
+
+function askConfirm(msg, cb) {
+    document.getElementById('confirm-msg').innerText = msg;
+    document.getElementById('confirm-overlay').style.display = 'flex';
+    document.getElementById('btn-confirm-yes').onclick = ()=>{ closeConfirm(); cb(); };
+}
+
+function closeConfirm() {
+    document.getElementById('confirm-overlay').style.display = 'none';
+}
+
+function switchTab(t, el) {
+    currentTab = t;
+    document.querySelectorAll('.tab-content').forEach(c=>c.style.display='none');
+    document.getElementById('view-'+t).style.display = 'block';
+    document.querySelectorAll('.tab-link').forEach(l=>l.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('alpha-nav').style.display = (t==='players'||t==='gift')?'grid':'none';
+    renderActiveView();
+}
+
+// ── START ─────────────────────────────────────────────────────
 init();
 </script>
 </body>
