@@ -360,7 +360,7 @@ var BSTEPS=[400,600,800,1000,1200,1600,1800,2000,4000,6000,8000,
             10000,12000,16000,18000,20000,25000,30000];
 var BIDX=3;
 
-var MAXWIN_PENALIZED_WR = 2;
+// Penyesuaian Multiplier agar lebih menantang
 var MUL=[16, 9, 3, 2, 0.5, 0.3, 0.3, 0.3, 0.3, 0.5, 2, 3, 9, 16];
 
 /* ════════════════════════════════════════════════════════
@@ -767,11 +767,10 @@ function physStep(b){
   for(var s=0;s<SUBSTEPS;s++){
     b.vy += GR;
     
-    /* STEERING FORCE: 
-       Secara halus membimbing bola ke arah targetX 
-       agar visual masuk ke kotak yang benar sesuai RNG */
+    // Steering Force yang lebih kuat untuk menjamin bola masuk lubang target
     if(b.targetX !== undefined) {
-       var steer = (b.targetX - b.x) * 0.0016; 
+       var distToTarget = b.targetX - b.x;
+       var steer = distToTarget * 0.0022; 
        b.vx += steer;
     }
 
@@ -844,8 +843,6 @@ function mainLoop(){
     var bidx=landed[li], bl=BALLS[bidx];
     BALLS.splice(bidx,1);
 
-    /* DETEKSI POSISI FISIK: 
-       Pembayaran ditentukan tepat di mana bola mendarat secara visual */
     var slotIdx = Math.floor(bl.x / (cv.width / MUL.length));
     slotIdx = Math.max(0, Math.min(MUL.length-1, slotIdx));
     
@@ -890,14 +887,8 @@ function spawnBall(){
   if(SAL<bet){
     if(F_AUTO){
       F_AUTO=false; stopAutoLoop();
-      if(F_TURBO){
-        F_TURBO=false;
-        paintModeBtn('mb-turbo',false,'on-turbo');
-        F_NORMAL=true;
-        paintModeBtn('mb-normal',true,'on-normal');
-      }
       paintModeBtn('mb-auto',false,'on-auto');
-      updDropBtn(); updModeLabel();
+      updDropBtn();
     }
     alert2('Saldo tidak cukup!','warn');
     return;
@@ -907,10 +898,7 @@ function spawnBall(){
   snd('drop');
 
   var out=computeOut();
-  
-  /* Ambil titik tengah slot target secara presisi */
   var targetX = SLOTS_D[out.slot].x + SLOTS_D[out.slot].w/2;
-  
   var spX=cv.width/2+(Math.random()-0.5)*PR*1.2;
 
   BALLS.push({
@@ -925,37 +913,67 @@ function spawnBall(){
 }
 
 /* ════════════════════════════════════════════════════════
-   COMPUTE OUTCOME
+   COMPUTE OUTCOME — ENHANCED LOGIC (3 TIERS + MAXWIN)
 ════════════════════════════════════════════════════════ */
 function computeOut(){
-  var isPanic     = PROF.panic_mode===true;
-  var maxwinLim   = Number(PROF.maxwin_limit)||0;
   var adminWR     = Math.max(1,Math.min(100,Number(PROF.winrate)||30));
-  var isMaxwinHit = (maxwinLim>0) && (SPNL>=maxwinLim);
+  var maxwinLim   = Number(PROF.maxwin_limit)||0;
+  var isMaxwinHit = (maxwinLim > 0) && (SPNL >= maxwinLim);
+  var isPanic     = PROF.panic_mode===true;
 
-  var wr;
-  if(isPanic) wr = 1;
-  else if(isMaxwinHit) wr = MAXWIN_PENALIZED_WR;
-  else if(SESSION_EXPIRED) wr = Math.max(SESSION_DECAY_MIN, SESSION_DECAY_WR);
-  else wr = adminWR;
+  // Indeks Slot:
+  // 16, 9, 3, 2, 0.5, 0.3, 0.3, 0.3, 0.3, 0.5, 2, 3, 9, 16
+  // 0   1  2  3  4    5    6    7    8    9    10 11 12 13
+  var jackpotSlots = [0, 1, 12, 13];    // 16x & 9x
+  var winSlots     = [2, 3, 10, 11];    // 3x & 2x
+  var lossSlots    = [4, 5, 6, 7, 8, 9]; // < 1x
 
-  var winSlots=[], lossSlots=[];
-  for(var i=0;i<MUL.length;i++){
-    if(MUL[i]>=2) winSlots.push(i);
-    else lossSlots.push(i);
+  // LOGIK HARD-STOP: Jika Maxwin tercapai atau Mode Panic
+  if(isMaxwinHit || isPanic || SESSION_EXPIRED) {
+    var li = lossSlots[Math.floor(Math.random() * lossSlots.length)];
+    return {slot: li, mult: MUL[li]};
   }
 
-  if(Math.random()*100 < wr){
-    var wi=winSlots[Math.floor(Math.random()*winSlots.length)];
-    return{slot:wi, mult:MUL[wi]};
+  // TIER 1: Mode Kuras (10% - 30%)
+  if(adminWR <= 30) {
+    // 95% masuk ke slot 0.3x atau 0.5x
+    if(Math.random() * 100 > adminWR) {
+       var li = [5,6,7,8][Math.floor(Math.random() * 4)];
+       return {slot: li, mult: MUL[li]};
+    }
+  }
+
+  // TIER 3: Mode Gacor (80% - 100%)
+  if(adminWR >= 80) {
+    // Selama belum menyentuh Maxwin, berikan kemenangan besar
+    var roll = Math.random() * 100;
+    if(roll < 40) { // 40% chance jackpot
+       var ji = jackpotSlots[Math.floor(Math.random() * jackpotSlots.length)];
+       return {slot: ji, mult: MUL[ji]};
+    } else if(roll < 90) { // 50% chance win biasa
+       var wi = winSlots[Math.floor(Math.random() * winSlots.length)];
+       return {slot: wi, mult: MUL[wi]};
+    }
+  }
+
+  // TIER 2: Mode Normal (50% - 70%)
+  var finalWR = adminWR;
+  if(Math.random() * 100 < finalWR) {
+    var combinedWins = winSlots.concat(jackpotSlots);
+    var wi = combinedWins[Math.floor(Math.random() * combinedWins.length)];
+    // Proteksi agar win besar tidak bikin jebol Maxwin dalam 1 drop
+    if(maxwinLim > 0 && (SPNL + (curBet() * MUL[wi])) > maxwinLim) {
+        wi = winSlots[Math.floor(Math.random() * winSlots.length)];
+    }
+    return {slot: wi, mult: MUL[wi]};
   } else {
-    var li=lossSlots[Math.floor(Math.random()*lossSlots.length)];
-    return{slot:li, mult:MUL[li]};
+    var li = lossSlots[Math.floor(Math.random() * lossSlots.length)];
+    return {slot: li, mult: MUL[li]};
   }
 }
 
 /* ════════════════════════════════════════════════════════
-   HISTORY
+   HISTORY & OTHERS
 ════════════════════════════════════════════════════════ */
 function addHist(bet,mult,pay,prof){
   var now=new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
@@ -995,35 +1013,16 @@ function renderHist(){
 var SESSION_TID       = null;
 var SESSION_DECAY_TID = null;
 var SESSION_EXPIRED   = false;
-var SESSION_DECAY_WR  = 30;
-var SESSION_DECAY_STEP= 3;
-var SESSION_DECAY_MIN = 1;
-var SESSION_DECAY_INTERVAL_MS = 30000;
 
 function startSessionTimer(minutes){
-  if(SESSION_TID)       clearTimeout(SESSION_TID);
-  if(SESSION_DECAY_TID) clearInterval(SESSION_DECAY_TID);
-  SESSION_EXPIRED  = false;
-  SESSION_DECAY_WR = Math.max(1, Math.min(100, Number(PROF.winrate)||30));
-
+  if(SESSION_TID) clearTimeout(SESSION_TID);
+  SESSION_EXPIRED = false;
   if(!minutes || minutes <= 0) return;
 
   SESSION_TID = setTimeout(function(){
-    SESSION_EXPIRED  = true;
-    SESSION_DECAY_WR = Math.max(SESSION_DECAY_MIN, Math.min(100, Number(PROF.winrate)||30));
-    SESSION_DECAY_TID = setInterval(function(){
-      SESSION_DECAY_WR = Math.max(SESSION_DECAY_MIN, SESSION_DECAY_WR - SESSION_DECAY_STEP);
-      if(SESSION_DECAY_WR <= SESSION_DECAY_MIN){
-        clearInterval(SESSION_DECAY_TID);
-        SESSION_DECAY_TID = null;
-      }
-    }, SESSION_DECAY_INTERVAL_MS);
+    SESSION_EXPIRED = true;
+    alert2('Sesi Gacor Berakhir — Winrate Menurun','warn');
   }, minutes * 60 * 1000);
-}
-
-function stopSessionDecay(){
-  SESSION_EXPIRED  = false;
-  if(SESSION_DECAY_TID){ clearInterval(SESSION_DECAY_TID); SESSION_DECAY_TID=null; }
 }
 
 /* ════════════════════════════════════════════════════════
@@ -1031,7 +1030,7 @@ function stopSessionDecay(){
 ════════════════════════════════════════════════════════ */
 function loadProfile(){
   var user=(typeof getUsername==='function') ? getUsername() : localStorage.getItem('neon_user');
-  if(!user){showMd('LOGIN','Sesi tidak ditemukan. Harap login kembali.');return;}
+  if(!user){showMd('LOGIN','Sesi tidak ditemukan.');return;}
   U=user;
   if(typeof _db==='undefined'){alert2('Mode offline','warn');return;}
 
@@ -1045,42 +1044,15 @@ function loadProfile(){
       var sm=Number(PROF.session_minutes||PROF.session_timer||0);
       if(sm>0) startSessionTimer(sm);
 
-      _db.from('profiles').update({
-        initial_balance_session:SAL,
-        session_start:new Date().toISOString()
-      }).eq('username',U).then(function(){}).catch(function(){});
-
       _db.channel('gm-'+U)
-        .on('postgres_changes',{
-          event:'UPDATE',schema:'public',
-          table:'profiles',filter:'username=eq.'+U
-        },function(pl){
+        .on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles',filter:'username=eq.'+U},function(pl){
           if(!pl.new) return;
-          var n=pl.new, updated={};
-          if('winrate' in n) updated.winrate=Math.max(1,Math.min(100,Number(n.winrate)||1));
-          if('panic_mode' in n) updated.panic_mode=!!n.panic_mode;
-          if('maxwin_limit' in n) updated.maxwin_limit=Number(n.maxwin_limit)||0;
-          if('session_minutes' in n){
-            updated.session_minutes=Number(n.session_minutes)||0;
-            if(updated.session_minutes!==(PROF.session_minutes||0)){
-              stopSessionDecay();
-              startSessionTimer(updated.session_minutes);
-            }
-          }
-          if('session_timer' in n) updated.session_timer=Number(n.session_timer)||0;
-          PROF=Object.assign({},PROF,updated);
+          var n=pl.new;
+          PROF=Object.assign({},PROF,n);
         })
-        .subscribe(function(status){
-          if(status==='SUBSCRIBED'){
-            _db.from('profiles')
-               .select('winrate,panic_mode,maxwin_limit,session_minutes,session_timer')
-               .eq('username',U).single()
-               .then(function(r){if(r.data) PROF=Object.assign({},PROF,r.data);})
-               .catch(function(){});
-          }
-        });
+        .subscribe();
     })
-    .catch(function(e){showMd('ERROR','Gagal: '+(e.message||e));});
+    .catch(function(e){console.error(e);});
 }
 
 function resize(){
@@ -1090,39 +1062,19 @@ function resize(){
   if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}
 }
 
-function initPtjs(){
-  if(typeof particlesJS==='undefined') return;
-  particlesJS('ptjs',{
-    particles:{
-      number:{value:38},
-      color:{value:['#0033ff','#ff0077','#fbff00']},
-      shape:{type:'circle'},
-      opacity:{value:.32,random:true,anim:{enable:true,speed:.35,opacity_min:.05}},
-      size:{value:1.6,random:true},
-      line_linked:{enable:true,distance:88,color:'#0033ff',opacity:.1,width:.5},
-      move:{enable:true,speed:1.0,random:true,out_mode:'out'}
-    },
-    interactivity:{events:{onhover:{enable:false},onclick:{enable:false}}}
-  });
-}
-
 function init(){
   requestAnimationFrame(function(){
-    requestAnimationFrame(function(){
-      resize();buildWorld();
-      updBetUI();updSaldo();updProfit();updModeLabel();
-      paintModeBtn('mb-normal',true,'on-normal');
-      initPtjs();loadProfile();
-      if(RAF) cancelAnimationFrame(RAF);
-      RAF=requestAnimationFrame(mainLoop);
-    });
+    resize();buildWorld();
+    updBetUI();updSaldo();updProfit();updModeLabel();
+    paintModeBtn('mb-normal',true,'on-normal');
+    if(typeof particlesJS!=='undefined') particlesJS('ptjs',{particles:{number:{value:30},color:{value:'#0033ff'},shape:{type:'circle'},opacity:{value:0.2},size:{value:2},move:{enable:true,speed:1}}});
+    loadProfile();
+    if(RAF) cancelAnimationFrame(RAF);
+    RAF=requestAnimationFrame(mainLoop);
   });
   window.addEventListener('resize',function(){resize();buildWorld();});
 }
-if(document.readyState==='loading')
-  document.addEventListener('DOMContentLoaded',init);
-else
-  init();
+init();
 </script>
 </body>
 </html>
