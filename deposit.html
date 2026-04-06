@@ -73,7 +73,12 @@
             letter-spacing:1px;text-shadow:0 0 6px rgba(251,255,0,.4);
             text-transform:uppercase;
         }
+        .qris-sublabel{
+            font-size:9px;color:rgba(255,255,255,.45);
+            margin-top:4px;letter-spacing:.5px;
+        }
 
+        /* ── WHATSAPP BUTTON FOR USDT ── */
         .wa-confirm-box{
             background:rgba(37,211,102,.08);
             border:1.5px solid rgba(37,211,102,.35);
@@ -103,6 +108,15 @@
             text-transform:uppercase;
         }
         .wa-btn:hover{background:rgba(37,211,102,.3);transform:scale(1.03);}
+        .wa-btn i{font-size:18px;}
+        .wa-label{
+            font-size:10px;
+            color:var(--yellow);
+            font-weight:900;
+            margin-bottom:10px;
+            letter-spacing:1px;
+            text-transform:uppercase;
+        }
 
         .btn-main{width:100%;padding:16px;border-radius:50px;border:none;background:linear-gradient(90deg,var(--blue),var(--pink));color:#fff;font-weight:900;font-size:13px;cursor:pointer;box-shadow:0 0 12px rgba(255,0,119,.3);transition:.2s;letter-spacing:1px;text-transform:uppercase;font-family:'Outfit',sans-serif;}
         .btn-main:active{transform:scale(.96);}
@@ -117,35 +131,34 @@
 
         #modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(10px);}
         .modal-box{width:88%;max-width:320px;background:rgba(0,0,15,.99);border:2px solid var(--pink);border-top:3px solid var(--yellow);border-radius:22px;padding:28px;text-align:center;box-shadow:0 0 30px rgba(255,0,119,.35);animation:zoomIn .3s ease;}
+        @keyframes zoomIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
         #modal-title{font-size:17px;font-weight:900;color:var(--pink);margin-bottom:13px;text-transform:uppercase;letter-spacing:1.5px;}
+        #modal-msg{font-size:13px;color:#ddd;line-height:1.7;margin-bottom:5px;}
 
-        .nav-bar{position:fixed;bottom:0;left:0;width:100%;height:72px;background:rgba(0,0,15,.99);display:flex;justify-content:space-around;align-items:center;border-top:1.5px solid var(--blue);backdrop-filter:blur(20px);z-index:1000;padding-bottom:6px;box-shadow:0 -4px 16px rgba(0,34,255,.2);}
-        .nav-item{color:rgba(255,255,255,.3);text-decoration:none;text-align:center;font-size:9px;font-weight:900;flex:1;transition:.3s;text-transform:uppercase;}
-        .nav-item.active{color:var(--pink);text-shadow:0 0 8px rgba(255,0,119,.5);}
+        .nav-bar{position:fixed;bottom:0;width:100%;height:72px;background:rgba(0,0,15,.99);display:flex;justify-content:space-around;align-items:center;border-top:1.5px solid var(--blue);backdrop-filter:blur(20px);z-index:1000;padding-bottom:6px;box-shadow:0 -4px 16px rgba(0,34,255,.2);}
+        .nav-item{color:rgba(255,255,255,.3);text-decoration:none;text-align:center;font-size:9px;font-weight:900;flex:1;letter-spacing:.5px;text-transform:uppercase;}
+        .nav-item.active{color:var(--yellow);text-shadow:0 0 8px rgba(251,255,0,.5);}
         .nav-item i{font-size:20px;display:block;margin-bottom:3px;}
     </style>
 </head>
 <body>
+<div id="neon-alert"></div>
 <div id="particles-js"></div>
-<div id="neon-alert">NOTIFICATION</div>
-<audio id="snd-click"   src="https://cdn.pixabay.com/audio/2022/03/15/audio_c8b417f73c.mp3"></audio>
-<audio id="snd-success" src="https://cdn.pixabay.com/audio/2021/08/04/audio_062564a02d.mp3"></audio>
-<audio id="snd-error"   src="https://cdn.pixabay.com/audio/2022/03/10/audio_c36394595e.mp3"></audio>
 
 <div class="header">
-    <div class="logo"><i class="fas fa-gem" style="margin-right:7px;"></i>NEON PLINKO</div>
-    <div class="saldo-badge" id="display-saldo">IDR 0</div>
+    <div class="logo"><i class="fas fa-coins"></i> DEPOSIT</div>
+    <div class="saldo-badge"><i class="fas fa-wallet"></i>&nbsp;<span id="display-saldo">IDR 0</span></div>
 </div>
 
 <div class="container">
     <div class="method-grid">
         <div class="method-item active" id="m-qris" onclick="selectMethod('QRIS')">
-            <i class="fas fa-qrcode" style="color:var(--pink);text-shadow:0 0 10px var(--pink)"></i>
-            <div class="m-label">QRIS / BANK</div>
+            <i class="fas fa-qrcode" style="color:var(--pink);"></i>
+            <div class="m-label">QRIS</div>
         </div>
         <div class="method-item" id="m-usdt" onclick="selectMethod('USDT')">
-            <i class="fa-brands fa-ethereum" style="color:var(--blue);text-shadow:0 0 10px var(--blue)"></i>
-            <div class="m-label">USDT CRYPTO</div>
+            <i class="fa-brands fa-ethereum" style="color:var(--blue);"></i>
+            <div class="m-label">USDT</div>
         </div>
     </div>
 
@@ -154,191 +167,164 @@
         <input type="number" id="amount-val" placeholder="0" oninput="calculate()">
 
         <div class="calc-card">
-            <div class="calc-row"><span>Rate:</span><span id="rate-text">1 : 1</span></div>
-            <div class="calc-row" id="fee-row" style="display:none"><span>Fee:</span><span>$2 USDT</span></div>
-            <div class="calc-row net-receive"><span>Diterima:</span><span id="net-text">IDR 0</span></div>
+            <div class="calc-row"><span>Rate</span><span id="rate-text">1 : 1</span></div>
+            <div class="calc-row" id="fee-row" style="display:none;"><span>Fee USDT</span><span>$2.00</span></div>
+            <div class="calc-row net-receive"><span>Saldo Diterima</span><span id="net-text">IDR 0</span></div>
         </div>
 
         <div id="qr-display">
             <div class="qris-frame">
-                <img id="img-qris" src="https://static.wikia.nocookie.net/logos/images/0/0b/QRIS_logo.png">
+                <img id="img-qris" src="https://i.ibb.co.com/fkvYMjS/qris.jpg" alt="QRIS">
             </div>
-            <div class="qris-label">Scan QRIS Diatas</div>
+            <p class="qris-label"><i class="fas fa-qrcode"></i> SCAN &amp; BAYAR SESUAI NOMINAL</p>
+            <p class="qris-sublabel">ARRASHY STORE &bull; NMID: ID1024357689073</p>
         </div>
 
-        <div class="wa-confirm-box" id="wa-box">
-            <div class="wa-label">Konfirmasi via WhatsApp</div>
-            <a href="#" id="wa-link" target="_blank" class="wa-btn">
-                <i class="fab fa-whatsapp"></i> Chat Admin USDT
+        <div class="wa-confirm-box" id="wa-usdt-box">
+            <div class="wa-label"><i class="fab fa-whatsapp"></i> KONFIRMASI WALLET ADDRESS</div>
+            <a href="https://wa.me/6289510249551?text=Halo%20Admin,%20saya%20ingin%20deposit%20USDT.%20Mohon%20kirim%20wallet%20address." 
+               class="wa-btn" target="_blank">
+                <i class="fab fa-whatsapp"></i> HUBUNGI ADMIN
             </a>
         </div>
 
-        <button class="btn-main" id="btn-konfirmasi" onclick="submitDeposit()">Konfirmasi Deposit</button>
+        <button class="btn-main" id="btn-konfirmasi" onclick="submitDeposit()">
+            <i class="fas fa-paper-plane"></i> KONFIRMASI PEMBAYARAN
+        </button>
     </div>
 
-    <div class="section-title" style="margin-top:25px; font-size:11px; font-weight:900; color:var(--pink); text-transform:uppercase;">
-        <i class="fas fa-history"></i> Riwayat Deposit
-    </div>
-    <div class="hist-wrap">
-        <div class="hist-scroll">
-            <table class="ht">
-                <thead>
-                    <tr>
-                        <th>Metode</th>
-                        <th>Nominal</th>
-                        <th>Net</th>
-                        <th>Status</th>
-                        <th>Tanggal</th>
-                    </tr>
-                </thead>
-                <tbody id="history-body">
-                    <tr class="empty-row"><td colspan="5">Memuat data...</td></tr>
-                </tbody>
-            </table>
+    <div style="margin-top:8px;">
+        <label style="margin-top:18px;display:block;"><i class="fas fa-clock-rotate-left"></i> Riwayat Deposit</label>
+        <div class="hist-wrap">
+            <div class="hist-scroll">
+                <table class="ht">
+                    <thead><tr><th>Metode</th><th>Nominal</th><th>Diterima</th><th>Status</th><th>Tanggal</th></tr></thead>
+                    <tbody id="history-body"><tr class="empty-row"><td colspan="5"><i class="fas fa-spinner fa-spin"></i> Memuat...</td></tr></tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
 
 <div id="modal-overlay">
     <div class="modal-box">
-        <div id="modal-title">INFO</div>
-        <div id="modal-msg" style="font-size:13px; color:#ddd; margin:15px 0;">Pesan</div>
-        <button class="btn-main" onclick="closeModal()">OK</button>
+        <h3 id="modal-title">NOTIFIKASI</h3>
+        <p id="modal-msg"></p>
+        <button class="btn-main" onclick="closeModal()" style="margin-top:18px;">MENGERTI</button>
     </div>
 </div>
 
-<nav class="nav-bar">
-    <a href="index.html" class="nav-item"><i class="fas fa-home"></i>Home</a>
-    <a href="deposit.html" class="nav-item active"><i class="fas fa-wallet"></i>Deposit</a>
-    <a href="withdraw.html" class="nav-item"><i class="fas fa-money-bill-wave"></i>WD</a>
-    <a href="reward.html" class="nav-item"><i class="fas fa-gift"></i>Reward</a>
-    <a href="profile.html" class="nav-item"><i class="fas fa-user"></i>Profil</a>
-</nav>
+<div class="nav-bar">
+    <a href="game.html" class="nav-item"><i class="fas fa-gamepad"></i>PLAY</a>
+    <a href="deposit.html" class="nav-item active"><i class="fas fa-wallet"></i>DEPO</a>
+    <a href="withdraw.html" class="nav-item"><i class="fas fa-money-bill-transfer"></i>WD</a>
+    <a href="reward.html" class="nav-item"><i class="fas fa-gift"></i>REWARD</a>
+    <a href="profil.html" class="nav-item"><i class="fas fa-user-shield"></i>PROFIL</a>
+</div>
 
 <script>
-const db = supabase.createClient(CONFIG.SB_URL, CONFIG.SB_KEY);
-let user = localStorage.getItem('neon_user');
-let method = 'QRIS';
-let isSubmitting = false;
-
-if(!user) location.href='login.html';
-
-particlesJS('particles-js', {
-    particles:{number:{value:40},color:{value:'#ff0077'},shape:{type:'circle'},opacity:{value:0.2},size:{value:2},move:{speed:1}}
+let curMethod='QRIS',KURS=16800,FEE_USDT=2,isSubmitting=false;
+particlesJS("particles-js",{
+    "particles":{
+        "number":{"value":70},
+        "color":{"value":"#0022ff"},
+        "shape":{"type":"circle"},
+        "opacity":{"value":0.55,"random":true,"anim":{"enable":true,"speed":0.5,"opacity_min":0.15}},
+        "size":{"value":2.5,"random":true},
+        "line_linked":{"enable":true,"distance":130,"color":"#0022ff","opacity":0.3,"width":0.8},
+        "move":{"enable":true,"speed":1.8,"random":true,"out_mode":"out"}
+    }
 });
 
-function playSnd(s){ document.getElementById('snd-'+s).play().catch(()=>{}); }
+function playSnd(t){const s=document.getElementById('snd-'+t);if(s){s.currentTime=0;s.play().catch(()=>{});}}
+function showNeonAlert(msg,ok=false){const a=document.getElementById('neon-alert');a.innerText=msg;a.className=ok?'show success':'show';setTimeout(()=>a.className='',3000);}
 
 function selectMethod(m){
-    method = m;
-    playSnd('click');
-    document.querySelectorAll('.method-item').forEach(el => el.classList.remove('active'));
-    document.getElementById('m-'+m.toLowerCase()).classList.add('active');
-    
-    const qrDisp = document.getElementById('qr-display');
-    const waBox = document.getElementById('wa-box');
-    const lbl = document.getElementById('input-label');
-    
-    if(m==='QRIS'){
-        qrDisp.style.display='block';
-        waBox.classList.remove('show');
-        lbl.innerHTML = '<i class="fas fa-coins"></i> Nominal Rupiah (Min 20.000)';
-        document.getElementById('fee-row').style.display='none';
-    } else {
-        qrDisp.style.display='none';
-        waBox.classList.add('show');
-        lbl.innerHTML = '<i class="fa-brands fa-ethereum"></i> Nominal USDT (Min $5)';
-        document.getElementById('fee-row').style.display='flex';
-    }
+    if(isSubmitting)return;playSnd('click');curMethod=m;
+    document.getElementById('m-qris').classList.toggle('active',m==='QRIS');
+    document.getElementById('m-usdt').classList.toggle('active',m==='USDT');
+    document.getElementById('input-label').innerHTML=m==='QRIS'?'<i class="fas fa-coins"></i> Nominal Rupiah (Min 20.000)':'<i class="fa-brands fa-ethereum"></i> Jumlah USDT (Min $10)';
+    document.getElementById('fee-row').style.display=(m==='USDT')?'flex':'none';
+    document.getElementById('qr-display').style.display=(m==='QRIS')?'block':'none';
+    document.getElementById('wa-usdt-box').classList.toggle('show',m==='USDT');
     calculate();
 }
 
 function calculate(){
-    const val = parseFloat(document.getElementById('amount-val').value) || 0;
-    const netTxt = document.getElementById('net-text');
-    const rateTxt = document.getElementById('rate-text');
-    
-    if(method === 'QRIS'){
-        rateTxt.innerText = '1 : 1';
-        netTxt.innerText = 'IDR ' + val.toLocaleString('id-ID');
-    } else {
-        rateTxt.innerText = '1 USDT : 15.500';
-        const net = Math.max(0, (val - 2) * 15500);
-        netTxt.innerText = 'IDR ' + net.toLocaleString('id-ID');
+    const input=parseFloat(document.getElementById('amount-val').value)||0;
+    let net=0;
+    if(curMethod==='QRIS'){document.getElementById('rate-text').innerText="1 : 1";net=input;}
+    else{document.getElementById('rate-text').innerText="IDR "+KURS.toLocaleString();net=input>FEE_USDT?(input-FEE_USDT)*KURS:0;}
+    document.getElementById('net-text').innerText="IDR "+Math.floor(net).toLocaleString('id-ID');
+    return Math.floor(net);
+}
+
+async function submitDeposit(){
+    if(isSubmitting)return;
+    const amount=parseFloat(document.getElementById('amount-val').value)||0;
+    const net=calculate();
+    const user=localStorage.getItem('neon_user');
+    if(!user)return showModal("ERROR","Sesi login hilang. Harap login kembali.");
+    if(curMethod==='QRIS'&&amount<20000){playSnd('error');return showModal("GAGAL","Minimal deposit QRIS adalah IDR 20.000");}
+    if(curMethod==='USDT'&&amount<10){playSnd('error');return showModal("GAGAL","Minimal deposit USDT adalah $10.00");}
+    isSubmitting=true;const btn=document.getElementById('btn-konfirmasi');
+    btn.innerText="MEMPROSES...";btn.disabled=true;
+    try{
+        const db=supabase.createClient(SUPA_URL, SUPA_KEY);
+        const{error}=await db.from('deposits').insert([{username:user,amount:amount,method:curMethod,net_receive:net,status:'PROSES'}]);
+        if(error)throw error;
+        playSnd('success');showNeonAlert("DEPOSIT TERKIRIM — MENUNGGU KONFIRMASI ADMIN",true);
+        showModal("BERHASIL","Permintaan deposit terkirim! Silakan tunggu konfirmasi admin.");
+        document.getElementById('amount-val').value="";
+        setTimeout(()=>{loadHistory();},500);
+    }catch(err){playSnd('error');showModal("ERROR","Gagal: "+err.message);}
+    finally{
+        isSubmitting=false;
+        btn.disabled=false;
+        btn.innerHTML='<i class="fas fa-paper-plane"></i> KONFIRMASI PEMBAYARAN';
     }
 }
 
 async function loadHistory(){
-    // Perbaikan query riwayat deposit agar terbaca
-    const {data, error} = await db.from('deposits')
-        .select('*')
-        .eq('username', user)
-        .order('created_at', {ascending: false})
-        .limit(20);
-
-    const body = document.getElementById('history-body');
-    if(data && data.length > 0){
-        body.innerHTML = data.map(d => {
-            const c = d.status === 'SUKSES' ? '#00ff88' : (d.status === 'PROSES' ? 'var(--yellow)' : 'var(--pink)');
-            return `<tr>
-                <td>${d.method || 'QRIS'}</td>
-                <td>Rp ${(d.amount || 0).toLocaleString('id-ID')}</td>
-                <td>Rp ${(d.net_receive || d.amount || 0).toLocaleString('id-ID')}</td>
-                <td style="color:${c};">${d.status}</td>
-                <td style="font-size:9px;opacity:.45;">${new Date(d.created_at).toLocaleDateString('id-ID')}</td>
-            </tr>`;
-        }).join('');
-    } else {
-        body.innerHTML = '<tr class="empty-row"><td colspan="5">Belum ada transaksi</td></tr>';
+    const user=localStorage.getItem('neon_user');
+    if(!user)return;
+    try{
+        const db=supabase.createClient(SUPA_URL, SUPA_KEY);
+        const{data,error}=await db.from('deposits').select('*').eq('username',user).order('created_at',{ascending:false}).limit(20);
+        
+        if(error){
+            console.error('Error loading history:',error);
+            document.getElementById('history-body').innerHTML='<tr class="empty-row"><td colspan="5">Gagal memuat riwayat</td></tr>';
+            return;
+        }
+        
+        const body=document.getElementById('history-body');
+        if(data&&data.length>0){
+            body.innerHTML=data.map(d=>{
+                const c=d.status==='SUKSES'?'#00ff88':(d.status==='PROSES'?'var(--yellow)':'var(--pink)');
+                return `<tr>
+                    <td>${d.method||'QRIS'}</td>
+                    <td>Rp ${(d.amount||0).toLocaleString()}</td>
+                    <td>Rp ${(d.net_receive||d.amount||0).toLocaleString()}</td>
+                    <td style="color:${c};">${d.status}</td>
+                    <td style="font-size:9px;opacity:.45;">${new Date(d.created_at).toLocaleDateString('id-ID')}</td>
+                </tr>`;
+            }).join('');
+        } else {
+            body.innerHTML='<tr class="empty-row"><td colspan="5">Belum ada transaksi</td></tr>';
+        }
+        
+        const{data:prof}=await db.from('profiles').select('saldo').eq('username',user).single();
+        if(prof)document.getElementById('display-saldo').innerText='IDR '+(prof.saldo||0).toLocaleString('id-ID');
+    }catch(err){
+        console.error('Error in loadHistory:',err);
+        document.getElementById('history-body').innerHTML='<tr class="empty-row"><td colspan="5">Gagal memuat riwayat</td></tr>';
     }
-    
-    const {data:prof} = await db.from('profiles').select('saldo').eq('username', user).single();
-    if(prof) document.getElementById('display-saldo').innerText = 'IDR ' + (prof.saldo || 0).toLocaleString('id-ID');
 }
 
-async function submitDeposit(){
-    if(isSubmitting) return;
-    const amount = parseFloat(document.getElementById('amount-val').value);
-    
-    if(!amount || (method==='QRIS' && amount < 20000) || (method==='USDT' && amount < 5)){
-        showModal("GAGAL", "Nominal tidak valid atau kurang dari minimal.");
-        return;
-    }
-
-    isSubmitting = true;
-    document.getElementById('btn-konfirmasi').disabled = true;
-
-    const net = method === 'QRIS' ? amount : (amount - 2) * 15500;
-    
-    const {error} = await db.from('deposits').insert([{
-        username: user,
-        amount: amount,
-        method: method,
-        status: 'PROSES',
-        net_receive: net
-    }]);
-
-    if(error){
-        showModal("ERROR", error.message);
-    } else {
-        playSnd('success');
-        showModal("BERHASIL", "Permintaan deposit Anda sedang diproses. Mohon tunggu.");
-        loadHistory();
-    }
-    isSubmitting = false;
-    document.getElementById('btn-konfirmasi').disabled = false;
-}
-
-function showModal(t, m){
-    document.getElementById('modal-title').innerText = t;
-    document.getElementById('modal-msg').innerText = m;
-    document.getElementById('modal-overlay').style.display = 'flex';
-}
-function closeModal(){
-    document.getElementById('modal-overlay').style.display = 'none';
-}
-
-window.onload = loadHistory;
+function showModal(t,m){document.getElementById('modal-title').innerText=t;document.getElementById('modal-msg').innerText=m;document.getElementById('modal-overlay').style.display='flex';}
+function closeModal(){playSnd('click');document.getElementById('modal-overlay').style.display='none';}
+window.onload=()=>{loadHistory();};
 </script>
 </body>
 </html>
