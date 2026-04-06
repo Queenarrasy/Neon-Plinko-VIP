@@ -8,455 +8,209 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
-    <script src="config.js"></script>
     <style>
-        :root{
-            --pink:#ff0077;--blue:#0022ff;--yellow:#fbff00;--bg:#000005;
-            --gp:0 0 8px rgba(255,0,119,.5),0 0 20px rgba(255,0,119,.2);
-            --gb:0 0 8px rgba(0,34,255,.5),0 0 20px rgba(0,34,255,.2);
-            --gy:0 0 8px rgba(251,255,0,.5),0 0 20px rgba(251,255,0,.2);
-        }
-        *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;outline:none;}
-        body{background:var(--bg);color:#fff;font-family:'Outfit',sans-serif;padding-bottom:90px;min-height:100vh;}
-        #particles-js{position:fixed;width:100%;height:100%;z-index:0;pointer-events:none;background:radial-gradient(circle at 50% 20%,#0a0a00 0%,#000 100%);}
+        :root{--pink:#ff0077;--blue:#0022ff;--yellow:#fbff00;--bg:#000005;--gp:0 0 15px rgba(255,0,119,.6);--gb:0 0 15px rgba(0,34,255,.6)}
+        *{margin:0;padding:0;box-sizing:border-box;font-family:'Outfit',sans-serif}
+        body{background:var(--bg);color:#fff;overflow-x:hidden}
+        #particles-js{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none}
+        .container{position:relative;z-index:2;padding:20px;max-width:600px;margin:0 auto}
+        
+        .header{text-align:center;margin:30px 0}
+        .title{font-family:'Cinzel Decorative',cursive;font-size:28px;text-shadow:var(--gp);color:var(--pink)}
+        
+        .card{background:rgba(255,255,255,.05);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:20px;margin-bottom:20px}
+        .ref-box{text-align:center;padding:20px;border:2px dashed var(--blue);border-radius:15px;background:rgba(0,34,255,.05)}
+        .ref-code{font-size:32px;font-weight:900;letter-spacing:5px;color:var(--yellow);text-shadow:0 0 10px rgba(251,255,0,.3);margin:10px 0}
+        
+        .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:20px}
+        .stat-item{background:rgba(255,255,255,.03);padding:15px;border-radius:12px;text-align:center}
+        .stat-val{display:block;font-size:20px;font-weight:800;color:var(--pink)}
+        .stat-lbl{font-size:11px;opacity:.6;text-transform:uppercase}
+        
+        table{width:100%;border-collapse:collapse;margin-top:15px}
+        th{text-align:left;font-size:12px;opacity:.5;padding:10px}
+        td{padding:12px 10px;font-size:14px;border-bottom:1px solid rgba(255,255,255,.05)}
+        
+        .btn-claim{width:100%;padding:15px;border:none;border-radius:12px;background:linear-gradient(to right,var(--pink),var(--blue));color:#fff;font-weight:900;cursor:pointer;margin-top:15px;box-shadow:var(--gp)}
+        .btn-claim:disabled{filter:grayscale(1);cursor:not-allowed}
 
-        #neon-alert{position:fixed;top:-120px;left:50%;transform:translateX(-50%);width:88%;max-width:340px;background:rgba(0,0,15,.97);border:1.5px solid var(--pink);border-top:2px solid var(--yellow);color:#fff;padding:12px 18px;border-radius:14px;text-align:center;font-weight:900;z-index:9000;font-size:13px;transition:.5s cubic-bezier(.175,.885,.32,1.275);box-shadow:0 0 18px rgba(255,0,119,.35);}
-        #neon-alert.show{top:15px;}
-        #neon-alert.success{border-color:var(--blue);box-shadow:0 0 18px rgba(0,34,255,.35);}
-
-        .header{padding:0 18px;height:62px;display:flex;align-items:center;justify-content:center;border-bottom:1.5px solid var(--blue);background:rgba(0,0,18,.98);position:sticky;top:0;z-index:100;backdrop-filter:blur(20px);box-shadow:0 0 15px rgba(0,34,255,.2);}
-        .header h1{font-size:15px;font-weight:900;letter-spacing:2px;color:var(--pink);text-shadow:0 0 8px rgba(255,0,119,.5);text-transform:uppercase;}
-
-        .container{padding:18px;max-width:500px;margin:0 auto;position:relative;z-index:10;}
-
-        .promo-banner{background:rgba(0,0,35,.8);border:1.5px solid var(--pink);border-radius:20px;padding:22px;text-align:center;margin-bottom:20px;box-shadow:0 0 12px rgba(255,0,119,.18);backdrop-filter:blur(10px);position:relative;overflow:hidden;}
-        .promo-banner::before{content:'TOP EVENT';position:absolute;top:11px;left:-28px;background:var(--pink);color:#fff;font-size:8px;font-weight:900;padding:5px 42px;transform:rotate(-45deg);letter-spacing:1px;}
-        .promo-title{font-size:1.1rem;font-weight:900;color:var(--yellow);text-shadow:0 0 8px rgba(251,255,0,.4);margin-bottom:16px;letter-spacing:1px;text-transform:uppercase;}
-        .prizes{display:flex;justify-content:center;gap:20px;}
-        .prize-item{font-size:10px;font-weight:900;color:#fff;text-transform:uppercase;}
-        .prize-item b{display:block;font-size:20px;color:var(--yellow);margin-top:5px;text-shadow:0 0 8px rgba(251,255,0,.4);}
-
-        .section-title{font-size:11px;font-weight:900;color:var(--pink);margin:18px 0 13px;display:flex;align-items:center;gap:9px;text-shadow:0 0 6px rgba(255,0,119,.4);text-transform:uppercase;letter-spacing:1px;}
-        .section-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(255,0,119,.4),transparent);}
-
-        /* MAIL/INBOX */
-        .mail-list{display:flex;flex-direction:column;gap:12px;margin-bottom:20px;}
-        .mail-item{background:rgba(251,255,0,.07);border:1.5px solid rgba(251,255,0,.35);border-radius:18px;padding:18px;box-shadow:0 0 10px rgba(251,255,0,.1);backdrop-filter:blur(8px);}
-
-        /* REFERRAL CARD */
-        .card{background:rgba(0,0,35,.75);border:1px solid rgba(0,34,255,.35);border-radius:20px;padding:20px;text-align:center;margin-bottom:18px;box-shadow:0 0 12px rgba(0,34,255,.1);backdrop-filter:blur(10px);}
-        .ref-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:13px 0;}
-        .stat-box{background:rgba(0,0,0,.6);padding:12px;border-radius:12px;border:1px solid rgba(0,34,255,.25);}
-        .stat-box small{display:block;font-size:9px;color:var(--yellow);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;font-weight:900;}
-        .stat-box span{font-weight:900;color:#fff;font-size:1.1rem;}
-        .ref-box{background:rgba(0,0,0,.7);border:1.5px dashed rgba(251,255,0,.4);border-radius:14px;padding:14px;margin-top:11px;cursor:pointer;transition:.3s;box-shadow:0 0 8px rgba(251,255,0,.1);}
-        .ref-box:active{transform:scale(.98);}
-        #ref-code{font-size:1.15rem;font-weight:900;color:var(--yellow);letter-spacing:4px;text-shadow:0 0 6px rgba(251,255,0,.4);}
-
-        .btn-main{width:100%;padding:14px;border:none;border-radius:50px;background:linear-gradient(90deg,var(--blue),#0044ff);color:#fff;font-weight:900;font-size:13px;cursor:pointer;text-transform:uppercase;box-shadow:0 0 10px rgba(0,34,255,.25);transition:.3s;letter-spacing:1px;font-family:'Outfit',sans-serif;}
-        .btn-pink{background:linear-gradient(90deg,var(--pink),#b400dc);box-shadow:0 0 10px rgba(255,0,119,.25);}
-        .btn-main:active{transform:scale(.96);}
-        .btn-main:disabled{opacity:.3;filter:grayscale(1);cursor:not-allowed;}
-
-        /* HISTORY with own scroll */
-        .hist-wrap{background:rgba(0,0,35,.7);border:1px solid rgba(0,34,255,.25);border-radius:18px;overflow:hidden;}
-        .hist-scroll{max-height:220px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--yellow) #000;}
-        .hist-scroll::-webkit-scrollbar{width:3px;}
-        .hist-scroll::-webkit-scrollbar-track{background:#000;}
-        .hist-scroll::-webkit-scrollbar-thumb{background:var(--yellow);border-radius:2px;}
-        table.ht{width:100%;border-collapse:collapse;}
-        table.ht th{padding:9px 12px;font-size:8px;font-weight:900;color:var(--pink);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid rgba(255,0,119,.2);background:rgba(0,0,15,.8);text-align:left;position:sticky;top:0;z-index:5;}
-        table.ht td{padding:10px 12px;font-size:11px;border-bottom:1px solid rgba(0,34,255,.08);font-weight:700;}
-        table.ht tr:last-child td{border-bottom:none;}
-        .empty-row td{text-align:center;padding:22px!important;opacity:.35;font-size:12px;}
-
-        /* MODAL */
-        #modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(10px);}
-        .modal{background:rgba(0,0,15,.99);border:1.5px solid var(--pink);border-top:2px solid var(--yellow);border-radius:22px;padding:26px;width:88%;max-width:320px;text-align:center;box-shadow:0 0 20px rgba(255,0,119,.25);animation:zoomIn .3s ease;}
-        @keyframes zoomIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
-        #m-title{font-size:16px;font-weight:900;color:var(--pink);text-shadow:0 0 8px rgba(255,0,119,.5);margin-bottom:11px;text-transform:uppercase;letter-spacing:1px;}
-        #m-msg{font-size:13px;color:#ccc;line-height:1.6;margin-bottom:5px;}
-
-        .nav-bar{position:fixed;bottom:0;width:100%;height:72px;background:rgba(0,0,15,.99);display:flex;justify-content:space-around;align-items:center;border-top:1.5px solid var(--blue);backdrop-filter:blur(20px);z-index:1000;padding-bottom:6px;box-shadow:0 -4px 16px rgba(0,34,255,.2);}
-        .nav-item{color:rgba(255,255,255,.3);text-decoration:none;text-align:center;font-size:9px;font-weight:900;flex:1;letter-spacing:.5px;text-transform:uppercase;}
-        .nav-item.active{color:var(--yellow);text-shadow:0 0 8px rgba(251,255,0,.5);}
-        .nav-item i{font-size:20px;display:block;margin-bottom:3px;}
+        .modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:1000}
+        .modal{background:#000;border:2px solid var(--pink);padding:30px;border-radius:20px;width:90%;max-width:350px;text-align:center}
     </style>
 </head>
 <body>
-<div id="particles-js"></div>
-<div id="neon-alert">NOTIFICATION</div>
-<audio id="snd-click"   src="https://cdn.pixabay.com/audio/2022/03/15/audio_c8b417f73c.mp3"></audio>
-<audio id="snd-success" src="https://cdn.pixabay.com/audio/2021/08/04/audio_062564a02d.mp3"></audio>
-<audio id="snd-error"   src="https://cdn.pixabay.com/audio/2022/03/10/audio_c36394595e.mp3"></audio>
+    <div id="particles-js"></div>
+    <div class="container">
+        <div class="header">
+            <div class="title">REFERRAL REWARDS</div>
+            <p style="font-size:12px;opacity:.7;margin-top:5px">Dapatkan Rp 5.000 per teman yang deposit!</p>
+        </div>
 
-<div class="header">
-    <h1><i class="fas fa-gift" style="margin-right:8px;"></i>REWARD CENTER</h1>
-</div>
-
-<div class="container">
-
-    <!-- BEST REWARD TOP REFERRAL LEADERBOARD -->
-    <div class="promo-banner" id="leaderboard-wrap">
-        <div class="promo-title">🏆 BEST REWARD — TOP REFERRAL</div>
-        <div class="prizes" id="lb-prizes">
-            <div class="prize-item" id="lb-1">
-                🥇 JUARA 1
-                <b>$100</b>
-                <span id="lb-name-1" style="display:block;font-size:9px;color:rgba(255,255,255,.55);margin-top:4px;">—</span>
-                <span id="lb-cnt-1" style="display:block;font-size:8px;color:var(--yellow);opacity:.7;"></span>
+        <div class="card">
+            <div class="ref-box">
+                <div style="font-size:12px;font-weight:700">KODE REFERRAL ANDA</div>
+                <div class="ref-code" id="ref-code">LOADING...</div>
+                <button onclick="copyRef()" style="background:none;border:1px solid var(--blue);color:#fff;padding:5px 15px;border-radius:20px;font-size:11px;cursor:pointer">SALIN LINK</button>
             </div>
-            <div class="prize-item" id="lb-2">
-                🥈 JUARA 2
-                <b>$50</b>
-                <span id="lb-name-2" style="display:block;font-size:9px;color:rgba(255,255,255,.55);margin-top:4px;">—</span>
-                <span id="lb-cnt-2" style="display:block;font-size:8px;color:var(--yellow);opacity:.7;"></span>
-            </div>
-            <div class="prize-item" id="lb-3">
-                🥉 JUARA 3
-                <b>$25</b>
-                <span id="lb-name-3" style="display:block;font-size:9px;color:rgba(255,255,255,.55);margin-top:4px;">—</span>
-                <span id="lb-cnt-3" style="display:block;font-size:8px;color:var(--yellow);opacity:.7;"></span>
+            
+            <div class="stats-grid">
+                <div class="stat-item"><span class="stat-val" id="total-ref">0</span><span class="stat-lbl">Teman</span></div>
+                <div class="stat-item"><span class="stat-val" id="valid-ref">0</span><span class="stat-lbl">Valid</span></div>
             </div>
         </div>
-        <div style="font-size:8px;opacity:.3;margin-top:12px;letter-spacing:1px;">
-            UPDATE REAL-TIME • PEMENANG DIHUBUNGI ADMIN
-        </div>
-    </div>
 
-    <!-- INBOX / HADIAH -->
-    <div class="section-title"><i class="fas fa-envelope"></i> Kotak Hadiah</div>
-    <div class="mail-list" id="mail-list">
-        <div style="text-align:center;opacity:.4;padding:20px;font-size:12px;"><i class="fas fa-spinner fa-spin"></i> Memuat...</div>
-    </div>
+        <div class="card">
+            <h3 style="font-size:15px;margin-bottom:15px"><i class="fas fa-gift" style="color:var(--pink)"></i> TOTAL BONUS: <span id="bonus-total" style="color:var(--yellow)">Rp 0</span></h3>
+            <button class="btn-claim" id="btn-claim" onclick="processClaim()" disabled>KLAIM HADIAH</button>
+            <p id="claim-note" style="font-size:10px;text-align:center;margin-top:10px;opacity:.5"></p>
+        </div>
 
-    <!-- REFERRAL -->
-    <div class="section-title"><i class="fas fa-users"></i> Program Referral</div>
-    <div class="card">
-        <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,.6);margin-bottom:12px;line-height:1.7;">
-            Ajak teman daftarkan diri & deposit min <b style="color:var(--yellow)">Rp 20.000</b>.<br>
-            Kamu dapat bonus <b style="color:var(--yellow)">Rp 5.000</b> per referral valid!
-        </div>
-        <div class="ref-stats">
-            <div class="stat-box"><small>Total Referral</small><span id="total-ref">0</span></div>
-            <div class="stat-box"><small>Valid (Deposit)</small><span id="valid-ref">0</span></div>
-            <div class="stat-box"><small>Bonus Terkumpul</small><span id="bonus-ref">Rp 0</span></div>
-            <div class="stat-box"><small>Klaim Tersedia</small><span id="claim-status" style="color:var(--yellow)">—</span></div>
-        </div>
-        <button class="btn-main btn-pink" id="btn-claim-ref" onclick="processRefClaim()" disabled style="margin-bottom:12px;">
-            <i class="fas fa-hand-holding-dollar"></i> KLAIM BONUS REFERRAL
-        </button>
-        <div style="font-size:10px;font-weight:900;color:var(--pink);margin:14px 0 9px;text-transform:uppercase;letter-spacing:1px;">Kode Referral Saya</div>
-        <div class="ref-box" onclick="copyRef()">
-            <div style="font-size:8px;opacity:.4;margin-bottom:5px;letter-spacing:2px;">TAP UNTUK SALIN KODE</div>
-            <div id="ref-code">MEMUAT...</div>
-        </div>
-        <div style="font-size:10px;opacity:.35;margin-top:7px;">
-            Link: <span id="ref-link" style="color:var(--blue)">...</span>
-        </div>
-    </div>
-
-    <div class="section-title"><i class="fas fa-users"></i> Daftar Referral Saya</div>
-    <div class="hist-wrap">
-        <div class="hist-scroll">
-            <table class="ht">
-                <thead><tr><th>Username</th><th>Status</th><th>Tanggal</th></tr></thead>
-                <tbody id="ref-table-body"><tr class="empty-row"><td colspan="3"><i class="fas fa-spinner fa-spin"></i> Memuat...</td></tr></tbody>
+        <div class="card">
+            <h3 style="font-size:14px;margin-bottom:10px">DAFTAR TEMAN</h3>
+            <table>
+                <thead><tr><th>USER</th><th>STATUS</th><th>TANGGAL</th></tr></thead>
+                <tbody id="ref-table-body">
+                    <tr><td colspan="3" style="text-align:center;opacity:.3">Memuat data...</td></tr>
+                </tbody>
             </table>
         </div>
     </div>
 
-</div>
-
-<div class="nav-bar">
-    <a href="game.html"     class="nav-item"><i class="fas fa-gamepad"></i>PLAY</a>
-    <a href="deposit.html"  class="nav-item"><i class="fas fa-wallet"></i>DEPO</a>
-    <a href="withdraw.html" class="nav-item"><i class="fas fa-money-bill-transfer"></i>WD</a>
-    <a href="reward.html"   class="nav-item active"><i class="fas fa-gift"></i>REWARD</a>
-    <a href="profil.html"   class="nav-item"><i class="fas fa-user-shield"></i>PROFIL</a>
-</div>
-
-<div id="modal-overlay">
-    <div class="modal">
-        <h3 id="m-title">NOTIFIKASI</h3>
-        <p id="m-msg"></p>
-        <button class="btn-main" onclick="closeModal()" style="margin-top:18px;">MENGERTI</button>
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal">
+            <h2 id="m-title" style="color:var(--yellow);margin-bottom:10px"></h2>
+            <p id="m-msg" style="font-size:14px;line-height:1.5;margin-bottom:20px"></p>
+            <button class="btn-claim" onclick="closeModal()">TUTUP</button>
+        </div>
     </div>
-</div>
 
-<script>
-// ── config.js sudah menyediakan _supabase / _db dan getUsername() ──
-let USERNAME=getUsername();
-particlesJS("particles-js",{"particles":{"number":{"value":65},"color":{"value":"#fbff00"},"shape":{"type":"circle"},"opacity":{"value":0.45,"random":true,"anim":{"enable":true,"speed":0.5,"opacity_min":0.1}},"size":{"value":2.5,"random":true},"line_linked":{"enable":true,"distance":130,"color":"#ff0077","opacity":0.2,"width":0.8},"move":{"enable":true,"speed":1.8,"random":true,"out_mode":"out"}},"interactivity":{"events":{"onhover":{"enable":false},"onclick":{"enable":false}}}});
-function playSnd(id){const s=document.getElementById('snd-'+id);if(s){s.currentTime=0;s.play().catch(()=>{});}}
-function showNeonAlert(msg,ok=false){showNeonAlertGlobal(msg,ok?'ok':'');}
+    <script>
+        const SUPA_URL="https://jcxgankdwfwfnbwlkkpz.supabase.co", SUPA_KEY="sb_publishable_CaQyWYa_F3LDYEo8BDWAlQ_d0SscfCL";
+        const _supabase = supabase.createClient(SUPA_URL, SUPA_KEY);
+        const USERNAME = localStorage.getItem('neon_user');
 
-async function initReward(){
-    if(!USERNAME){window.location.href='index.html';return;}
-    loadTopReferral();
-    loadReferralStats();
-    loadInbox();
-}
+        async function init(){
+            if(!USERNAME) return location.href='index.html';
+            loadData();
+            particlesJS("particles-js", {"particles":{"number":{"value":50},"color":{"value":"#fbff00"},"opacity":{"value":0.3},"size":{"value":2},"line_linked":{"enable":true,"distance":150,"color":"#ff0077","opacity":0.2},"move":{"enable":true,"speed":1}}});
+        }
 
-/* ── TOP REFERRAL LEADERBOARD ── */
-async function loadTopReferral(){
-    try{
-        const{data:refs}=await _supabase.from('profiles')
-            .select('referred_by').not('referred_by','is',null).neq('referred_by','DIRECT');
-        if(!refs||!refs.length) return;
-        const counts={};
-        refs.forEach(r=>{
-            const rb=(r.referred_by||'').trim();
-            if(rb&&rb!=='DIRECT') counts[rb]=(counts[rb]||0)+1;
-        });
-        const top=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,3);
-        const prizes=['$100','$50','$25'];
-        top.forEach(([uname,cnt],i)=>{
-            const n=document.getElementById('lb-name-'+(i+1));
-            const cv=document.getElementById('lb-cnt-'+(i+1));
-            if(n) n.textContent=uname;
-            if(cv) cv.textContent=cnt+' referral';
-            if(uname===USERNAME){
-                const box=document.getElementById('lb-'+(i+1));
-                if(box) box.style.background='rgba(251,255,0,.08)';
-                showNeonAlert('🏆 Kamu posisi '+(i+1)+' Top Referral! Hadiah: '+prizes[i],true);
+        async function loadData(){
+            try {
+                // 1. Ambil info diri sendiri (terutama referral_code)
+                const {data:me} = await _supabase.from('profiles').select('*').eq('username', USERNAME).single();
+                if(!me) return;
+                
+                document.getElementById('ref-code').innerText = me.referral_code;
+                const refLink = window.location.origin + "/index.html?ref=" + me.referral_code;
+                window.currentRefLink = refLink;
+
+                // 2. Cari teman yang kolom 'referred_by' nya berisi 'referral_code' milik saya
+                const {data:friends} = await _supabase.from('profiles').select('username, created_at')
+                    .eq('referred_by', me.referral_code).order('created_at', {ascending:false});
+                
+                const total = friends ? friends.length : 0;
+                document.getElementById('total-ref').innerText = total;
+
+                if(total === 0) {
+                    document.getElementById('ref-table-body').innerHTML = '<tr><td colspan="3" style="text-align:center;opacity:.5">Belum ada teman yang bergabung</td></tr>';
+                    return;
+                }
+
+                // 3. Cek siapa yang sudah deposit minimal 20.000 dan status SUKSES
+                const uNames = friends.map(f => f.username);
+                const {data:deposits} = await _supabase.from('deposits')
+                    .select('username')
+                    .in('username', uNames)
+                    .eq('status', 'SUKSES')
+                    .gte('amount', 20000);
+
+                const validUsers = new Set((deposits || []).map(d => d.username));
+                const validCount = validUsers.size;
+                document.getElementById('valid-ref').innerText = validCount;
+
+                // 4. Hitung bonus (Valid * 5000) dikurangi yang sudah pernah diklaim
+                const {data:history} = await _supabase.from('deposits').select('amount').eq('username', USERNAME).eq('method', 'REFERRAL_BONUS');
+                const alreadyClaimed = (history || []).reduce((acc, curr) => acc + Number(curr.amount), 0);
+                
+                const totalBonusPossible = validCount * 5000;
+                const claimable = totalBonusPossible - alreadyClaimed;
+
+                document.getElementById('bonus-total').innerText = "Rp " + totalBonusPossible.toLocaleString('id-ID');
+                
+                const btn = document.getElementById('btn-claim');
+                if(claimable > 0) {
+                    btn.disabled = false;
+                    btn.innerText = `KLAIM RP ${claimable.toLocaleString('id-ID')}`;
+                    document.getElementById('claim-note').innerText = "Saldo akan langsung bertambah";
+                } else {
+                    btn.disabled = true;
+                    btn.innerText = validCount > 0 ? "SUDAH DIKLAIM" : "KLAIM HADIAH";
+                    document.getElementById('claim-note').innerText = "Minimal 1 teman deposit 20rb untuk klaim";
+                }
+
+                // 5. Render Tabel
+                document.getElementById('ref-table-body').innerHTML = friends.map(f => {
+                    const isValid = validUsers.has(f.username);
+                    return `<tr>
+                        <td>${f.username}</td>
+                        <td style="color:${isValid?'#00ff88':'var(--yellow)'};font-weight:800">${isValid?'VALID':'PENDING'}</td>
+                        <td style="font-size:10px;opacity:.5">${new Date(f.created_at).toLocaleDateString('id-ID')}</td>
+                    </tr>`;
+                }).join('');
+
+            } catch (e) { console.error(e); }
+        }
+
+        async function processClaim(){
+            const btn = document.getElementById('btn-claim');
+            btn.disabled = true;
+            btn.innerText = "PROCESSING...";
+
+            try {
+                // Ambil ulang data untuk validasi server-side sederhana
+                const {data:me} = await _supabase.from('profiles').select('saldo, referral_code').eq('username', USERNAME).single();
+                const {data:friends} = await _supabase.from('profiles').select('username').eq('referred_by', me.referral_code);
+                const uNames = (friends || []).map(f => f.username);
+                
+                const {data:deposits} = await _supabase.from('deposits').select('username').in('username', uNames).eq('status', 'SUKSES').gte('amount', 20000);
+                const validCount = [...new Set((deposits || []).map(d => d.username))].length;
+
+                const {data:history} = await _supabase.from('deposits').select('amount').eq('username', USERNAME).eq('method', 'REFERRAL_BONUS');
+                const alreadyClaimed = (history || []).reduce((acc, curr) => acc + Number(curr.amount), 0);
+
+                const amountToClaim = (validCount * 5000) - alreadyClaimed;
+
+                if(amountToClaim <= 0) throw new Error("Tidak ada saldo yang bisa diklaim.");
+
+                // Eksekusi Klaim
+                await _supabase.from('profiles').update({ saldo: me.saldo + amountToClaim }).eq('username', USERNAME);
+                await _supabase.from('deposits').insert([{
+                    username: USERNAME, amount: amountToClaim, net_receive: amountToClaim,
+                    method: 'REFERRAL_BONUS', status: 'SUKSES'
+                }]);
+
+                showModal("SUKSES!", `Bonus sebesar Rp ${amountToClaim.toLocaleString('id-ID')} telah ditambahkan ke saldo Anda.`);
+                loadData();
+            } catch (e) {
+                showModal("GAGAL", e.message);
+                btn.disabled = false;
             }
-        });
-    }catch(e){ console.error('loadTopReferral:',e); }
-}
-
-/* ── REFERRAL STATS ── */
-async function loadReferralStats(){
-    try{
-        // Ambil referral_code user ini
-        const{data:myP}=await _supabase.from('profiles')
-            .select('referral_code,referred_by_claimed').eq('username',USERNAME).single();
-        if(myP&&myP.referral_code){
-            document.getElementById('ref-code').innerText=myP.referral_code;
-            const base=window.location.origin+window.location.pathname.replace('reward.html','index.html');
-            document.getElementById('ref-link').innerText=`${base}?ref=${myP.referral_code}`;
         }
 
-        // Ambil semua teman yang didaftarkan lewat kode referral user ini
-        const{data:friends}=await _supabase.from('profiles')
-            .select('username,created_at')
-            .eq('referred_by',USERNAME)
-            .order('created_at',{ascending:false});
-
-        const totalFriends=friends?friends.length:0;
-        document.getElementById('total-ref').innerText=totalFriends;
-
-        if(!friends||friends.length===0){
-            document.getElementById('ref-table-body').innerHTML='<tr class="empty-row"><td colspan="3">Belum ada referral</td></tr>';
-            document.getElementById('valid-ref').innerText='0';
-            document.getElementById('bonus-ref').innerText='Rp 0';
-            document.getElementById('claim-status').innerText='Belum ada';
-            return;
+        function copyRef(){
+            navigator.clipboard.writeText(window.currentRefLink || '');
+            alert("Link Referral disalin!");
         }
 
-        // Cek referral valid = sudah deposit min 20.000 status SUKSES
-        const uNames=friends.map(f=>f.username);
-        const{data:vDepo}=await _supabase.from('deposits')
-            .select('username')
-            .in('username',uNames)
-            .eq('status','SUKSES')
-            .gte('amount',20000);
-        const valids=new Set((vDepo||[]).map(d=>d.username));
-        const validCount=valids.size;
-
-        // Cek berapa yang sudah diklaim sebelumnya via deposits tabel
-        const{data:claimedBefore}=await _supabase.from('deposits')
-            .select('amount')
-            .eq('username',USERNAME)
-            .eq('method','REFERRAL_BONUS')
-            .eq('status','SUKSES');
-        const totalClaimed=(claimedBefore||[]).reduce((s,x)=>s+Number(x.amount||0),0);
-
-        // Bonus tersedia = valid * 5000 - sudah diklaim
-        const totalBonus=validCount*5000;
-        const bonusTersedia=Math.max(0,totalBonus-totalClaimed);
-
-        document.getElementById('valid-ref').innerText=validCount;
-        document.getElementById('bonus-ref').innerText='Rp '+totalBonus.toLocaleString('id-ID');
-
-        const claimEl=document.getElementById('claim-status');
-        const btnClaim=document.getElementById('btn-claim-ref');
-        if(bonusTersedia>0){
-            btnClaim.disabled=false;
-            btnClaim.innerHTML='<i class="fas fa-hand-holding-dollar"></i> KLAIM Rp '+bonusTersedia.toLocaleString('id-ID');
-            if(claimEl) claimEl.innerText='Rp '+bonusTersedia.toLocaleString('id-ID')+' tersedia';
-        } else {
-            btnClaim.disabled=true;
-            btnClaim.innerHTML='<i class="fas fa-hand-holding-dollar"></i> KLAIM BONUS REFERRAL';
-            if(claimEl) claimEl.innerText=totalBonus>0?'Sudah diklaim semua':'Belum ada';
+        function showModal(t, m){ 
+            document.getElementById('m-title').innerText = t; 
+            document.getElementById('m-msg').innerText = m; 
+            document.getElementById('modal-overlay').style.display = 'flex'; 
         }
-
-        // Render tabel daftar referral
-        document.getElementById('ref-table-body').innerHTML=friends.map(f=>{
-            const isValid=valids.has(f.username);
-            return `<tr>
-                <td><i class="fas fa-user-astronaut" style="margin-right:7px;color:var(--pink)"></i>${f.username}</td>
-                <td style="font-weight:900;color:${isValid?'#00ff88':'var(--yellow)'};">${isValid?'VALID ✓':'PENDING'}</td>
-                <td style="font-size:9px;opacity:.4;">${new Date(f.created_at).toLocaleDateString('id-ID')}</td>
-            </tr>`;
-        }).join('');
-    }catch(e){console.error('loadReferralStats:',e);}
-}
-
-/* ── INBOX / KOTAK HADIAH ── */
-async function loadInbox(){
-    const list=document.getElementById('mail-list');
-    try{
-        const{data,error}=await _supabase.from('inbox')
-            .select('*').eq('username',USERNAME).eq('status','UNCLAIMED')
-            .order('created_at',{ascending:false});
-        if(error)throw error;
-        if(data&&data.length>0){
-            list.innerHTML=data.map(m=>`<div class="mail-item">
-                <div style="font-size:10px;color:var(--pink);margin-bottom:7px;font-weight:900;letter-spacing:1px;"><i class="fas fa-bolt"></i> VIP NEON GIFT</div>
-                <div style="font-size:13px;margin-bottom:11px;color:#eee;font-weight:600;">${m.pesan||'Hadiah dari Admin'}</div>
-                <div style="color:var(--yellow);font-weight:900;font-size:24px;margin-bottom:14px;text-shadow:0 0 8px rgba(251,255,0,.4)">Rp ${Number(m.nominal||0).toLocaleString('id-ID')}</div>
-                <button class="btn-main btn-pink btn-claim-mail" onclick="claimMail('${m.id}',${m.nominal})">
-                    <i class="fas fa-hand-sparkles"></i> AMBIL SEKARANG
-                </button>
-            </div>`).join('');
-        } else {
-            list.innerHTML='<div style="text-align:center;opacity:.5;padding:28px;border:1.5px dashed rgba(0,34,255,.3);border-radius:16px;font-size:12px;"><i class="fas fa-envelope-open" style="font-size:22px;display:block;margin-bottom:9px;color:var(--blue);"></i>Belum ada hadiah masuk</div>';
-        }
-    }catch(e){console.error("Inbox Error:",e.message);}
-}
-
-/* ── KLAIM HADIAH (ATOMIC — anti double claim & anti double click) ── */
-const _claimingIds = new Set(); // Guard: cegah klik ganda pada ID yang sama
-
-async function claimMail(id, amt){
-    id = String(id);
-
-    // Guard: jika ID ini sedang diproses, abaikan klik berikutnya
-    if(_claimingIds.has(id)){
-        showNeonAlert("Hadiah sedang diproses, harap tunggu...", false);
-        return;
-    }
-    _claimingIds.add(id);
-
-    // Nonaktifkan semua tombol klaim selama proses berlangsung
-    document.querySelectorAll('.btn-claim-mail').forEach(b => b.disabled = true);
-
-    playSnd('click');
-    try{
-        // Step 1: Cek status TERKINI dari DB — anti race condition & anti reload lama
-        const{data:inbox, error:eCek} = await _supabase.from('inbox')
-            .select('status, nominal').eq('id', id).single();
-        if(eCek || !inbox){ showModal("ERROR","Hadiah tidak ditemukan."); return; }
-        if(inbox.status !== 'UNCLAIMED'){
-            showModal("SUDAH DIKLAIM","Hadiah ini sudah pernah diklaim sebelumnya.");
-            loadInbox(); return;
-        }
-
-        // Gunakan nominal dari DB (lebih aman daripada dari parameter HTML)
-        const nominalAsli = Number(inbox.nominal || amt);
-
-        // Step 2: Tandai CLAIMED secara atomic (filter status=UNCLAIMED mencegah race condition)
-        // Jika ada proses lain yang sudah klaim duluan, update ini tidak akan berpengaruh
-        const{data:claimedRows, error:eUp} = await _supabase.from('inbox')
-            .update({ status: 'CLAIMED' })
-            .eq('id', id)
-            .eq('status', 'UNCLAIMED')   // ← kunci atomic: hanya jalan jika masih UNCLAIMED
-            .select('id');
-        if(eUp){ showModal("GAGAL","Gagal klaim: " + eUp.message); return; }
-
-        // Jika tidak ada baris yang berubah → sudah diklaim oleh proses lain
-        if(!claimedRows || claimedRows.length === 0){
-            showModal("SUDAH DIKLAIM","Hadiah ini sudah pernah diklaim sebelumnya.");
-            loadInbox(); return;
-        }
-
-        // Step 3: Tambah saldo HANYA setelah status berhasil di-update ke CLAIMED
-        const{data:p, error:eP} = await _supabase.from('profiles')
-            .select('saldo').eq('username', USERNAME).single();
-        if(eP || !p){ showModal("ERROR","Gagal ambil saldo."); return; }
-
-        const{error:eS} = await _supabase.from('profiles')
-            .update({ saldo: (p.saldo || 0) + nominalAsli })
-            .eq('username', USERNAME);
-        if(eS){ showModal("ERROR","Saldo gagal ditambah: " + eS.message); return; }
-
-        playSnd('success');
-        showNeonAlert("HADIAH Rp " + nominalAsli.toLocaleString('id-ID') + " MASUK KE SALDO!", true);
-        showModal("BERHASIL! 🎉","Hadiah Rp " + nominalAsli.toLocaleString('id-ID') + " berhasil masuk ke saldo Anda!");
-        if(typeof syncNeonData === "function") syncNeonData();
-        loadInbox();
-    } catch(e){
-        showModal("ERROR","Gagal mengambil hadiah: " + e.message);
-    } finally{
-        // Selalu lepas guard agar tidak terkunci selamanya
-        _claimingIds.delete(id);
-        document.querySelectorAll('.btn-claim-mail').forEach(b => b.disabled = false);
-    }
-}
-
-/* ── KLAIM BONUS REFERRAL ── */
-async function processRefClaim(){
-    playSnd('click');
-    const btn=document.getElementById('btn-claim-ref');
-    btn.disabled=true;
-    try{
-        // Hitung referral valid
-        const{data:friends}=await _supabase.from('profiles')
-            .select('username').eq('referred_by',USERNAME);
-        const uList=(friends||[]).map(f=>f.username);
-        if(!uList.length){showModal("INFO","Belum ada referral.");btn.disabled=false;return;}
-
-        const{data:vDepo}=await _supabase.from('deposits')
-            .select('username').in('username',uList).eq('status','SUKSES').gte('amount',20000);
-        const validCount=[...new Set((vDepo||[]).map(d=>d.username))].length;
-        const totalBonus=validCount*5000;
-
-        // Cek sudah diklaim berapa
-        const{data:claimedBefore}=await _supabase.from('deposits')
-            .select('amount').eq('username',USERNAME).eq('method','REFERRAL_BONUS').eq('status','SUKSES');
-        const totalClaimed=(claimedBefore||[]).reduce((s,x)=>s+Number(x.amount||0),0);
-        const bonusTersedia=Math.max(0,totalBonus-totalClaimed);
-
-        if(bonusTersedia<=0){
-            showModal("INFO","Bonus referral sudah semua diklaim atau belum ada referral valid.");
-            btn.disabled=false;return;
-        }
-
-        // Tambah saldo
-        const{data:p}=await _supabase.from('profiles').select('saldo').eq('username',USERNAME).single();
-        const{error:eS}=await _supabase.from('profiles')
-            .update({saldo:(p.saldo||0)+bonusTersedia}).eq('username',USERNAME);
-        if(eS){showModal("GAGAL","Gagal tambah saldo: "+eS.message);btn.disabled=false;return;}
-
-        // Catat di deposits sebagai histori klaim
-        await _supabase.from('deposits').insert([{
-            username:USERNAME,
-            amount:bonusTersedia,
-            net_receive:bonusTersedia,
-            method:'REFERRAL_BONUS',
-            status:'SUKSES'
-        }]);
-
-        playSnd('success');
-        showNeonAlert("BONUS REFERRAL Rp "+bonusTersedia.toLocaleString('id-ID')+" BERHASIL DIKLAIM!",true);
-        showModal("SUKSES 🎉","Bonus Referral Rp "+bonusTersedia.toLocaleString('id-ID')+" telah masuk ke saldo!");
-        if(typeof syncNeonData==="function") syncNeonData();
-        loadReferralStats();
-    }catch(e){showModal("GAGAL","Klaim gagal: "+e.message);btn.disabled=false;}
-}
-
-function copyRef(){
-    playSnd('click');
-    const c=document.getElementById('ref-code').innerText;
-    if(c&&c!=='MEMUAT...'&&c!=='—'){
-        navigator.clipboard.writeText(c).catch(()=>{});
-        showNeonAlert("KODE REFERRAL DISALIN: "+c,true);
-    }
-}
-function showModal(t,m){document.getElementById('m-title').innerText=t;document.getElementById('m-msg').innerText=m;document.getElementById('modal-overlay').style.display='flex';}
-function closeModal(){playSnd('click');document.getElementById('modal-overlay').style.display='none';}
-window.addEventListener('load',initReward);
-</script>
+        function closeModal(){ document.getElementById('modal-overlay').style.display = 'none'; }
+        
+        window.onload = init;
+    </script>
 </body>
 </html>
