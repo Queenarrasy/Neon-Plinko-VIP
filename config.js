@@ -68,12 +68,16 @@ function formatRp(amount) {
 
 // ── 5. SYNC ENGINE ────────────────────────────────────────────
 
+let _syncRunning = false; // lock agar syncNeonData tidak jalan double
+
 /**
  * syncNeonData — sinkronisasi saldo & referral ke semua elemen UI.
  */
 async function syncNeonData() {
+    if(_syncRunning) return; // skip jika sedang berjalan
+    _syncRunning = true;
     const user = getUsername();
-    if (!user) return;
+    if (!user) { _syncRunning = false; return; }
 
     try {
         const { data, error } = await _supabase
@@ -143,6 +147,8 @@ async function syncNeonData() {
 
     } catch (err) {
         console.warn('[syncNeonData]', err?.message || err);
+    } finally {
+        _syncRunning = false;
     }
 }
 
