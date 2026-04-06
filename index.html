@@ -20,14 +20,60 @@
         .tab-nav{display:flex;gap:10px;margin-bottom:30px;background:rgba(255,255,255,.05);padding:6px;border-radius:15px;border:1px solid rgba(255,255,255,.1)}
         .tab-btn{flex:1;padding:12px;border:none;background:transparent;color:rgba(255,255,255,.5);font-weight:700;cursor:pointer;border-radius:10px;transition:.3s;font-size:13px;letter-spacing:1px}
         .tab-btn.active{background:var(--pink);color:#fff;box-shadow:var(--gp)}
+
+        /* ── INPUT GROUP — EYE ICON TIDAK MENIMPA IKON KIRI ── */
         .input-group{position:relative;margin-bottom:18px;text-align:left}
-        .input-group i{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--pink);font-size:16px;text-shadow:0 0 10px var(--pink)}
-        .input-group .toggle-pass{position:absolute;right:15px;top:50%;transform:translateY(-50%);color:var(--yellow);font-size:16px;cursor:pointer;text-shadow:0 0 8px var(--yellow);transition:.3s}
-        .input-group .toggle-pass:hover{color:var(--pink);text-shadow:0 0 10px var(--pink)}
-        input,select{width:100%;padding:14px 15px 14px 45px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;color:#fff;font-size:14px;outline:none;transition:.3s;letter-spacing:0.5px}
+        .input-group .icon-left{
+            position:absolute;
+            left:15px;
+            top:50%;
+            transform:translateY(-50%);
+            color:var(--pink);
+            font-size:16px;
+            text-shadow:0 0 10px var(--pink);
+            z-index:2;
+            pointer-events:none;
+        }
+        /* Eye toggle: posisi kanan, tidak overlap dengan ikon kiri */
+        .toggle-pass{
+            position:absolute;
+            right:15px;
+            top:50%;
+            transform:translateY(-50%);
+            color:var(--yellow);
+            font-size:16px;
+            cursor:pointer;
+            text-shadow:0 0 8px var(--yellow);
+            transition:.3s;
+            z-index:2;
+            /* Pastikan area klik cukup besar di mobile */
+            padding:4px;
+            line-height:1;
+        }
+        .toggle-pass:hover{color:var(--pink);text-shadow:0 0 10px var(--pink)}
+
+        /* Input dengan padding kiri (ikon kiri) DAN kanan (eye icon) */
+        input,select{
+            width:100%;
+            padding:14px 45px 14px 45px; /* kiri:45px untuk ikon, kanan:45px untuk eye */
+            background:rgba(255,255,255,.05);
+            border:1px solid rgba(255,255,255,.1);
+            border-radius:12px;
+            color:#fff;
+            font-size:14px;
+            outline:none;
+            transition:.3s;
+            letter-spacing:0.5px;
+        }
+        /* Input tanpa eye icon (tidak ada .has-eye) pakai padding kanan normal */
+        input.no-eye,select{
+            padding:14px 15px 14px 45px;
+        }
         input:focus{border-color:var(--pink);background:rgba(255,255,255,.1);box-shadow:0 0 15px rgba(255,0,119,.2)}
+
         .btn-main{width:100%;padding:16px;border:none;border-radius:15px;background:linear-gradient(45deg,var(--pink),var(--blue));color:#fff;font-weight:900;font-size:15px;letter-spacing:2px;cursor:pointer;transition:.4s;box-shadow:var(--gp);margin-top:10px;text-transform:uppercase}
         .btn-main:active{transform:scale(0.96)}
+        .btn-main:disabled{opacity:.5;cursor:not-allowed;}
         .forgot-pass{text-align:center;margin-top:15px;font-size:12px;color:rgba(255,255,255,.5)}
         .wa-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(37,211,102,.15);border:1px solid rgba(37,211,102,.4);padding:8px 16px;border-radius:20px;color:#25d366;font-weight:800;cursor:pointer;transition:.3s;text-decoration:none;font-size:11px;margin-top:8px;box-shadow:0 0 10px rgba(37,211,102,.2)}
         .wa-btn:hover{background:rgba(37,211,102,.25);box-shadow:0 0 15px rgba(37,211,102,.3);transform:scale(1.02)}
@@ -75,37 +121,68 @@
         const _supa = supabase.createClient(SUPA_URL, SUPA_KEY);
         let currentMode = 'login';
 
+        // ── FORM TEMPLATES ──
+        // Catatan: input password pakai class has-eye agar padding kanan aktif
+        // Ikon kiri pakai class icon-left, bukan tag <i> langsung (agar pointer-events:none tidak ganggu input)
         const forms = {
-            login: `<div class="input-group"><i class="fas fa-user-astronaut"></i><input type="text" id="user" placeholder="USERNAME"></div>
-                    <div class="input-group">
-                        <i class="fas fa-fingerprint"></i>
-                        <input type="password" id="pass" placeholder="PASSWORD">
-                        <i class="fas fa-eye toggle-pass" id="toggle-pass-login" onclick="togglePassword('pass','toggle-pass-login')"></i>
-                    </div>`,
-            daftar: `<div class="input-group"><i class="fas fa-user-plus"></i><input type="text" id="user" placeholder="USERNAME (MIN 5)"></div>
-                    <div class="input-group">
-                        <i class="fas fa-key"></i>
-                        <input type="password" id="pass" placeholder="PASSWORD (MIN 6)">
-                        <i class="fas fa-eye toggle-pass" id="toggle-pass-daftar" onclick="togglePassword('pass','toggle-pass-daftar')"></i>
-                    </div>
-                    <div class="input-group"><i class="fas fa-id-badge"></i><input type="text" id="nama" placeholder="NAMA SESUAI REKENING"></div>
-                    <div class="input-group"><i class="fas fa-phone-alt"></i><input type="number" id="hp" placeholder="NOMOR WHATSAPP"></div>
-                    <div class="input-group"><i class="fas fa-university"></i>
-                        <select id="bank" onchange="checkBank()">
-                            <option value="">PILIH BANK / E-WALLET</option>
-                            <option value="DANA">DANA</option><option value="OVO">OVO</option><option value="GOPAY">GOPAY</option>
-                            <option value="BCA">BCA</option><option value="BNI">BNI</option><option value="BRI">BRI</option>
-                            <option value="MANDIRI">MANDIRI</option><option value="LAINNYA">LAINNYA...</option>
-                        </select>
-                    </div>
-                    <div id="kustom-bank-area"></div>
-                    <div class="input-group"><i class="fas fa-credit-card"></i><input type="number" id="norek" placeholder="NOMOR REKENING / DOMPET"></div>
-                    <div class="input-group"><i class="fas fa-users"></i><input type="text" id="ref" placeholder="KODE REFERRAL (OPSIONAL)"></div>`
+            login: `
+                <div class="input-group">
+                    <i class="fas fa-user-astronaut icon-left"></i>
+                    <input type="text" id="user" placeholder="USERNAME" class="no-eye">
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-fingerprint icon-left"></i>
+                    <input type="password" id="pass" placeholder="PASSWORD">
+                    <i class="fas fa-eye toggle-pass" id="toggle-pass-login" onclick="togglePassword('pass','toggle-pass-login')" title="Tampilkan/Sembunyikan Password"></i>
+                </div>`,
+            daftar: `
+                <div class="input-group">
+                    <i class="fas fa-user-plus icon-left"></i>
+                    <input type="text" id="user" placeholder="USERNAME (MIN 5)" class="no-eye">
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-key icon-left"></i>
+                    <input type="password" id="pass" placeholder="PASSWORD (MIN 6)">
+                    <i class="fas fa-eye toggle-pass" id="toggle-pass-daftar" onclick="togglePassword('pass','toggle-pass-daftar')" title="Tampilkan/Sembunyikan Password"></i>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-id-badge icon-left"></i>
+                    <input type="text" id="nama" placeholder="NAMA SESUAI REKENING" class="no-eye">
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-phone-alt icon-left"></i>
+                    <input type="number" id="hp" placeholder="NOMOR WHATSAPP" class="no-eye">
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-university icon-left"></i>
+                    <select id="bank" onchange="checkBank()" class="no-eye" style="color:#fff;-webkit-appearance:none;appearance:none;">
+                        <option value="">PILIH BANK / E-WALLET</option>
+                        <option value="DANA">DANA</option>
+                        <option value="OVO">OVO</option>
+                        <option value="GOPAY">GOPAY</option>
+                        <option value="BCA">BCA</option>
+                        <option value="BNI">BNI</option>
+                        <option value="BRI">BRI</option>
+                        <option value="MANDIRI">MANDIRI</option>
+                        <option value="LAINNYA">LAINNYA...</option>
+                    </select>
+                </div>
+                <div id="kustom-bank-area"></div>
+                <div class="input-group">
+                    <i class="fas fa-credit-card icon-left"></i>
+                    <input type="number" id="norek" placeholder="NOMOR REKENING / DOMPET" class="no-eye">
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-users icon-left"></i>
+                    <input type="text" id="ref" placeholder="KODE REFERRAL (OPSIONAL)" class="no-eye">
+                </div>`
         };
 
+        // ── TOGGLE PASSWORD — SEMBUNYIKAN / TAMPILKAN ──
         function togglePassword(inputId, iconId){
             const input = document.getElementById(inputId);
-            const icon = document.getElementById(iconId);
+            const icon  = document.getElementById(iconId);
+            if(!input || !icon) return;
             if(input.type === 'password'){
                 input.type = 'text';
                 icon.classList.remove('fa-eye');
@@ -118,84 +195,126 @@
         }
 
         function switchTab(m){
-            currentMode=m;
-            document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+            currentMode = m;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             event.target.classList.add('active');
-            document.getElementById('form-container').innerHTML=forms[m];
-            document.getElementById('btn-action').innerText=m==='login'?'INITIALIZE ACCESS':'CREATE VIP ACCOUNT';
-            document.getElementById('forgot-section').style.display=m==='login'?'block':'none';
-            if(m==='daftar'){
-                const p=localStorage.getItem('pending_ref');
-                if(p) document.getElementById('ref').value=p;
+            document.getElementById('form-container').innerHTML = forms[m];
+            document.getElementById('btn-action').innerText = m==='login' ? 'INITIALIZE ACCESS' : 'CREATE VIP ACCOUNT';
+            document.getElementById('forgot-section').style.display = m==='login' ? 'block' : 'none';
+            if(m === 'daftar'){
+                const p = localStorage.getItem('pending_ref');
+                if(p) document.getElementById('ref').value = p;
             }
         }
 
         function checkBank(){
-            const v=document.getElementById('bank').value;
-            document.getElementById('kustom-bank-area').innerHTML=v==='LAINNYA'?
-                `<div class="input-group"><i class="fas fa-pen"></i><input type="text" id="bank_kustom" placeholder="NAMA BANK"></div>`:'';
+            const v = document.getElementById('bank').value;
+            document.getElementById('kustom-bank-area').innerHTML = v==='LAINNYA' ?
+                `<div class="input-group">
+                    <i class="fas fa-pen icon-left"></i>
+                    <input type="text" id="bank_kustom" placeholder="NAMA BANK" class="no-eye">
+                </div>` : '';
         }
 
-        function validatePass(s){return s.length>=6 && /\d/.test(s) && /[a-zA-Z]/.test(s);}
+        function validatePass(s){
+            return s.length >= 6 && /\d/.test(s) && /[a-zA-Z]/.test(s);
+        }
 
         async function handleAuth(){
-            const u=document.getElementById('user').value.toLowerCase().trim();
-            const p=document.getElementById('pass').value.trim();
-            const btn=document.getElementById('btn-action');
-            if(!u||!p) return showNeonModal("DATA TIDAK LENGKAP!");
-            btn.disabled=true; btn.innerText="PROCESSING...";
+            const u = document.getElementById('user').value.toLowerCase().trim();
+            const p = document.getElementById('pass').value.trim();
+            const btn = document.getElementById('btn-action');
+            if(!u || !p) return showNeonModal("DATA TIDAK LENGKAP!");
+            btn.disabled = true; btn.innerText = "PROCESSING...";
 
-            if(currentMode==='login'){
-                const {data,error}=await _supa.from('profiles').select('*').eq('username',u).eq('password',p).single();
-                if(error||!data){
+            if(currentMode === 'login'){
+                const {data, error} = await _supa.from('profiles').select('*').eq('username',u).eq('password',p).single();
+                if(error || !data){
                     showNeonModal("ACCESS DENIED! CHECK CREDENTIALS.");
-                    btn.disabled=false; btn.innerText="INITIALIZE ACCESS";
+                    btn.disabled = false; btn.innerText = "INITIALIZE ACCESS";
                 } else {
-                    localStorage.setItem('neon_user',u);
-                    location.href='game.html';
+                    localStorage.setItem('neon_user', u);
+                    location.href = 'game.html';
                 }
             } else {
-                const nama=document.getElementById('nama').value.toUpperCase().trim();
-                const hp=document.getElementById('hp').value.trim();
-                const bank=document.getElementById('bank').value==='LAINNYA'?document.getElementById('bank_kustom').value.toUpperCase():document.getElementById('bank').value;
-                const norek=document.getElementById('norek').value.trim();
-                const ref=document.getElementById('ref').value.trim()||'DIRECT';
-                const myRef="NEON"+Math.random().toString(36).substring(2,7).toUpperCase();
+                const nama  = document.getElementById('nama').value.toUpperCase().trim();
+                const hp    = document.getElementById('hp').value.trim();
+                const bankEl= document.getElementById('bank').value;
+                let bank    = bankEl === 'LAINNYA' ? (document.getElementById('bank_kustom')||{value:''}).value.toUpperCase() : bankEl;
+                const norek = document.getElementById('norek').value.trim();
+                const ref   = document.getElementById('ref').value.trim() || 'DIRECT';
 
-                if(!nama||!hp||!bank||!norek) { btn.disabled=false; return showNeonModal("LENGKAPI SEMUA DATA!"); }
-                if(!validatePass(p)) { btn.disabled=false; return showNeonModal("PASSWORD HARUS 6+ KARAKTER (HURUF & ANGKA)!"); }
+                // Generate kode referral unik untuk member baru
+                const myRef = "NEON" + Math.random().toString(36).substring(2,7).toUpperCase();
 
-                const {data:uE}=await _supa.from('profiles').select('username').eq('username',u).single();
-                if(uE){ btn.disabled=false; return showNeonModal("USERNAME SUDAH TERDAFTAR!"); }
-                
-                const {data:rE}=await _supa.from('profiles').select('rekening').eq('rekening',norek).single();
-                if(rE){ btn.disabled=false; return showNeonModal("NOMOR REKENING SUDAH TERDAFTAR!"); }
+                if(!nama || !hp || !bank || !norek){
+                    btn.disabled = false;
+                    return showNeonModal("LENGKAPI SEMUA DATA!");
+                }
+                if(u.length < 5){
+                    btn.disabled = false;
+                    return showNeonModal("USERNAME MINIMAL 5 KARAKTER!");
+                }
+                if(!validatePass(p)){
+                    btn.disabled = false;
+                    return showNeonModal("PASSWORD HARUS 6+ KARAKTER (HURUF & ANGKA)!");
+                }
 
-                const {error:insErr}=await _supa.from('profiles').insert([{
-                    username:u, password:p, nama_lengkap:nama, nomor_hp:hp, bank_name:bank,
-                    rekening:norek, referred_by:ref, referral_code:myRef, saldo:0, winrate:30, maxwin_limit:100000
+                // Cek username sudah terdaftar
+                const {data:uE} = await _supa.from('profiles').select('username').eq('username',u).single();
+                if(uE){ btn.disabled = false; return showNeonModal("USERNAME SUDAH TERDAFTAR!"); }
+
+                // Cek rekening sudah terdaftar
+                const {data:rE} = await _supa.from('profiles').select('rekening').eq('rekening',norek).single();
+                if(rE){ btn.disabled = false; return showNeonModal("NOMOR REKENING SUDAH TERDAFTAR!"); }
+
+                // ── INSERT MEMBER BARU — semua field referral dicatat ──
+                const {error:insErr} = await _supa.from('profiles').insert([{
+                    username      : u,
+                    password      : p,
+                    nama_lengkap  : nama,
+                    nomor_hp      : hp,
+                    bank_name     : bank,
+                    rekening      : norek,
+                    referred_by   : ref,       // siapa yang mereferral member ini
+                    referral_code : myRef,     // kode unik milik member ini
+                    saldo         : 0,
+                    winrate       : 30,
+                    maxwin_limit  : 100000
                 }]);
 
-                if(insErr){ showNeonModal("ERROR: "+insErr.message); btn.disabled=false; }
-                else {
+                if(insErr){
+                    showNeonModal("ERROR: " + insErr.message);
+                    btn.disabled = false;
+                } else {
+                    // Jika ada referral, catat di tabel referrals (jika ada) untuk event referral terbanyak
+                    if(ref !== 'DIRECT'){
+                        await _supa.from('referrals').insert([{
+                            referrer_code : ref,
+                            new_member    : u,
+                            created_at    : new Date().toISOString()
+                        }]).catch(()=>{}); // silent fail jika tabel belum ada
+                    }
                     localStorage.removeItem('pending_ref');
-                    showNeonModal("VIP ACCOUNT CREATED! PLEASE LOGIN.");
-                    setTimeout(()=>location.reload(),2000);
+                    showNeonModal("✅ VIP ACCOUNT CREATED! SILAKAN LOGIN.");
+                    setTimeout(() => location.reload(), 2200);
                 }
             }
         }
 
-        function showNeonModal(t){ 
-            document.getElementById('modal-text').innerText=t; 
-            document.getElementById('neon-modal').style.display='flex'; 
+        function showNeonModal(t){
+            document.getElementById('modal-text').innerText = t;
+            document.getElementById('neon-modal').style.display = 'flex';
         }
-        function closeModal(){ document.getElementById('neon-modal').style.display='none'; }
-        
-        window.onload=()=>{
+        function closeModal(){
+            document.getElementById('neon-modal').style.display = 'none';
+        }
+
+        window.onload = () => {
             switchTab('login');
-            const params=new URLSearchParams(window.location.search);
-            const r=params.get('ref');
-            if(r){ localStorage.setItem('pending_ref',r); switchTab('daftar'); }
+            const params = new URLSearchParams(window.location.search);
+            const r = params.get('ref');
+            if(r){ localStorage.setItem('pending_ref', r); switchTab('daftar'); }
             particlesJS("particles-js",{
                 "particles":{
                     "number":{"value":60},
