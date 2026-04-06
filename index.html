@@ -127,7 +127,141 @@ function showNeonModal(msg,isError=false){document.getElementById('m-text').inne
 function closeModal(){document.getElementById('neon-modal').style.display='none';}
 function validatePass(p){return /^(?=.*[a-zA-Z])(?=.*[0-9]).{6,}$/.test(p);}
 function captureReferral(){const params=new URLSearchParams(window.location.search);const ref=params.get('ref');if(ref){localStorage.setItem('pending_ref',ref);switchTab('daftar');}}
-async function handleAuth(){
+async function handleAuth(){/**
+ * PATCH index.html — bagian handleAuth() LOGIN
+ * Ganti fungsi handleAuth() yang lama dengan ini.
+ *
+ * Perubahan utama pada blok LOGIN:
+ *   1. Generate sessionToken unik untuk device ini
+ *   2. Update session_token di DB saat login berhasil
+ *   3. Simpan session_token ke localStorage device ini
+ *
+ * Ini memastikan saat user login di device baru,
+ * token lama (device lain) menjadi invalid →
+ * config.js syncNeonData() akan logout device lama.
+ */
+
+async function handleAuth() {
+    const u   = document.getElementById('user').value.toLowerCase().trim();
+    const p   = document.getElementById('pass').value.trim();
+    const btn = document.getElementById('btn-action');
+
+    if (!u || !p) return showNeonModal("DATA TIDAK LENGKAP!", true);
+    btn.disabled = true;
+    btn.innerText = "PROCESSING...";
+
+    if (currentMode === 'login') {
+        // ── PROSES LOGIN ────────────────────────────────────
+        const { data, error } = await _supa
+            .from('profiles')
+            .select('*')
+            .eq('username', u)
+            .eq('password', p)
+            .single();
+
+        if (error || !data) {
+            showNeonModal("USERNAME / PASSWORD SALAH!", true);
+            btn.disabled = false;
+            btn.innerText = "INITIALIZE ACCESS";
+            return;
+        }
+
+        // Generate token unik untuk session device ini
+        const sessionToken = Math.random().toString(36).substring(2)
+                           + Date.now().toString(36)
+                           + Math.random().toString(36).substring(2);
+
+        // Update session_token di DB → invalidasi device/login lain
+        await _supa.from('profiles').update({
+            session_token   : sessionToken,
+            last_session_id : sessionToken
+        }).eq('username', u);
+
+        // Simpan ke localStorage device ini
+        localStorage.setItem('neon_user',          u);
+        localStorage.setItem('user_session',        u);
+        localStorage.setItem('neon_session_token',  sessionToken);
+
+        showNeonAlert("ACCESS GRANTED — ENTERING SYSTEM", true);
+        setTimeout(() => location.href = 'game.html', 1200);
+
+    } else {
+        // ── PROSES REGISTRASI ───────────────────────────────
+        const nama      = document.getElementById('nama').value.toUpperCase().trim();
+        const hp        = document.getElementById('hp').value.trim();
+        const bankInit  = document.getElementById('bank').value;
+        const bankFinal = bankInit === 'LAINNYA'
+                        ? document.getElementById('bank_kustom').value.toUpperCase()
+                        : bankInit;
+        const norek     = document.getElementById('norek').value.trim();
+        const refFinal  = document.getElementById('ref').value.trim() || 'DIRECT';
+        const myNewRef  = "NEON" + Math.random().toString(36).substring(2, 7).toUpperCase();
+
+        if (!nama || !hp || !bankFinal || !norek) {
+            btn.disabled = false;
+            btn.innerText = "CREATE VIP ACCOUNT";
+            return showNeonModal("LENGKAPI SEMUA DATA!", true);
+        }
+        if (!validatePass(p)) {
+            btn.disabled = false;
+            btn.innerText = "CREATE VIP ACCOUNT";
+            return showNeonModal("PASSWORD WAJIB 6 KARAKTER (HURUF & ANGKA)!", true);
+        }
+
+        // Cek username duplikat
+        const { data: uE } = await _supa
+            .from('profiles').select('username').eq('username', u).single();
+        if (uE) {
+            btn.disabled = false;
+            btn.innerText = "CREATE VIP ACCOUNT";
+            return showNeonModal("USERNAME SUDAH TERDAFTAR!", true);
+        }
+
+        // Cek rekening duplikat
+        const { data: rE } = await _supa
+            .from('profiles').select('rekening').eq('rekening', norek).single();
+        if (rE) {
+            btn.disabled = false;
+            btn.innerText = "CREATE VIP ACCOUNT";
+            return showNeonModal("NOMOR REKENING SUDAH TERDAFTAR!", true);
+        }
+
+        // Insert player baru
+        const { error: insErr } = await _supa.from('profiles').insert([{
+            username              : u,
+            password              : p,
+            nama_lengkap          : nama,
+            nomor_hp              : hp,
+            nomor_telp            : hp,
+            phone                 : hp,
+            bank_name             : bankFinal,
+            rekening              : norek,
+            bank_account          : norek,
+            referred_by           : refFinal,
+            referral_code         : myNewRef,
+            saldo                 : 0,
+            winrate               : 30,
+            maxwin_limit          : 100000,
+            initial_balance_session: 0,
+            total_deposit_current : 0,
+            last_deposit_amount   : 0,
+            session_minutes       : 0,
+            session_timer         : 0,
+            panic_mode            : false,
+            backup_winrate        : 30
+        }]);
+
+        if (insErr) {
+            showNeonModal("SYSTEM BUSY: " + insErr.message, true);
+            btn.disabled = false;
+            btn.innerText = "CREATE VIP ACCOUNT";
+        } else {
+            localStorage.removeItem('pending_ref');
+            showNeonModal("REGISTRASI BERHASIL! SILAHKAN LOGIN.");
+            setTimeout(() => location.reload(), 2000);
+        }
+    }
+}
     const u=document.getElementById('user').value.toLowerCase().trim();
     const p=document.getElementById('pass').value.trim();
     const btn=document.getElementById('btn-action');
