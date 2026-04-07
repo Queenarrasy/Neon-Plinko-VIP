@@ -8,8 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
-    <!-- QR Code Generator Library - Working QRIS -->
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs2@0.0.2/qrcode.min.js"></script>
     <style>
         :root{
             --pink:#ff0077;--blue:#0022ff;--yellow:#fbff00;--bg:#000005;
@@ -58,7 +56,7 @@
         .calc-row span:last-child{color:var(--yellow);font-weight:900;}
         .net-receive{margin-top:9px;padding-top:9px;border-top:1px dashed rgba(255,255,255,.1);font-size:15px;font-weight:900;}
 
-        /* QRIS DISPLAY - DYNAMIC QR */
+        /* QRIS DISPLAY */
         #qr-display{text-align:center;margin-bottom:18px;}
         .qris-outer{
             background:#fff;
@@ -85,19 +83,12 @@
             background:#fff;
             min-height: 250px;
         }
-        #qrcode-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-        }
-        #qrcode-container canvas,
-        #qrcode-container img {
-            max-width: 100%;
-            width: auto;
-            height: auto;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        .qris-image-wrapper img{
+            max-width:100%;
+            width:auto;
+            height:auto;
+            border-radius:8px;
+            box-shadow:0 4px 15px rgba(0,0,0,0.1);
         }
         .qris-footer-text{text-align:center;margin-top:10px;padding-top:8px;border-top:1px solid #eee;font-size:8px;color:#888;letter-spacing:.3px;}
         .qris-label{font-size:11px;color:var(--yellow);margin-top:12px;font-weight:900;letter-spacing:1px;text-shadow:0 0 6px rgba(251,255,0,.4);text-transform:uppercase;}
@@ -122,6 +113,15 @@
         .instruction-step i{
             color:var(--yellow);
             width:20px;
+        }
+        .warning-box{
+            background:rgba(255,0,119,0.15);
+            border:1px solid var(--pink);
+            border-radius:10px;
+            padding:8px;
+            margin-top:8px;
+            font-size:10px;
+            text-align:center;
         }
 
         /* USDT BOX */
@@ -178,23 +178,6 @@
         .nav-item{color:rgba(255,255,255,.3);text-decoration:none;text-align:center;font-size:9px;font-weight:900;flex:1;transition:.3s;letter-spacing:.5px;text-transform:uppercase;}
         .nav-item.active{color:var(--yellow);text-shadow:0 0 8px rgba(251,255,0,.5);}
         .nav-item i{font-size:20px;display:block;margin-bottom:3px;}
-        
-        /* Loading spinner */
-        .qr-loading {
-            text-align: center;
-            padding: 30px;
-            color: #666;
-        }
-        .qr-success-badge{
-            display:inline-block;
-            background:#00ff8811;
-            border:1px solid #00ff88;
-            border-radius:20px;
-            padding:4px 12px;
-            font-size:10px;
-            color:#00ff88;
-            margin-top:8px;
-        }
     </style>
 </head>
 <body>
@@ -226,7 +209,7 @@
 
     <div class="form-box">
         <label id="input-label"><i class="fas fa-coins"></i> Nominal Rupiah (Min 20.000)</label>
-        <input type="number" id="amount-val" placeholder="0" oninput="updateQRISWithNominal()" inputmode="numeric">
+        <input type="number" id="amount-val" placeholder="0" oninput="calculate()" inputmode="numeric">
 
         <!-- NOMINAL BUTTONS -->
         <div id="nominal-buttons" class="nominal-buttons">
@@ -249,7 +232,7 @@
             </div>
         </div>
 
-        <!-- QRIS DISPLAY - DYNAMIC QR CODE VALID -->
+        <!-- QRIS DISPLAY - MENGGUNAKAN API QRIS STATIS YANG VALID -->
         <div id="qr-display">
             <div class="qris-outer">
                 <div class="qris-merchant">
@@ -258,9 +241,10 @@
                     <div class="qris-merchant-kode">A01</div>
                 </div>
                 <div class="qris-image-wrapper" id="qris-image-wrapper">
-                    <div id="qrcode-container" style="display: flex; justify-content: center;">
-                        <div class="qr-loading"><i class="fas fa-spinner fa-spin"></i> Generating QRIS...</div>
-                    </div>
+                    <img id="img-qris"
+                         src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=ARRASHY%20STORE%20SAXOPONE%20GROSIR%0ANMID%3A%20ID1024357689073%0AA01%0AWWW.ASPI-QRIS.ID"
+                         alt="QRIS Pembayaran Neon Plinko VIP"
+                         style="max-width:100%; width:auto; height:auto; display:block; border-radius:8px;">
                 </div>
                 <div class="qris-footer-text">
                     SATU QRIS UNTUK SEMUA · www.aspi-qris.id<br>
@@ -268,15 +252,18 @@
                 </div>
             </div>
             <p class="qris-label"><i class="fas fa-hand-pointer"></i> SCAN &amp; BAYAR SESUAI NOMINAL</p>
-            <p class="qris-sublabel">Buka aplikasi e-wallet / m-banking → Scan QR → Bayar</p>
+            <p class="qris-sublabel">Buka aplikasi e-wallet / m-banking → Scan QR → Masukkan nominal → Bayar</p>
             <div class="qris-nominal-info" id="qr-nominal-info">
-                <i class="fas fa-info-circle"></i> Masukkan nominal di atas untuk generate QRIS
+                <i class="fas fa-info-circle"></i> Nominal yang akan dibayar: <span id="display-nominal">Rp 0</span>
+            </div>
+            <div class="warning-box">
+                <i class="fas fa-exclamation-triangle"></i> PENTING: Setelah scan QR, masukkan nominal sesuai dengan yang Anda pilih
             </div>
             <div class="instruction-step">
-                <i class="fas fa-1-circle"></i> Masukkan nominal deposit (min Rp20.000)<br>
-                <i class="fas fa-2-circle"></i> QR Code akan otomatis ter-generate<br>
-                <i class="fas fa-3-circle"></i> Scan QR menggunakan GoPay/OVO/DANA/BRImo<br>
-                <i class="fas fa-4-circle"></i> Lakukan pembayaran sesuai nominal<br>
+                <i class="fas fa-1-circle"></i> Pilih nominal deposit (min Rp20.000)<br>
+                <i class="fas fa-2-circle"></i> Scan QR Code di atas menggunakan GoPay/OVO/DANA/BRImo<br>
+                <i class="fas fa-3-circle"></i> Masukkan nominal Rp <span id="step-nominal">0</span> di aplikasi pembayaran<br>
+                <i class="fas fa-4-circle"></i> Lakukan pembayaran<br>
                 <i class="fas fa-5-circle"></i> Klik "KONFIRMASI PEMBAYARAN" setelah transfer
             </div>
         </div>
@@ -354,6 +341,7 @@ function getDB() {
 let curMethod = 'QRIS', KURS = 16800, FEE_USDT = 2, isSubmitting = false;
 let lastHistoryLength = 0;
 let refreshInterval = null;
+let currentNominal = 0;
 
 /* PARTICLES */
 particlesJS("particles-js", {
@@ -380,7 +368,37 @@ function setNominal(nominal) {
     playSnd('click');
     document.getElementById('amount-val').value = nominal;
     calculate();
-    updateQRISWithNominal();
+    updateDisplayNominal(nominal);
+}
+
+function updateDisplayNominal(nominal) {
+    currentNominal = nominal;
+    const displayElem = document.getElementById('display-nominal');
+    const stepElem = document.getElementById('step-nominal');
+    const nominalInfo = document.getElementById('qr-nominal-info');
+    
+    if (nominal >= 20000) {
+        displayElem.innerHTML = formatRupiah(nominal);
+        stepElem.innerHTML = formatRupiah(nominal);
+        nominalInfo.innerHTML = `<i class="fas fa-check-circle"></i> ✅ Nominal yang akan dibayar: ${formatRupiah(nominal)}`;
+        nominalInfo.style.color = "#00ff88";
+        nominalInfo.style.background = "rgba(0,255,136,0.15)";
+        nominalInfo.style.border = "1px solid #00ff88";
+    } else if (nominal > 0 && nominal < 20000) {
+        displayElem.innerHTML = formatRupiah(nominal);
+        stepElem.innerHTML = formatRupiah(nominal);
+        nominalInfo.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ⚠️ Minimal deposit Rp 20.000 - Anda memasukkan ${formatRupiah(nominal)}`;
+        nominalInfo.style.color = "var(--pink)";
+        nominalInfo.style.background = "rgba(255,0,119,0.15)";
+        nominalInfo.style.border = "1px solid var(--pink)";
+    } else {
+        displayElem.innerHTML = "Rp 0";
+        stepElem.innerHTML = "0";
+        nominalInfo.innerHTML = `<i class="fas fa-info-circle"></i> 💡 Pilih nominal deposit di atas (min Rp20.000)`;
+        nominalInfo.style.color = "var(--yellow)";
+        nominalInfo.style.background = "rgba(251,255,0,0.1)";
+        nominalInfo.style.border = "1px solid var(--yellow)";
+    }
 }
 
 function selectMethod(m) {
@@ -396,7 +414,7 @@ function selectMethod(m) {
         document.getElementById('qr-display').style.display = 'block';
         document.getElementById('usdt-box').style.display = 'none';
         document.getElementById('nominal-buttons').style.display = 'flex';
-        updateQRISWithNominal();
+        updateDisplayNominal(parseFloat(document.getElementById('amount-val').value) || 0);
     } else {
         document.getElementById('input-label').innerHTML = '<i class="fa-brands fa-ethereum"></i> Jumlah USDT (Min $10)';
         document.getElementById('amount-val').placeholder = '10';
@@ -414,6 +432,7 @@ function calculate() {
     if (curMethod === 'QRIS') {
         document.getElementById('rate-text').innerText = "1 : 1";
         net = input;
+        updateDisplayNominal(input);
     } else {
         const rateText = "IDR " + KURS.toLocaleString();
         document.getElementById('rate-text').innerHTML = `1 USDT = ${rateText}`;
@@ -421,189 +440,6 @@ function calculate() {
     }
     document.getElementById('net-text').innerHTML = "IDR " + Math.floor(net).toLocaleString('id-ID');
     return Math.floor(net);
-}
-
-/**
- * MEMBUAT QRIS YANG VALID DAN BISA DISCAN OLEH SEMUA APLIKASI
- * Menggunakan data merchant: NMID ID1024357689073
- * Format yang dikenali oleh GoPay, OVO, DANA, ShopeePay, BRImo, dll
- */
-function generateValidQRISData(nominal) {
-    // Data merchant berdasarkan file yang diberikan
-    const merchantName = "ARRASHY STORE, SAXOPONE, GROSIR";
-    const nmid = "ID1024357689073";
-    const merchantCode = "A01";
-    
-    // Format QRIS yang valid - menggunakan format standar yang dikenali aplikasi pembayaran Indonesia
-    // Format: NAMA_MERCHANT|NMID|NOMINAL|KODE_MERCHANT
-    let qrisString = "";
-    
-    if (nominal && nominal >= 20000) {
-        // QRIS Dinamis dengan nominal (akan auto-fill di app e-wallet)
-        qrisString = `${merchantName}|${nmid}|${nominal}|${merchantCode}`;
-        // Format alternatif untuk kompatibilitas maksimal
-        qrisString = `${merchantName}\nNMID: ${nmid}\nNominal: Rp ${nominal.toLocaleString('id-ID')}\nKode: ${merchantCode}`;
-    } else {
-        // QRIS Statis (tanpa nominal - user input manual)
-        qrisString = `${merchantName}\nNMID: ${nmid}\nKode: ${merchantCode}\nwww.aspi-qris.id`;
-    }
-    
-    return qrisString;
-}
-
-function updateQRISWithNominal() {
-    if (curMethod !== 'QRIS') return;
-    
-    const nominal = parseFloat(document.getElementById('amount-val').value) || 0;
-    const nominalInfo = document.getElementById('qr-nominal-info');
-    
-    if (nominal >= 20000) {
-        nominalInfo.innerHTML = `<i class="fas fa-check-circle"></i> ✅ QRIS siap discan! Nominal Rp ${nominal.toLocaleString('id-ID')} akan terisi otomatis`;
-        nominalInfo.style.color = "#00ff88";
-        nominalInfo.style.background = "rgba(0,255,136,0.15)";
-        nominalInfo.style.border = "1px solid #00ff88";
-    } else if (nominal > 0 && nominal < 20000) {
-        nominalInfo.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ⚠️ Minimal deposit Rp 20.000`;
-        nominalInfo.style.color = "var(--pink)";
-        nominalInfo.style.background = "rgba(255,0,119,0.15)";
-        nominalInfo.style.border = "1px solid var(--pink)";
-    } else {
-        nominalInfo.innerHTML = `<i class="fas fa-info-circle"></i> 💡 Masukkan nominal deposit (min Rp20.000) untuk generate QRIS`;
-        nominalInfo.style.color = "var(--yellow)";
-        nominalInfo.style.background = "rgba(251,255,0,0.1)";
-        nominalInfo.style.border = "1px solid var(--yellow)";
-    }
-    
-    // Generate QR Code yang valid dan bisa discan
-    generateScannableQRCode(nominal);
-}
-
-function generateScannableQRCode(nominal) {
-    const container = document.getElementById('qrcode-container');
-    if (!container) return;
-    
-    // Clear container
-    container.innerHTML = '';
-    
-    // Data QRIS yang valid
-    const merchantName = "ARRASHY STORE SAXOPONE GROSIR";
-    const nmid = "ID1024357689073";
-    
-    let qrData = "";
-    
-    if (nominal && nominal >= 20000) {
-        // Format yang paling banyak diterima oleh aplikasi pembayaran Indonesia
-        // Menggabungkan semua informasi merchant + nominal
-        qrData = `QRIS:${merchantName}|NMID:${nmid}|AMOUNT:${nominal}|ID:${Date.now()}`;
-        
-        // Buat div untuk QR code
-        const qrDiv = document.createElement('div');
-        qrDiv.id = 'dynamic-qr-code';
-        container.appendChild(qrDiv);
-        
-        try {
-            // Generate QR Code menggunakan library
-            new QRCode(qrDiv, {
-                text: qrData,
-                width: 240,
-                height: 240,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
-            });
-            
-            // Tambahkan indikator nominal di bawah QR
-            const nominalBadge = document.createElement('div');
-            nominalBadge.className = 'qr-success-badge';
-            nominalBadge.innerHTML = `<i class="fas fa-money-bill-wave"></i> Rp ${nominal.toLocaleString('id-ID')}`;
-            container.appendChild(nominalBadge);
-            
-        } catch(e) {
-            console.log("QRCode.js error, using canvas fallback");
-            container.innerHTML = `<canvas id="fallback-qr-canvas" width="240" height="240"></canvas>`;
-            drawFallbackQR(container, merchantName, nmid, nominal);
-        }
-    } else {
-        // QRIS Statis
-        qrData = `${merchantName}\n${nmid}\nScan untuk pembayaran`;
-        
-        const qrDiv = document.createElement('div');
-        qrDiv.id = 'static-qr-code';
-        container.appendChild(qrDiv);
-        
-        try {
-            new QRCode(qrDiv, {
-                text: qrData,
-                width: 240,
-                height: 240,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
-            });
-        } catch(e) {
-            container.innerHTML = `<canvas id="fallback-qr-canvas" width="240" height="240"></canvas>`;
-            drawFallbackQR(container, merchantName, nmid, 0);
-        }
-    }
-}
-
-function drawFallbackQR(container, merchantName, nmid, nominal) {
-    const canvas = document.getElementById('fallback-qr-canvas');
-    if(!canvas) return;
-    const ctx = canvas.getContext('2d');
-    
-    // Draw white background
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, 240, 240);
-    
-    // Draw border
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(5, 5, 230, 230);
-    
-    // Draw QR-like pattern (simplified but scannable enough for demo)
-    ctx.fillStyle = '#000000';
-    
-    // Position markers (3 corners like real QR)
-    // Top-left
-    ctx.fillRect(10, 10, 40, 40);
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(15, 15, 30, 30);
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(20, 20, 20, 20);
-    
-    // Top-right
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(190, 10, 40, 40);
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(195, 15, 30, 30);
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(200, 20, 20, 20);
-    
-    // Bottom-left
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(10, 190, 40, 40);
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(15, 195, 30, 30);
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(20, 200, 20, 20);
-    
-    // Text info
-    ctx.fillStyle = '#000000';
-    ctx.font = 'bold 12px Arial';
-    ctx.fillText(merchantName.substring(0, 20), 60, 120);
-    ctx.font = '10px Arial';
-    ctx.fillText(nmid, 60, 140);
-    if(nominal > 0) {
-        ctx.fillStyle = '#FF0077';
-        ctx.font = 'bold 12px Arial';
-        ctx.fillText(`Rp ${(nominal/1000).toFixed(0)}K`, 60, 165);
-    }
-    
-    // Add note
-    ctx.fillStyle = '#999999';
-    ctx.font = '9px Arial';
-    ctx.fillText("Scan dengan e-wallet", 60, 190);
 }
 
 async function submitDeposit() {
@@ -623,10 +459,10 @@ async function submitDeposit() {
         if (error) throw error;
         playSnd('success');
         showNeonAlert("✅ DEPOSIT TERKIRIM — MENUNGGU KONFIRMASI ADMIN", true);
-        showModal("BERHASIL", "Permintaan deposit terkirim!\n\n✅ Silakan scan QRIS di atas\n✅ Lakukan pembayaran sesuai nominal\n✅ Klik OK, saldo akan masuk setelah admin konfirmasi");
+        showModal("BERHASIL", "✅ Permintaan deposit terkirim!\n\n📱 Scan QR Code di atas\n💰 Bayar Rp " + amount.toLocaleString('id-ID') + "\n✅ Klik OK setelah transfer\n\nSaldo akan masuk setelah admin konfirmasi.");
         document.getElementById('amount-val').value = "";
         calculate();
-        updateQRISWithNominal();
+        updateDisplayNominal(0);
         await loadHistory();
         await updateUserSaldo();
     } catch(err) { playSnd('error'); showModal("ERROR", "Gagal mengirim deposit:\n" + err.message); }
@@ -677,8 +513,7 @@ window.onload = () => {
     updateUserSaldo();
     if (refreshInterval) clearInterval(refreshInterval);
     refreshInterval = setInterval(() => { loadHistory(); updateUserSaldo(); }, 10000);
-    // Generate QR Code awal (statis)
-    setTimeout(() => generateScannableQRCode(0), 500);
+    updateDisplayNominal(0);
 };
 </script>
 </body>
