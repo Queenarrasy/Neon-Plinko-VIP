@@ -9,619 +9,149 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     <style>
-        :root {
-            --pink: #ff0077;
-            --blue: #0022ff;
-            --yellow: #fbff00;
-            --bg: #000005;
-            --gp: 0 0 8px rgba(255,0,119,.5), 0 0 20px rgba(255,0,119,.2);
-            --gy: 0 0 8px rgba(251,255,0,.5), 0 0 20px rgba(251,255,0,.2);
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background: var(--bg);
-            font-family: 'Outfit', sans-serif;
-            color: #fff;
-            overflow-x: hidden;
-            min-height: 100vh;
-        }
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at 50% 20%, #0a0015 0%, #000 100%);
-            z-index: -2;
-        }
-        #particles-js {
-            position: fixed;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            pointer-events: none;
-        }
-        .header {
-            padding: 0 18px;
-            height: 62px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1.5px solid var(--blue);
-            background: rgba(0, 0, 18, .98);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            backdrop-filter: blur(20px);
-            box-shadow: 0 0 15px rgba(0, 34, 255, .2);
-        }
-        .header h1 {
-            font-size: 15px;
-            font-weight: 900;
-            letter-spacing: 2px;
-            color: var(--pink);
-            text-shadow: 0 0 8px rgba(255, 0, 119, .5);
-            text-transform: uppercase;
-        }
-        .header-saldo {
-            background: rgba(0, 0, 0, .7);
-            border: 1.5px solid var(--yellow);
-            padding: 5px 12px;
-            border-radius: 50px;
-            font-size: 10px;
-            font-weight: 900;
-            color: var(--yellow);
-        }
-        .container {
-            padding: 16px;
-            max-width: 500px;
-            margin: 0 auto;
-            position: relative;
-            z-index: 10;
-            padding-bottom: 90px;
-        }
-        .back-button {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(0, 0, 35, .8);
-            border: 1px solid var(--blue);
-            border-radius: 30px;
-            padding: 8px 16px;
-            margin-bottom: 16px;
-            cursor: pointer;
-            transition: .3s;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--yellow);
-        }
-        .back-button:hover { background: rgba(0, 34, 255, .3); transform: translateX(-3px); }
-        .banner-section {
-            margin-bottom: 18px;
-            border-radius: 22px;
-            overflow: hidden;
-            border: 2px solid rgba(255, 0, 119, .4);
-            box-shadow: 0 0 30px rgba(255, 0, 119, .2), 0 0 60px rgba(251, 255, 0, .1);
-            background: #000;
-            position: relative;
-        }
-        .banner-img-wrap {
-            position: relative;
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: linear-gradient(135deg, #0a0015, #1a0030);
-            padding: 10px 0;
-        }
-        .banner-img-wrap img {
-            width: 70px;
-            height: auto;
-            display: block;
-            object-fit: contain;
-            filter: drop-shadow(0 0 8px var(--yellow));
-        }
-        .banner-img-wrap .left-logo { margin-left: 10px; }
-        .banner-img-wrap .right-logo { margin-right: 10px; }
-        .banner-prize-overlay {
-            flex: 1;
-            text-align: center;
-            padding: 12px 14px;
-        }
-        .banner-event-title {
-            font-size: 11px;
-            font-weight: 900;
-            color: var(--yellow);
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            text-shadow: 0 0 8px rgba(251, 255, 0, .6);
-            margin-bottom: 4px;
-        }
-        .banner-podium-row {
-            display: flex;
-            justify-content: center;
-            align-items: flex-end;
-            gap: 8px;
-        }
-        .podium-prize {
-            text-align: center;
-            padding: 6px 10px;
-            border-radius: 12px;
-            backdrop-filter: blur(4px);
-        }
-        .podium-prize.gold {
-            background: rgba(251, 200, 0, .2);
-            border: 1.5px solid rgba(251, 200, 0, .5);
-            order: 2;
-            transform: translateY(-4px);
-        }
-        .podium-prize.silver {
-            background: rgba(180, 180, 180, .15);
-            border: 1.5px solid rgba(180, 180, 180, .4);
-            order: 1;
-        }
-        .podium-prize.bronze {
-            background: rgba(200, 100, 30, .15);
-            border: 1.5px solid rgba(200, 100, 30, .4);
-            order: 3;
-        }
-        .podium-prize .rank {
-            font-size: 9px;
-            font-weight: 900;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            opacity: .8;
-        }
-        .podium-prize.gold .rank { color: #ffc800; }
-        .podium-prize.silver .rank { color: #ccc; }
-        .podium-prize.bronze .rank { color: #cd7c3a; }
-        .podium-prize .amount {
-            font-size: 15px;
-            font-weight: 900;
-            color: #fff;
-            text-shadow: 0 0 8px rgba(255, 255, 255, .4);
-        }
-        .podium-prize.gold .amount {
-            font-size: 18px;
-            color: #ffc800;
-            text-shadow: 0 0 10px rgba(251, 200, 0, .6);
-        }
-        .usdt-icon { font-size: 14px; margin-right: 4px; }
-        .banner-rules {
-            background: rgba(0, 0, 15, .9);
-            padding: 14px 16px;
-            border-top: 1px solid rgba(251, 255, 0, .15);
-        }
-        .rules-title {
-            font-size: 10px;
-            font-weight: 900;
-            color: var(--yellow);
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            margin-bottom: 9px;
-        }
-        .rules-list {
-            list-style: none;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-        .rules-list li {
-            font-size: 11px;
-            color: rgba(255, 255, 255, .75);
-            line-height: 1.5;
-            display: flex;
-            gap: 8px;
-            align-items: flex-start;
-        }
-        .rules-list li::before {
-            content: '▸';
-            color: var(--pink);
-            flex-shrink: 0;
-            margin-top: 1px;
-        }
-        .stats-row {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 16px;
-        }
-        .stat-card {
-            background: rgba(0, 0, 35, .75);
-            border: 1px solid rgba(0, 34, 255, .35);
-            border-radius: 16px;
-            padding: 12px 8px;
-            text-align: center;
-            backdrop-filter: blur(10px);
-        }
-        .stat-card small {
-            display: block;
-            font-size: 9px;
-            color: var(--yellow);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 6px;
-            font-weight: 900;
-        }
-        .stat-card span {
-            font-weight: 900;
-            color: #fff;
-            font-size: 1.2rem;
-        }
-        .stat-card .stat-sub {
-            font-size: 9px;
-            color: rgba(255, 255, 255, .4);
-            margin-top: 4px;
-        }
-        .card {
-            background: rgba(0, 0, 35, .75);
-            border: 1px solid rgba(0, 34, 255, .35);
-            border-radius: 20px;
-            padding: 18px;
-            margin-bottom: 16px;
-            backdrop-filter: blur(10px);
-        }
-        .bonus-available {
-            background: rgba(255, 0, 119, .07);
-            border: 1px solid rgba(255, 0, 119, .25);
-            border-radius: 12px;
-            padding: 10px 14px;
-            margin-bottom: 14px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .bonus-label {
-            font-size: 10px;
-            color: rgba(255, 255, 255, .6);
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: .5px;
-        }
-        .bonus-amount {
-            font-size: 15px;
-            font-weight: 900;
-            color: var(--pink);
-            text-shadow: 0 0 8px rgba(255, 0, 119, .4);
-        }
-        .btn-main {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 50px;
-            color: #fff;
-            font-weight: 900;
-            font-size: 13px;
-            cursor: pointer;
-            text-transform: uppercase;
-            transition: .3s;
-            letter-spacing: 1px;
-            font-family: 'Outfit', sans-serif;
-        }
-        .btn-pink {
-            background: linear-gradient(90deg, var(--pink), #b400dc);
-            box-shadow: 0 0 10px rgba(255, 0, 119, .25);
-        }
-        .btn-yellow {
-            background: linear-gradient(90deg, #b8a000, var(--yellow));
-            box-shadow: 0 0 10px rgba(251, 255, 0, .2);
-            color: #000;
-        }
-        .btn-blue {
-            background: linear-gradient(90deg, var(--blue), #0044ff);
-            box-shadow: 0 0 10px rgba(0, 34, 255, .25);
-        }
-        .btn-main:active { transform: scale(.96); }
-        .btn-main:disabled { opacity: .3; filter: grayscale(1); cursor: not-allowed; }
-        .claim-info {
-            font-size: 10px;
-            color: rgba(255, 255, 255, .45);
-            text-align: center;
-            margin-top: 8px;
-            line-height: 1.5;
-        }
-        .claim-info b { color: var(--yellow); }
-        .inbox-empty {
-            text-align: center;
-            padding: 24px;
-            font-size: 12px;
-            color: rgba(255, 255, 255, .35);
-            font-weight: 700;
-        }
-        .inbox-item {
-            background: rgba(255, 0, 119, .06);
-            border: 1.5px solid rgba(255, 0, 119, .25);
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 10px;
-        }
-        .inbox-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-        .inbox-from {
-            font-size: 10px;
-            font-weight: 900;
-            color: var(--yellow);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .inbox-date {
-            font-size: 9px;
-            color: rgba(255, 255, 255, .35);
-        }
-        .inbox-msg {
-            font-size: 12px;
-            color: #ddd;
-            line-height: 1.6;
-            margin-bottom: 10px;
-        }
-        .inbox-reward-amount {
-            font-size: 18px;
-            font-weight: 900;
-            color: var(--pink);
-            text-shadow: 0 0 8px rgba(255, 0, 119, .4);
-            margin-bottom: 10px;
-        }
-        .btn-claim-inbox {
-            padding: 10px 22px;
-            border: none;
-            border-radius: 50px;
-            background: linear-gradient(90deg, var(--pink), #b400dc);
-            color: #fff;
-            font-weight: 900;
-            font-size: 11px;
-            cursor: pointer;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            box-shadow: 0 0 10px rgba(255, 0, 119, .3);
-            transition: .2s;
-            font-family: 'Outfit', sans-serif;
-        }
-        .btn-claim-inbox:active { transform: scale(.96); }
-        .btn-claim-inbox:disabled { opacity: .4; filter: grayscale(1); cursor: not-allowed; }
-        .ref-code-card {
-            background: rgba(0, 0, 35, .75);
-            border: 1px solid rgba(251, 255, 0, .3);
-            border-radius: 20px;
-            padding: 18px;
-            margin-bottom: 16px;
-            text-align: center;
-            backdrop-filter: blur(10px);
-        }
-        .ref-code-title {
-            font-size: 10px;
-            font-weight: 900;
-            color: var(--yellow);
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            margin-bottom: 12px;
-        }
-        .ref-code-display {
-            background: rgba(0, 0, 0, .7);
-            border: 2px dashed rgba(251, 255, 0, .4);
-            border-radius: 14px;
-            padding: 14px;
-            margin-bottom: 12px;
-            cursor: pointer;
-            transition: .2s;
-        }
-        .ref-code-display:active { transform: scale(.98); }
-        #ref-code {
-            font-size: 1.4rem;
-            font-weight: 900;
-            color: var(--yellow);
-            letter-spacing: 5px;
-            text-shadow: 0 0 8px rgba(251, 255, 0, .5);
-        }
-        .ref-code-hint {
-            font-size: 9px;
-            color: rgba(255, 255, 255, .35);
-            margin-top: 5px;
-            letter-spacing: .5px;
-        }
-        .ref-link-box {
-            background: rgba(0, 0, 0, .5);
-            border: 1px solid rgba(0, 34, 255, .3);
-            border-radius: 12px;
-            padding: 10px 14px;
-            margin-bottom: 12px;
-            cursor: pointer;
-            transition: .2s;
-            word-break: break-all;
-        }
-        .ref-link-box:active { background: rgba(0, 34, 255, .1); }
-        .ref-link-label {
-            font-size: 9px;
-            color: rgba(255, 255, 255, .4);
-            font-weight: 900;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            margin-bottom: 4px;
-        }
-        #ref-link {
-            font-size: 10px;
-            color: var(--blue);
-            font-weight: 700;
-            word-break: break-all;
-            text-shadow: 0 0 6px rgba(0, 34, 255, .4);
-        }
-        .ref-share-btns {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-        }
-        .hist-wrap {
-            background: rgba(0, 0, 35, .7);
-            border: 1px solid rgba(0, 34, 255, .25);
-            border-radius: 18px;
-            overflow: hidden;
-            margin-bottom: 18px;
-        }
-        .hist-scroll {
-            max-height: 240px;
-            overflow-y: auto;
-        }
-        .hist-scroll::-webkit-scrollbar { width: 3px; }
-        .hist-scroll::-webkit-scrollbar-track { background: #000; }
-        .hist-scroll::-webkit-scrollbar-thumb { background: var(--yellow); border-radius: 2px; }
-        table.ht {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 300px;
-        }
-        table.ht thead tr { background: rgba(0, 0, 15, .95); }
-        table.ht th {
-            padding: 10px 12px;
-            font-size: 8px;
-            font-weight: 900;
-            color: var(--pink);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            border-bottom: 1px solid rgba(255, 0, 119, .2);
-            text-align: left;
-            position: sticky;
-            top: 0;
-            z-index: 5;
-            white-space: nowrap;
-        }
-        table.ht td {
-            padding: 10px 12px;
-            font-size: 11px;
-            border-bottom: 1px solid rgba(0, 34, 255, .08);
-            font-weight: 700;
-            white-space: nowrap;
-        }
-        .badge-valid {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 3px 9px;
-            border-radius: 20px;
-            font-size: 9px;
-            font-weight: 900;
-            text-transform: uppercase;
-        }
-        .badge-active {
-            background: rgba(255, 0, 119, .1);
-            border: 1px solid rgba(255, 0, 119, .3);
-            color: var(--pink);
-        }
-        .badge-pending {
-            background: rgba(251, 255, 0, .08);
-            border: 1px solid rgba(251, 255, 0, .25);
-            color: var(--yellow);
-        }
-        #modal-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, .95);
-            z-index: 9999;
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(10px);
-        }
-        .modal {
-            background: rgba(0, 0, 15, .99);
-            border: 2px solid var(--pink);
-            border-top: 3px solid var(--yellow);
-            border-radius: 22px;
-            padding: 28px;
-            width: 88%;
-            max-width: 320px;
-            text-align: center;
-            box-shadow: 0 0 30px rgba(255, 0, 119, .35), 0 0 60px rgba(0, 34, 255, .2);
-            animation: zoomIn .3s ease;
-        }
-        @keyframes zoomIn {
-            from { transform: scale(.8); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-        #m-title {
-            font-size: 17px;
-            font-weight: 900;
-            color: var(--pink);
-            margin-bottom: 13px;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-        }
-        #m-msg {
-            font-size: 13px;
-            color: #ddd;
-            line-height: 1.7;
-            margin-bottom: 5px;
-            white-space: pre-line;
-        }
-        #neon-alert {
-            position: fixed;
-            top: -120px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 88%;
-            max-width: 340px;
-            background: rgba(0, 0, 15, .98);
-            border: 2px solid var(--pink);
-            border-top: 3px solid var(--yellow);
-            color: #fff;
-            padding: 14px 20px;
-            border-radius: 16px;
-            text-align: center;
-            font-weight: 900;
-            z-index: 9000;
-            font-size: 13px;
-            transition: .5s cubic-bezier(.175, .885, .32, 1.275);
-            box-shadow: 0 0 25px rgba(255, 0, 119, .45);
-        }
-        #neon-alert.show { top: 15px; }
-        .nav-bar {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            height: 72px;
-            background: rgba(0, 0, 15, .99);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border-top: 1.5px solid var(--blue);
-            backdrop-filter: blur(20px);
-            z-index: 1000;
-            box-shadow: 0 -4px 16px rgba(0, 34, 255, .2);
-        }
-        .nav-item {
-            color: var(--yellow);
-            text-decoration: none;
-            text-align: center;
-            font-size: 9px;
-            font-weight: 900;
-            letter-spacing: .5px;
-            text-transform: uppercase;
-            text-shadow: 0 0 8px rgba(251, 255, 0, .5);
-        }
-        .nav-item i {
-            font-size: 20px;
-            display: block;
-            margin-bottom: 3px;
-        }
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: var(--yellow);
-        }
-        .section-title {
-            font-size: 12px;
-            font-weight: 900;
-            color: var(--pink);
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            margin-bottom: 14px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        :root{--pink:#ff0077;--blue:#0022ff;--yellow:#fbff00;--bg:#000005;}
+        *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+        body{background:var(--bg);color:#fff;font-family:'Outfit',sans-serif;min-height:100vh;padding-bottom:90px;}
+        #particles-js{position:fixed;width:100%;height:100%;z-index:0;pointer-events:none;background:radial-gradient(circle at 50% 20%,#0a0015 0%,#000 100%);}
+
+        /* ── ALERT ── */
+        #neon-alert{position:fixed;top:-120px;left:50%;transform:translateX(-50%);width:88%;max-width:340px;background:rgba(0,0,15,.97);border:1.5px solid var(--pink);border-top:2px solid var(--yellow);color:#fff;padding:12px 18px;border-radius:14px;text-align:center;font-weight:900;z-index:9000;font-size:13px;transition:.5s cubic-bezier(.175,.885,.32,1.275);box-shadow:0 0 18px rgba(255,0,119,.35);}
+        #neon-alert.show{top:15px;}
+
+        /* ── HEADER ── */
+        .header{height:62px;padding:0 18px;display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,18,.98);border-bottom:1.5px solid var(--pink);position:sticky;top:0;z-index:100;backdrop-filter:blur(20px);box-shadow:0 0 15px rgba(255,0,119,.15);}
+        .logo{font-size:14px;font-weight:900;color:var(--pink);text-shadow:0 0 8px rgba(255,0,119,.5);letter-spacing:1px;text-transform:uppercase;}
+        .saldo-badge{background:rgba(0,0,0,.7);border:1.5px solid var(--yellow);padding:5px 13px;border-radius:50px;font-size:11px;font-weight:900;color:var(--yellow);}
+
+        .container{padding:18px;max-width:500px;margin:auto;position:relative;z-index:10;}
+
+        /* ── BANNER ── */
+        .banner-section{margin-bottom:18px;border-radius:22px;overflow:hidden;border:2px solid rgba(255,0,119,.4);box-shadow:0 0 30px rgba(255,0,119,.2),0 0 60px rgba(251,255,0,.08);background:#000;}
+        .banner-img-wrap{display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#0a0015,#1a0030);padding:12px 0;}
+        .banner-prize-overlay{flex:1;text-align:center;padding:12px 14px;}
+        .banner-event-title{font-size:10px;font-weight:900;color:var(--yellow);letter-spacing:2px;text-transform:uppercase;text-shadow:0 0 8px rgba(251,255,0,.6);margin-bottom:8px;}
+        .banner-podium-row{display:flex;justify-content:center;align-items:flex-end;gap:8px;}
+        .podium-prize{text-align:center;padding:6px 10px;border-radius:12px;backdrop-filter:blur(4px);}
+        .podium-prize.gold{background:rgba(251,200,0,.2);border:1.5px solid rgba(251,200,0,.5);order:2;transform:translateY(-4px);}
+        .podium-prize.silver{background:rgba(180,180,180,.15);border:1.5px solid rgba(180,180,180,.4);order:1;}
+        .podium-prize.bronze{background:rgba(200,100,30,.15);border:1.5px solid rgba(200,100,30,.4);order:3;}
+        .podium-prize .rank{font-size:8px;font-weight:900;letter-spacing:1px;text-transform:uppercase;opacity:.8;}
+        .podium-prize.gold .rank{color:#ffc800;} .podium-prize.silver .rank{color:#ccc;} .podium-prize.bronze .rank{color:#cd7c3a;}
+        .podium-prize .amount{font-size:14px;font-weight:900;color:#fff;}
+        .podium-prize.gold .amount{font-size:17px;color:#ffc800;text-shadow:0 0 10px rgba(251,200,0,.6);}
+        .banner-rules{background:rgba(0,0,15,.9);padding:12px 16px;border-top:1px solid rgba(251,255,0,.15);}
+        .rules-title{font-size:9px;font-weight:900;color:var(--yellow);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;}
+        .rules-list{list-style:none;display:flex;flex-direction:column;gap:5px;}
+        .rules-list li{font-size:10px;color:rgba(255,255,255,.7);line-height:1.5;display:flex;gap:8px;align-items:flex-start;}
+        .rules-list li::before{content:'▸';color:var(--pink);flex-shrink:0;margin-top:1px;}
+
+        /* ── STATS ── */
+        .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+        .stat-card{background:rgba(0,0,35,.75);border:1px solid rgba(0,34,255,.35);border-radius:16px;padding:12px 8px;text-align:center;backdrop-filter:blur(10px);}
+        .stat-card small{display:block;font-size:8px;color:var(--yellow);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;font-weight:900;}
+        .stat-card span{font-weight:900;color:#fff;font-size:1.2rem;}
+        .stat-card .stat-sub{font-size:9px;color:rgba(255,255,255,.4);margin-top:4px;}
+
+        /* ── REF CODE CARD ── */
+        .ref-code-card{background:rgba(0,0,35,.75);border:1.5px solid rgba(251,255,0,.3);border-radius:20px;padding:18px;margin-bottom:16px;text-align:center;backdrop-filter:blur(10px);box-shadow:0 0 15px rgba(251,255,0,.08);}
+        .ref-code-title{font-size:10px;font-weight:900;color:var(--yellow);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;text-shadow:0 0 6px rgba(251,255,0,.4);}
+        .ref-code-display{background:rgba(0,0,0,.7);border:2px dashed rgba(251,255,0,.5);border-radius:14px;padding:16px;margin-bottom:10px;cursor:pointer;transition:.2s;}
+        .ref-code-display:active{transform:scale(.98);}
+        #ref-code{font-size:1.6rem;font-weight:900;color:var(--yellow);letter-spacing:6px;text-shadow:0 0 12px rgba(251,255,0,.6);min-height:2rem;display:flex;align-items:center;justify-content:center;}
+        .ref-code-hint{font-size:9px;color:rgba(255,255,255,.35);margin-bottom:10px;letter-spacing:.5px;}
+        .ref-link-box{background:rgba(0,0,0,.5);border:1px solid rgba(0,34,255,.4);border-radius:12px;padding:10px 14px;margin-bottom:12px;cursor:pointer;transition:.2s;word-break:break-all;}
+        .ref-link-box:active{background:rgba(0,34,255,.1);}
+        .ref-link-label{font-size:9px;color:rgba(255,255,255,.4);font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
+        #ref-link{font-size:10px;color:#5599ff;font-weight:700;word-break:break-all;text-shadow:0 0 6px rgba(0,34,255,.4);}
+        .ref-share-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+
+        /* ── CARD ── */
+        .card{background:rgba(0,0,35,.75);border:1px solid rgba(0,34,255,.35);border-radius:20px;padding:18px;margin-bottom:16px;backdrop-filter:blur(10px);}
+        .section-title{font-size:12px;font-weight:900;color:var(--pink);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px;display:flex;align-items:center;gap:8px;text-shadow:0 0 6px rgba(255,0,119,.4);}
+
+        /* ── BONUS ── */
+        .bonus-available{background:rgba(255,0,119,.07);border:1px solid rgba(255,0,119,.3);border-radius:12px;padding:10px 14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;}
+        .bonus-label{font-size:10px;color:rgba(255,255,255,.6);font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+        .bonus-amount{font-size:15px;font-weight:900;color:var(--pink);text-shadow:0 0 8px rgba(255,0,119,.4);}
+        .claim-info{font-size:10px;color:rgba(255,255,255,.4);text-align:center;margin-top:8px;line-height:1.5;}
+        .claim-info b{color:var(--yellow);}
+
+        /* ── BUTTONS ── */
+        .btn-main{width:100%;padding:14px;border:none;border-radius:50px;color:#fff;font-weight:900;font-size:13px;cursor:pointer;text-transform:uppercase;transition:.3s;letter-spacing:1px;font-family:'Outfit',sans-serif;}
+        .btn-pink{background:linear-gradient(90deg,var(--pink),#b400dc);box-shadow:0 0 12px rgba(255,0,119,.3);}
+        .btn-yellow{background:linear-gradient(90deg,#b8a000,var(--yellow));box-shadow:0 0 10px rgba(251,255,0,.2);color:#000;}
+        .btn-blue{background:linear-gradient(90deg,var(--blue),#0044ff);box-shadow:0 0 10px rgba(0,34,255,.25);}
+        .btn-main:active{transform:scale(.96);}
+        .btn-main:disabled{opacity:.3;filter:grayscale(1);cursor:not-allowed;}
+
+        /* ── INBOX ── */
+        .inbox-empty{text-align:center;padding:24px;font-size:12px;color:rgba(255,255,255,.35);font-weight:700;}
+        .inbox-item{background:rgba(255,0,119,.06);border:1.5px solid rgba(255,0,119,.25);border-radius:16px;padding:14px;margin-bottom:10px;}
+        .inbox-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+        .inbox-from{font-size:10px;font-weight:900;color:var(--yellow);text-transform:uppercase;letter-spacing:1px;}
+        .inbox-date{font-size:9px;color:rgba(255,255,255,.35);}
+        .inbox-msg{font-size:11px;color:#ddd;line-height:1.6;margin-bottom:10px;}
+        .inbox-reward-amount{font-size:16px;font-weight:900;color:var(--pink);text-shadow:0 0 8px rgba(255,0,119,.4);margin-bottom:10px;}
+        .btn-claim-inbox{padding:10px 22px;border:none;border-radius:50px;background:linear-gradient(90deg,var(--pink),#b400dc);color:#fff;font-weight:900;font-size:11px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;box-shadow:0 0 10px rgba(255,0,119,.3);transition:.2s;font-family:'Outfit',sans-serif;}
+        .btn-claim-inbox:active{transform:scale(.96);}
+        .btn-claim-inbox:disabled{opacity:.4;filter:grayscale(1);cursor:not-allowed;}
+
+        /* ── RIWAYAT UNDANGAN TABLE (sama persis deposit.html) ── */
+        .hist-section-title{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:900;color:var(--yellow);margin:4px 0 10px;text-shadow:0 0 8px rgba(251,255,0,.5);letter-spacing:1px;text-transform:uppercase;}
+        .hist-outer{background:rgba(0,0,25,.85);border:1.5px solid rgba(0,34,255,.5);border-radius:18px;overflow:hidden;box-shadow:0 0 18px rgba(0,34,255,.15),inset 0 0 30px rgba(0,0,50,.4);}
+        .hist-scroll-body{max-height:212px;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:rgba(0,34,255,.5) transparent;}
+        .hist-scroll-body::-webkit-scrollbar{width:3px;}
+        .hist-scroll-body::-webkit-scrollbar-track{background:transparent;}
+        .hist-scroll-body::-webkit-scrollbar-thumb{background:rgba(0,34,255,.5);border-radius:4px;}
+
+        table.ht{width:100%;border-collapse:collapse;table-layout:fixed;}
+        table.ht col.c-time   {width:28%;}
+        table.ht col.c-user   {width:28%;}
+        table.ht col.c-status {width:22%;}
+        table.ht col.c-bonus  {width:22%;}
+
+        table.ht thead tr{background:linear-gradient(90deg,rgba(255,0,119,.18),rgba(0,34,255,.25),rgba(251,255,0,.1));border-bottom:1.5px solid rgba(255,0,119,.4);}
+        table.ht th{padding:9px 6px;font-size:8px;font-weight:900;letter-spacing:.8px;text-transform:uppercase;text-align:center;}
+        table.ht th:nth-child(1){color:var(--yellow);text-shadow:0 0 6px rgba(251,255,0,.6);}
+        table.ht th:nth-child(2){color:#00cfff;text-shadow:0 0 6px rgba(0,207,255,.6);}
+        table.ht th:nth-child(3){color:var(--pink);text-shadow:0 0 6px rgba(255,0,119,.6);}
+        table.ht th:nth-child(4){color:#b8ff00;text-shadow:0 0 6px rgba(184,255,0,.5);}
+
+        table.ht tbody tr{border-bottom:1px solid rgba(0,34,255,.12);transition:background .2s;}
+        table.ht tbody tr:last-child{border-bottom:none;}
+        table.ht tbody tr:hover{background:rgba(0,34,255,.08);}
+        table.ht td{padding:0;text-align:center;vertical-align:middle;}
+
+        .td-time{padding:8px 5px;display:flex;flex-direction:column;align-items:center;gap:1px;}
+        .td-time .t-date{font-size:9px;font-weight:900;color:var(--yellow);text-shadow:0 0 5px rgba(251,255,0,.5);letter-spacing:.3px;}
+        .td-time .t-hour{font-size:9px;font-weight:900;color:rgba(255,255,255,.6);}
+
+        .td-user{padding:8px 5px;display:flex;flex-direction:column;align-items:center;gap:1px;}
+        .td-user .u-name{font-size:10px;font-weight:900;color:#fff;text-shadow:0 0 4px rgba(0,207,255,.3);word-break:break-all;max-width:100%;overflow:hidden;text-overflow:ellipsis;}
+        .td-user .u-sub{font-size:7px;color:rgba(255,255,255,.4);}
+
+        .td-bonus{padding:8px 5px;display:flex;flex-direction:column;align-items:center;gap:1px;}
+        .td-bonus .b-val{font-size:10px;font-weight:900;color:#b8ff00;text-shadow:0 0 5px rgba(184,255,0,.4);}
+        .td-bonus .b-cur{font-size:7px;color:rgba(255,255,255,.4);}
+
+        .badge-status{display:inline-flex;align-items:center;justify-content:center;gap:3px;padding:4px 6px;border-radius:20px;font-size:7px;font-weight:900;letter-spacing:.3px;white-space:nowrap;}
+        .badge-aktif{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.45);color:#00ff88;box-shadow:0 0 6px rgba(0,255,136,.2);}
+        .badge-pending{background:rgba(251,255,0,.1);border:1px solid rgba(251,255,0,.4);color:var(--yellow);box-shadow:0 0 6px rgba(251,255,0,.15);}
+        .td-status{padding:8px 4px;}
+        .h-empty{text-align:center;padding:28px 12px;opacity:.4;font-size:11px;color:#fff;}
+
+        /* ── MODAL ── */
+        #modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(10px);}
+        .modal-box{width:88%;max-width:320px;background:rgba(0,0,15,.99);border:1.5px solid var(--pink);border-top:2px solid var(--yellow);border-radius:22px;padding:26px;text-align:center;box-shadow:0 0 20px rgba(255,0,119,.25);animation:zoomIn .3s ease;}
+        @keyframes zoomIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+        #m-title{font-size:16px;font-weight:900;color:var(--pink);text-shadow:0 0 8px rgba(255,0,119,.5);margin-bottom:11px;text-transform:uppercase;letter-spacing:1px;}
+        #m-msg{font-size:13px;color:#ccc;line-height:1.6;white-space:pre-line;}
+
+        /* ── NAV ── */
+        .nav-bar{position:fixed;bottom:0;left:0;width:100%;height:72px;background:rgba(0,0,15,.99);display:flex;justify-content:space-around;align-items:center;border-top:1.5px solid var(--blue);backdrop-filter:blur(20px);z-index:1000;box-shadow:0 -4px 16px rgba(0,34,255,.2);}
+        .nav-item{color:rgba(255,255,255,.3);text-decoration:none;text-align:center;font-size:9px;font-weight:900;flex:1;letter-spacing:.5px;text-transform:uppercase;}
+        .nav-item.active{color:var(--yellow);text-shadow:0 0 8px rgba(251,255,0,.5);}
+        .nav-item i{font-size:20px;display:block;margin-bottom:3px;}
     </style>
 </head>
 <body>
@@ -629,40 +159,29 @@
 <div id="particles-js"></div>
 
 <div class="header">
-    <h1><i class="fas fa-gift"></i> REWARD</h1>
-    <div class="header-saldo"><i class="fas fa-wallet"></i>&nbsp;<span id="display-saldo">IDR 0</span></div>
+    <a href="game.html" style="color:rgba(255,255,255,.6);font-size:20px;"><i class="fa-solid fa-chevron-left"></i></a>
+    <div class="logo"><i class="fas fa-gift"></i> REWARD CENTER</div>
+    <div class="saldo-badge"><i class="fas fa-wallet"></i> <span id="display-saldo">IDR 0</span></div>
 </div>
 
 <div class="container">
-    <div class="back-button" onclick="window.history.back()">
-        <i class="fas fa-arrow-left"></i> Kembali
-    </div>
 
-    <!-- Banner Podium (tetap) -->
+    <!-- Banner Podium -->
     <div class="banner-section">
         <div class="banner-img-wrap">
-            <div class="left-logo">
-                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23fbff00'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z'/%3E%3C/svg%3E" alt="USDT" style="width: 40px; filter: drop-shadow(0 0 4px var(--yellow));">
+            <div style="margin-left:10px;">
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23fbff00'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z'/%3E%3C/svg%3E" style="width:38px;filter:drop-shadow(0 0 6px var(--yellow));" alt="vip">
             </div>
             <div class="banner-prize-overlay">
                 <div class="banner-event-title"><i class="fab fa-bitcoin"></i> TOP REFERRAL MONTHLY <i class="fab fa-ethereum"></i></div>
                 <div class="banner-podium-row">
-                    <div class="podium-prize silver">
-                        <div class="rank">2ND PLACE</div>
-                        <div class="amount"><i class="fas fa-dollar-sign usdt-icon"></i> 50 USDT</div>
-                    </div>
-                    <div class="podium-prize gold">
-                        <div class="rank">1ST PLACE</div>
-                        <div class="amount"><i class="fas fa-dollar-sign usdt-icon"></i> 100 USDT</div>
-                    </div>
-                    <div class="podium-prize bronze">
-                        <div class="rank">3RD PLACE</div>
-                        <div class="amount"><i class="fas fa-dollar-sign usdt-icon"></i> 25 USDT</div>
-                    </div>
+                    <div class="podium-prize silver"><div class="rank">2ND</div><div class="amount"><i class="fas fa-dollar-sign" style="font-size:12px;margin-right:2px;"></i>50 USDT</div></div>
+                    <div class="podium-prize gold"><div class="rank">🏆 1ST</div><div class="amount"><i class="fas fa-dollar-sign" style="font-size:12px;margin-right:2px;"></i>100 USDT</div></div>
+                    <div class="podium-prize bronze"><div class="rank">3RD</div><div class="amount"><i class="fas fa-dollar-sign" style="font-size:12px;margin-right:2px;"></i>25 USDT</div></div>
                 </div>
             </div>
-            <div class="right-logo">
-                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23fbff00'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z'/%3E%3C/svg%3E" alt="USDT" style="width: 40px; filter: drop-shadow(0 0 4px var(--yellow));">
+            <div style="margin-right:10px;">
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23fbff00'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z'/%3E%3C/svg%3E" style="width:38px;filter:drop-shadow(0 0 6px var(--yellow));" alt="vip">
             </div>
         </div>
         <div class="banner-rules">
@@ -671,23 +190,23 @@
                 <li>Bonus Rp5.000 per referral aktif (deposit pertama min Rp20.000)</li>
                 <li>Bonus masuk ke total komisi & bisa diklaim setiap hari Senin</li>
                 <li>Top 3 referral terbanyak tiap bulan dapat hadiah USDT tambahan</li>
-                <li>Pantau status referral Anda di tabel riwayat</li>
+                <li>Pantau status referral Anda di tabel riwayat undangan di bawah</li>
             </ul>
         </div>
     </div>
 
-    <!-- 3 Statistik -->
+    <!-- Statistik -->
     <div class="stats-row">
-        <div class="stat-card"><small><i class="fas fa-users"></i> TOTAL UNDANGAN</small><span id="total-ref">0</span></div>
-        <div class="stat-card"><small><i class="fas fa-user-check"></i> TOTAL AKTIF</small><span id="active-ref">0</span></div>
-        <div class="stat-card"><small><i class="fas fa-coins"></i> TOTAL KOMISI</small><span id="total-komisi">0</span><div class="stat-sub">IDR</div></div>
+        <div class="stat-card"><small><i class="fas fa-users"></i> TOTAL UNDANGAN</small><span id="total-ref">—</span></div>
+        <div class="stat-card"><small><i class="fas fa-user-check"></i> AKTIF</small><span id="active-ref">—</span></div>
+        <div class="stat-card"><small><i class="fas fa-coins"></i> TOTAL KOMISI</small><span id="total-komisi">—</span><div class="stat-sub">IDR</div></div>
     </div>
 
     <!-- Kode Referral -->
     <div class="ref-code-card">
         <div class="ref-code-title"><i class="fas fa-code"></i> KODE REFERRAL ANDA</div>
         <div class="ref-code-display" onclick="copyRefCode()">
-            <div id="ref-code">MEMUAT...</div>
+            <div id="ref-code"><i class="fas fa-spinner fa-spin" style="font-size:1rem;"></i></div>
         </div>
         <div class="ref-code-hint">✨ Klik untuk salin kode ✨</div>
         <div class="ref-link-box" onclick="copyRefLink()">
@@ -700,7 +219,7 @@
         </div>
     </div>
 
-    <!-- Bonus Mingguan -->
+    <!-- Bonus Tersedia -->
     <div class="card">
         <div class="bonus-available">
             <div class="bonus-label"><i class="fas fa-gift"></i> BONUS TERSEDIA</div>
@@ -709,309 +228,376 @@
         <button class="btn-main btn-pink" id="claim-btn" onclick="claimBonus()">
             <i class="fas fa-hand-holding-usd"></i> KLAIM BONUS SEKARANG
         </button>
-        <div class="claim-info"><i class="fas fa-info-circle"></i> Bonus akan masuk otomatis setiap <b>Senin</b> pukul 00:00</div>
+        <div class="claim-info"><i class="fas fa-info-circle"></i> Bonus dihitung otomatis dari referral aktif · Klaim setiap <b>Senin</b></div>
     </div>
 
-    <!-- Kotak Masuk (menggunakan tabel inbox) -->
+    <!-- Kotak Masuk -->
     <div class="card">
         <div class="section-title"><i class="fas fa-inbox"></i> KOTAK MASUK</div>
         <div id="inbox-container">
-            <div class="inbox-empty"><i class="fas fa-envelope-open-text" style="font-size: 24px; margin-bottom: 10px; display: block;"></i>Memuat pesan...</div>
+            <div class="inbox-empty"><i class="fas fa-envelope-open-text" style="font-size:24px;margin-bottom:10px;display:block;"></i>Memuat pesan...</div>
         </div>
     </div>
 
-    <!-- Riwayat Referral -->
-    <div class="hist-wrap">
-        <div class="hist-scroll">
-            <table class="ht">
-                <thead><tr><th>TANGGAL</th><th>USERNAME</th><th>STATUS</th><th>BONUS</th></tr></thead>
-                <tbody id="history-body"><tr class="empty-row"><td colspan="4">Memuat data referral...</td></tr></tbody>
+    <!-- Riwayat Undangan -->
+    <div class="hist-section-title">
+        <i class="fas fa-users"></i> RIWAYAT UNDANGAN
+        <span style="margin-left:auto;font-size:9px;cursor:pointer;color:var(--pink);opacity:.8;" onclick="loadReferralHistory()">
+            <i class="fas fa-rotate-right"></i> Refresh
+        </span>
+    </div>
+    <div class="hist-outer">
+        <table class="ht" style="table-layout:fixed;width:100%;">
+            <colgroup><col class="c-time"><col class="c-user"><col class="c-status"><col class="c-bonus"></colgroup>
+            <thead>
+                <tr>
+                    <th><i class="fas fa-clock" style="margin-right:3px;"></i>WAKTU</th>
+                    <th><i class="fas fa-user" style="margin-right:3px;"></i>USERNAME</th>
+                    <th><i class="fas fa-circle-dot" style="margin-right:3px;"></i>STATUS</th>
+                    <th><i class="fas fa-coins" style="margin-right:3px;"></i>KOMISI</th>
+                </tr>
+            </thead>
+        </table>
+        <div class="hist-scroll-body">
+            <table class="ht" style="table-layout:fixed;width:100%;">
+                <colgroup><col class="c-time"><col class="c-user"><col class="c-status"><col class="c-bonus"></colgroup>
+                <tbody id="history-body">
+                    <tr><td colspan="4"><div class="h-empty"><i class="fas fa-spinner fa-spin"></i><br>Memuat...</div></td></tr>
+                </tbody>
             </table>
         </div>
     </div>
 </div>
 
-<div class="nav-bar"><a href="#" class="nav-item"><i class="fas fa-gift"></i><span>Reward</span></a></div>
-<div id="modal-overlay"><div class="modal"><div id="m-title"><i class="fas fa-check-circle"></i> SUKSES!</div><div id="m-msg">Bonus berhasil diklaim!</div><button class="btn-main btn-pink" style="margin-top: 20px;" onclick="closeModal()">TUTUP</button></div></div>
+<!-- Modal -->
+<div id="modal-overlay">
+    <div class="modal-box">
+        <h3 id="m-title">NOTIFIKASI</h3>
+        <p id="m-msg"></p>
+        <button class="btn-main btn-pink" onclick="closeModal()" style="margin-top:18px;">MENGERTI</button>
+    </div>
+</div>
+
+<!-- Nav -->
+<div class="nav-bar">
+    <a href="game.html"    class="nav-item"><i class="fas fa-gamepad"></i>PLAY</a>
+    <a href="deposit.html" class="nav-item"><i class="fas fa-wallet"></i>DEPO</a>
+    <a href="withdraw.html"class="nav-item"><i class="fas fa-money-bill-transfer"></i>WD</a>
+    <a href="reward.html"  class="nav-item active"><i class="fas fa-gift"></i>REWARD</a>
+    <a href="profil.html"  class="nav-item"><i class="fas fa-user-shield"></i>PROFIL</a>
+</div>
 
 <script>
-    // ========== KONFIGURASI SUPABASE ==========
-    const SUPABASE_URL = 'https://jcxgankdwfwfnbwlkkpz.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjeGdhbmtkd2Z3Zm5id2xra3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNDU0MjMsImV4cCI6MjA5MDgyMTQyM30.qBNQNZxeHLfG7U-HZDSkYg1Y4awPKcJ7J2XjnkiJ6PI';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    
-    let currentUser = null;
-    let currentUsername = '';
-    let userData = {
-        id: null,
-        refCode: '',
-        refLink: '',
-        totalReferral: 0,
-        activeReferral: 0,
-        totalKomisi: 0,
-        bonusAvailable: 0,
-        saldo: 0
-    };
-    
-    // Helper UI
-    function showAlert(message, isSuccess = true) {
-        const alertBox = document.getElementById('neon-alert');
-        alertBox.innerText = message;
-        alertBox.classList.add('show');
-        setTimeout(() => alertBox.classList.remove('show'), 3000);
+// ── CONFIG ──────────────────────────────────────────────────────────────────
+const SUPABASE_URL  = 'https://jcxgankdwfwfnbwlkkpz.supabase.co';
+const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjeGdhbmtkd2Z3Zm5id2xra3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNDU0MjMsImV4cCI6MjA5MDgyMTQyM30.qBNQNZxeHLfG7U-HZDSkYg1Y4awPKcJ7J2XjnkiJ6PI';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── STATE ───────────────────────────────────────────────────────────────────
+let currentUser = null, currentUsername = '';
+let userData = { id: null, refCode: '', refLink: '', totalReferral: 0, activeReferral: 0, totalKomisi: 0, bonusAvailable: 0, saldo: 0 };
+
+// Komisi per referral aktif (Rp 5.000 per orang)
+const KOMISI_PER_REF = 5000;
+
+// ── PARTICLES ───────────────────────────────────────────────────────────────
+if (typeof particlesJS !== 'undefined') {
+    particlesJS('particles-js', {
+        particles: {
+            number: { value: 70 },
+            color:  { value: ['#ff0077','#0022ff','#fbff00'] },
+            shape:  { type: 'circle' },
+            opacity: { value: 0.5, random: true },
+            size:   { value: 2, random: true },
+            line_linked: { enable: true, distance: 130, color: '#0022ff', opacity: 0.25, width: 0.8 },
+            move:   { enable: true, speed: 1.5, random: true }
+        },
+        interactivity: { events: { onhover: { enable: false }, onclick: { enable: false } } }
+    });
+}
+
+// ── HELPERS ─────────────────────────────────────────────────────────────────
+function showAlert(msg) {
+    const a = document.getElementById('neon-alert');
+    a.innerText = msg; a.classList.add('show');
+    setTimeout(() => a.classList.remove('show'), 3200);
+}
+function showModal(title, message) {
+    document.getElementById('m-title').innerHTML = `<i class="fas ${title.includes('BERHASIL') ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i> ${title}`;
+    document.getElementById('m-msg').innerHTML = message;
+    document.getElementById('modal-overlay').style.display = 'flex';
+}
+function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+function formatRupiah(n) { return new Intl.NumberFormat('id-ID').format(n || 0); }
+
+function updateUI() {
+    document.getElementById('display-saldo').innerHTML = 'IDR ' + formatRupiah(userData.saldo);
+    document.getElementById('total-ref').innerText     = userData.totalReferral;
+    document.getElementById('active-ref').innerText    = userData.activeReferral;
+    document.getElementById('total-komisi').innerHTML  = formatRupiah(userData.totalKomisi);
+    document.getElementById('bonus-amount').innerHTML  = 'IDR ' + formatRupiah(userData.bonusAvailable);
+    document.getElementById('ref-code').innerText      = userData.refCode || '—';
+    document.getElementById('ref-link').innerText      = userData.refLink || '—';
+    const claimBtn = document.getElementById('claim-btn');
+    if (claimBtn) claimBtn.disabled = userData.bonusAvailable <= 0;
+}
+
+function copyRefCode() {
+    if (userData.refCode) {
+        navigator.clipboard.writeText(userData.refCode).catch(() => {});
+        showAlert('✅ KODE REFERRAL DISALIN: ' + userData.refCode);
     }
-    function showModal(title, message) {
-        document.getElementById('m-title').innerHTML = `<i class="fas ${title.includes('SUKSES') ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i> ${title}`;
-        document.getElementById('m-msg').innerHTML = message;
-        document.getElementById('modal-overlay').style.display = 'flex';
+}
+function copyRefLink() {
+    if (userData.refLink) {
+        navigator.clipboard.writeText(userData.refLink).catch(() => {});
+        showAlert('✅ LINK UNDANGAN DISALIN!');
     }
-    function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
-    function formatRupiah(amount) { return new Intl.NumberFormat('id-ID').format(amount); }
-    function updateUI() {
-        document.getElementById('display-saldo').innerHTML = `IDR ${formatRupiah(userData.saldo)}`;
-        document.getElementById('total-ref').innerText = userData.totalReferral;
-        document.getElementById('active-ref').innerText = userData.activeReferral;
-        document.getElementById('total-komisi').innerHTML = formatRupiah(userData.totalKomisi);
-        document.getElementById('bonus-amount').innerHTML = `IDR ${formatRupiah(userData.bonusAvailable)}`;
-        document.getElementById('ref-code').innerText = userData.refCode;
-        document.getElementById('ref-link').innerText = userData.refLink;
-    }
-    function copyRefCode() { if(userData.refCode) { navigator.clipboard.writeText(userData.refCode); showAlert('✅ KODE REFERRAL DISALIN!'); } }
-    function copyRefLink() { if(userData.refLink) { navigator.clipboard.writeText(userData.refLink); showAlert('✅ LINK UNDANGAN DISALIN!'); } }
-    function shareWA() { window.open(`https://wa.me/?text=${encodeURIComponent(`🎮 Gabung NEON PLINKO VIP sekarang!\n\nDaftar pakai kode referral: ${userData.refCode}\nLink: ${userData.refLink}\n\nSetiap teman yang daftar dan deposit pertama min Rp20.000, Anda dapat bonus Rp5.000!`)}`, '_blank'); }
-    function shareLink() { if(navigator.share) navigator.share({ title: 'NEON PLINKO VIP', text: `Daftar NEON PLINKO VIP pakai kode: ${userData.refCode}`, url: userData.refLink }).catch(e=>console.log(e)); else copyRefLink(); }
-    
-    // ========== INBOX (TABEL `inbox`) ==========
-    async function loadInbox() {
-        const inboxContainer = document.getElementById('inbox-container');
-        try {
-            // Ambil pesan dengan status 'pending' untuk user yang sedang login
-            const { data: messages, error } = await supabase
-                .from('inbox')
-                .select('*')
-                .eq('username', currentUsername)
-                .eq('status', 'pending')
-                .order('created_at', { ascending: false });
-            
-            if (error) throw error;
-            if (!messages || messages.length === 0) {
-                inboxContainer.innerHTML = `<div class="inbox-empty"><i class="fas fa-inbox" style="font-size:24px;margin-bottom:10px;display:block;"></i>Tidak ada pesan baru</div>`;
-                return;
-            }
-            let html = '';
-            for (const msg of messages) {
-                html += `<div class="inbox-item" data-id="${msg.id}" data-nominal="${msg.nominal}">
-                            <div class="inbox-header">
-                                <span class="inbox-from"><i class="fas fa-trophy"></i> BONUS</span>
-                                <span class="inbox-date">${new Date(msg.created_at).toLocaleDateString('id-ID')}</span>
-                            </div>
-                            <div class="inbox-msg">${msg.pesan || 'Selamat! Anda mendapatkan bonus.'}</div>
-                            <div class="inbox-reward-amount">IDR ${formatRupiah(msg.nominal)}</div>
-                            <button class="btn-claim-inbox" onclick="claimInboxBonus('${msg.id}', ${msg.nominal})">KLAIM SEKARANG</button>
-                        </div>`;
-            }
-            inboxContainer.innerHTML = html;
-        } catch(e) {
-            console.error(e);
-            inboxContainer.innerHTML = `<div class="inbox-empty">Gagal memuat pesan</div>`;
+}
+function shareWA() {
+    const txt = `🎮 Gabung NEON PLINKO VIP!\n\nKode referral: ${userData.refCode}\nLink: ${userData.refLink}\n\n✨ Deposit min Rp20.000 & kita dapat bonus Rp5.000!`;
+    window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
+}
+function shareLink() {
+    if (navigator.share) navigator.share({ title: 'NEON PLINKO VIP', text: `Daftar NEON PLINKO VIP pakai kode: ${userData.refCode}`, url: userData.refLink }).catch(() => {});
+    else copyRefLink();
+}
+
+// ── GET USER ─────────────────────────────────────────────────────────────────
+// Coba dari Supabase Auth dulu, fallback ke localStorage (untuk login custom)
+async function resolveCurrentUser() {
+    // 1) Coba Supabase Auth session
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session && session.user) {
+            return { authUser: session.user, username: null };
         }
+    } catch(e) {}
+    // 2) Fallback: localStorage (login custom seperti deposit.html)
+    const localUser = localStorage.getItem('neon_user') || localStorage.getItem('username') || localStorage.getItem('neon_username');
+    if (localUser) return { authUser: null, username: localUser };
+    return null;
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+async function init() {
+    const resolved = await resolveCurrentUser();
+    if (!resolved) {
+        document.getElementById('ref-code').innerText = 'LOGIN DULU';
+        document.getElementById('ref-link').innerText = 'Silakan login untuk melihat kode referral';
+        document.getElementById('history-body').innerHTML =
+            '<tr><td colspan="4"><div class="h-empty"><i class="fas fa-lock"></i><br>Silakan login</div></td></tr>';
+        return;
     }
-    
-    async function claimInboxBonus(inboxId, amount) {
-        try {
-            // Update status inbox menjadi 'claimed'
-            const { error: updateError } = await supabase
-                .from('inbox')
-                .update({ status: 'claimed' })
-                .eq('id', inboxId)
-                .eq('username', currentUsername);
-            if (updateError) throw updateError;
-            
-            // Tambahkan saldo user dan total komisi
-            userData.saldo += amount;
-            userData.totalKomisi += amount;
-            const { error: userUpdateError } = await supabase
-                .from('users')
-                .update({ saldo: userData.saldo, total_komisi: userData.totalKomisi })
-                .eq('id', currentUser.id);
-            if (userUpdateError) throw userUpdateError;
-            
-            updateUI();
-            await loadInbox(); // refresh inbox
-            showModal('BERHASIL!', `✨ Bonus IDR ${formatRupiah(amount)} telah ditambahkan ke saldo Anda! ✨`);
-            showAlert(`🎉 Bonus IDR ${formatRupiah(amount)} berhasil diklaim!`);
-        } catch(e) {
-            console.error(e);
-            showAlert('❌ Gagal mengklaim bonus!', false);
+
+    try {
+        let user = null;
+
+        if (resolved.authUser) {
+            // ── Path A: Supabase Auth ──
+            currentUser = resolved.authUser;
+            let { data, error } = await supabase.from('users').select('*').eq('id', currentUser.id).single();
+            if (error && error.code === 'PGRST116') {
+                // Buat user baru
+                const refCode  = 'VIP' + Math.random().toString(36).substring(2, 8).toUpperCase();
+                const username = currentUser.user_metadata?.username || currentUser.email?.split('@')[0] || 'Player';
+                const { data: newUser, error: insertErr } = await supabase.from('users').insert({
+                    id: currentUser.id, email: currentUser.email, username, ref_code: refCode,
+                    saldo: 0, total_komisi: 0, total_referral: 0, active_referral: 0, bonus_available: 0
+                }).select().single();
+                if (insertErr) throw insertErr;
+                data = newUser;
+            } else if (error) { throw error; }
+            user = data;
+            currentUsername = user.username;
+
+            userData = {
+                id: user.id, refCode: user.ref_code,
+                refLink: window.location.origin + '/reward.html?ref=' + user.ref_code,
+                totalReferral: user.total_referral || 0, activeReferral: user.active_referral || 0,
+                totalKomisi: user.total_komisi || 0, bonusAvailable: user.bonus_available || 0, saldo: user.saldo || 0
+            };
+
+        } else {
+            // ── Path B: Login custom (localStorage username → profiles table) ──
+            currentUsername = resolved.username;
+            const { data: prof, error: pErr } = await supabase.from('profiles').select('*').eq('username', currentUsername).single();
+            if (pErr) throw pErr;
+
+            // Generate ref_code jika belum ada
+            let refCode = prof.ref_code;
+            if (!refCode) {
+                refCode = 'VIP' + Math.random().toString(36).substring(2, 8).toUpperCase();
+                await supabase.from('profiles').update({ ref_code: refCode }).eq('username', currentUsername);
+            }
+
+            userData = {
+                id: prof.id, refCode,
+                refLink: window.location.origin + '/reward.html?ref=' + refCode,
+                totalReferral: prof.total_referral || 0, activeReferral: prof.active_referral || 0,
+                totalKomisi: prof.total_komisi || 0, bonusAvailable: prof.bonus_available || 0, saldo: prof.saldo || 0
+            };
         }
+
+        updateUI();
+        await updateReferralBonus();
+        await loadReferralHistory();
+        await loadInbox();
+
+    } catch(e) {
+        console.error('init error:', e);
+        document.getElementById('ref-code').innerText = 'ERROR';
+        showAlert('❌ Gagal memuat data. Coba refresh halaman.');
     }
-    
-    // ========== BONUS MINGGUAN ==========
-    async function claimBonus() {
-        if (userData.bonusAvailable <= 0) {
-            showAlert('⚠️ Tidak ada bonus yang tersedia saat ini!', false);
+}
+
+// ── UPDATE REFERRAL BONUS ─────────────────────────────────────────────────
+async function updateReferralBonus() {
+    if (!userData.refCode) return;
+    try {
+        // Ambil semua referral berdasarkan ref_code
+        const tableName = currentUser ? 'users' : 'profiles';
+        const refField  = 'referred_by';   // kolom yang menyimpan kode referrer
+
+        const { data: refs, error } = await supabase
+            .from(tableName)
+            .select('id, deposit_amount, first_deposit_at')
+            .eq(refField, userData.refCode);
+        if (error) throw error;
+
+        const all    = refs || [];
+        const active = all.filter(r => r.first_deposit_at && Number(r.deposit_amount || 0) >= 20000);
+        const bonus  = active.length * KOMISI_PER_REF;
+
+        userData.totalReferral  = all.length;
+        userData.activeReferral = active.length;
+        userData.bonusAvailable = bonus;
+        // Update ke DB
+        const updateData = { total_referral: all.length, active_referral: active.length, bonus_available: bonus };
+        if (currentUser) {
+            await supabase.from('users').update(updateData).eq('id', userData.id);
+        } else {
+            await supabase.from('profiles').update(updateData).eq('username', currentUsername);
+        }
+        updateUI();
+    } catch(e) { console.error('updateReferralBonus error:', e); }
+}
+
+// ── LOAD REFERRAL HISTORY ──────────────────────────────────────────────────
+async function loadReferralHistory() {
+    const tbody = document.getElementById('history-body');
+    if (!userData.refCode) {
+        tbody.innerHTML = '<tr><td colspan="4"><div class="h-empty"><i class="fas fa-lock"></i><br>Silakan login</div></td></tr>';
+        return;
+    }
+    tbody.innerHTML = '<tr><td colspan="4"><div class="h-empty"><i class="fas fa-spinner fa-spin"></i><br>Memuat...</div></td></tr>';
+    try {
+        const tableName = currentUser ? 'users' : 'profiles';
+        const { data: refs, error } = await supabase
+            .from(tableName)
+            .select('username, created_at, first_deposit_at, deposit_amount')
+            .eq('referred_by', userData.refCode)
+            .order('created_at', { ascending: false });
+        if (error) throw error;
+
+        if (!refs || refs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4"><div class="h-empty"><i class="fas fa-users-slash"></i><br>Belum ada undangan</div></td></tr>';
             return;
         }
-        try {
-            const amount = userData.bonusAvailable;
-            userData.saldo += amount;
-            userData.totalKomisi += amount;
-            userData.bonusAvailable = 0;
-            await supabase
-                .from('users')
-                .update({ saldo: userData.saldo, total_komisi: userData.totalKomisi, bonus_available: 0 })
-                .eq('id', currentUser.id);
-            updateUI();
-            showModal('BERHASIL!', `✨ Bonus mingguan IDR ${formatRupiah(amount)} telah ditambahkan ke saldo Anda! ✨`);
-            showAlert(`🎉 Bonus IDR ${formatRupiah(amount)} berhasil diklaim!`);
-        } catch(e) {
-            console.error(e);
-            showAlert('❌ Gagal mengklaim bonus!', false);
+        tbody.innerHTML = refs.map(r => {
+            const isActive  = r.first_deposit_at && Number(r.deposit_amount || 0) >= 20000;
+            const bonusVal  = isActive ? KOMISI_PER_REF : 0;
+            const dObj      = new Date(r.created_at);
+            const tgl       = dObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: '2-digit' });
+            const jam       = dObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            const badgeClass= isActive ? 'badge-aktif'   : 'badge-pending';
+            const badgeIcon = isActive ? 'fa-circle-check' : 'fa-clock';
+            const badgeTxt  = isActive ? 'AKTIF'           : 'PENDING';
+            return `<tr>
+  <td><div class="td-time"><span class="t-date">${tgl}</span><span class="t-hour">${jam}</span></div></td>
+  <td><div class="td-user"><span class="u-name">${r.username || 'Anon'}</span><span class="u-sub">${isActive ? 'Deposit ✓' : 'Belum deposit'}</span></div></td>
+  <td class="td-status"><span class="badge-status ${badgeClass}"><i class="fas ${badgeIcon}"></i> ${badgeTxt}</span></td>
+  <td><div class="td-bonus"><span class="b-val">${bonusVal > 0 ? formatRupiah(bonusVal) : '—'}</span><span class="b-cur">${bonusVal > 0 ? 'IDR' : ''}</span></div></td>
+</tr>`;
+        }).join('');
+        // Scroll ke atas
+        document.querySelector('.hist-scroll-body').scrollTop = 0;
+    } catch(e) {
+        console.error('loadReferralHistory error:', e);
+        tbody.innerHTML = '<tr><td colspan="4"><div class="h-empty"><i class="fas fa-triangle-exclamation"></i><br>Gagal memuat</div></td></tr>';
+    }
+}
+
+// ── LOAD INBOX ────────────────────────────────────────────────────────────
+async function loadInbox() {
+    const container = document.getElementById('inbox-container');
+    if (!currentUsername) { container.innerHTML = '<div class="inbox-empty">Silakan login</div>'; return; }
+    try {
+        const { data: messages, error } = await supabase
+            .from('inbox').select('*').eq('username', currentUsername).eq('status', 'pending').order('created_at', { ascending: false });
+        if (error) throw error;
+        if (!messages || messages.length === 0) {
+            container.innerHTML = '<div class="inbox-empty"><i class="fas fa-inbox" style="font-size:24px;margin-bottom:10px;display:block;"></i>Tidak ada pesan baru</div>';
+            return;
         }
+        container.innerHTML = messages.map(msg => `
+<div class="inbox-item" data-id="${msg.id}">
+    <div class="inbox-header">
+        <span class="inbox-from"><i class="fas fa-trophy"></i> BONUS</span>
+        <span class="inbox-date">${new Date(msg.created_at).toLocaleDateString('id-ID')}</span>
+    </div>
+    <div class="inbox-msg">${msg.pesan || 'Selamat! Anda mendapatkan bonus.'}</div>
+    <div class="inbox-reward-amount">IDR ${formatRupiah(msg.nominal)}</div>
+    <button class="btn-claim-inbox" onclick="claimInboxBonus('${msg.id}', ${msg.nominal})">KLAIM SEKARANG</button>
+</div>`).join('');
+    } catch(e) {
+        console.error('loadInbox error:', e);
+        container.innerHTML = '<div class="inbox-empty">Gagal memuat pesan</div>';
     }
-    
-    // ========== RIWAYAT REFERRAL ==========
-    async function loadReferralHistory() {
-        const historyBody = document.getElementById('history-body');
-        try {
-            const { data: referrals, error } = await supabase
-                .from('users')
-                .select('username, created_at, first_deposit_at, deposit_amount')
-                .eq('referred_by', userData.refCode)
-                .order('created_at', { ascending: false });
-            if (error) throw error;
-            if (!referrals || referrals.length === 0) {
-                historyBody.innerHTML = `<tr class="empty-row"><td colspan="4">Belum ada referral yang terdaftar</td></tr>`;
-                return;
-            }
-            let html = '';
-            for (const ref of referrals) {
-                const isActive = ref.first_deposit_at && ref.deposit_amount >= 20000;
-                const bonusAmount = isActive ? 5000 : 0;
-                const date = new Date(ref.created_at).toLocaleDateString('id-ID');
-                html += `<tr>
-                            <td>${date}</td>
-                            <td>${ref.username || 'Anonymous'}</td>
-                            <td><span class="badge-valid ${isActive ? 'badge-active' : 'badge-pending'}"><i class="fas ${isActive ? 'fa-check-circle' : 'fa-clock'}"></i> ${isActive ? 'AKTIF' : 'PENDING'}</span></td>
-                            <td>IDR ${formatRupiah(bonusAmount)}</td>
-                         </tr>`;
-            }
-            historyBody.innerHTML = html;
-        } catch(e) {
-            console.error(e);
-            historyBody.innerHTML = `<tr class="empty-row"><td colspan="4">Gagal memuat data referral</td></tr>`;
-        }
+}
+
+// ── CLAIM INBOX ───────────────────────────────────────────────────────────
+async function claimInboxBonus(inboxId, amount) {
+    try {
+        const { error: updErr } = await supabase.from('inbox').update({ status: 'claimed' }).eq('id', inboxId).eq('username', currentUsername);
+        if (updErr) throw updErr;
+        userData.saldo       += amount;
+        userData.totalKomisi += amount;
+        const updateData = { saldo: userData.saldo, total_komisi: userData.totalKomisi };
+        if (currentUser) await supabase.from('users').update(updateData).eq('id', userData.id);
+        else             await supabase.from('profiles').update(updateData).eq('username', currentUsername);
+        updateUI();
+        await loadInbox();
+        showModal('BERHASIL!', `✨ Bonus IDR ${formatRupiah(amount)} telah ditambahkan ke saldo Anda!`);
+        showAlert(`🎉 Bonus IDR ${formatRupiah(amount)} berhasil diklaim!`);
+    } catch(e) {
+        console.error('claimInboxBonus error:', e);
+        showAlert('❌ Gagal mengklaim bonus!');
     }
-    
-    // Hitung ulang jumlah referral aktif & bonus tersedia
-    async function updateReferralBonus() {
-        try {
-            const { data: activeRefs, error: activeError } = await supabase
-                .from('users')
-                .select('id')
-                .eq('referred_by', userData.refCode)
-                .gte('deposit_amount', 20000)
-                .not('first_deposit_at', 'is', null);
-            if (activeError) throw activeError;
-            const activeCount = activeRefs?.length || 0;
-            
-            const { count: totalCount, error: countError } = await supabase
-                .from('users')
-                .select('id', { count: 'exact', head: true })
-                .eq('referred_by', userData.refCode);
-            if (countError) throw countError;
-            
-            const newBonusAvailable = activeCount * 5000;
-            userData.totalReferral = totalCount || 0;
-            userData.activeReferral = activeCount;
-            userData.bonusAvailable = newBonusAvailable;
-            
-            await supabase
-                .from('users')
-                .update({ total_referral: totalCount || 0, active_referral: activeCount, bonus_available: newBonusAvailable })
-                .eq('id', currentUser.id);
-            updateUI();
-        } catch(e) { console.error(e); }
+}
+
+// ── CLAIM BONUS MINGGUAN ──────────────────────────────────────────────────
+async function claimBonus() {
+    if (userData.bonusAvailable <= 0) { showAlert('⚠️ Tidak ada bonus yang tersedia saat ini!'); return; }
+    try {
+        const amount = userData.bonusAvailable;
+        userData.saldo       += amount;
+        userData.totalKomisi += amount;
+        userData.bonusAvailable = 0;
+        const updateData = { saldo: userData.saldo, total_komisi: userData.totalKomisi, bonus_available: 0 };
+        if (currentUser) await supabase.from('users').update(updateData).eq('id', userData.id);
+        else             await supabase.from('profiles').update(updateData).eq('username', currentUsername);
+        updateUI();
+        showModal('BERHASIL!', `✨ Bonus IDR ${formatRupiah(amount)} telah ditambahkan ke saldo Anda!`);
+        showAlert(`🎉 Bonus IDR ${formatRupiah(amount)} berhasil diklaim!`);
+    } catch(e) {
+        console.error('claimBonus error:', e);
+        showAlert('❌ Gagal mengklaim bonus!');
     }
-    
-    // ========== INISIALISASI ==========
-    async function init() {
-        try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                document.getElementById('ref-code').innerText = 'LOGIN DULU';
-                document.getElementById('ref-link').innerText = 'Silakan login untuk melihat kode referral';
-                return;
-            }
-            currentUser = session.user;
-            // Ambil atau buat user di tabel `users`
-            let { data: user, error: userError } = await supabase
-                .from('users')
-                .select('*')
-                .eq('id', currentUser.id)
-                .single();
-            if (userError && userError.code === 'PGRST116') {
-                // User belum ada, buat baru
-                const refCode = 'VIP' + Math.random().toString(36).substring(2, 8).toUpperCase();
-                const username = currentUser.user_metadata?.username || currentUser.email?.split('@')[0] || 'Player';
-                const { data: newUser, error: insertError } = await supabase
-                    .from('users')
-                    .insert({
-                        id: currentUser.id,
-                        email: currentUser.email,
-                        username: username,
-                        ref_code: refCode,
-                        saldo: 0,
-                        total_komisi: 0,
-                        total_referral: 0,
-                        active_referral: 0,
-                        bonus_available: 0
-                    })
-                    .select()
-                    .single();
-                if (insertError) throw insertError;
-                user = newUser;
-            } else if (userError) {
-                throw userError;
-            }
-            
-            currentUsername = user.username;
-            userData = {
-                id: user.id,
-                refCode: user.ref_code,
-                refLink: `${window.location.origin}${window.location.pathname}?ref=${user.ref_code}`,
-                totalReferral: user.total_referral || 0,
-                activeReferral: user.active_referral || 0,
-                totalKomisi: user.total_komisi || 0,
-                bonusAvailable: user.bonus_available || 0,
-                saldo: user.saldo || 0
-            };
-            updateUI();
-            await loadReferralHistory();
-            await updateReferralBonus(); // hitung ulang berdasarkan data referral terbaru
-            await loadInbox(); // muat inbox dari tabel inbox
-        } catch(e) {
-            console.error(e);
-            showAlert('❌ Gagal memuat data! Silakan refresh halaman.', false);
-        }
-    }
-    
-    document.addEventListener('click', e => { if (e.target === document.getElementById('modal-overlay')) closeModal(); });
-    if (typeof particlesJS !== 'undefined') {
-        particlesJS('particles-js', {
-            particles: {
-                number: { value: 80 },
-                color: { value: ['#ff0077','#0022ff','#fbff00'] },
-                shape: { type: 'circle' },
-                opacity: { value: 0.5, random: true },
-                size: { value: 2, random: true },
-                line_linked: { enable: false },
-                move: { enable: true, speed: 1.5, direction: 'none', random: true }
-            },
-            interactivity: { events: { onhover: { enable: false }, onclick: { enable: false } } }
-        });
-    }
-    init();
+}
+
+document.addEventListener('click', e => { if (e.target === document.getElementById('modal-overlay')) closeModal(); });
+init();
 </script>
 </body>
 </html>
