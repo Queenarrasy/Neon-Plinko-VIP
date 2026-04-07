@@ -124,25 +124,143 @@
         .btn-main:active{transform:scale(.96);}
         .btn-main:disabled{opacity:.4;cursor:not-allowed;}
 
-        .hist-section-title{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:900;color:var(--yellow);margin:20px 0 10px;}
-        .hist-wrap{background:rgba(0,0,35,.7);border:1px solid rgba(0,34,255,.25);border-radius:18px;overflow:hidden;margin-top:8px;max-height:320px;overflow-y:auto;overflow-x:hidden;}
-        /* Card-style history rows */
-        .h-row{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid rgba(0,34,255,.1);}
-        .h-row:last-child{border-bottom:none;}
-        .h-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;}
-        .h-icon.qris{background:rgba(255,0,119,.15);color:var(--pink);}
-        .h-icon.usdt{background:rgba(38,161,123,.15);color:#26a17b;}
-        .h-info{flex:1;min-width:0;}
-        .h-method{font-size:9px;font-weight:900;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;}
-        .h-nominal{font-size:13px;font-weight:900;color:#fff;line-height:1.2;}
-        .h-nominal span.unit{font-size:9px;color:rgba(255,255,255,.4);font-weight:700;}
-        .h-right{text-align:right;flex-shrink:0;}
-        .h-date{font-size:9px;color:rgba(255,255,255,.35);margin-bottom:4px;line-height:1.4;}
-        .badge-status{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:20px;font-size:8px;font-weight:900;}
-        .badge-sukses{background:rgba(0,255,136,.12);border:1px solid rgba(0,255,136,.35);color:#00ff88;}
-        .badge-proses{background:rgba(251,255,0,.1);border:1px solid rgba(251,255,0,.35);color:var(--yellow);}
-        .badge-gagal{background:rgba(255,0,119,.1);border:1px solid rgba(255,0,119,.35);color:var(--pink);}
-        .h-empty{text-align:center;padding:28px 12px;opacity:.4;font-size:11px;}
+        /* ── HISTORY TABLE ────────────────────────────────── */
+        .hist-section-title{
+            display:flex;align-items:center;gap:8px;
+            font-size:11px;font-weight:900;color:var(--yellow);
+            margin:24px 0 10px;
+            text-shadow:0 0 8px rgba(251,255,0,.5);
+            letter-spacing:1px;text-transform:uppercase;
+        }
+        .hist-outer{
+            background:rgba(0,0,25,.85);
+            border:1.5px solid rgba(0,34,255,.5);
+            border-radius:18px;
+            overflow:hidden;
+            box-shadow:0 0 18px rgba(0,34,255,.15), inset 0 0 30px rgba(0,0,50,.4);
+        }
+        /* fixed-height: show exactly 4 rows + header, rest scroll */
+        .hist-scroll-body{
+            max-height:212px; /* header 36px + 4 × 44px */
+            overflow-y:auto;
+            overflow-x:hidden;
+            scrollbar-width:thin;
+            scrollbar-color:rgba(0,34,255,.5) transparent;
+        }
+        .hist-scroll-body::-webkit-scrollbar{width:3px;}
+        .hist-scroll-body::-webkit-scrollbar-track{background:transparent;}
+        .hist-scroll-body::-webkit-scrollbar-thumb{background:rgba(0,34,255,.5);border-radius:4px;}
+
+        /* Table */
+        table.ht{width:100%;border-collapse:collapse;table-layout:fixed;}
+        /* Column widths */
+        table.ht col.c-time   {width:28%;}
+        table.ht col.c-nominal{width:28%;}
+        table.ht col.c-method {width:22%;}
+        table.ht col.c-status {width:22%;}
+
+        /* Header */
+        table.ht thead tr{
+            background:linear-gradient(90deg,rgba(255,0,119,.18),rgba(0,34,255,.25),rgba(251,255,0,.1));
+            border-bottom:1.5px solid rgba(255,0,119,.4);
+        }
+        table.ht th{
+            padding:9px 8px;
+            font-size:8px;font-weight:900;
+            letter-spacing:.8px;text-transform:uppercase;
+            text-align:center;
+        }
+        table.ht th:nth-child(1){color:var(--yellow);text-shadow:0 0 6px rgba(251,255,0,.6);}
+        table.ht th:nth-child(2){color:#00cfff;text-shadow:0 0 6px rgba(0,207,255,.6);}
+        table.ht th:nth-child(3){color:var(--pink);text-shadow:0 0 6px rgba(255,0,119,.6);}
+        table.ht th:nth-child(4){color:#b8ff00;text-shadow:0 0 6px rgba(184,255,0,.5);}
+
+        /* Body rows */
+        table.ht tbody tr{
+            border-bottom:1px solid rgba(0,34,255,.12);
+            transition:background .2s;
+        }
+        table.ht tbody tr:last-child{border-bottom:none;}
+        table.ht tbody tr:hover{background:rgba(0,34,255,.08);}
+
+        table.ht td{
+            padding:0;
+            text-align:center;
+            vertical-align:middle;
+        }
+
+        /* Cell inner wrappers */
+        .td-time{
+            padding:8px 6px;
+            display:flex;flex-direction:column;align-items:center;gap:1px;
+        }
+        .td-time .t-date{
+            font-size:9px;font-weight:900;
+            color:var(--yellow);
+            text-shadow:0 0 5px rgba(251,255,0,.5);
+            letter-spacing:.3px;
+        }
+        .td-time .t-hour{
+            font-size:10px;font-weight:900;
+            color:rgba(255,255,255,.7);
+        }
+
+        .td-nominal{
+            padding:8px 6px;
+            display:flex;flex-direction:column;align-items:center;gap:1px;
+        }
+        .td-nominal .n-val{
+            font-size:11px;font-weight:900;
+            color:#fff;
+            text-shadow:0 0 5px rgba(0,207,255,.4);
+            word-break:break-all;
+        }
+        .td-nominal .n-cur{
+            font-size:8px;font-weight:700;
+            color:#00cfff;letter-spacing:.5px;
+        }
+
+        .td-method{
+            padding:8px 4px;
+            display:flex;flex-direction:column;align-items:center;gap:2px;
+        }
+        .td-method i{font-size:13px;}
+        .td-method .m-lbl{font-size:7px;font-weight:900;letter-spacing:.4px;color:rgba(255,255,255,.55);}
+        .td-method.is-qris i{color:var(--pink);filter:drop-shadow(0 0 3px rgba(255,0,119,.6));}
+        .td-method.is-usdt i{color:#26a17b;filter:drop-shadow(0 0 3px rgba(38,161,123,.6));}
+
+        /* Status badges */
+        .badge-status{
+            display:inline-flex;align-items:center;justify-content:center;
+            gap:3px;padding:4px 7px;border-radius:20px;
+            font-size:7.5px;font-weight:900;letter-spacing:.3px;
+            white-space:nowrap;
+        }
+        .badge-sukses{
+            background:rgba(0,255,136,.1);
+            border:1px solid rgba(0,255,136,.45);
+            color:#00ff88;
+            box-shadow:0 0 6px rgba(0,255,136,.2);
+        }
+        .badge-proses{
+            background:rgba(251,255,0,.1);
+            border:1px solid rgba(251,255,0,.4);
+            color:var(--yellow);
+            box-shadow:0 0 6px rgba(251,255,0,.15);
+        }
+        .badge-gagal{
+            background:rgba(255,0,119,.1);
+            border:1px solid rgba(255,0,119,.45);
+            color:var(--pink);
+            box-shadow:0 0 6px rgba(255,0,119,.2);
+        }
+        .td-status{padding:8px 4px;}
+
+        .h-empty{
+            text-align:center;padding:28px 12px;
+            opacity:.4;font-size:11px;color:#fff;
+        }
+        /* ── END HISTORY TABLE ─────────────────────────────── */
 
         #modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(10px);}
         .modal-box{width:88%;max-width:320px;background:rgba(0,0,15,.99);border:1.5px solid var(--pink);border-top:2px solid var(--yellow);border-radius:22px;padding:26px;text-align:center;}
@@ -260,12 +378,38 @@
 
     <div class="hist-section-title">
         <i class="fas fa-clock-rotate-left"></i> Riwayat Deposit
-        <span style="margin-left:auto;font-size:9px;cursor:pointer;" onclick="playSnd('click');loadHistory()">
+        <span style="margin-left:auto;font-size:9px;cursor:pointer;color:var(--pink);opacity:.8;" onclick="playSnd('click');loadHistory()">
             <i class="fas fa-rotate-right"></i> Refresh
         </span>
     </div>
-    <div class="hist-wrap" id="history-body">
-        <div class="h-empty"><i class="fas fa-spinner fa-spin"></i> Memuat...</div>
+    <div class="hist-outer">
+        <!-- sticky header outside scroll -->
+        <table class="ht" style="table-layout:fixed;width:100%;">
+            <colgroup>
+                <col class="c-time"><col class="c-nominal">
+                <col class="c-method"><col class="c-status">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th><i class="fas fa-clock" style="margin-right:3px;"></i>WAKTU</th>
+                    <th><i class="fas fa-coins" style="margin-right:3px;"></i>NOMINAL</th>
+                    <th><i class="fas fa-layer-group" style="margin-right:3px;"></i>METODE</th>
+                    <th><i class="fas fa-circle-dot" style="margin-right:3px;"></i>STATUS</th>
+                </tr>
+            </thead>
+        </table>
+        <!-- scrollable body -->
+        <div class="hist-scroll-body" id="history-body">
+            <table class="ht" id="history-table" style="table-layout:fixed;width:100%;">
+                <colgroup>
+                    <col class="c-time"><col class="c-nominal">
+                    <col class="c-method"><col class="c-status">
+                </colgroup>
+                <tbody id="history-tbody">
+                    <tr><td colspan="4"><div class="h-empty"><i class="fas fa-spinner fa-spin"></i><br>Memuat...</div></td></tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -432,50 +576,65 @@ async function updateUserSaldo() {
 
 async function loadHistory() {
     const user = getUser();
-    const body = document.getElementById('history-body');
+    const tbody = document.getElementById('history-tbody');
     if (!user) {
-        if(body) body.innerHTML = '<div class="h-empty"><i class="fas fa-exclamation-triangle"></i><br>Silakan login terlebih dahulu</div>';
+        if(tbody) tbody.innerHTML = '<tr><td colspan="4"><div class="h-empty"><i class="fas fa-exclamation-triangle"></i><br>Silakan login</div></td></tr>';
         return;
     }
     try {
         const db = getDB();
-        const { data, error } = await db.from('deposits').select('id,amount,net_receive,method,status,created_at').eq('username', user).order('created_at', { ascending: false }).limit(30);
+        const { data, error } = await db
+            .from('deposits')
+            .select('id,amount,net_receive,method,status,created_at')
+            .eq('username', user)
+            .order('created_at', { ascending: false })
+            .limit(50);
         if (error) throw error;
         if (data && data.length > 0) {
             if (data.length !== lastHistoryLength) await updateUserSaldo();
             lastHistoryLength = data.length;
-            if(body) body.innerHTML = data.map(d => {
+            tbody.innerHTML = data.map(d => {
+                // ── Status ──
                 let st = (d.status || 'PROSES').toUpperCase();
-                let bc = 'badge-proses', ic = 'fa-clock';
-                if (st === 'SUKSES' || st === 'APPROVE' || st === 'BERHASIL') { bc = 'badge-sukses'; ic = 'fa-circle-check'; st = 'SUKSES'; }
-                else if (st === 'GAGAL') { bc = 'badge-gagal'; ic = 'fa-circle-xmark'; st = 'GAGAL'; }
-                else { st = 'PROSES'; }
+                let bc = 'badge-proses', ic = 'fa-clock', stLabel = 'PROSES';
+                if (['SUKSES','APPROVE','BERHASIL'].includes(st)) {
+                    bc = 'badge-sukses'; ic = 'fa-circle-check'; stLabel = 'BERHASIL';
+                } else if (st === 'GAGAL') {
+                    bc = 'badge-gagal'; ic = 'fa-circle-xmark'; stLabel = 'GAGAL';
+                }
+                // ── Method ──
                 const isUsdt = (d.method || '').toUpperCase() === 'USDT';
-                const nominalFmt = isUsdt
-                    ? `<span class="unit">$</span>${parseFloat(d.amount).toFixed(2)}`
-                    : parseFloat(d.amount).toLocaleString('id-ID');
-                const iconClass = isUsdt ? 'usdt' : 'qris';
-                const iconI = isUsdt ? 'fa-brands fa-ethereum' : 'fas fa-qrcode';
+                const methodClass = isUsdt ? 'is-usdt' : 'is-qris';
+                const methodIcon = isUsdt ? 'fa-brands fa-ethereum' : 'fas fa-qrcode';
+                const methodLabel = isUsdt ? 'USDT' : 'QRIS';
+                // ── Nominal ──
+                let nomVal, nomCur;
+                if (isUsdt) {
+                    nomVal = '$' + parseFloat(d.amount).toFixed(2);
+                    nomCur = 'USDT TRC20';
+                } else {
+                    nomVal = parseFloat(d.amount).toLocaleString('id-ID');
+                    nomCur = 'IDR';
+                }
+                // ── Time ──
                 const dObj = new Date(d.created_at);
-                const tgl = dObj.toLocaleDateString('id-ID', { day:'2-digit', month:'short' });
+                const tgl = dObj.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'2-digit' });
                 const jam = dObj.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
-                return `<div class="h-row">
-  <div class="h-icon ${iconClass}"><i class="${iconI}"></i></div>
-  <div class="h-info">
-    <div class="h-method">${d.method || 'QRIS'}</div>
-    <div class="h-nominal">${nominalFmt}</div>
-  </div>
-  <div class="h-right">
-    <div class="h-date">${tgl}<br>${jam}</div>
-    <span class="badge-status ${bc}"><i class="fas ${ic}"></i> ${st}</span>
-  </div>
-</div>`;
+                return `<tr>
+  <td><div class="td-time"><span class="t-date">${tgl}</span><span class="t-hour">${jam}</span></div></td>
+  <td><div class="td-nominal"><span class="n-val">${nomVal}</span><span class="n-cur">${nomCur}</span></div></td>
+  <td><div class="td-method ${methodClass}"><i class="${methodIcon}"></i><span class="m-lbl">${methodLabel}</span></div></td>
+  <td class="td-status"><span class="badge-status ${bc}"><i class="fas ${ic}"></i> ${stLabel}</span></td>
+</tr>`;
             }).join('');
+            // scroll to top so newest = first visible
+            const scrollBody = document.getElementById('history-body');
+            if(scrollBody) scrollBody.scrollTop = 0;
         } else {
-            if(body) body.innerHTML = '<div class="h-empty"><i class="fas fa-inbox"></i><br>Belum ada transaksi</div>';
+            tbody.innerHTML = '<tr><td colspan="4"><div class="h-empty"><i class="fas fa-inbox"></i><br>Belum ada transaksi</div></td></tr>';
         }
     } catch(err) {
-        if(body) body.innerHTML = '<div class="h-empty"><i class="fas fa-triangle-exclamation"></i><br>Gagal memuat riwayat</div>';
+        if(tbody) tbody.innerHTML = '<tr><td colspan="4"><div class="h-empty"><i class="fas fa-triangle-exclamation"></i><br>Gagal memuat</div></td></tr>';
     }
 }
 
