@@ -850,7 +850,7 @@
                         <td colspan="4">Memuat data referral...</td>
                     </tr>
                 </tbody>
-            </table>
+             </table>
         </div>
     </div>
 </div>
@@ -978,6 +978,12 @@
         const inboxContainer = document.getElementById('inbox-container');
         
         try {
+            // Jika belum login, tampilkan pesan
+            if (!currentUser) {
+                inboxContainer.innerHTML = `<div class="inbox-empty">Silakan login terlebih dahulu</div>`;
+                return;
+            }
+            
             const { data: claimed, error: claimedError } = await supabase
                 .from('claimed_bonuses')
                 .select('bonus_id')
@@ -1125,6 +1131,12 @@
         const historyBody = document.getElementById('history-body');
         
         try {
+            // Jika belum login atau refCode belum ada, tampilkan data kosong
+            if (!currentUser || !userData.refCode) {
+                historyBody.innerHTML = `<tr class="empty-row"><td colspan="4">Login untuk melihat riwayat referral</td></tr>`;
+                return;
+            }
+            
             const { data: referrals, error } = await supabase
                 .from('users')
                 .select('username, created_at, referred_by, first_deposit_at, deposit_amount')
@@ -1177,6 +1189,8 @@
     // ==================== UPDATE REFERRAL BONUS ====================
     async function updateReferralBonus() {
         try {
+            if (!currentUser || !userData.refCode) return;
+            
             const { data: activeRefs, error: countError } = await supabase
                 .from('users')
                 .select('id')
@@ -1222,17 +1236,22 @@
     // ==================== MAIN INITIALIZATION ====================
     async function init() {
         try {
+            // Cek session user
             const { data: { session }, error: sessionError } = await supabase.auth.getSession();
             
             if (sessionError || !session) {
                 console.log("Tidak ada sesi, silakan login terlebih dahulu");
                 document.getElementById('ref-code').innerText = 'LOGIN DULU';
                 document.getElementById('ref-link').innerText = 'Silakan login untuk melihat kode referral';
+                // Tampilkan data kosong
+                document.getElementById('history-body').innerHTML = '<tr class="empty-row"><td colspan="4">Login untuk melihat riwayat referral</td></tr>';
+                document.getElementById('inbox-container').innerHTML = '<div class="inbox-empty">Silakan login terlebih dahulu</div>';
                 return;
             }
             
             currentUser = session.user;
             
+            // Ambil atau buat user data
             let { data: user, error: userError } = await supabase
                 .from('users')
                 .select('*')
@@ -1273,6 +1292,8 @@
             };
             
             updateUI();
+            
+            // Load data setelah userData siap
             await loadReferralHistory();
             await updateReferralBonus();
             await loadInbox();
