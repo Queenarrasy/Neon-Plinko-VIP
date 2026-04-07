@@ -36,7 +36,7 @@
         .podium-prize.silver{background:rgba(180,180,180,.15);border:1.5px solid rgba(180,180,180,.4);order:1;}
         .podium-prize.bronze{background:rgba(200,100,30,.15);border:1.5px solid rgba(200,100,30,.4);order:3;}
         .podium-prize .rank{font-size:8px;font-weight:900;letter-spacing:1px;text-transform:uppercase;opacity:.8;}
-        .podium-prize.gold .rank{color:#ffc800;} .podium-prize.silver .rank{color:#ccc;} .podium-prize.bronze .rank{color:#cd7c3a;}
+        .podium-prize.gold .rank{color:#ffc800;}.podium-prize.silver .rank{color:#ccc;}.podium-prize.bronze .rank{color:#cd7c3a;}
         .podium-prize .amount{font-size:14px;font-weight:900;color:#fff;}
         .podium-prize.gold .amount{font-size:17px;color:#ffc800;text-shadow:0 0 10px rgba(251,200,0,.6);}
         .banner-rules{background:rgba(0,0,15,.9);padding:12px 16px;border-top:1px solid rgba(251,255,0,.15);}
@@ -140,6 +140,9 @@
         .td-status{padding:8px 4px;}
         .h-empty{text-align:center;padding:28px 12px;opacity:.4;font-size:11px;color:#fff;}
 
+        /* ── ERROR BOX ── */
+        .error-box{background:rgba(255,0,0,.08);border:1px solid rgba(255,0,0,.3);border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:11px;color:#ff6666;text-align:center;}
+
         /* ── MODAL ── */
         #modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(10px);}
         .modal-box{width:88%;max-width:320px;background:rgba(0,0,15,.99);border:1.5px solid var(--pink);border-top:2px solid var(--yellow);border-radius:22px;padding:26px;text-align:center;box-shadow:0 0 20px rgba(255,0,119,.25);animation:zoomIn .3s ease;}
@@ -152,6 +155,10 @@
         .nav-item{color:rgba(255,255,255,.3);text-decoration:none;text-align:center;font-size:9px;font-weight:900;flex:1;letter-spacing:.5px;text-transform:uppercase;}
         .nav-item.active{color:var(--yellow);text-shadow:0 0 8px rgba(251,255,0,.5);}
         .nav-item i{font-size:20px;display:block;margin-bottom:3px;}
+
+        /* ── DEBUG PANEL (tampil jika ada error koneksi) ── */
+        #debug-panel{display:none;background:rgba(255,100,0,.07);border:1px solid rgba(255,100,0,.3);border-radius:12px;padding:12px;margin-bottom:12px;font-size:9px;color:rgba(255,200,100,.7);word-break:break-all;line-height:1.6;}
+        #debug-panel.show{display:block;}
     </style>
 </head>
 <body>
@@ -165,6 +172,9 @@
 </div>
 
 <div class="container">
+
+    <!-- Debug Panel (hidden by default) -->
+    <div id="debug-panel"></div>
 
     <!-- Banner Podium -->
     <div class="banner-section">
@@ -211,7 +221,7 @@
         <div class="ref-code-hint">✨ Klik untuk salin kode ✨</div>
         <div class="ref-link-box" onclick="copyRefLink()">
             <div class="ref-link-label"><i class="fas fa-link"></i> LINK UNDANGAN</div>
-            <div id="ref-link"><i class="fas fa-spinner fa-spin" style="font-size:0.7rem;"></i> Memuat link...</div>
+            <div id="ref-link">Memuat link...</div>
         </div>
         <div class="ref-share-btns">
             <button class="btn-main btn-blue" onclick="shareWA()"><i class="fab fa-whatsapp"></i> WhatsApp</button>
@@ -233,7 +243,11 @@
 
     <!-- Kotak Masuk -->
     <div class="card">
-        <div class="section-title"><i class="fas fa-inbox"></i> KOTAK MASUK</div>
+        <div class="section-title"><i class="fas fa-inbox"></i> KOTAK MASUK
+            <span style="margin-left:auto;font-size:9px;cursor:pointer;color:rgba(255,255,255,.4);font-weight:700;" onclick="loadInbox()">
+                <i class="fas fa-rotate-right"></i> Refresh
+            </span>
+        </div>
         <div id="inbox-container">
             <div class="inbox-empty"><i class="fas fa-envelope-open-text" style="font-size:24px;margin-bottom:10px;display:block;"></i>Memuat pesan...</div>
         </div>
@@ -267,10 +281,12 @@
             </table>
         </div>
     </div>
+
+    <div style="height:16px;"></div>
 </div>
 
 <!-- Modal -->
-<div id="modal-overlay">
+<div id="modal-overlay" style="display:none;">
     <div class="modal-box">
         <h3 id="m-title">NOTIFIKASI</h3>
         <p id="m-msg"></p>
@@ -288,45 +304,35 @@
 </div>
 
 <script>
-// ════════════════════════════════════════════════════════════════
-// REWARD.HTML — NEON PLINKO VIP  (FIXED v2)
-// ════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+// CONFIG — GANTI SUPABASE_URL & SUPABASE_ANON_KEY dengan milik Anda
+// Gunakan "anon public" key dari Settings → API di dashboard Supabase
+// ═══════════════════════════════════════════════════════════════════
+const SUPABASE_URL      = 'https://jcxgankdwfwfnbwlkkpz.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjeGdhbmtkd2Z3Zm5id2xra3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNDU0MjMsImV4cCI6MjA5MDgyMTQyM30.qBNQNZxeHLfG7U-HZDSkYg1Y4awPKcJ7J2XjnkiJ6PI';
+// Contoh format anon key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.xxxx
 
-// ── CONFIG ──────────────────────────────────────────────────────
-const SUPABASE_URL = 'https://jcxgankdwfwfnbwlkkpz.supabase.co';
-// KEY: gunakan anon key dari config.js (JWT panjang)
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjeGdhbmtkd2Z3Zm5id2xra3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNDU0MjMsImV4cCI6MjA5MDgyMTQyM30.qBNQNZxeHLfG7U-HZDSkYg1Y4awPKcJ7J2XjnkiJ6PI';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// ── INISIALISASI SUPABASE ────────────────────────────────────────────────────
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ── KONSTANTA ────────────────────────────────────────────────────
+// ── KONSTANTA ────────────────────────────────────────────────────────────────
 const KOMISI_PER_REF    = 5000;
 const MIN_DEPOSIT_AKTIF = 20000;
 
-// ── BASE URL untuk link referral ─────────────────────────────────
-// Gunakan lokasi aktual halaman ini sebagai base
-function getBaseUrl() {
-    const loc = window.location;
-    // ambil semua kecuali filename & query
-    const parts = loc.pathname.split('/');
-    parts.pop(); // hilangkan 'reward.html'
-    const dir = parts.join('/');
-    return loc.origin + dir;
-}
-
-// ── STATE ────────────────────────────────────────────────────────
+// ── STATE ───────────────────────────────────────────────────────────────────
 let currentUsername = '';
 let userData = {
-    id:             null,
-    refCode:        '',
-    refLink:        '',
-    totalReferral:  0,
+    id: null,
+    refCode: '',
+    refLink: '',
+    totalReferral: 0,
     activeReferral: 0,
-    totalKomisi:    0,
+    totalKomisi: 0,
     bonusAvailable: 0,
-    saldo:          0
+    saldo: 0
 };
 
-// ── PARTICLES ────────────────────────────────────────────────────
+// ── PARTICLES ───────────────────────────────────────────────────────────────
 if (typeof particlesJS !== 'undefined') {
     particlesJS('particles-js', {
         particles: {
@@ -342,7 +348,7 @@ if (typeof particlesJS !== 'undefined') {
     });
 }
 
-// ── HELPERS ──────────────────────────────────────────────────────
+// ── HELPERS ─────────────────────────────────────────────────────────────────
 function showAlert(msg) {
     const a = document.getElementById('neon-alert');
     a.innerText = msg;
@@ -365,194 +371,245 @@ function formatRupiah(n) {
     return new Intl.NumberFormat('id-ID').format(n || 0);
 }
 
-// ── UPDATE UI ────────────────────────────────────────────────────
+// ── FIX: generate kode unik per-user berdasarkan username ───────────────────
+function generateRefCode(username) {
+    // Buat kode yang konsisten dari username (bukan random, agar tidak berubah tiap kali)
+    const hash = Array.from(username).reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0);
+    const part  = Math.abs(hash).toString(36).toUpperCase().padEnd(6, '0').substring(0, 6);
+    return 'VIP' + part;
+}
+
 function updateUI() {
-    // Saldo header
-    const saldoEl = document.getElementById('display-saldo');
-    if (saldoEl) saldoEl.innerHTML = 'IDR ' + formatRupiah(userData.saldo);
+    document.getElementById('display-saldo').innerHTML = 'IDR ' + formatRupiah(userData.saldo);
+    document.getElementById('total-ref').innerText     = userData.totalReferral;
+    document.getElementById('active-ref').innerText    = userData.activeReferral;
+    document.getElementById('total-komisi').innerHTML  = formatRupiah(userData.totalKomisi);
+    document.getElementById('bonus-amount').innerHTML  = 'IDR ' + formatRupiah(userData.bonusAvailable);
 
-    // Stats
-    const elTotalRef   = document.getElementById('total-ref');
-    const elActiveRef  = document.getElementById('active-ref');
-    const elTotalKom   = document.getElementById('total-komisi');
-    const elBonusAmt   = document.getElementById('bonus-amount');
-    if (elTotalRef)  elTotalRef.innerText  = userData.totalReferral;
-    if (elActiveRef) elActiveRef.innerText = userData.activeReferral;
-    if (elTotalKom)  elTotalKom.innerHTML  = formatRupiah(userData.totalKomisi);
-    if (elBonusAmt)  elBonusAmt.innerHTML  = 'IDR ' + formatRupiah(userData.bonusAvailable);
+    // Tampilkan kode referral
+    const refCodeEl = document.getElementById('ref-code');
+    if (userData.refCode) {
+        refCodeEl.innerText = userData.refCode;
+    } else {
+        refCodeEl.innerHTML = '<span style="font-size:.8rem;color:rgba(255,255,255,.4)">Memuat...</span>';
+    }
 
-    // Kode referral
-    const elCode = document.getElementById('ref-code');
-    if (elCode) elCode.innerText = userData.refCode || '—';
+    // Tampilkan link referral
+    document.getElementById('ref-link').innerText = userData.refLink || '—';
 
-    // Link referral
-    const elLink = document.getElementById('ref-link');
-    if (elLink) elLink.innerText = userData.refLink || '—';
-
-    // Tombol klaim
+    // Enable/disable tombol klaim
     const claimBtn = document.getElementById('claim-btn');
     if (claimBtn) claimBtn.disabled = userData.bonusAvailable <= 0;
 }
 
-// ── SALIN / SHARE ────────────────────────────────────────────────
+// ── SALIN / SHARE ────────────────────────────────────────────────────────────
 function copyRefCode() {
     if (!userData.refCode || userData.refCode === '—') {
-        showAlert('⚠️ Kode referral belum tersedia');
+        showAlert('⚠️ Kode referral belum tersedia!');
         return;
     }
-    navigator.clipboard.writeText(userData.refCode)
-        .then(() => showAlert('✅ KODE REFERRAL DISALIN: ' + userData.refCode))
-        .catch(() => {
-            // Fallback untuk browser yang tidak support clipboard API
-            const tmp = document.createElement('textarea');
-            tmp.value = userData.refCode;
-            document.body.appendChild(tmp);
-            tmp.select();
-            document.execCommand('copy');
-            document.body.removeChild(tmp);
-            showAlert('✅ KODE REFERRAL DISALIN: ' + userData.refCode);
-        });
+    navigator.clipboard.writeText(userData.refCode).catch(() => {
+        // fallback untuk browser yang tidak support clipboard
+        const el = document.createElement('textarea');
+        el.value = userData.refCode;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+    });
+    showAlert('✅ KODE REFERRAL DISALIN: ' + userData.refCode);
 }
 
 function copyRefLink() {
     if (!userData.refLink || userData.refLink === '—') {
-        showAlert('⚠️ Link referral belum tersedia');
+        showAlert('⚠️ Link referral belum tersedia!');
         return;
     }
-    navigator.clipboard.writeText(userData.refLink)
-        .then(() => showAlert('✅ LINK UNDANGAN DISALIN!'))
-        .catch(() => {
-            const tmp = document.createElement('textarea');
-            tmp.value = userData.refLink;
-            document.body.appendChild(tmp);
-            tmp.select();
-            document.execCommand('copy');
-            document.body.removeChild(tmp);
-            showAlert('✅ LINK UNDANGAN DISALIN!');
-        });
+    navigator.clipboard.writeText(userData.refLink).catch(() => {
+        const el = document.createElement('textarea');
+        el.value = userData.refLink;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+    });
+    showAlert('✅ LINK UNDANGAN DISALIN!');
 }
 
 function shareWA() {
-    if (!userData.refCode) { showAlert('⚠️ Login terlebih dahulu'); return; }
+    if (!userData.refCode) return;
     const txt = `🎮 Gabung NEON PLINKO VIP!\n\nKode referral: ${userData.refCode}\nLink: ${userData.refLink}\n\n✨ Deposit min Rp20.000 & kita dapat bonus Rp5.000!`;
     window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
 }
 
 function shareLink() {
-    if (!userData.refLink) { showAlert('⚠️ Login terlebih dahulu'); return; }
-    if (navigator.share) {
+    if (navigator.share && userData.refLink) {
         navigator.share({
             title: 'NEON PLINKO VIP',
-            text: `Daftar NEON PLINKO VIP pakai kode: ${userData.refCode}`,
-            url: userData.refLink
-        }).catch(() => copyRefLink());
+            text:  `Daftar NEON PLINKO VIP pakai kode: ${userData.refCode}`,
+            url:   userData.refLink
+        }).catch(() => {});
     } else {
         copyRefLink();
     }
 }
 
-// ── RESOLVE USERNAME ─────────────────────────────────────────────
+// ── RESOLVE LOGIN ─────────────────────────────────────────────────────────
 function getLocalUsername() {
+    // Coba semua kemungkinan key localStorage
     return localStorage.getItem('neon_user')
-        || localStorage.getItem('user_session')
-        || localStorage.getItem('user_neon')
         || localStorage.getItem('username')
         || localStorage.getItem('neon_username')
+        || localStorage.getItem('user')
         || null;
 }
 
-// ── INIT ─────────────────────────────────────────────────────────
+// ── DEBUG HELPER ─────────────────────────────────────────────────────────
+function debugLog(msg) {
+    const panel = document.getElementById('debug-panel');
+    const ts    = new Date().toLocaleTimeString('id-ID');
+    panel.innerHTML += `[${ts}] ${msg}<br>`;
+    panel.classList.add('show');
+    console.log('[DEBUG]', msg);
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
 async function init() {
     const localUser = getLocalUsername();
 
     if (!localUser) {
-        // Tampilkan status tidak login
-        const elCode = document.getElementById('ref-code');
-        const elLink = document.getElementById('ref-link');
-        if (elCode) elCode.innerText = 'LOGIN DULU';
-        if (elLink) elLink.innerText = 'Silakan login untuk melihat kode referral';
+        document.getElementById('ref-code').innerText = 'LOGIN DULU';
+        document.getElementById('ref-link').innerText = 'Silakan login untuk melihat kode referral';
         document.getElementById('history-body').innerHTML =
             '<tr><td colspan="4"><div class="h-empty"><i class="fas fa-lock"></i><br>Silakan login</div></td></tr>';
         document.getElementById('inbox-container').innerHTML =
-            '<div class="inbox-empty"><i class="fas fa-lock" style="font-size:24px;margin-bottom:10px;display:block;"></i>Silakan login</div>';
-        showAlert('⚠️ Silakan login terlebih dahulu');
+            '<div class="inbox-empty"><i class="fas fa-lock" style="font-size:24px;margin-bottom:10px;display:block;"></i>Silakan login untuk melihat pesan</div>';
         return;
     }
 
-    currentUsername = localUser;
+    currentUsername = localUser.trim().toLowerCase();
 
     try {
-        // ── Ambil data profil lengkap ──
+        // ── Ambil profil dari Supabase ──
         const { data: prof, error: pErr } = await supabase
             .from('profiles')
             .select('*')
             .eq('username', currentUsername)
-            .single();
+            .maybeSingle(); // pakai maybeSingle agar tidak error jika tidak ada
 
-        if (pErr) throw pErr;
-        if (!prof) throw new Error('Data profil tidak ditemukan');
-
-        // ── Generate referral_code jika belum ada ──
-        let refCode = prof.referral_code;
-        if (!refCode || refCode.trim() === '') {
-            refCode = 'VIP' + Math.random().toString(36).substring(2, 8).toUpperCase();
-            const { error: updErr } = await supabase
-                .from('profiles')
-                .update({ referral_code: refCode })
-                .eq('username', currentUsername);
-            if (updErr) console.warn('Gagal simpan referral_code:', updErr);
+        if (pErr) {
+            debugLog('Error ambil profil: ' + JSON.stringify(pErr));
+            throw pErr;
         }
 
-        // ── Buat refLink dengan base URL yang benar ──
-        const baseUrl = getBaseUrl();
-        const refLink = baseUrl + '/index.html?ref=' + refCode;
+        if (!prof) {
+            // User tidak ada di tabel profiles — buat profil baru
+            const newRefCode = generateRefCode(currentUsername);
+            const { data: inserted, error: insErr } = await supabase
+                .from('profiles')
+                .insert({
+                    username:       currentUsername,
+                    saldo:          0,
+                    total_komisi:   0,
+                    bonus_available:0,
+                    total_referral: 0,
+                    active_referral:0,
+                    referral_code:  newRefCode
+                })
+                .select()
+                .single();
 
-        // ── Set state userData ──
-        userData = {
-            id:             prof.id,
-            refCode:        refCode,
-            refLink:        refLink,
-            totalReferral:  prof.total_referral   || 0,
-            activeReferral: prof.active_referral  || 0,
-            totalKomisi:    Number(prof.total_komisi      || 0),
-            bonusAvailable: Number(prof.bonus_available   || 0),
-            saldo:          Number(prof.saldo             || 0)
-        };
+            if (insErr) {
+                debugLog('Error insert profil baru: ' + JSON.stringify(insErr));
+                throw insErr;
+            }
 
-        // Render UI awal dari data DB
+            userData = {
+                id:             inserted.id,
+                refCode:        newRefCode,
+                refLink:        buildRefLink(newRefCode),
+                totalReferral:  0,
+                activeReferral: 0,
+                totalKomisi:    0,
+                bonusAvailable: 0,
+                saldo:          0
+            };
+        } else {
+            // Pastikan referral_code ada — generate jika null/kosong
+            let refCode = prof.referral_code;
+            if (!refCode) {
+                refCode = generateRefCode(currentUsername);
+                const { error: updRCErr } = await supabase
+                    .from('profiles')
+                    .update({ referral_code: refCode })
+                    .eq('username', currentUsername);
+                if (updRCErr) debugLog('Gagal simpan referral_code: ' + JSON.stringify(updRCErr));
+            }
+
+            userData = {
+                id:             prof.id,
+                refCode:        refCode,
+                refLink:        buildRefLink(refCode),
+                totalReferral:  Number(prof.total_referral)   || 0,
+                activeReferral: Number(prof.active_referral)  || 0,
+                totalKomisi:    Number(prof.total_komisi)      || 0,
+                bonusAvailable: Number(prof.bonus_available)  || 0,
+                saldo:          Number(prof.saldo)             || 0
+            };
+        }
+
         updateUI();
 
-        // ── Hitung ulang referral secara real-time dari DB ──
+        // Hitung ulang statistik referral & muat data
         await updateReferralBonus();
-
-        // ── Muat tabel riwayat & inbox ──
-        await Promise.all([loadReferralHistory(), loadInbox()]);
+        await loadReferralHistory();
+        await loadInbox();
 
     } catch (e) {
         console.error('init error:', e);
-        const elCode = document.getElementById('ref-code');
-        if (elCode) elCode.innerText = 'ERROR';
-        showAlert('❌ Gagal memuat data: ' + (e.message || 'Coba refresh'));
+        debugLog('init error: ' + e.message);
+
+        if (e.message && e.message.includes('Failed to fetch')) {
+            showAlert('❌ Tidak dapat terhubung ke server. Periksa koneksi internet Anda.');
+        } else if (e.message && (e.message.includes('401') || e.message.includes('Invalid API key'))) {
+            showAlert('❌ API Key Supabase tidak valid. Periksa konfigurasi SUPABASE_ANON_KEY.');
+        } else {
+            showAlert('❌ Gagal memuat data. Coba refresh halaman.');
+        }
+
+        document.getElementById('ref-code').innerText = 'ERROR';
+        document.getElementById('history-body').innerHTML =
+            '<tr><td colspan="4"><div class="h-empty"><i class="fas fa-triangle-exclamation"></i><br>Gagal memuat data</div></td></tr>';
     }
 }
 
-// ── UPDATE REFERRAL BONUS ─────────────────────────────────────────
+// ── BUILD REF LINK ────────────────────────────────────────────────────────
+function buildRefLink(code) {
+    // Gunakan URL halaman saat ini sebagai base
+    const base = window.location.origin + window.location.pathname.replace(/reward[^/]*$/, '');
+    return base + 'register.html?ref=' + code;
+}
+
+// ── UPDATE REFERRAL BONUS ─────────────────────────────────────────────────
 async function updateReferralBonus() {
     if (!userData.refCode) return;
 
     try {
-        // Ambil semua user yang terdaftar dengan referred_by = refCode kita
+        // Ambil semua user yang referred_by = referral_code kita
         const { data: refs, error } = await supabase
             .from('profiles')
             .select('username, created_at, total_deposit_current, last_deposit_amount, saldo')
             .eq('referred_by', userData.refCode)
             .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+            debugLog('updateReferralBonus error: ' + JSON.stringify(error));
+            throw error;
+        }
 
         const all = refs || [];
 
-        // Referral aktif = sudah deposit >= 20.000
+        // Cek aktif: total_deposit_current >= 20000 OR last_deposit_amount >= 20000
         const active = all.filter(r => {
             const totalDep = Number(r.total_deposit_current || 0);
             const lastDep  = Number(r.last_deposit_amount   || 0);
@@ -563,25 +620,22 @@ async function updateReferralBonus() {
 
         userData.totalReferral  = all.length;
         userData.activeReferral = active.length;
-
-        // Hanya update bonus jika lebih besar (tidak override jika sudah ada bonus pending)
+        // Hanya update bonusAvailable jika lebih besar (tidak overwrite bonus pending)
         if (newBonus > userData.bonusAvailable) {
             userData.bonusAvailable = newBonus;
         }
 
-        // Simpan kembali ke DB (toleran jika kolom belum ada)
-        try {
-            await supabase
-                .from('profiles')
-                .update({
-                    total_referral:  all.length,
-                    active_referral: active.length,
-                    bonus_available: userData.bonusAvailable
-                })
-                .eq('username', currentUsername);
-        } catch (dbUpErr) {
-            console.warn('Kolom total_referral/active_referral/bonus_available mungkin belum ada di DB:', dbUpErr);
-        }
+        // Simpan ke DB
+        const { error: updErr } = await supabase
+            .from('profiles')
+            .update({
+                total_referral:  all.length,
+                active_referral: active.length,
+                bonus_available: userData.bonusAvailable
+            })
+            .eq('username', currentUsername);
+
+        if (updErr) debugLog('updateReferralBonus DB update gagal: ' + JSON.stringify(updErr));
 
         updateUI();
 
@@ -590,10 +644,9 @@ async function updateReferralBonus() {
     }
 }
 
-// ── LOAD REFERRAL HISTORY ──────────────────────────────────────────
+// ── LOAD REFERRAL HISTORY ──────────────────────────────────────────────────
 async function loadReferralHistory() {
     const tbody = document.getElementById('history-body');
-    if (!tbody) return;
 
     if (!userData.refCode) {
         tbody.innerHTML = '<tr><td colspan="4"><div class="h-empty"><i class="fas fa-lock"></i><br>Silakan login</div></td></tr>';
@@ -609,7 +662,10 @@ async function loadReferralHistory() {
             .eq('referred_by', userData.refCode)
             .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+            debugLog('loadReferralHistory error: ' + JSON.stringify(error));
+            throw error;
+        }
 
         if (!refs || refs.length === 0) {
             tbody.innerHTML = '<tr><td colspan="4"><div class="h-empty"><i class="fas fa-users-slash"></i><br>Belum ada undangan</div></td></tr>';
@@ -617,19 +673,19 @@ async function loadReferralHistory() {
         }
 
         tbody.innerHTML = refs.map(r => {
-            const totalDep  = Number(r.total_deposit_current || 0);
-            const lastDep   = Number(r.last_deposit_amount   || 0);
-            const isActive  = (totalDep >= MIN_DEPOSIT_AKTIF) || (totalDep === 0 && lastDep >= MIN_DEPOSIT_AKTIF);
-            const bonusVal  = isActive ? KOMISI_PER_REF : 0;
+            const totalDep = Number(r.total_deposit_current || 0);
+            const lastDep  = Number(r.last_deposit_amount   || 0);
+            const isActive = (totalDep >= MIN_DEPOSIT_AKTIF) || (totalDep === 0 && lastDep >= MIN_DEPOSIT_AKTIF);
+            const bonusVal = isActive ? KOMISI_PER_REF : 0;
 
-            const dObj  = new Date(r.created_at);
-            const tgl   = dObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: '2-digit' });
-            const jam   = dObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            const dObj     = new Date(r.created_at);
+            const tgl      = dObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: '2-digit' });
+            const jam      = dObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
-            const badgeClass = isActive ? 'badge-aktif' : 'badge-pending';
+            const badgeClass = isActive ? 'badge-aktif'     : 'badge-pending';
             const badgeIcon  = isActive ? 'fa-circle-check' : 'fa-clock';
-            const badgeTxt   = isActive ? 'AKTIF' : 'PENDING';
-            const subTxt     = isActive ? 'Deposit ✓' : 'Belum deposit';
+            const badgeTxt   = isActive ? 'AKTIF'           : 'PENDING';
+            const subTxt     = isActive ? 'Deposit ✓'       : 'Belum deposit';
 
             return `<tr>
   <td><div class="td-time">
@@ -652,7 +708,6 @@ async function loadReferralHistory() {
 </tr>`;
         }).join('');
 
-        // Scroll ke atas
         const scrollBody = document.querySelector('.hist-scroll-body');
         if (scrollBody) scrollBody.scrollTop = 0;
 
@@ -662,17 +717,16 @@ async function loadReferralHistory() {
     }
 }
 
-// ── LOAD INBOX ────────────────────────────────────────────────────
+// ── LOAD INBOX ────────────────────────────────────────────────────────────
 async function loadInbox() {
     const container = document.getElementById('inbox-container');
-    if (!container) return;
 
     if (!currentUsername) {
         container.innerHTML = '<div class="inbox-empty">Silakan login</div>';
         return;
     }
 
-    container.innerHTML = '<div class="inbox-empty"><i class="fas fa-spinner fa-spin" style="font-size:20px;margin-bottom:8px;display:block;"></i>Memuat pesan...</div>';
+    container.innerHTML = '<div class="inbox-empty"><i class="fas fa-spinner fa-spin" style="font-size:20px;margin-bottom:10px;display:block;"></i>Memuat pesan...</div>';
 
     try {
         const { data: messages, error } = await supabase
@@ -682,7 +736,10 @@ async function loadInbox() {
             .eq('status', 'pending')
             .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+            debugLog('loadInbox error: ' + JSON.stringify(error));
+            throw error;
+        }
 
         if (!messages || messages.length === 0) {
             container.innerHTML = '<div class="inbox-empty"><i class="fas fa-inbox" style="font-size:24px;margin-bottom:10px;display:block;"></i>Tidak ada pesan baru</div>';
@@ -692,39 +749,49 @@ async function loadInbox() {
         container.innerHTML = messages.map(msg => `
 <div class="inbox-item" data-id="${msg.id}">
     <div class="inbox-header">
-        <span class="inbox-from"><i class="fas fa-trophy"></i> BONUS</span>
-        <span class="inbox-date">${new Date(msg.created_at).toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' })}</span>
+        <span class="inbox-from"><i class="fas fa-trophy"></i> BONUS ADMIN</span>
+        <span class="inbox-date">${new Date(msg.created_at).toLocaleDateString('id-ID', {day:'2-digit',month:'short',year:'numeric'})}</span>
     </div>
-    <div class="inbox-msg">${msg.pesan || 'Selamat! Anda mendapatkan bonus.'}</div>
+    <div class="inbox-msg">${escapeHtml(msg.pesan || 'Selamat! Anda mendapatkan bonus.')}</div>
     <div class="inbox-reward-amount">IDR ${formatRupiah(msg.nominal)}</div>
-    <button class="btn-claim-inbox" onclick="claimInboxBonus('${msg.id}', ${msg.nominal})">
-        <i class="fas fa-hand-holding-usd"></i> KLAIM SEKARANG
+    <button class="btn-claim-inbox" onclick="claimInboxBonus('${msg.id}', ${Number(msg.nominal)})">
+        <i class="fas fa-gift"></i> KLAIM SEKARANG
     </button>
 </div>`).join('');
 
     } catch (e) {
         console.error('loadInbox error:', e);
-        container.innerHTML = '<div class="inbox-empty"><i class="fas fa-triangle-exclamation" style="font-size:20px;margin-bottom:8px;display:block;"></i>Gagal memuat pesan</div>';
+        container.innerHTML = '<div class="inbox-empty"><i class="fas fa-triangle-exclamation" style="font-size:20px;margin-bottom:8px;display:block;color:var(--pink);"></i>Gagal memuat pesan</div>';
     }
 }
 
-// ── CLAIM INBOX BONUS ──────────────────────────────────────────────
+// ── ESCAPE HTML (keamanan) ────────────────────────────────────────────────
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+// ── CLAIM INBOX BONUS ─────────────────────────────────────────────────────
 async function claimInboxBonus(inboxId, amount) {
-    // Disable semua tombol klaim
+    // Disable semua tombol klaim untuk hindari double-klik
     document.querySelectorAll('.btn-claim-inbox').forEach(b => b.disabled = true);
 
     try {
         // 1. Update status inbox → claimed
         const { error: updInboxErr } = await supabase
             .from('inbox')
-            .update({ status: 'claimed' })
+            .update({ status: 'claimed', claimed_at: new Date().toISOString() })
             .eq('id', inboxId)
-            .eq('username', currentUsername);
+            .eq('username', currentUsername)
+            .eq('status', 'pending'); // double-check: hanya klaim jika masih pending
 
         if (updInboxErr) throw updInboxErr;
 
-        // 2. Tambah saldo di profiles
-        const newSaldo  = Number(userData.saldo)       + Number(amount);
+        // 2. Tambah saldo & total_komisi di profiles
+        const newSaldo  = Number(userData.saldo)      + Number(amount);
         const newKomisi = Number(userData.totalKomisi) + Number(amount);
 
         const { error: updProfErr } = await supabase
@@ -737,24 +804,22 @@ async function claimInboxBonus(inboxId, amount) {
 
         if (updProfErr) throw updProfErr;
 
-        // Update state lokal
         userData.saldo       = newSaldo;
         userData.totalKomisi = newKomisi;
         updateUI();
 
-        // Reload inbox & tampilkan sukses
         await loadInbox();
         showModal('BERHASIL!', `✨ Bonus IDR ${formatRupiah(amount)} telah ditambahkan ke saldo Anda!`);
         showAlert(`🎉 Bonus IDR ${formatRupiah(amount)} berhasil diklaim!`);
 
     } catch (e) {
         console.error('claimInboxBonus error:', e);
-        showAlert('❌ Gagal mengklaim bonus: ' + (e.message || 'Coba lagi'));
+        showAlert('❌ Gagal mengklaim bonus! ' + (e.message || ''));
         document.querySelectorAll('.btn-claim-inbox').forEach(b => b.disabled = false);
     }
 }
 
-// ── CLAIM BONUS MINGGUAN ───────────────────────────────────────────
+// ── CLAIM BONUS MINGGUAN ──────────────────────────────────────────────────
 async function claimBonus() {
     if (userData.bonusAvailable <= 0) {
         showAlert('⚠️ Tidak ada bonus yang tersedia saat ini!');
@@ -766,7 +831,7 @@ async function claimBonus() {
 
     try {
         const amount    = userData.bonusAvailable;
-        const newSaldo  = Number(userData.saldo)       + amount;
+        const newSaldo  = Number(userData.saldo)      + amount;
         const newKomisi = Number(userData.totalKomisi) + amount;
 
         const { error } = await supabase
@@ -790,17 +855,17 @@ async function claimBonus() {
 
     } catch (e) {
         console.error('claimBonus error:', e);
-        showAlert('❌ Gagal mengklaim bonus: ' + (e.message || 'Coba lagi'));
+        showAlert('❌ Gagal mengklaim bonus!');
         if (claimBtn) claimBtn.disabled = false;
     }
 }
 
-// ── EVENT LISTENERS ───────────────────────────────────────────────
+// ── EVENT LISTENERS ──────────────────────────────────────────────────────────
 document.addEventListener('click', e => {
     if (e.target === document.getElementById('modal-overlay')) closeModal();
 });
 
-// ── START ─────────────────────────────────────────────────────────
+// ── START ─────────────────────────────────────────────────────────────────────
 init();
 </script>
 </body>
