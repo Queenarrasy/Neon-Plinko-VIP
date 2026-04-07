@@ -47,7 +47,7 @@
 
         /* NOMINAL BUTTONS */
         .nominal-buttons{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;justify-content:center;}
-        .nominal-btn{background:rgba(0,0,35,.8);border:1px solid var(--blue);padding:10px 16px;border-radius:30px;font-size:12px;font-weight:900;color:#fff;cursor:pointer;transition:.2s;}
+        .nominal-btn{background:rgba(0,0,35,.8);border:1px solid var(--blue);padding:10px 12px;border-radius:30px;font-size:11px;font-weight:900;color:#fff;cursor:pointer;transition:.2s;}
         .nominal-btn:hover{background:var(--pink);border-color:var(--pink);transform:scale(1.02);}
 
         /* KALKULATOR */
@@ -81,6 +81,7 @@
             align-items:center;
             padding:10px 0;
             background:#fff;
+            min-height: 200px;
         }
         #img-qris{
             max-width:100%;
@@ -90,6 +91,17 @@
             margin:0 auto;
             border-radius:8px;
             object-fit:contain;
+        }
+        /* Fallback QR Code style */
+        .qris-fallback{
+            background: #000;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .qris-fallback svg{
+            max-width: 100%;
+            height: auto;
         }
         .qris-footer-text{text-align:center;margin-top:10px;padding-top:8px;border-top:1px solid #eee;font-size:8px;color:#888;letter-spacing:.3px;}
         .qris-label{font-size:11px;color:var(--yellow);margin-top:12px;font-weight:900;letter-spacing:1px;text-shadow:0 0 6px rgba(251,255,0,.4);text-transform:uppercase;}
@@ -118,7 +130,7 @@
         .btn-main:active{transform:scale(.96);}
         .btn-main:disabled{opacity:.4;cursor:not-allowed;filter:grayscale(1);}
 
-        /* HISTORY TABLE - dengan scroll sendiri */
+        /* HISTORY TABLE */
         .hist-section-title{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:900;color:var(--yellow);text-transform:uppercase;letter-spacing:1px;margin:20px 0 10px;}
         .hist-wrap{background:rgba(0,0,35,.7);border:1px solid rgba(0,34,255,.25);border-radius:18px;overflow:hidden;margin-top:8px;max-height:280px;overflow-y:auto;}
         .hist-scroll{width:100%;overflow-x:auto;}
@@ -179,20 +191,21 @@
     </div>
 
     <div class="form-box">
-        <!-- INPUT LABEL -->
         <label id="input-label"><i class="fas fa-coins"></i> Nominal Rupiah (Min 20.000)</label>
         <input type="number" id="amount-val" placeholder="0" oninput="calculate()" inputmode="numeric">
 
-        <!-- NOMINAL BUTTONS (hanya untuk QRIS) -->
+        <!-- NOMINAL BUTTONS - URUTAN BARU -->
         <div id="nominal-buttons" class="nominal-buttons">
+            <button type="button" class="nominal-btn" onclick="setNominal(20000)">Rp 20K</button>
             <button type="button" class="nominal-btn" onclick="setNominal(50000)">Rp 50K</button>
             <button type="button" class="nominal-btn" onclick="setNominal(100000)">Rp 100K</button>
+            <button type="button" class="nominal-btn" onclick="setNominal(150000)">Rp 150K</button>
             <button type="button" class="nominal-btn" onclick="setNominal(200000)">Rp 200K</button>
+            <button type="button" class="nominal-btn" onclick="setNominal(300000)">Rp 300K</button>
+            <button type="button" class="nominal-btn" onclick="setNominal(350000)">Rp 350K</button>
             <button type="button" class="nominal-btn" onclick="setNominal(500000)">Rp 500K</button>
-            <button type="button" class="nominal-btn" onclick="setNominal(1000000)">Rp 1JT</button>
         </div>
 
-        <!-- KALKULATOR -->
         <div class="calc-card">
             <div class="calc-row"><span>Kurs:</span><span id="rate-text">1 : 1</span></div>
             <div class="calc-row" id="fee-row" style="display:none;"><span>Fee USDT:</span><span>$2.00</span></div>
@@ -210,12 +223,12 @@
                     <div class="qris-merchant-id">NMID: ID1024357689073</div>
                     <div class="qris-merchant-kode">A01</div>
                 </div>
-                <div class="qris-image-wrapper">
+                <div class="qris-image-wrapper" id="qris-image-wrapper">
                     <img id="img-qris"
-                         src="Kode_QRIS_ARRASHY_STORE___SAXOPONE__Grosir.png"
+                         src="Kode QRIS ARRASHY STORE , SAXOPONE, Grosir.png"
                          alt="QRIS Pembayaran Neon Plinko VIP"
                          style="max-width:100%; width:auto; height:auto; display:block;"
-                         onerror="this.onerror=null; this.src='https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=QRIS_ARRASHY_STORE';">
+                         onerror="handleImageError()">
                 </div>
                 <div class="qris-footer-text">
                     SATU QRIS UNTUK SEMUA · www.aspi-qris.id<br>
@@ -244,13 +257,12 @@
             </div>
         </div>
 
-        <!-- KONFIRMASI BUTTON -->
         <button class="btn-main" id="btn-konfirmasi" onclick="submitDeposit()">
             <i class="fas fa-paper-plane"></i> KONFIRMASI PEMBAYARAN
         </button>
     </div>
 
-    <!-- RIWAYAT DEPOSIT dengan scroll sendiri -->
+    <!-- RIWAYAT DEPOSIT -->
     <div class="hist-section-title">
         <i class="fas fa-clock-rotate-left"></i> Riwayat Deposit
         <span style="margin-left:auto;font-size:9px;color:rgba(255,255,255,.35);cursor:pointer;padding:4px 8px;border-radius:20px;border:1px solid rgba(255,255,255,.1);" onclick="playSnd('click');loadHistory()">
@@ -261,26 +273,16 @@
         <div class="hist-scroll">
             <table class="ht">
                 <thead>
-                    <tr>
-                        <th>Metode</th>
-                        <th>Nominal</th>
-                        <th>Diterima</th>
-                        <th>Status</th>
-                        <th>Tanggal</th>
-                    </tr>
+                    <tr><th>Metode</th><th>Nominal</th><th>Diterima</th><th>Status</th><th>Tanggal</th></tr>
                 </thead>
                 <tbody id="history-body">
-                    <tr class="empty-row">
-                        <td colspan="5"><i class="fas fa-spinner fa-spin"></i> Memuat...</td>
-                    </tr>
+                    <tr class="empty-row"><td colspan="5"><i class="fas fa-spinner fa-spin"></i> Memuat...</td></tr>
                 </tbody>
-            </table>
+             </table>
         </div>
     </div>
+</div>
 
-</div><!-- /container -->
-
-<!-- MODAL -->
 <div id="modal-overlay">
     <div class="modal-box">
         <h3 id="m-title">NOTIFIKASI</h3>
@@ -289,7 +291,6 @@
     </div>
 </div>
 
-<!-- NAV BAR -->
 <div class="nav-bar">
     <a href="game.html"    class="nav-item" onclick="playSnd('click')"><i class="fas fa-gamepad"></i>PLAY</a>
     <a href="deposit.html" class="nav-item active"><i class="fas fa-wallet"></i>DEPO</a>
@@ -299,9 +300,6 @@
 </div>
 
 <script>
-/* ══════════════════════════════════════════════════════════
-   SUPABASE CONFIGURATION
-══════════════════════════════════════════════════════════ */
 const SUPA_URL = "https://jcxgankdwfwfnbwlkkpz.supabase.co";
 const SUPA_KEY = "sb_publishable_CaQyWYa_F3LDYEo8BDWAlQ_d0SscfCL";
 
@@ -312,6 +310,8 @@ function getDB() {
 }
 
 let curMethod = 'QRIS', KURS = 16800, FEE_USDT = 2, isSubmitting = false;
+let lastHistoryLength = 0;
+let refreshInterval = null;
 
 /* PARTICLES */
 particlesJS("particles-js", {
@@ -326,37 +326,13 @@ particlesJS("particles-js", {
     }
 });
 
-/* SOUND */
-function playSnd(t) {
-    try { document.getElementById('snd-' + t).cloneNode().play(); } catch(e) {}
-}
-
-/* ALERT */
-function showNeonAlert(msg, ok = false) {
-    const a = document.getElementById('neon-alert');
-    a.innerText = msg;
-    a.className = ok ? 'show success' : 'show';
-    setTimeout(() => a.className = '', 3500);
-}
-
-/* MODAL POPUP ALERT */
-function showModal(t, m) {
-    document.getElementById('m-title').innerText = t;
-    document.getElementById('m-msg').innerText = m;
-    document.getElementById('modal-overlay').style.display = 'flex';
-}
-function closeModal() {
-    playSnd('click');
-    document.getElementById('modal-overlay').style.display = 'none';
-}
-
-/* FORMAT */
+function playSnd(t) { try { document.getElementById('snd-' + t).cloneNode().play(); } catch(e) {} }
+function showNeonAlert(msg, ok = false) { const a = document.getElementById('neon-alert'); a.innerText = msg; a.className = ok ? 'show success' : 'show'; setTimeout(() => a.className = '', 3500); }
+function showModal(t, m) { document.getElementById('m-title').innerText = t; document.getElementById('m-msg').innerText = m; document.getElementById('modal-overlay').style.display = 'flex'; }
+function closeModal() { playSnd('click'); document.getElementById('modal-overlay').style.display = 'none'; }
 function formatRupiah(n) { return 'Rp ' + Math.floor(n || 0).toLocaleString('id-ID'); }
-
-/* GET USER */
 function getUser() { return localStorage.getItem('neon_user') || null; }
 
-/* SET NOMINAL (untuk QRIS) */
 function setNominal(nominal) {
     if (curMethod !== 'QRIS') return;
     playSnd('click');
@@ -364,15 +340,12 @@ function setNominal(nominal) {
     calculate();
 }
 
-/* METHOD SELECT */
 function selectMethod(m) {
     if (isSubmitting) return;
     playSnd('click');
     curMethod = m;
-
     document.getElementById('m-qris').classList.toggle('active', m === 'QRIS');
     document.getElementById('m-usdt').classList.toggle('active', m === 'USDT');
-
     if (m === 'QRIS') {
         document.getElementById('input-label').innerHTML = '<i class="fas fa-coins"></i> Nominal Rupiah (Min 20.000)';
         document.getElementById('amount-val').placeholder = '0';
@@ -391,7 +364,6 @@ function selectMethod(m) {
     calculate();
 }
 
-/* CALCULATE */
 function calculate() {
     const input = parseFloat(document.getElementById('amount-val').value) || 0;
     let net = 0;
@@ -401,168 +373,95 @@ function calculate() {
     } else {
         const rateText = "IDR " + KURS.toLocaleString();
         document.getElementById('rate-text').innerHTML = `1 USDT = ${rateText}`;
-        if (input > FEE_USDT) {
-            net = (input - FEE_USDT) * KURS;
-        } else {
-            net = 0;
-        }
+        net = input > FEE_USDT ? (input - FEE_USDT) * KURS : 0;
     }
     document.getElementById('net-text').innerHTML = "IDR " + Math.floor(net).toLocaleString('id-ID');
     return Math.floor(net);
 }
 
-/* SUBMIT DEPOSIT */
+/* FALLBACK QRIS - Membuat QR Code dengan data merchant */
+function handleImageError() {
+    console.log("Gambar QRIS tidak ditemukan, membuat fallback QR Code...");
+    const wrapper = document.getElementById('qris-image-wrapper');
+    if (wrapper) {
+        // Data untuk QRIS
+        const qrisData = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=ARRASHY%20STORE%20SAXOPONE%20GROSIR%0ANMID:%20ID1024357689073%0AA01";
+        wrapper.innerHTML = `<img id="img-qris" src="${qrisData}" alt="QRIS Pembayaran" style="max-width:100%; width:auto; height:auto; display:block; border-radius:8px;" onerror="this.src='https://chart.googleapis.com/chart?chs=250x250&cht=qr&chl=ARRASHY%20STORE%20SAXOPONE%20GROSIR'">`;
+    }
+}
+
 async function submitDeposit() {
     if (isSubmitting) return;
     let amount = parseFloat(document.getElementById('amount-val').value) || 0;
     const user = getUser();
-
-    if (!user) {
-        playSnd('error');
-        return showModal("ERROR", "Sesi login hilang. Harap login kembali.");
-    }
-
-    // VALIDASI MINIMUM dengan POPUP ALERT
-    if (curMethod === 'QRIS') {
-        if (amount < 20000) {
-            playSnd('error');
-            showModal("PERINGATAN", "Minimum Deposit QRIS adalah Rp 20.000\n\nMasukkan nominal minimal Rp 20.000 untuk melanjutkan transaksi.");
-            return;
-        }
-    } else if (curMethod === 'USDT') {
-        if (amount < 10) {
-            playSnd('error');
-            showModal("PERINGATAN", "Minimum Deposit USDT adalah $10.00\n\nMasukkan minimal $10.00 untuk melanjutkan transaksi.");
-            return;
-        }
-    }
-
-    // Hitung net_receive
-    let netReceive = 0;
-    if (curMethod === 'QRIS') {
-        netReceive = amount;
-    } else {
-        netReceive = (amount > FEE_USDT) ? (amount - FEE_USDT) * KURS : 0;
-    }
-
+    if (!user) { playSnd('error'); return showModal("ERROR", "Sesi login hilang. Harap login kembali."); }
+    if (curMethod === 'QRIS' && amount < 20000) { playSnd('error'); showModal("PERINGATAN", "Minimum Deposit QRIS adalah Rp 20.000"); return; }
+    if (curMethod === 'USDT' && amount < 10) { playSnd('error'); showModal("PERINGATAN", "Minimum Deposit USDT adalah $10.00"); return; }
+    let netReceive = curMethod === 'QRIS' ? amount : (amount > FEE_USDT ? (amount - FEE_USDT) * KURS : 0);
     isSubmitting = true;
     const btn = document.getElementById('btn-konfirmasi');
-    btn.innerText = "MEMPROSES...";
-    btn.disabled  = true;
-
+    btn.innerText = "MEMPROSES..."; btn.disabled = true;
     try {
         const db = getDB();
-        const { error } = await db.from('deposits').insert([{
-            username   : user,
-            amount     : amount,
-            method     : curMethod,
-            net_receive: netReceive,
-            status     : 'PROSES'
-        }]);
+        const { error } = await db.from('deposits').insert([{ username: user, amount: amount, method: curMethod, net_receive: netReceive, status: 'PROSES' }]);
         if (error) throw error;
-
         playSnd('success');
         showNeonAlert("✅ DEPOSIT TERKIRIM — MENUNGGU KONFIRMASI ADMIN", true);
-        showModal("BERHASIL", "Permintaan deposit terkirim!\n\nSaldo akan ditambahkan setelah admin menyetujui.\n\n" +
-            (curMethod === 'QRIS'
-                ? "Pastikan Anda sudah melakukan pembayaran via QRIS."
-                : "Pastikan Anda sudah transfer USDT ke wallet address yang diberikan admin."));
-
+        showModal("BERHASIL", "Permintaan deposit terkirim!\n\nSaldo akan ditambahkan setelah admin menyetujui.");
         document.getElementById('amount-val').value = "";
         calculate();
-
         await loadHistory();
         await updateUserSaldo();
-
-    } catch(err) {
-        playSnd('error');
-        showModal("ERROR", "Gagal mengirim deposit:\n" + err.message);
-    } finally {
-        isSubmitting = false;
-        btn.disabled  = false;
-        btn.innerHTML = '<i class="fas fa-paper-plane"></i> KONFIRMASI PEMBAYARAN';
-    }
+    } catch(err) { playSnd('error'); showModal("ERROR", "Gagal mengirim deposit:\n" + err.message); }
+    finally { isSubmitting = false; btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> KONFIRMASI PEMBAYARAN'; }
 }
 
-/* UPDATE SALDO */
 async function updateUserSaldo() {
     const user = getUser();
     if (!user) return;
     try {
         const db = getDB();
         const { data, error } = await db.from('profiles').select('saldo').eq('username', user).single();
-        if (!error && data) {
-            document.getElementById('display-saldo').innerText = 'IDR ' + (data.saldo || 0).toLocaleString('id-ID');
-        }
+        if (!error && data) document.getElementById('display-saldo').innerText = 'IDR ' + (data.saldo || 0).toLocaleString('id-ID');
     } catch(e) { console.warn(e); }
 }
 
-/* LOAD HISTORY */
 async function loadHistory() {
     const user = getUser();
-    if (!user) {
-        const body = document.getElementById('history-body');
-        body.innerHTML = '<tr class="empty-row"><td colspan="5"><i class="fas fa-exclamation-triangle"></i><br>Silakan login terlebih dahulu</td></tr>';
-        return;
-    }
+    if (!user) { document.getElementById('history-body').innerHTML = '<tr class="empty-row"><td colspan="5"><i class="fas fa-exclamation-triangle"></i><br>Silakan login terlebih dahulu</td></tr>'; return; }
     const body = document.getElementById('history-body');
     body.innerHTML = '<tr class="empty-row"><td colspan="5"><i class="fas fa-spinner fa-spin"></i> Memuat...</td></tr>';
-
     try {
         const db = getDB();
-        const { data, error } = await db
-            .from('deposits')
-            .select('id,amount,net_receive,method,status,created_at')
-            .eq('username', user)
-            .order('created_at', { ascending: false })
-            .limit(30);
-
+        const { data, error } = await db.from('deposits').select('id,amount,net_receive,method,status,created_at').eq('username', user).order('created_at', { ascending: false }).limit(30);
         if (error) throw error;
-
         if (data && data.length > 0) {
+            if (data.length !== lastHistoryLength) await updateUserSaldo();
+            lastHistoryLength = data.length;
             body.innerHTML = data.map(d => {
                 let st = (d.status || 'PROSES').toUpperCase();
                 let bc = 'badge-proses', ic = 'fa-clock';
-                if (st === 'SUKSES' || st === 'APPROVE' || st === 'BERHASIL') {
-                    bc = 'badge-sukses';
-                    ic = 'fa-circle-check';
-                    st = 'SUKSES';
-                } else if (st === 'GAGAL') {
-                    bc = 'badge-gagal';
-                    ic = 'fa-circle-xmark';
-                } else {
-                    st = 'PROSES';
-                }
-                const nc = (st === 'SUKSES') ? '#00ff88' : (st === 'GAGAL') ? 'var(--pink)' : 'var(--yellow)';
+                if (st === 'SUKSES' || st === 'APPROVE' || st === 'BERHASIL') { bc = 'badge-sukses'; ic = 'fa-circle-check'; st = 'SUKSES'; }
+                else if (st === 'GAGAL') { bc = 'badge-gagal'; ic = 'fa-circle-xmark'; }
+                else st = 'PROSES';
+                const nc = st === 'SUKSES' ? '#00ff88' : st === 'GAGAL' ? 'var(--pink)' : 'var(--yellow)';
                 const dObj = new Date(d.created_at);
-                const tgl  = dObj.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'2-digit' });
-                const jam  = dObj.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
-                const displayAmount = (d.method === 'USDT') ? `$${d.amount}` : formatRupiah(d.amount);
-                return `<tr>
-                    <td style="font-size:11px;font-weight:900;">${d.method || 'QRIS'}</td>
-                    <td style="font-size:12px;font-weight:900;color:var(--yellow);">${displayAmount}</td>
-                    <td style="font-size:12px;font-weight:900;color:${nc};">${formatRupiah(d.net_receive || d.amount)}</td>
-                    <td><span class="badge-status ${bc}"><i class="fas ${ic}"></i> ${st}</span></td>
-                    <td class="td-date">${tgl}<br><span style="opacity:.7">${jam}</span></td>
-                </tr>`;
+                const tgl = dObj.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'2-digit' });
+                const jam = dObj.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
+                const displayAmount = d.method === 'USDT' ? `$${d.amount}` : formatRupiah(d.amount);
+                return `<tr><td style="font-size:11px;font-weight:900;">${d.method || 'QRIS'}</td><td style="font-size:12px;font-weight:900;color:var(--yellow);">${displayAmount}</td><td style="font-size:12px;font-weight:900;color:${nc};">${formatRupiah(d.net_receive || d.amount)}</td><td><span class="badge-status ${bc}"><i class="fas ${ic}"></i> ${st}</span></td><td class="td-date">${tgl}<br><span style="opacity:.7">${jam}</span></td></tr>`;
             }).join('');
-        } else {
-            body.innerHTML = '<tr class="empty-row"><td colspan="5"><i class="fas fa-inbox"></i><br>Belum ada transaksi</td></tr>';
-        }
-    } catch(err) {
-        console.error('loadHistory error:', err);
-        body.innerHTML = '<tr class="empty-row"><td colspan="5"><i class="fas fa-triangle-exclamation"></i><br>Gagal memuat riwayat</td></tr>';
-    }
+        } else { lastHistoryLength = 0; body.innerHTML = '<tr class="empty-row"><td colspan="5"><i class="fas fa-inbox"></i><br>Belum ada transaksi</td></tr>'; }
+    } catch(err) { body.innerHTML = '<tr class="empty-row"><td colspan="5"><i class="fas fa-triangle-exclamation"></i><br>Gagal memuat riwayat</td></tr>'; }
 }
 
-/* ON LOAD */
 window.onload = () => {
     loadHistory();
     updateUserSaldo();
-    setInterval(() => {
-        loadHistory();
-        updateUserSaldo();
-    }, 30000);
+    if (refreshInterval) clearInterval(refreshInterval);
+    refreshInterval = setInterval(() => { loadHistory(); updateUserSaldo(); }, 10000);
+    // Coba load gambar QRIS, jika gagal akan trigger fallback
+    setTimeout(() => { const img = document.getElementById('img-qris'); if(img && !img.complete) handleImageError(); }, 1000);
 };
 </script>
 </body>
