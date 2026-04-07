@@ -25,6 +25,21 @@
 
         .container{padding:18px;max-width:500px;margin:auto;position:relative;z-index:10;}
 
+        /* ── DEBUG / LOGIN PANEL ── */
+        #debug-panel{background:rgba(255,150,0,.08);border:1.5px solid rgba(255,150,0,.4);border-radius:16px;padding:14px;margin-bottom:14px;font-size:10px;color:rgba(255,200,100,.85);word-break:break-all;line-height:1.8;display:none;}
+        #debug-panel.show{display:block;}
+        #debug-panel .debug-title{font-size:11px;font-weight:900;color:#ffaa00;margin-bottom:8px;letter-spacing:1px;}
+        #debug-panel .debug-line{padding:2px 0;border-bottom:1px solid rgba(255,150,0,.1);}
+
+        /* ── MANUAL LOGIN PANEL ── */
+        #manual-login-panel{background:rgba(0,34,255,.08);border:1.5px solid rgba(0,34,255,.4);border-radius:16px;padding:18px;margin-bottom:14px;display:none;}
+        #manual-login-panel.show{display:block;}
+        .ml-title{font-size:11px;font-weight:900;color:var(--yellow);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;text-align:center;}
+        .ml-subtitle{font-size:10px;color:rgba(255,255,255,.5);text-align:center;margin-bottom:12px;line-height:1.5;}
+        .ml-input{width:100%;background:rgba(0,0,0,.6);border:1.5px solid rgba(0,34,255,.5);border-radius:12px;padding:12px 16px;color:#fff;font-size:13px;font-weight:700;font-family:'Outfit',sans-serif;outline:none;margin-bottom:10px;}
+        .ml-input:focus{border-color:var(--yellow);}
+        .ml-input::placeholder{color:rgba(255,255,255,.3);}
+
         /* ── BANNER ── */
         .banner-section{margin-bottom:18px;border-radius:22px;overflow:hidden;border:2px solid rgba(255,0,119,.4);box-shadow:0 0 30px rgba(255,0,119,.2),0 0 60px rgba(251,255,0,.08);background:#000;}
         .banner-img-wrap{display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#0a0015,#1a0030);padding:12px 0;}
@@ -81,6 +96,7 @@
         .btn-pink{background:linear-gradient(90deg,var(--pink),#b400dc);box-shadow:0 0 12px rgba(255,0,119,.3);}
         .btn-yellow{background:linear-gradient(90deg,#b8a000,var(--yellow));box-shadow:0 0 10px rgba(251,255,0,.2);color:#000;}
         .btn-blue{background:linear-gradient(90deg,var(--blue),#0044ff);box-shadow:0 0 10px rgba(0,34,255,.25);}
+        .btn-green{background:linear-gradient(90deg,#00aa44,#00ff88);box-shadow:0 0 10px rgba(0,255,136,.2);color:#000;}
         .btn-main:active{transform:scale(.96);}
         .btn-main:disabled{opacity:.3;filter:grayscale(1);cursor:not-allowed;}
 
@@ -140,9 +156,6 @@
         .td-status{padding:8px 4px;}
         .h-empty{text-align:center;padding:28px 12px;opacity:.4;font-size:11px;color:#fff;}
 
-        /* ── ERROR BOX ── */
-        .error-box{background:rgba(255,0,0,.08);border:1px solid rgba(255,0,0,.3);border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:11px;color:#ff6666;text-align:center;}
-
         /* ── MODAL ── */
         #modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(10px);}
         .modal-box{width:88%;max-width:320px;background:rgba(0,0,15,.99);border:1.5px solid var(--pink);border-top:2px solid var(--yellow);border-radius:22px;padding:26px;text-align:center;box-shadow:0 0 20px rgba(255,0,119,.25);animation:zoomIn .3s ease;}
@@ -156,9 +169,11 @@
         .nav-item.active{color:var(--yellow);text-shadow:0 0 8px rgba(251,255,0,.5);}
         .nav-item i{font-size:20px;display:block;margin-bottom:3px;}
 
-        /* ── DEBUG PANEL (tampil jika ada error koneksi) ── */
-        #debug-panel{display:none;background:rgba(255,100,0,.07);border:1px solid rgba(255,100,0,.3);border-radius:12px;padding:12px;margin-bottom:12px;font-size:9px;color:rgba(255,200,100,.7);word-break:break-all;line-height:1.6;}
-        #debug-panel.show{display:block;}
+        /* ── USER INFO BADGE ── */
+        .user-info-bar{background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.25);border-radius:12px;padding:8px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;font-size:10px;}
+        .user-info-bar .u-label{color:rgba(255,255,255,.4);font-weight:700;}
+        .user-info-bar .u-val{color:#00ff88;font-weight:900;letter-spacing:.5px;}
+        .user-info-bar .btn-logout{background:rgba(255,0,119,.15);border:1px solid rgba(255,0,119,.3);color:var(--pink);border-radius:20px;padding:4px 10px;font-size:9px;font-weight:900;cursor:pointer;font-family:'Outfit',sans-serif;}
     </style>
 </head>
 <body>
@@ -173,8 +188,27 @@
 
 <div class="container">
 
-    <!-- Debug Panel (hidden by default) -->
-    <div id="debug-panel"></div>
+    <!-- User Info Bar -->
+    <div class="user-info-bar" id="user-info-bar" style="display:none;">
+        <div><span class="u-label">Login sebagai: </span><span class="u-val" id="user-info-name">—</span></div>
+        <button class="btn-logout" onclick="logoutUser()"><i class="fas fa-sign-out-alt"></i> Ganti</button>
+    </div>
+
+    <!-- Manual Login Panel (tampil jika tidak ada session) -->
+    <div id="manual-login-panel">
+        <div class="ml-title"><i class="fas fa-user-circle"></i> MASUKKAN USERNAME</div>
+        <div class="ml-subtitle">Username tidak terdeteksi dari sesi login.<br>Masukkan username Anda untuk melanjutkan.</div>
+        <input type="text" class="ml-input" id="manual-username-input" placeholder="Contoh: user123" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+        <button class="btn-main btn-green" onclick="submitManualLogin()">
+            <i class="fas fa-arrow-right-to-bracket"></i> LANJUTKAN
+        </button>
+    </div>
+
+    <!-- Debug Panel -->
+    <div id="debug-panel">
+        <div class="debug-title"><i class="fas fa-bug"></i> DEBUG INFO</div>
+        <div id="debug-lines"></div>
+    </div>
 
     <!-- Banner Podium -->
     <div class="banner-section">
@@ -195,10 +229,10 @@
             </div>
         </div>
         <div class="banner-rules">
-            <div class="rules-title"><i class="fas fa-list"></i> SYARAT & KETENTUAN</div>
+            <div class="rules-title"><i class="fas fa-list"></i> SYARAT &amp; KETENTUAN</div>
             <ul class="rules-list">
                 <li>Bonus Rp5.000 per referral aktif (deposit pertama min Rp20.000)</li>
-                <li>Bonus masuk ke total komisi & bisa diklaim setiap hari Senin</li>
+                <li>Bonus masuk ke total komisi &amp; bisa diklaim setiap hari Senin</li>
                 <li>Top 3 referral terbanyak tiap bulan dapat hadiah USDT tambahan</li>
                 <li>Pantau status referral Anda di tabel riwayat undangan di bawah</li>
             </ul>
@@ -249,7 +283,7 @@
             </span>
         </div>
         <div id="inbox-container">
-            <div class="inbox-empty"><i class="fas fa-envelope-open-text" style="font-size:24px;margin-bottom:10px;display:block;"></i>Memuat pesan...</div>
+            <div class="inbox-empty"><i class="fas fa-envelope-open-text" style="font-size:24px;margin-bottom:10px;display:block;"></i>Menunggu login...</div>
         </div>
     </div>
 
@@ -276,7 +310,7 @@
             <table class="ht" style="table-layout:fixed;width:100%;">
                 <colgroup><col class="c-time"><col class="c-user"><col class="c-status"><col class="c-bonus"></colgroup>
                 <tbody id="history-body">
-                    <tr><td colspan="4"><div class="h-empty"><i class="fas fa-spinner fa-spin"></i><br>Memuat...</div></td></tr>
+                    <tr><td colspan="4"><div class="h-empty"><i class="fas fa-lock"></i><br>Menunggu login</div></td></tr>
                 </tbody>
             </table>
         </div>
@@ -305,34 +339,25 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════════════
-// CONFIG — GANTI SUPABASE_URL & SUPABASE_ANON_KEY dengan milik Anda
-// Gunakan "anon public" key dari Settings → API di dashboard Supabase
+// CONFIG
 // ═══════════════════════════════════════════════════════════════════
 const SUPABASE_URL      = 'https://jcxgankdwfwfnbwlkkpz.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjeGdhbmtkd2Z3Zm5id2xra3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNDU0MjMsImV4cCI6MjA5MDgyMTQyM30.qBNQNZxeHLfG7U-HZDSkYg1Y4awPKcJ7J2XjnkiJ6PI';
-// Contoh format anon key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.xxxx
 
-// ── INISIALISASI SUPABASE ────────────────────────────────────────────────────
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ── KONSTANTA ────────────────────────────────────────────────────────────────
 const KOMISI_PER_REF    = 5000;
 const MIN_DEPOSIT_AKTIF = 20000;
 
-// ── STATE ───────────────────────────────────────────────────────────────────
+// ── STATE ─────────────────────────────────────────────────────────
 let currentUsername = '';
 let userData = {
-    id: null,
-    refCode: '',
-    refLink: '',
-    totalReferral: 0,
-    activeReferral: 0,
-    totalKomisi: 0,
-    bonusAvailable: 0,
-    saldo: 0
+    id: null, refCode: '', refLink: '',
+    totalReferral: 0, activeReferral: 0,
+    totalKomisi: 0, bonusAvailable: 0, saldo: 0
 };
 
-// ── PARTICLES ───────────────────────────────────────────────────────────────
+// ── PARTICLES ─────────────────────────────────────────────────────
 if (typeof particlesJS !== 'undefined') {
     particlesJS('particles-js', {
         particles: {
@@ -342,43 +367,110 @@ if (typeof particlesJS !== 'undefined') {
             opacity: { value: 0.5, random: true },
             size:   { value: 2, random: true },
             line_linked: { enable: true, distance: 130, color: '#0022ff', opacity: 0.25, width: 0.8 },
-            move:   { enable: true, speed: 1.5, random: true }
+            move: { enable: true, speed: 1.5, random: true }
         },
         interactivity: { events: { onhover: { enable: false }, onclick: { enable: false } } }
     });
 }
 
-// ── HELPERS ─────────────────────────────────────────────────────────────────
+// ── HELPERS ───────────────────────────────────────────────────────
 function showAlert(msg) {
     const a = document.getElementById('neon-alert');
     a.innerText = msg;
     a.classList.add('show');
     setTimeout(() => a.classList.remove('show'), 3200);
 }
-
 function showModal(title, message) {
     const icon = title.includes('BERHASIL') ? 'fa-check-circle' : 'fa-exclamation-triangle';
     document.getElementById('m-title').innerHTML = `<i class="fas ${icon}"></i> ${title}`;
     document.getElementById('m-msg').innerHTML = message;
     document.getElementById('modal-overlay').style.display = 'flex';
 }
+function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+function formatRupiah(n) { return new Intl.NumberFormat('id-ID').format(n || 0); }
 
-function closeModal() {
-    document.getElementById('modal-overlay').style.display = 'none';
-}
-
-function formatRupiah(n) {
-    return new Intl.NumberFormat('id-ID').format(n || 0);
-}
-
-// ── FIX: generate kode unik per-user berdasarkan username ───────────────────
 function generateRefCode(username) {
-    // Buat kode yang konsisten dari username (bukan random, agar tidak berubah tiap kali)
     const hash = Array.from(username).reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0);
-    const part  = Math.abs(hash).toString(36).toUpperCase().padEnd(6, '0').substring(0, 6);
+    const part = Math.abs(hash).toString(36).toUpperCase().padEnd(6,'0').substring(0,6);
     return 'VIP' + part;
 }
 
+// ── DEBUG LOGGER ──────────────────────────────────────────────────
+const debugLines = [];
+function debugLog(msg, type = 'info') {
+    const ts = new Date().toLocaleTimeString('id-ID');
+    const color = type === 'error' ? '#ff6666' : type === 'ok' ? '#00ff88' : 'rgba(255,200,100,.85)';
+    const icon  = type === 'error' ? '❌' : type === 'ok' ? '✅' : 'ℹ️';
+    debugLines.push(`<div class="debug-line" style="color:${color}">[${ts}] ${icon} ${msg}</div>`);
+    const panel = document.getElementById('debug-panel');
+    const lines = document.getElementById('debug-lines');
+    lines.innerHTML = debugLines.join('');
+    panel.classList.add('show');
+    console.log('[DEBUG]', msg);
+}
+
+// ── CARI USERNAME DI SEMUA KEY LOCALSTORAGE ──────────────────────
+function getLocalUsername() {
+    // Coba semua key yang mungkin
+    const knownKeys = [
+        'neon_user', 'username', 'neon_username', 'user',
+        'loggedUser', 'logged_user', 'currentUser', 'current_user',
+        'player', 'playerName', 'player_name', 'nama', 'name',
+        'userId', 'user_id', 'loginUser', 'login_user',
+        'session_user', 'sessionUser', 'auth_user', 'authUser'
+    ];
+
+    for (const key of knownKeys) {
+        const val = localStorage.getItem(key);
+        if (val && val.trim().length > 0) {
+            // Coba parse jika JSON
+            try {
+                const parsed = JSON.parse(val);
+                if (typeof parsed === 'string' && parsed.trim()) {
+                    debugLog(`Ditemukan username dari key "${key}" (JSON string): ${parsed}`, 'ok');
+                    return parsed.trim();
+                }
+                if (typeof parsed === 'object' && parsed !== null) {
+                    // Cari property username/name di object
+                    const objVal = parsed.username || parsed.name || parsed.user || parsed.nama || parsed.id;
+                    if (objVal && typeof objVal === 'string') {
+                        debugLog(`Ditemukan username dari key "${key}" (JSON object.${Object.keys(parsed).find(k => parsed[k] === objVal)}): ${objVal}`, 'ok');
+                        return objVal.trim();
+                    }
+                }
+            } catch {
+                // Bukan JSON, pakai langsung
+                debugLog(`Ditemukan username dari key "${key}": ${val.trim()}`, 'ok');
+                return val.trim();
+            }
+        }
+    }
+
+    // Scan SEMUA key di localStorage
+    debugLog('Key standar tidak ditemukan. Scan semua localStorage...');
+    const allKeys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        const v = localStorage.getItem(k);
+        allKeys.push(`${k}=${v?.substring(0,40)}`);
+
+        // Heuristik: value pendek (2-30 char) tanpa spasi kemungkinan username
+        if (v && v.trim().length >= 2 && v.trim().length <= 30 && !v.includes(' ') && !v.startsWith('{') && !v.startsWith('[')) {
+            debugLog(`Kandidat username dari key "${k}": ${v.trim()}`, 'info');
+            return v.trim();
+        }
+    }
+
+    if (allKeys.length > 0) {
+        debugLog('Semua localStorage: ' + allKeys.join(' | '));
+    } else {
+        debugLog('localStorage KOSONG! Tidak ada data tersimpan.', 'error');
+    }
+
+    return null;
+}
+
+// ── UPDATE UI ─────────────────────────────────────────────────────
 function updateUI() {
     document.getElementById('display-saldo').innerHTML = 'IDR ' + formatRupiah(userData.saldo);
     document.getElementById('total-ref').innerText     = userData.totalReferral;
@@ -386,7 +478,6 @@ function updateUI() {
     document.getElementById('total-komisi').innerHTML  = formatRupiah(userData.totalKomisi);
     document.getElementById('bonus-amount').innerHTML  = 'IDR ' + formatRupiah(userData.bonusAvailable);
 
-    // Tampilkan kode referral
     const refCodeEl = document.getElementById('ref-code');
     if (userData.refCode) {
         refCodeEl.innerText = userData.refCode;
@@ -394,187 +485,189 @@ function updateUI() {
         refCodeEl.innerHTML = '<span style="font-size:.8rem;color:rgba(255,255,255,.4)">Memuat...</span>';
     }
 
-    // Tampilkan link referral
     document.getElementById('ref-link').innerText = userData.refLink || '—';
 
-    // Enable/disable tombol klaim
     const claimBtn = document.getElementById('claim-btn');
     if (claimBtn) claimBtn.disabled = userData.bonusAvailable <= 0;
 }
 
-// ── SALIN / SHARE ────────────────────────────────────────────────────────────
+// ── COPY / SHARE ──────────────────────────────────────────────────
 function copyRefCode() {
-    if (!userData.refCode || userData.refCode === '—') {
-        showAlert('⚠️ Kode referral belum tersedia!');
-        return;
-    }
+    if (!userData.refCode || userData.refCode === '—') { showAlert('⚠️ Kode referral belum tersedia!'); return; }
     navigator.clipboard.writeText(userData.refCode).catch(() => {
-        // fallback untuk browser yang tidak support clipboard
-        const el = document.createElement('textarea');
-        el.value = userData.refCode;
-        document.body.appendChild(el);
-        el.select();
-        document.execCommand('copy');
-        document.body.removeChild(el);
+        const el = document.createElement('textarea'); el.value = userData.refCode;
+        document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
     });
     showAlert('✅ KODE REFERRAL DISALIN: ' + userData.refCode);
 }
-
 function copyRefLink() {
-    if (!userData.refLink || userData.refLink === '—') {
-        showAlert('⚠️ Link referral belum tersedia!');
-        return;
-    }
+    if (!userData.refLink || userData.refLink === '—') { showAlert('⚠️ Link referral belum tersedia!'); return; }
     navigator.clipboard.writeText(userData.refLink).catch(() => {
-        const el = document.createElement('textarea');
-        el.value = userData.refLink;
-        document.body.appendChild(el);
-        el.select();
-        document.execCommand('copy');
-        document.body.removeChild(el);
+        const el = document.createElement('textarea'); el.value = userData.refLink;
+        document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
     });
     showAlert('✅ LINK UNDANGAN DISALIN!');
 }
-
 function shareWA() {
     if (!userData.refCode) return;
     const txt = `🎮 Gabung NEON PLINKO VIP!\n\nKode referral: ${userData.refCode}\nLink: ${userData.refLink}\n\n✨ Deposit min Rp20.000 & kita dapat bonus Rp5.000!`;
     window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
 }
-
 function shareLink() {
     if (navigator.share && userData.refLink) {
-        navigator.share({
-            title: 'NEON PLINKO VIP',
-            text:  `Daftar NEON PLINKO VIP pakai kode: ${userData.refCode}`,
-            url:   userData.refLink
-        }).catch(() => {});
-    } else {
-        copyRefLink();
+        navigator.share({ title: 'NEON PLINKO VIP', text: `Daftar NEON PLINKO VIP pakai kode: ${userData.refCode}`, url: userData.refLink }).catch(() => {});
+    } else { copyRefLink(); }
+}
+
+// ── BUILD REF LINK ────────────────────────────────────────────────
+function buildRefLink(code) {
+    const base = window.location.origin + window.location.pathname.replace(/reward[^/]*$/, '');
+    return base + 'register.html?ref=' + code;
+}
+
+// ── MANUAL LOGIN ──────────────────────────────────────────────────
+function submitManualLogin() {
+    const input = document.getElementById('manual-username-input');
+    const val = (input.value || '').trim().toLowerCase();
+    if (!val || val.length < 2) {
+        showAlert('⚠️ Masukkan username yang valid (min 2 karakter)!');
+        return;
     }
+    // Simpan ke semua key yang umum
+    localStorage.setItem('neon_user', val);
+    localStorage.setItem('username', val);
+    document.getElementById('manual-login-panel').style.display = 'none';
+    debugLog('Username disimpan manual: ' + val, 'ok');
+    initWithUsername(val);
 }
 
-// ── RESOLVE LOGIN ─────────────────────────────────────────────────────────
-function getLocalUsername() {
-    // Coba semua kemungkinan key localStorage
-    return localStorage.getItem('neon_user')
-        || localStorage.getItem('username')
-        || localStorage.getItem('neon_username')
-        || localStorage.getItem('user')
-        || null;
+function logoutUser() {
+    // Hapus sesi
+    ['neon_user','username','neon_username','user','loggedUser','currentUser'].forEach(k => localStorage.removeItem(k));
+    currentUsername = '';
+    document.getElementById('user-info-bar').style.display = 'none';
+    document.getElementById('manual-login-panel').style.display = 'block';
+    document.getElementById('manual-username-input').value = '';
+    document.getElementById('ref-code').innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:1rem;"></i>';
+    document.getElementById('ref-link').innerText = 'Memuat link...';
 }
 
-// ── DEBUG HELPER ─────────────────────────────────────────────────────────
-function debugLog(msg) {
-    const panel = document.getElementById('debug-panel');
-    const ts    = new Date().toLocaleTimeString('id-ID');
-    panel.innerHTML += `[${ts}] ${msg}<br>`;
-    panel.classList.add('show');
-    console.log('[DEBUG]', msg);
-}
-
-// ── INIT ─────────────────────────────────────────────────────────────────────
+// ── INIT UTAMA ────────────────────────────────────────────────────
 async function init() {
+    debugLog('Memulai deteksi sesi...');
+
+    // Cek URL param ?user= atau ?username= (berguna untuk testing)
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlUser = urlParams.get('user') || urlParams.get('username');
+    if (urlUser) {
+        debugLog('Username dari URL param: ' + urlUser, 'ok');
+        localStorage.setItem('neon_user', urlUser.trim().toLowerCase());
+    }
+
     const localUser = getLocalUsername();
 
     if (!localUser) {
-        document.getElementById('ref-code').innerText = 'LOGIN DULU';
-        document.getElementById('ref-link').innerText = 'Silakan login untuk melihat kode referral';
+        debugLog('Tidak ada username ditemukan. Tampilkan form manual login.', 'error');
+        document.getElementById('manual-login-panel').style.display = 'block';
+        document.getElementById('ref-code').innerHTML = '<span style="font-size:.75rem;color:rgba(255,255,255,.4)">Belum Login</span>';
+        document.getElementById('ref-link').innerText = 'Login dulu untuk melihat link';
         document.getElementById('history-body').innerHTML =
             '<tr><td colspan="4"><div class="h-empty"><i class="fas fa-lock"></i><br>Silakan login</div></td></tr>';
         document.getElementById('inbox-container').innerHTML =
-            '<div class="inbox-empty"><i class="fas fa-lock" style="font-size:24px;margin-bottom:10px;display:block;"></i>Silakan login untuk melihat pesan</div>';
+            '<div class="inbox-empty"><i class="fas fa-lock" style="font-size:24px;margin-bottom:10px;display:block;"></i>Silakan login</div>';
         return;
     }
 
-    currentUsername = localUser.trim().toLowerCase();
+    // Sembunyikan form login jika username sudah ada
+    document.getElementById('manual-login-panel').style.display = 'none';
+    await initWithUsername(localUser);
+}
+
+async function initWithUsername(username) {
+    currentUsername = username.trim().toLowerCase();
+
+    // Tampilkan user info bar
+    document.getElementById('user-info-bar').style.display = 'flex';
+    document.getElementById('user-info-name').innerText = currentUsername;
+
+    debugLog('Menggunakan username: ' + currentUsername, 'ok');
+    debugLog('Menghubungi Supabase...');
 
     try {
-        // ── Ambil profil dari Supabase ──
         const { data: prof, error: pErr } = await supabase
             .from('profiles')
             .select('*')
             .eq('username', currentUsername)
-            .maybeSingle(); // pakai maybeSingle agar tidak error jika tidak ada
+            .maybeSingle();
 
         if (pErr) {
-            debugLog('Error ambil profil: ' + JSON.stringify(pErr));
+            debugLog('Error query profiles: ' + JSON.stringify(pErr), 'error');
             throw pErr;
         }
 
         if (!prof) {
-            // User tidak ada di tabel profiles — buat profil baru
+            debugLog('Profil tidak ditemukan. Membuat profil baru...', 'info');
             const newRefCode = generateRefCode(currentUsername);
             const { data: inserted, error: insErr } = await supabase
                 .from('profiles')
                 .insert({
-                    username:       currentUsername,
-                    saldo:          0,
-                    total_komisi:   0,
-                    bonus_available:0,
-                    total_referral: 0,
-                    active_referral:0,
-                    referral_code:  newRefCode
+                    username: currentUsername,
+                    saldo: 0, total_komisi: 0,
+                    bonus_available: 0, total_referral: 0,
+                    active_referral: 0, referral_code: newRefCode
                 })
                 .select()
                 .single();
 
             if (insErr) {
-                debugLog('Error insert profil baru: ' + JSON.stringify(insErr));
+                debugLog('Error insert profil: ' + JSON.stringify(insErr), 'error');
                 throw insErr;
             }
 
+            debugLog('Profil baru berhasil dibuat!', 'ok');
             userData = {
-                id:             inserted.id,
-                refCode:        newRefCode,
-                refLink:        buildRefLink(newRefCode),
-                totalReferral:  0,
-                activeReferral: 0,
-                totalKomisi:    0,
-                bonusAvailable: 0,
-                saldo:          0
+                id: inserted.id, refCode: newRefCode,
+                refLink: buildRefLink(newRefCode),
+                totalReferral: 0, activeReferral: 0,
+                totalKomisi: 0, bonusAvailable: 0, saldo: 0
             };
         } else {
-            // Pastikan referral_code ada — generate jika null/kosong
+            debugLog('Profil ditemukan: ' + JSON.stringify({id: prof.id, saldo: prof.saldo}), 'ok');
             let refCode = prof.referral_code;
             if (!refCode) {
                 refCode = generateRefCode(currentUsername);
-                const { error: updRCErr } = await supabase
-                    .from('profiles')
-                    .update({ referral_code: refCode })
-                    .eq('username', currentUsername);
-                if (updRCErr) debugLog('Gagal simpan referral_code: ' + JSON.stringify(updRCErr));
+                await supabase.from('profiles').update({ referral_code: refCode }).eq('username', currentUsername);
+                debugLog('Referral code dibuat & disimpan: ' + refCode, 'ok');
             }
-
             userData = {
-                id:             prof.id,
-                refCode:        refCode,
-                refLink:        buildRefLink(refCode),
-                totalReferral:  Number(prof.total_referral)   || 0,
-                activeReferral: Number(prof.active_referral)  || 0,
-                totalKomisi:    Number(prof.total_komisi)      || 0,
-                bonusAvailable: Number(prof.bonus_available)  || 0,
-                saldo:          Number(prof.saldo)             || 0
+                id: prof.id, refCode,
+                refLink: buildRefLink(refCode),
+                totalReferral:  Number(prof.total_referral)  || 0,
+                activeReferral: Number(prof.active_referral) || 0,
+                totalKomisi:    Number(prof.total_komisi)     || 0,
+                bonusAvailable: Number(prof.bonus_available) || 0,
+                saldo:          Number(prof.saldo)           || 0
             };
         }
 
-        updateUI();
+        // Sembunyikan debug jika sukses
+        document.getElementById('debug-panel').classList.remove('show');
 
-        // Hitung ulang statistik referral & muat data
+        updateUI();
         await updateReferralBonus();
         await loadReferralHistory();
         await loadInbox();
 
     } catch (e) {
-        console.error('init error:', e);
-        debugLog('init error: ' + e.message);
+        console.error('initWithUsername error:', e);
+        debugLog('FATAL: ' + e.message, 'error');
 
-        if (e.message && e.message.includes('Failed to fetch')) {
-            showAlert('❌ Tidak dapat terhubung ke server. Periksa koneksi internet Anda.');
-        } else if (e.message && (e.message.includes('401') || e.message.includes('Invalid API key'))) {
-            showAlert('❌ API Key Supabase tidak valid. Periksa konfigurasi SUPABASE_ANON_KEY.');
+        if (e.message?.includes('Failed to fetch')) {
+            showAlert('❌ Tidak dapat terhubung ke server. Periksa koneksi internet!');
+        } else if (e.message?.includes('401') || e.message?.includes('Invalid API key')) {
+            showAlert('❌ API Key Supabase tidak valid!');
         } else {
-            showAlert('❌ Gagal memuat data. Coba refresh halaman.');
+            showAlert('❌ Gagal memuat data: ' + (e.message || 'Unknown error'));
         }
 
         document.getElementById('ref-code').innerText = 'ERROR';
@@ -583,33 +676,19 @@ async function init() {
     }
 }
 
-// ── BUILD REF LINK ────────────────────────────────────────────────────────
-function buildRefLink(code) {
-    // Gunakan URL halaman saat ini sebagai base
-    const base = window.location.origin + window.location.pathname.replace(/reward[^/]*$/, '');
-    return base + 'register.html?ref=' + code;
-}
-
-// ── UPDATE REFERRAL BONUS ─────────────────────────────────────────────────
+// ── UPDATE REFERRAL BONUS ─────────────────────────────────────────
 async function updateReferralBonus() {
     if (!userData.refCode) return;
-
     try {
-        // Ambil semua user yang referred_by = referral_code kita
         const { data: refs, error } = await supabase
             .from('profiles')
             .select('username, created_at, total_deposit_current, last_deposit_amount, saldo')
             .eq('referred_by', userData.refCode)
             .order('created_at', { ascending: false });
 
-        if (error) {
-            debugLog('updateReferralBonus error: ' + JSON.stringify(error));
-            throw error;
-        }
+        if (error) { debugLog('updateReferralBonus error: ' + JSON.stringify(error), 'error'); throw error; }
 
         const all = refs || [];
-
-        // Cek aktif: total_deposit_current >= 20000 OR last_deposit_amount >= 20000
         const active = all.filter(r => {
             const totalDep = Number(r.total_deposit_current || 0);
             const lastDep  = Number(r.last_deposit_amount   || 0);
@@ -617,44 +696,28 @@ async function updateReferralBonus() {
         });
 
         const newBonus = active.length * KOMISI_PER_REF;
-
         userData.totalReferral  = all.length;
         userData.activeReferral = active.length;
-        // Hanya update bonusAvailable jika lebih besar (tidak overwrite bonus pending)
-        if (newBonus > userData.bonusAvailable) {
-            userData.bonusAvailable = newBonus;
-        }
+        if (newBonus > userData.bonusAvailable) userData.bonusAvailable = newBonus;
 
-        // Simpan ke DB
         const { error: updErr } = await supabase
             .from('profiles')
-            .update({
-                total_referral:  all.length,
-                active_referral: active.length,
-                bonus_available: userData.bonusAvailable
-            })
+            .update({ total_referral: all.length, active_referral: active.length, bonus_available: userData.bonusAvailable })
             .eq('username', currentUsername);
 
-        if (updErr) debugLog('updateReferralBonus DB update gagal: ' + JSON.stringify(updErr));
-
+        if (updErr) debugLog('updateReferralBonus DB update gagal: ' + JSON.stringify(updErr), 'error');
         updateUI();
-
-    } catch (e) {
-        console.error('updateReferralBonus error:', e);
-    }
+    } catch (e) { console.error('updateReferralBonus error:', e); }
 }
 
-// ── LOAD REFERRAL HISTORY ──────────────────────────────────────────────────
+// ── LOAD REFERRAL HISTORY ─────────────────────────────────────────
 async function loadReferralHistory() {
     const tbody = document.getElementById('history-body');
-
     if (!userData.refCode) {
-        tbody.innerHTML = '<tr><td colspan="4"><div class="h-empty"><i class="fas fa-lock"></i><br>Silakan login</div></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4"><div class="h-empty"><i class="fas fa-lock"></i><br>Login dulu</div></td></tr>';
         return;
     }
-
     tbody.innerHTML = '<tr><td colspan="4"><div class="h-empty"><i class="fas fa-spinner fa-spin"></i><br>Memuat...</div></td></tr>';
-
     try {
         const { data: refs, error } = await supabase
             .from('profiles')
@@ -662,10 +725,7 @@ async function loadReferralHistory() {
             .eq('referred_by', userData.refCode)
             .order('created_at', { ascending: false });
 
-        if (error) {
-            debugLog('loadReferralHistory error: ' + JSON.stringify(error));
-            throw error;
-        }
+        if (error) { debugLog('loadReferralHistory error: ' + JSON.stringify(error), 'error'); throw error; }
 
         if (!refs || refs.length === 0) {
             tbody.innerHTML = '<tr><td colspan="4"><div class="h-empty"><i class="fas fa-users-slash"></i><br>Belum ada undangan</div></td></tr>';
@@ -677,57 +737,34 @@ async function loadReferralHistory() {
             const lastDep  = Number(r.last_deposit_amount   || 0);
             const isActive = (totalDep >= MIN_DEPOSIT_AKTIF) || (totalDep === 0 && lastDep >= MIN_DEPOSIT_AKTIF);
             const bonusVal = isActive ? KOMISI_PER_REF : 0;
-
             const dObj     = new Date(r.created_at);
-            const tgl      = dObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: '2-digit' });
-            const jam      = dObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-
-            const badgeClass = isActive ? 'badge-aktif'     : 'badge-pending';
-            const badgeIcon  = isActive ? 'fa-circle-check' : 'fa-clock';
-            const badgeTxt   = isActive ? 'AKTIF'           : 'PENDING';
-            const subTxt     = isActive ? 'Deposit ✓'       : 'Belum deposit';
-
+            const tgl      = dObj.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'2-digit' });
+            const jam      = dObj.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
+            const badgeClass = isActive ? 'badge-aktif'      : 'badge-pending';
+            const badgeIcon  = isActive ? 'fa-circle-check'  : 'fa-clock';
+            const badgeTxt   = isActive ? 'AKTIF'            : 'PENDING';
+            const subTxt     = isActive ? 'Deposit ✓'        : 'Belum deposit';
             return `<tr>
-  <td><div class="td-time">
-    <span class="t-date">${tgl}</span>
-    <span class="t-hour">${jam}</span>
-  </div></td>
-  <td><div class="td-user">
-    <span class="u-name">${r.username || 'Anon'}</span>
-    <span class="u-sub">${subTxt}</span>
-  </div></td>
-  <td class="td-status">
-    <span class="badge-status ${badgeClass}">
-      <i class="fas ${badgeIcon}"></i> ${badgeTxt}
-    </span>
-  </td>
-  <td><div class="td-bonus">
-    <span class="b-val">${bonusVal > 0 ? formatRupiah(bonusVal) : '—'}</span>
-    <span class="b-cur">${bonusVal > 0 ? 'IDR' : ''}</span>
-  </div></td>
+  <td><div class="td-time"><span class="t-date">${tgl}</span><span class="t-hour">${jam}</span></div></td>
+  <td><div class="td-user"><span class="u-name">${r.username||'Anon'}</span><span class="u-sub">${subTxt}</span></div></td>
+  <td class="td-status"><span class="badge-status ${badgeClass}"><i class="fas ${badgeIcon}"></i> ${badgeTxt}</span></td>
+  <td><div class="td-bonus"><span class="b-val">${bonusVal > 0 ? formatRupiah(bonusVal) : '—'}</span><span class="b-cur">${bonusVal > 0 ? 'IDR' : ''}</span></div></td>
 </tr>`;
         }).join('');
 
         const scrollBody = document.querySelector('.hist-scroll-body');
         if (scrollBody) scrollBody.scrollTop = 0;
-
     } catch (e) {
         console.error('loadReferralHistory error:', e);
         tbody.innerHTML = '<tr><td colspan="4"><div class="h-empty"><i class="fas fa-triangle-exclamation"></i><br>Gagal memuat data</div></td></tr>';
     }
 }
 
-// ── LOAD INBOX ────────────────────────────────────────────────────────────
+// ── LOAD INBOX ────────────────────────────────────────────────────
 async function loadInbox() {
     const container = document.getElementById('inbox-container');
-
-    if (!currentUsername) {
-        container.innerHTML = '<div class="inbox-empty">Silakan login</div>';
-        return;
-    }
-
+    if (!currentUsername) { container.innerHTML = '<div class="inbox-empty">Silakan login</div>'; return; }
     container.innerHTML = '<div class="inbox-empty"><i class="fas fa-spinner fa-spin" style="font-size:20px;margin-bottom:10px;display:block;"></i>Memuat pesan...</div>';
-
     try {
         const { data: messages, error } = await supabase
             .from('inbox')
@@ -736,10 +773,7 @@ async function loadInbox() {
             .eq('status', 'pending')
             .order('created_at', { ascending: false });
 
-        if (error) {
-            debugLog('loadInbox error: ' + JSON.stringify(error));
-            throw error;
-        }
+        if (error) { debugLog('loadInbox error: ' + JSON.stringify(error), 'error'); throw error; }
 
         if (!messages || messages.length === 0) {
             container.innerHTML = '<div class="inbox-empty"><i class="fas fa-inbox" style="font-size:24px;margin-bottom:10px;display:block;"></i>Tidak ada pesan baru</div>';
@@ -750,7 +784,7 @@ async function loadInbox() {
 <div class="inbox-item" data-id="${msg.id}">
     <div class="inbox-header">
         <span class="inbox-from"><i class="fas fa-trophy"></i> BONUS ADMIN</span>
-        <span class="inbox-date">${new Date(msg.created_at).toLocaleDateString('id-ID', {day:'2-digit',month:'short',year:'numeric'})}</span>
+        <span class="inbox-date">${new Date(msg.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'})}</span>
     </div>
     <div class="inbox-msg">${escapeHtml(msg.pesan || 'Selamat! Anda mendapatkan bonus.')}</div>
     <div class="inbox-reward-amount">IDR ${formatRupiah(msg.nominal)}</div>
@@ -758,60 +792,37 @@ async function loadInbox() {
         <i class="fas fa-gift"></i> KLAIM SEKARANG
     </button>
 </div>`).join('');
-
     } catch (e) {
         console.error('loadInbox error:', e);
         container.innerHTML = '<div class="inbox-empty"><i class="fas fa-triangle-exclamation" style="font-size:20px;margin-bottom:8px;display:block;color:var(--pink);"></i>Gagal memuat pesan</div>';
     }
 }
 
-// ── ESCAPE HTML (keamanan) ────────────────────────────────────────────────
 function escapeHtml(str) {
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ── CLAIM INBOX BONUS ─────────────────────────────────────────────────────
+// ── CLAIM INBOX BONUS ─────────────────────────────────────────────
 async function claimInboxBonus(inboxId, amount) {
-    // Disable semua tombol klaim untuk hindari double-klik
     document.querySelectorAll('.btn-claim-inbox').forEach(b => b.disabled = true);
-
     try {
-        // 1. Update status inbox → claimed
         const { error: updInboxErr } = await supabase
             .from('inbox')
             .update({ status: 'claimed', claimed_at: new Date().toISOString() })
-            .eq('id', inboxId)
-            .eq('username', currentUsername)
-            .eq('status', 'pending'); // double-check: hanya klaim jika masih pending
-
+            .eq('id', inboxId).eq('username', currentUsername).eq('status', 'pending');
         if (updInboxErr) throw updInboxErr;
 
-        // 2. Tambah saldo & total_komisi di profiles
         const newSaldo  = Number(userData.saldo)      + Number(amount);
         const newKomisi = Number(userData.totalKomisi) + Number(amount);
-
         const { error: updProfErr } = await supabase
-            .from('profiles')
-            .update({
-                saldo:        newSaldo,
-                total_komisi: newKomisi
-            })
-            .eq('username', currentUsername);
-
+            .from('profiles').update({ saldo: newSaldo, total_komisi: newKomisi }).eq('username', currentUsername);
         if (updProfErr) throw updProfErr;
 
-        userData.saldo       = newSaldo;
-        userData.totalKomisi = newKomisi;
+        userData.saldo = newSaldo; userData.totalKomisi = newKomisi;
         updateUI();
-
         await loadInbox();
         showModal('BERHASIL!', `✨ Bonus IDR ${formatRupiah(amount)} telah ditambahkan ke saldo Anda!`);
         showAlert(`🎉 Bonus IDR ${formatRupiah(amount)} berhasil diklaim!`);
-
     } catch (e) {
         console.error('claimInboxBonus error:', e);
         showAlert('❌ Gagal mengklaim bonus! ' + (e.message || ''));
@@ -819,40 +830,25 @@ async function claimInboxBonus(inboxId, amount) {
     }
 }
 
-// ── CLAIM BONUS MINGGUAN ──────────────────────────────────────────────────
+// ── CLAIM BONUS MINGGUAN ──────────────────────────────────────────
 async function claimBonus() {
-    if (userData.bonusAvailable <= 0) {
-        showAlert('⚠️ Tidak ada bonus yang tersedia saat ini!');
-        return;
-    }
-
+    if (userData.bonusAvailable <= 0) { showAlert('⚠️ Tidak ada bonus yang tersedia saat ini!'); return; }
     const claimBtn = document.getElementById('claim-btn');
     if (claimBtn) claimBtn.disabled = true;
-
     try {
         const amount    = userData.bonusAvailable;
         const newSaldo  = Number(userData.saldo)      + amount;
         const newKomisi = Number(userData.totalKomisi) + amount;
-
         const { error } = await supabase
             .from('profiles')
-            .update({
-                saldo:           newSaldo,
-                total_komisi:    newKomisi,
-                bonus_available: 0
-            })
+            .update({ saldo: newSaldo, total_komisi: newKomisi, bonus_available: 0 })
             .eq('username', currentUsername);
-
         if (error) throw error;
 
-        userData.saldo          = newSaldo;
-        userData.totalKomisi    = newKomisi;
-        userData.bonusAvailable = 0;
+        userData.saldo = newSaldo; userData.totalKomisi = newKomisi; userData.bonusAvailable = 0;
         updateUI();
-
         showModal('BERHASIL!', `✨ Bonus IDR ${formatRupiah(amount)} telah ditambahkan ke saldo Anda!`);
         showAlert(`🎉 Bonus IDR ${formatRupiah(amount)} berhasil diklaim!`);
-
     } catch (e) {
         console.error('claimBonus error:', e);
         showAlert('❌ Gagal mengklaim bonus!');
@@ -860,12 +856,15 @@ async function claimBonus() {
     }
 }
 
-// ── EVENT LISTENERS ──────────────────────────────────────────────────────────
+// ── EVENT LISTENERS ───────────────────────────────────────────────
 document.addEventListener('click', e => {
     if (e.target === document.getElementById('modal-overlay')) closeModal();
 });
+document.getElementById('manual-username-input')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitManualLogin();
+});
 
-// ── START ─────────────────────────────────────────────────────────────────────
+// ── START ─────────────────────────────────────────────────────────
 init();
 </script>
 </body>
