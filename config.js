@@ -33,12 +33,57 @@ const NEON_CONFIG = {
 
 // ── 3. AUTH HELPERS ───────────────────────────────────────────
 
+/**
+ * Ambil username dari localStorage.
+ * Mencakup semua key yang digunakan di seluruh halaman,
+ * termasuk key yang di-scan oleh reward.html.
+ */
 function getUsername() {
-    return localStorage.getItem('neon_user')
-        || localStorage.getItem('user_session')
-        || localStorage.getItem('user_neon')
-        || localStorage.getItem('username')
-        || null;
+    // Cek key-key utama yang dipakai di semua halaman
+    const knownKeys = [
+        'neon_user',
+        'user_session',
+        'user_neon',
+        'username',
+        'neon_username',
+        'user',
+        'loggedUser',
+        'logged_user',
+        'currentUser',
+        'current_user',
+        'player',
+        'playerName',
+        'player_name',
+        'nama',
+        'name',
+        'userId',
+        'user_id',
+        'loginUser',
+        'login_user',
+        'session_user',
+        'sessionUser',
+        'auth_user',
+        'authUser'
+    ];
+
+    for (const key of knownKeys) {
+        const val = localStorage.getItem(key);
+        if (val && val.trim().length > 0) {
+            // Coba parse jika JSON
+            try {
+                const parsed = JSON.parse(val);
+                if (typeof parsed === 'string' && parsed.trim()) return parsed.trim();
+                if (typeof parsed === 'object' && parsed !== null) {
+                    const objVal = parsed.username || parsed.name || parsed.user || parsed.nama || parsed.id;
+                    if (objVal && typeof objVal === 'string') return objVal.trim();
+                }
+            } catch {
+                return val.trim();
+            }
+        }
+    }
+
+    return null;
 }
 
 function isLoggedIn() {
@@ -183,7 +228,26 @@ document.addEventListener('DOMContentLoaded', () => {
         'panel.html'
     ];
 
-    const isAdminPage = adminPages.some(p => currentPage === p);
+    // Halaman dengan sistem login mandiri — jangan di-redirect
+    const selfAuthPages = [
+        'reward.html',
+        'reward__3_.html'
+    ];
+
+    const isAdminPage    = adminPages.some(p => currentPage === p);
+    const isSelfAuthPage = selfAuthPages.some(p => currentPage === p);
+
+    // Halaman dengan auth mandiri menangani login sendiri,
+    // config.js tidak perlu memproteksi atau me-redirect mereka.
+    if (isSelfAuthPage) {
+        // Tetap jalankan syncNeonData jika user sudah login
+        // agar elemen seperti display-saldo di header ikut terupdate.
+        if (user) {
+            syncNeonData();
+            setInterval(syncNeonData, 8000);
+        }
+        return;
+    }
 
     if (!publicPages.includes(currentPage) && !isAdminPage && !user) {
         window.location.href = 'index.html';
