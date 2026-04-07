@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     <script src="config.js"></script>
     <style>
         :root {
@@ -15,9 +14,10 @@
             --blue: #0022ff;
             --yellow: #fbff00;
             --bg: #000005;
-            /* Efek Neon Tipis */
-            --neon-pink: 0 0 6px rgba(255, 0, 119, 0.4);
-            --neon-blue: 0 0 6px rgba(0, 34, 255, 0.4);
+            /* Neon Tipis & Elegan */
+            --sh-p: 0 0 10px rgba(255, 0, 119, 0.4);
+            --sh-b: 0 0 10px rgba(0, 34, 255, 0.4);
+            --sh-y: 0 0 10px rgba(251, 255, 0, 0.4);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -28,289 +28,273 @@
             font-family: 'Outfit', sans-serif;
             color: #fff;
             min-height: 100vh;
-            overflow-x: hidden;
         }
 
+        /* Overlay Gelap agar konten terbaca */
         body::before {
             content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 5, 0.93); z-index: -1;
+            background: rgba(0, 0, 5, 0.9); z-index: 1;
         }
 
-        #particles-js { position: fixed; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+        .container { position: relative; z-index: 5; padding: 20px; max-width: 450px; margin: 0 auto; }
 
-        /* Container ditingkatkan z-index agar bisa diklik */
-        .container { position: relative; z-index: 10; padding: 20px; max-width: 500px; margin: 0 auto; }
-
-        .nav-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        /* Header */
+        .nav-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .btn-back {
-            background: rgba(255, 255, 255, 0.05); border: 1px solid var(--pink);
-            color: #fff; padding: 10px 15px; border-radius: 12px; text-decoration: none;
-            font-size: 11px; font-weight: 800; box-shadow: var(--neon-pink);
+            background: rgba(255,255,255,0.05); border: 1px solid var(--pink);
+            color: #fff; padding: 8px 15px; border-radius: 10px; text-decoration: none;
+            font-size: 11px; font-weight: 800; box-shadow: var(--sh-p);
+        }
+        .header-title { font-family: 'Cinzel Decorative'; font-size: 20px; color: var(--pink); text-shadow: var(--sh-p); }
+
+        /* Saldo */
+        .card-saldo {
+            background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 0, 119, 0.2);
+            border-radius: 15px; padding: 20px; text-align: center; margin-bottom: 20px;
+            backdrop-filter: blur(10px); box-shadow: var(--sh-p);
+        }
+        .label-sm { font-size: 10px; color: var(--pink); font-weight: 800; letter-spacing: 1px; }
+        .val-lg { font-size: 28px; font-weight: 900; color: #fff; }
+
+        /* Main Card */
+        .card-main {
+            background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px; padding: 20px; backdrop-filter: blur(15px); margin-bottom: 20px;
         }
 
-        .header h1 {
-            font-family: 'Cinzel Decorative', cursive; font-size: 22px;
-            text-align: center; color: var(--pink); text-shadow: var(--neon-pink);
+        /* Method Selector */
+        .method-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
+        .method-item {
+            background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);
+            padding: 15px; border-radius: 12px; text-align: center; cursor: pointer; transition: 0.2s;
         }
+        .method-item.active { border-color: var(--pink); background: rgba(255, 0, 119, 0.1); box-shadow: var(--sh-p); }
+        .method-item i { display: block; font-size: 20px; margin-bottom: 5px; }
+        .method-item span { font-size: 10px; font-weight: 800; }
 
-        .saldo-card {
-            background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 0, 119, 0.2);
-            border-radius: 15px; padding: 15px; text-align: center; margin-bottom: 20px;
-            backdrop-filter: blur(10px); box-shadow: var(--neon-pink);
+        /* Inputs */
+        .input-box {
+            width: 100%; background: #000; border: 1px solid rgba(255,255,255,0.1);
+            padding: 15px; border-radius: 12px; color: #fff; font-size: 20px;
+            font-weight: 900; text-align: center; margin-bottom: 15px;
         }
-        .saldo-label { font-size: 10px; color: var(--pink); font-weight: 800; text-transform: uppercase; }
-        .saldo-val { font-size: 26px; font-weight: 900; color: #fff; }
+        .input-box:focus { outline: none; border-color: var(--blue); box-shadow: var(--sh-b); }
 
-        .card {
-            background: rgba(255, 255, 255, 0.01); border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px; padding: 20px; margin-bottom: 20px; backdrop-filter: blur(15px);
-        }
-
-        .label { display: block; font-size: 11px; font-weight: 800; color: var(--pink); margin-bottom: 15px; text-transform: uppercase; }
-
-        .method-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-        .method-box {
-            border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; padding: 15px;
-            text-align: center; cursor: pointer; transition: 0.3s; background: rgba(0,0,0,0.5);
-            z-index: 20; position: relative;
-        }
-        .method-box.active { border-color: var(--pink); background: rgba(255, 0, 119, 0.1); box-shadow: var(--neon-pink); }
-        .method-box i { font-size: 24px; margin-bottom: 8px; display: block; }
-        .method-box span { font-size: 10px; font-weight: 900; }
-
-        .input-group input {
-            width: 100%; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1);
-            padding: 18px; border-radius: 12px; color: #fff; font-family: 'Outfit';
-            font-size: 22px; font-weight: 900; text-align: center;
-        }
-        .input-group input:focus { outline: none; border-color: var(--pink); box-shadow: var(--neon-pink); }
-
-        /* QRIS Area Fix */
-        .qris-area { text-align: center; margin: 20px 0; display: block; }
+        /* QRIS Frame - Perbaikan Gambar */
+        #qris-display { text-align: center; padding: 15px 0; }
         .qris-frame {
-            background: #fff; padding: 10px; border-radius: 12px; display: inline-block;
-            box-shadow: 0 0 15px rgba(255,255,255,0.1); line-height: 0;
+            background: #fff; padding: 10px; border-radius: 10px; display: inline-block; line-height: 0;
         }
         .qris-frame img { 
-            width: 100%; max-width: 220px; border-radius: 5px;
-            image-rendering: -webkit-optimize-contrast; /* Fix gambar pecah */
+            width: 200px; height: 200px; 
+            image-rendering: pixelated; /* Menghilangkan blur */
             image-rendering: crisp-edges;
         }
 
         /* USDT Area */
-        .usdt-area {
-            background: rgba(0, 34, 255, 0.05); border: 1px dashed var(--blue);
-            padding: 15px; border-radius: 15px; margin-bottom: 20px; display: none;
+        #usdt-display { 
+            display: none; background: rgba(0, 34, 255, 0.05); 
+            border: 1px dashed var(--blue); padding: 15px; border-radius: 12px; margin-bottom: 15px; 
         }
-        .wallet-box {
-            background: #000; padding: 12px; border-radius: 10px; font-family: monospace;
-            font-size: 11px; color: var(--yellow); word-break: break-all; 
-            border: 1px solid rgba(0, 34, 255, 0.3); margin: 10px 0;
+        .wallet-text { 
+            background: #000; color: var(--yellow); font-family: monospace; 
+            padding: 10px; border-radius: 8px; font-size: 11px; word-break: break-all;
+            margin: 10px 0; border: 1px solid rgba(0,34,255,0.2);
         }
 
-        .btn-main {
-            width: 100%; background: var(--pink); color: #fff; border: none; padding: 18px;
-            border-radius: 12px; font-weight: 900; font-size: 15px; cursor: pointer;
-            text-transform: uppercase; box-shadow: var(--neon-pink);
+        .btn-confirm {
+            width: 100%; background: var(--pink); color: #fff; border: none;
+            padding: 15px; border-radius: 12px; font-weight: 900; cursor: pointer;
+            text-transform: uppercase; box-shadow: var(--sh-p); transition: 0.3s;
         }
+        .btn-confirm:active { transform: scale(0.98); }
 
         /* History Table */
-        .h-wrap { overflow-x: auto; margin-top: 10px; }
-        .h-table { width: 100%; border-collapse: collapse; min-width: 450px; }
-        .h-table th { text-align: left; font-size: 10px; color: rgba(255,255,255,0.4); padding: 15px 10px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .h-table td { padding: 15px 10px; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .history-section { margin-top: 10px; overflow-x: auto; }
+        .tbl { width: 100%; border-collapse: collapse; min-width: 400px; }
+        .tbl th { text-align: left; padding: 12px; font-size: 10px; color: rgba(255,255,255,0.4); border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .tbl td { padding: 12px; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
 
-        .badge { padding: 4px 8px; border-radius: 5px; font-size: 10px; font-weight: 900; }
-        .st-PROSES { background: var(--blue); box-shadow: var(--neon-blue); }
+        .status-pill { padding: 4px 8px; border-radius: 4px; font-size: 9px; font-weight: 900; }
+        .st-PROSES { background: var(--blue); text-shadow: var(--sh-b); }
         .st-SUKSES { background: #00ff88; color: #000; }
-        .st-GAGAL { background: var(--pink); }
+        .st-GAGAL { background: var(--pink); text-shadow: var(--sh-p); }
 
+        /* Modal */
         #modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); backdrop-filter: blur(8px);
-            display: none; align-items: center; justify-content: center; z-index: 1000;
+            position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85);
+            display:none; align-items:center; justify-content:center; z-index:100; backdrop-filter: blur(5px);
         }
-        .modal { background: #050505; border: 1px solid var(--pink); padding: 25px; border-radius: 20px; width: 85%; max-width: 320px; text-align: center; }
+        .modal-content { background:#0a0a0a; border:1px solid var(--pink); padding:25px; border-radius:20px; width:80%; max-width:300px; text-align:center; }
     </style>
 </head>
 <body>
-    <div id="particles-js"></div>
-    <audio id="snd-click" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
 
-    <div class="container">
-        <div class="nav-bar">
-            <a href="game.html" class="btn-back" onclick="playSnd()"><i class="fas fa-chevron-left"></i> KEMBALI</a>
-            <div class="header"><h1>TOPUP</h1></div>
-            <div style="width: 50px;"></div>
-        </div>
-
-        <div class="saldo-card">
-            <span class="saldo-label">SALDO AKUN</span>
-            <div class="saldo-val" id="display-saldo">Rp 0</div>
-        </div>
-
-        <div class="card">
-            <span class="label">Metode Pembayaran</span>
-            <div class="method-grid">
-                <div class="method-box active" id="m-qris" onclick="setMethod('QRIS')">
-                    <i class="fas fa-qrcode" style="color: var(--pink);"></i>
-                    <span>QRIS (AUTO)</span>
-                </div>
-                <div class="method-box" id="m-usdt" onclick="setMethod('USDT')">
-                    <i class="fab fa-ethereum" style="color: var(--blue);"></i>
-                    <span>USDT CRYPTO</span>
-                </div>
-            </div>
-
-            <div class="input-group">
-                <input type="number" id="inp-amt" placeholder="0" oninput="updateConvert()">
-            </div>
-
-            <div id="qris-box" class="qris-area">
-                <div class="qris-frame">
-                    <img src="25989.png" alt="QRIS NEON" onerror="this.src='https://via.placeholder.com/200?text=QRIS+ERROR'">
-                </div>
-                <p style="font-size:9px; margin-top:10px; opacity:0.6; font-weight:700;">SILAKAN SCAN & BAYAR</p>
-            </div>
-
-            <div id="usdt-box" class="usdt-area">
-                <div style="display:flex; justify-content:space-between; font-size:12px;">
-                    <span>Rate: 16.200</span>
-                    <span id="usdt-res" style="color:var(--yellow); font-weight:900;">Rp 0</span>
-                </div>
-                <div class="wallet-box">0x71dE983697e066eBe53018e698887eDAb6377777</div>
-                <p style="font-size:9px; color:var(--blue); font-weight:800; text-align:center;">JARINGAN BEP20 (BNB SMART CHAIN)</p>
-            </div>
-
-            <button class="btn-main" id="btn-depo" onclick="prosesDepo()">
-                <i class="fas fa-check-circle"></i> KONFIRMASI PEMBAYARAN
-            </button>
-        </div>
-
-        <div class="card" style="padding: 15px;">
-            <span class="label"><i class="fas fa-history"></i> Riwayat Deposit</span>
-            <div class="h-wrap">
-                <table class="h-table">
-                    <thead>
-                        <tr>
-                            <th>METODE</th>
-                            <th>NOMINAL</th>
-                            <th>STATUS</th>
-                            <th>WAKTU</th>
-                        </tr>
-                    </thead>
-                    <tbody id="history-body"></tbody>
-                </table>
-            </div>
-        </div>
+<div class="container">
+    <div class="nav-bar">
+        <a href="game.html" class="btn-back"><i class="fas fa-chevron-left"></i> KEMBALI</a>
+        <h1 class="header-title">TOPUP</h1>
+        <div style="width:50px"></div>
     </div>
 
-    <div id="modal-overlay">
-        <div class="modal">
-            <h3 id="m-title" style="color:var(--pink); margin-bottom:12px; font-family:'Cinzel Decorative';">INFO</h3>
-            <p id="m-msg" style="font-size:14px; opacity:0.8; margin-bottom:20px;"></p>
-            <button class="btn-main" onclick="closeModal()">OKAY</button>
-        </div>
+    <div class="card-saldo">
+        <p class="label-sm">SALDO ANDA</p>
+        <p class="val-lg" id="user-saldo">Rp 0</p>
     </div>
 
-    <script>
-        // Gunakan URL Supabase Anda
-        const SUPA_URL = "https://jcxgankdwfwfnbwlkkpz.supabase.co";
-        const SUPA_KEY = CONFIG.SUPABASE_ANON_KEY; 
-        const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
-        
-        let activeMethod = 'QRIS';
+    <div class="card-main">
+        <p class="label-sm">PILIH METODE</p>
+        <div class="method-grid">
+            <div class="method-item active" id="btn-qris" onclick="selectMethod('QRIS')">
+                <i class="fas fa-qrcode" style="color:var(--pink)"></i>
+                <span>QRIS AUTO</span>
+            </div>
+            <div class="method-item" id="btn-usdt" onclick="selectMethod('USDT')">
+                <i class="fab fa-ethereum" style="color:var(--blue)"></i>
+                <span>USDT CRYPTO</span>
+            </div>
+        </div>
 
-        particlesJS("particles-js", {"particles":{"number":{"value":30},"color":{"value":"#ff0077"},"opacity":{"value":0.2},"size":{"value":2},"move":{"speed":1}}});
+        <p class="label-sm">NOMINAL DEPOSIT</p>
+        <input type="number" id="amount-input" class="input-box" placeholder="Min. 20000" oninput="calcUSDT()">
 
-        function playSnd(){ const a=document.getElementById('snd-click'); a.currentTime=0; a.play(); }
+        <div id="qris-display">
+            <div class="qris-frame">
+                <img src="25989.png" alt="QRIS" onerror="this.src='https://via.placeholder.com/200?text=QRIS+TIDAK+ADA'">
+            </div>
+            <p style="font-size:9px; color:var(--pink); margin-top:10px; font-weight:700;">SCAN QR DI ATAS UNTUK MEMBAYAR</p>
+        </div>
 
-        function setMethod(m){
-            playSnd();
-            activeMethod = m;
-            document.getElementById('m-qris').classList.toggle('active', m==='QRIS');
-            document.getElementById('m-usdt').classList.toggle('active', m==='USDT');
-            document.getElementById('qris-box').style.display = (m==='QRIS' ? 'block' : 'none');
-            document.getElementById('usdt-box').style.display = (m==='USDT' ? 'block' : 'none');
-            document.getElementById('inp-amt').placeholder = (m==='USDT' ? 'Jumlah USDT' : 'Min. 20.000');
-            document.getElementById('inp-amt').value = '';
-            updateConvert();
-        }
+        <div id="usdt-display">
+            <div style="display:flex; justify-content:space-between; font-size:11px;">
+                <span>Estimasi Terima:</span>
+                <span id="usdt-calc" style="color:var(--yellow); font-weight:900;">Rp 0</span>
+            </div>
+            <div class="wallet-text">0x71dE983697e066eBe53018e698887eDAb6377777</div>
+            <p style="font-size:9px; color:var(--blue); text-align:center;">Network: BEP20 (BNB Smart Chain)</p>
+        </div>
 
-        function updateConvert(){
-            const val = parseFloat(document.getElementById('inp-amt').value) || 0;
-            if(activeMethod === 'USDT'){
-                document.getElementById('usdt-res').innerText = "Rp " + (val * 16200).toLocaleString('id-ID');
-            }
-        }
+        <button class="btn-confirm" id="main-submit" onclick="submitDeposit()">
+            KONFIRMASI PEMBAYARAN
+        </button>
+    </div>
 
-        async function prosesDepo(){
-            playSnd();
-            const user = localStorage.getItem('p_user');
-            const amt = parseFloat(document.getElementById('inp-amt').value);
-
-            if(!user) return showModal("ERROR", "Silakan login ulang.");
-            if(!amt || amt <= 0) return showModal("INFO", "Masukkan nominal yang valid.");
-
-            const finalIDR = (activeMethod === 'USDT' ? amt * 16200 : amt);
-            
-            try {
-                const btn = document.getElementById('btn-depo');
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> MEMPROSES...';
-
-                const { error } = await supa.from('deposits').insert([{
-                    username: user,
-                    amount: amt,
-                    net_receive: finalIDR,
-                    method: activeMethod,
-                    status: 'PROSES',
-                    created_at: new Date().toISOString()
-                }]);
-
-                if(error) throw error;
-                showModal("SUKSES", "Konfirmasi deposit terkirim! Saldo akan masuk setelah divalidasi Admin.");
-                document.getElementById('inp-amt').value = '';
-                loadHistory();
-            } catch (err) {
-                showModal("GAGAL", "Terjadi kesalahan database.");
-            } finally {
-                const btn = document.getElementById('btn-depo');
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-check-circle"></i> KONFIRMASI PEMBAYARAN';
-            }
-        }
-
-        async function loadHistory(){
-            const user = localStorage.getItem('p_user');
-            if(!user) return;
-
-            // Load Saldo
-            const { data: profile } = await supa.from('profiles').select('saldo').eq('username', user).single();
-            if(profile) document.getElementById('display-saldo').innerText = 'Rp ' + (profile.saldo || 0).toLocaleString('id-ID');
-
-            // Load History dari tabel deposits
-            const { data } = await supa.from('deposits').select('*').eq('username', user).order('created_at', {ascending:false}).limit(5);
-            const body = document.getElementById('history-body');
-            
-            if(data && data.length > 0){
-                body.innerHTML = data.map(d => `
+    <div class="card-main" style="padding:15px;">
+        <p class="label-sm"><i class="fas fa-history"></i> RIWAYAT TERAKHIR</p>
+        <div class="history-section">
+            <table class="tbl">
+                <thead>
                     <tr>
-                        <td style="color:var(--pink); font-weight:800;">${d.method}</td>
-                        <td style="font-weight:900;">${d.method==='USDT'?'$':''} ${d.amount.toLocaleString('id-ID')}</td>
-                        <td><span class="badge st-${d.status}">${d.status}</span></td>
-                        <td style="font-size:9px; opacity:0.4;">${new Date(d.created_at).toLocaleTimeString()}</td>
+                        <th>METODE</th>
+                        <th>JUMLAH</th>
+                        <th>STATUS</th>
+                        <th>WAKTU</th>
                     </tr>
-                `).join('');
-            } else {
-                body.innerHTML = '<tr><td colspan="4" style="text-align:center; opacity:0.3; padding:20px;">Belum ada riwayat</td></tr>';
-            }
+                </thead>
+                <tbody id="history-data">
+                    <tr><td colspan="4" style="text-align:center; opacity:0.3; padding:20px;">Memuat data...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="modal-overlay">
+    <div class="modal-content">
+        <h3 id="m-header" style="color:var(--pink); margin-bottom:10px;">INFO</h3>
+        <p id="m-body" style="font-size:13px; margin-bottom:20px; opacity:0.8;"></p>
+        <button class="btn-confirm" onclick="closeM()">OKAY</button>
+    </div>
+</div>
+
+<script>
+    const supa = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+    let currentMethod = 'QRIS';
+
+    function selectMethod(m) {
+        currentMethod = m;
+        document.getElementById('btn-qris').classList.toggle('active', m === 'QRIS');
+        document.getElementById('btn-usdt').classList.toggle('active', m === 'USDT');
+        document.getElementById('qris-display').style.display = (m === 'QRIS' ? 'block' : 'none');
+        document.getElementById('usdt-display').style.display = (m === 'USDT' ? 'block' : 'none');
+        document.getElementById('amount-input').value = '';
+        calcUSDT();
+    }
+
+    function calcUSDT() {
+        const val = parseFloat(document.getElementById('amount-input').value) || 0;
+        if(currentMethod === 'USDT') {
+            document.getElementById('usdt-calc').innerText = "Rp " + (val * 16200).toLocaleString('id-ID');
         }
+    }
 
-        function showModal(t,m){ document.getElementById('m-title').innerText=t; document.getElementById('m-msg').innerText=m; document.getElementById('modal-overlay').style.display='flex'; }
-        function closeModal(){ playSnd(); document.getElementById('modal-overlay').style.display='none'; }
+    async function submitDeposit() {
+        const user = localStorage.getItem('p_user');
+        const amt = parseFloat(document.getElementById('amount-input').value);
 
-        window.onload = loadHistory;
-    </script>
+        if(!user) return alert("Sesi habis, silakan login kembali.");
+        if(!amt || amt < 1000) return showAlert("INFO", "Masukkan nominal yang benar.");
+
+        const btn = document.getElementById('main-submit');
+        btn.disabled = true;
+        btn.innerText = "MENGIRIM...";
+
+        const finalIDR = (currentMethod === 'USDT' ? amt * 16200 : amt);
+
+        const { error } = await supa.from('deposits').insert([{
+            username: user,
+            amount: amt,
+            net_receive: finalIDR,
+            method: currentMethod,
+            status: 'PROSES'
+        }]);
+
+        if(!error) {
+            showAlert("BERHASIL", "Permintaan deposit telah dikirim. Saldo akan otomatis bertambah setelah diverifikasi.");
+            document.getElementById('amount-input').value = '';
+            fetchData();
+        } else {
+            showAlert("ERROR", "Gagal menghubungi server.");
+        }
+        btn.disabled = false;
+        btn.innerText = "KONFIRMASI PEMBAYARAN";
+    }
+
+    async function fetchData() {
+        const user = localStorage.getItem('p_user');
+        if(!user) return;
+
+        // Ambil Saldo
+        const { data: profile } = await supa.from('profiles').select('saldo').eq('username', user).single();
+        if(profile) document.getElementById('user-saldo').innerText = "Rp " + (profile.saldo || 0).toLocaleString('id-ID');
+
+        // Ambil Riwayat
+        const { data: logs } = await supa.from('deposits').select('*').eq('username', user).order('created_at', {ascending: false}).limit(5);
+        const target = document.getElementById('history-data');
+        
+        if(logs && logs.length > 0) {
+            target.innerHTML = logs.map(l => `
+                <tr>
+                    <td style="color:var(--pink); font-weight:800;">${l.method}</td>
+                    <td style="font-weight:900;">${l.method==='USDT'?'$':''} ${l.amount.toLocaleString('id-ID')}</td>
+                    <td><span class="badge-status st-${l.status}">${l.status}</span></td>
+                    <td style="font-size:9px; opacity:0.5;">${new Date(l.created_at).toLocaleTimeString()}</td>
+                </tr>
+            `).join('');
+        } else {
+            target.innerHTML = '<tr><td colspan="4" style="text-align:center; opacity:0.3; padding:20px;">Tidak ada riwayat</td></tr>';
+        }
+    }
+
+    function showAlert(h, b) {
+        document.getElementById('m-header').innerText = h;
+        document.getElementById('m-body').innerText = b;
+        document.getElementById('modal-overlay').style.display = 'flex';
+    }
+    function closeM() { document.getElementById('modal-overlay').style.display = 'none'; }
+
+    window.onload = fetchData;
+</script>
+
 </body>
 </html>
