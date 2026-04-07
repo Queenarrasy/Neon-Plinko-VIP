@@ -87,11 +87,13 @@
         /* ── INBOX ── */
         .inbox-empty{text-align:center;padding:24px;font-size:12px;color:rgba(255,255,255,.35);font-weight:700;}
         .inbox-item{background:rgba(255,0,119,.06);border:1.5px solid rgba(255,0,119,.25);border-radius:16px;padding:14px;margin-bottom:10px;}
+        .inbox-item.claimed{border-color:rgba(0,255,136,.25);background:rgba(0,255,136,.04);opacity:.7;}
         .inbox-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
         .inbox-from{font-size:10px;font-weight:900;color:var(--yellow);text-transform:uppercase;letter-spacing:1px;}
         .inbox-date{font-size:9px;color:rgba(255,255,255,.35);}
         .inbox-msg{font-size:11px;color:#ddd;line-height:1.6;margin-bottom:10px;}
         .inbox-reward-amount{font-size:16px;font-weight:900;color:var(--pink);text-shadow:0 0 8px rgba(255,0,119,.4);margin-bottom:10px;}
+        .inbox-status-claimed{font-size:10px;font-weight:900;color:#00ff88;letter-spacing:1px;padding:8px 0;text-align:center;}
         .btn-claim-inbox{padding:10px 22px;border:none;border-radius:50px;background:linear-gradient(90deg,var(--pink),#b400dc);color:#fff;font-weight:900;font-size:11px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;box-shadow:0 0 10px rgba(255,0,119,.3);transition:.2s;font-family:'Outfit',sans-serif;}
         .btn-claim-inbox:active{transform:scale(.96);}
         .btn-claim-inbox:disabled{opacity:.4;filter:grayscale(1);cursor:not-allowed;}
@@ -188,7 +190,7 @@
             <div class="rules-title"><i class="fas fa-list"></i> SYARAT & KETENTUAN</div>
             <ul class="rules-list">
                 <li>Bonus Rp5.000 per referral aktif (deposit pertama min Rp20.000)</li>
-                <li>Bonus masuk ke total komisi & bisa diklaim setiap hari Senin</li>
+                <li>Bonus masuk otomatis ke saldo setelah diklaim</li>
                 <li>Top 3 referral terbanyak tiap bulan dapat hadiah USDT tambahan</li>
                 <li>Pantau status referral Anda di tabel riwayat undangan di bawah</li>
             </ul>
@@ -199,7 +201,7 @@
     <div class="stats-row">
         <div class="stat-card"><small><i class="fas fa-users"></i> TOTAL UNDANGAN</small><span id="total-ref">—</span></div>
         <div class="stat-card"><small><i class="fas fa-user-check"></i> AKTIF</small><span id="active-ref">—</span></div>
-        <div class="stat-card"><small><i class="fas fa-coins"></i> TOTAL KOMISI</small><span id="total-komisi">—</span><div class="stat-sub">IDR</div></div>
+        <div class="stat-card"><small><i class="fas fa-coins"></i> SALDO</small><span id="total-komisi">—</span><div class="stat-sub">IDR</div></div>
     </div>
 
     <!-- Kode Referral -->
@@ -225,10 +227,10 @@
             <div class="bonus-label"><i class="fas fa-gift"></i> BONUS TERSEDIA</div>
             <div class="bonus-amount" id="bonus-amount">IDR 0</div>
         </div>
-        <button class="btn-main btn-pink" id="claim-btn" onclick="claimBonus()">
+        <button class="btn-main btn-pink" id="claim-btn" onclick="claimBonus()" disabled>
             <i class="fas fa-hand-holding-usd"></i> KLAIM BONUS SEKARANG
         </button>
-        <div class="claim-info"><i class="fas fa-info-circle"></i> Bonus dihitung otomatis dari referral aktif · Klaim setiap <b>Senin</b></div>
+        <div class="claim-info"><i class="fas fa-info-circle"></i> Bonus dihitung dari referral aktif (deposit min Rp20.000) × <b>Rp5.000</b></div>
     </div>
 
     <!-- Kotak Masuk -->
@@ -289,25 +291,21 @@
 
 <script>
 // ── CONFIG ──────────────────────────────────────────────────────────────────
-const SUPABASE_URL  = 'https://jcxgankdwfwfnbwlkkpz.supabase.co';
-const SUPABASE_KEY  = 'sb_publishable_CaQyWYa_F3LDYEo8BDWAlQ_d0SscfCL';
+const SUPABASE_URL = 'https://jcxgankdwfwfnbwlkkpz.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_CaQyWYa_F3LDYEo8BDWAlQ_d0SscfCL';
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ── KONSTANTA ────────────────────────────────────────────────────────────────
-// Referral aktif = total_deposit_current >= 20000
-// Kolom di profiles: referred_by, referral_code, saldo, total_deposit_current, last_deposit_amount
 const KOMISI_PER_REF    = 5000;
 const MIN_DEPOSIT_AKTIF = 20000;
 
 // ── STATE ───────────────────────────────────────────────────────────────────
 let currentUsername = '';
 let userData = {
-    id: null,
     refCode: '',
     refLink: '',
     totalReferral: 0,
     activeReferral: 0,
-    totalKomisi: 0,
     bonusAvailable: 0,
     saldo: 0
 };
@@ -352,13 +350,13 @@ function formatRupiah(n) {
 }
 
 function updateUI() {
-    document.getElementById('display-saldo').innerHTML  = 'IDR ' + formatRupiah(userData.saldo);
-    document.getElementById('total-ref').innerText      = userData.totalReferral;
-    document.getElementById('active-ref').innerText     = userData.activeReferral;
-    document.getElementById('total-komisi').innerHTML   = formatRupiah(userData.totalKomisi);
-    document.getElementById('bonus-amount').innerHTML   = 'IDR ' + formatRupiah(userData.bonusAvailable);
-    document.getElementById('ref-code').innerText       = userData.refCode || '—';
-    document.getElementById('ref-link').innerText       = userData.refLink || '—';
+    document.getElementById('display-saldo').innerHTML = 'IDR ' + formatRupiah(userData.saldo);
+    document.getElementById('total-ref').innerText     = userData.totalReferral;
+    document.getElementById('active-ref').innerText    = userData.activeReferral;
+    document.getElementById('total-komisi').innerHTML  = formatRupiah(userData.saldo);
+    document.getElementById('bonus-amount').innerHTML  = 'IDR ' + formatRupiah(userData.bonusAvailable);
+    document.getElementById('ref-code').innerText      = userData.refCode || '—';
+    document.getElementById('ref-link').innerText      = userData.refLink || '—';
     const claimBtn = document.getElementById('claim-btn');
     if (claimBtn) claimBtn.disabled = userData.bonusAvailable <= 0;
 }
@@ -366,13 +364,28 @@ function updateUI() {
 // ── SALIN / SHARE ────────────────────────────────────────────────────────────
 function copyRefCode() {
     if (!userData.refCode) return;
-    navigator.clipboard.writeText(userData.refCode).catch(() => {});
+    navigator.clipboard.writeText(userData.refCode).catch(() => {
+        // fallback untuk browser lama
+        const el = document.createElement('textarea');
+        el.value = userData.refCode;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+    });
     showAlert('✅ KODE REFERRAL DISALIN: ' + userData.refCode);
 }
 
 function copyRefLink() {
     if (!userData.refLink) return;
-    navigator.clipboard.writeText(userData.refLink).catch(() => {});
+    navigator.clipboard.writeText(userData.refLink).catch(() => {
+        const el = document.createElement('textarea');
+        el.value = userData.refLink;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+    });
     showAlert('✅ LINK UNDANGAN DISALIN!');
 }
 
@@ -394,7 +407,6 @@ function shareLink() {
 }
 
 // ── RESOLVE LOGIN ─────────────────────────────────────────────────────────
-// Ambil username dari localStorage (login custom)
 function getLocalUsername() {
     return localStorage.getItem('neon_user')
         || localStorage.getItem('username')
@@ -402,9 +414,15 @@ function getLocalUsername() {
         || null;
 }
 
+// ── BUILD REF LINK ────────────────────────────────────────────────────────
+function buildRefLink(code) {
+    // Gunakan URL halaman saat ini sebagai base, arahkan ke index.html dengan ?ref=
+    const base = window.location.origin + (window.location.pathname.replace('reward.html', '') || '/');
+    return base + 'index.html?ref=' + code;
+}
+
 // ── INIT ─────────────────────────────────────────────────────────────────────
 async function init() {
-    // Coba ambil username dari localStorage dulu
     const localUser = getLocalUsername();
 
     if (!localUser) {
@@ -420,44 +438,38 @@ async function init() {
     currentUsername = localUser;
 
     try {
-        // Ambil data profil dari tabel profiles
+        // Ambil data profil
         const { data: prof, error: pErr } = await supabase
             .from('profiles')
-            .select('*')
+            .select('id, username, saldo, referral_code, referred_by, total_deposit_current, last_deposit_amount')
             .eq('username', currentUsername)
             .single();
 
         if (pErr) throw pErr;
 
-        // ── Pastikan referral_code ada, generate jika belum ──
-        // Kolom di DB: referral_code (bukan ref_code)
+        // Generate referral_code jika belum ada
         let refCode = prof.referral_code;
         if (!refCode) {
             refCode = 'VIP' + Math.random().toString(36).substring(2, 8).toUpperCase();
-            const { error: updErr } = await supabase
+            await supabase
                 .from('profiles')
                 .update({ referral_code: refCode })
                 .eq('username', currentUsername);
-            if (updErr) console.warn('Gagal simpan referral_code:', updErr);
         }
 
         userData = {
-            id:              prof.id,
-            refCode:         refCode,
-            refLink:         window.location.origin + '/reward.html?ref=' + refCode,
-            // Ambil dari kolom DB yang ada
-            // total_referral & active_referral akan di-refresh lewat updateReferralBonus()
-            totalReferral:   prof.total_referral   || 0,
-            activeReferral:  prof.active_referral  || 0,
-            totalKomisi:     prof.total_komisi      || 0,
-            bonusAvailable:  prof.bonus_available   || 0,
-            saldo:           Number(prof.saldo)     || 0
+            refCode:        refCode,
+            refLink:        buildRefLink(refCode),
+            totalReferral:  0,
+            activeReferral: 0,
+            bonusAvailable: 0,
+            saldo:          Number(prof.saldo) || 0
         };
 
         updateUI();
 
-        // Hitung ulang referral aktif secara real-time
-        await updateReferralBonus(prof);
+        // Hitung referral aktif secara real-time
+        await updateReferralBonus();
 
         // Muat tabel riwayat & inbox
         await loadReferralHistory();
@@ -471,18 +483,14 @@ async function init() {
 }
 
 // ── UPDATE REFERRAL BONUS ─────────────────────────────────────────────────
-// Menggunakan kolom yang BENAR-BENAR ADA di tabel profiles:
-//   referred_by        → siapa yang mereferralkan
-//   total_deposit_current → total deposit user tsb (cek aktif/tidak)
-//   last_deposit_amount   → sebagai fallback jika tidak ada total_deposit_current
-async function updateReferralBonus(profData) {
+// Hanya menggunakan kolom yang ADA: referred_by, total_deposit_current, last_deposit_amount, saldo
+async function updateReferralBonus() {
     if (!userData.refCode) return;
 
     try {
-        // Ambil semua user yang referred_by = referral_code kita
         const { data: refs, error } = await supabase
             .from('profiles')
-            .select('username, created_at, total_deposit_current, last_deposit_amount, saldo')
+            .select('username, created_at, total_deposit_current, last_deposit_amount')
             .eq('referred_by', userData.refCode)
             .order('created_at', { ascending: false });
 
@@ -490,35 +498,15 @@ async function updateReferralBonus(profData) {
 
         const all = refs || [];
 
-        // Cek aktif: total_deposit_current >= 20000
-        // Fallback: gunakan last_deposit_amount jika total_deposit_current null/0
         const active = all.filter(r => {
             const totalDep = Number(r.total_deposit_current || 0);
             const lastDep  = Number(r.last_deposit_amount   || 0);
             return (totalDep >= MIN_DEPOSIT_AKTIF) || (totalDep === 0 && lastDep >= MIN_DEPOSIT_AKTIF);
         });
 
-        const newBonus = active.length * KOMISI_PER_REF;
-
         userData.totalReferral  = all.length;
         userData.activeReferral = active.length;
-        // Hanya update bonusAvailable jika lebih besar dari sebelumnya
-        // (mencegah overwrite jika sudah ada bonus pending lain)
-        if (newBonus > userData.bonusAvailable) {
-            userData.bonusAvailable = newBonus;
-        }
-
-        // Simpan ke DB
-        const { error: updErr } = await supabase
-            .from('profiles')
-            .update({
-                total_referral:  all.length,
-                active_referral: active.length,
-                bonus_available: userData.bonusAvailable
-            })
-            .eq('username', currentUsername);
-
-        if (updErr) console.warn('updateReferralBonus DB update gagal:', updErr);
+        userData.bonusAvailable = active.length * KOMISI_PER_REF;
 
         updateUI();
 
@@ -539,7 +527,6 @@ async function loadReferralHistory() {
     tbody.innerHTML = '<tr><td colspan="4"><div class="h-empty"><i class="fas fa-spinner fa-spin"></i><br>Memuat...</div></td></tr>';
 
     try {
-        // Query semua user yang referred_by = kode kita
         const { data: refs, error } = await supabase
             .from('profiles')
             .select('username, created_at, total_deposit_current, last_deposit_amount')
@@ -554,20 +541,19 @@ async function loadReferralHistory() {
         }
 
         tbody.innerHTML = refs.map(r => {
-            // Cek apakah referral ini sudah aktif (sudah deposit >= 20rb)
             const totalDep  = Number(r.total_deposit_current || 0);
             const lastDep   = Number(r.last_deposit_amount   || 0);
             const isActive  = (totalDep >= MIN_DEPOSIT_AKTIF) || (totalDep === 0 && lastDep >= MIN_DEPOSIT_AKTIF);
             const bonusVal  = isActive ? KOMISI_PER_REF : 0;
 
-            const dObj      = new Date(r.created_at);
-            const tgl       = dObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: '2-digit' });
-            const jam       = dObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            const dObj = new Date(r.created_at);
+            const tgl  = dObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: '2-digit' });
+            const jam  = dObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
-            const badgeClass = isActive ? 'badge-aktif'    : 'badge-pending';
-            const badgeIcon  = isActive ? 'fa-circle-check': 'fa-clock';
-            const badgeTxt   = isActive ? 'AKTIF'          : 'PENDING';
-            const subTxt     = isActive ? 'Deposit ✓'      : 'Belum deposit';
+            const badgeClass = isActive ? 'badge-aktif'     : 'badge-pending';
+            const badgeIcon  = isActive ? 'fa-circle-check' : 'fa-clock';
+            const badgeTxt   = isActive ? 'AKTIF'           : 'PENDING';
+            const subTxt     = isActive ? 'Deposit ✓'       : 'Belum deposit';
 
             return `<tr>
   <td><div class="td-time">
@@ -590,7 +576,6 @@ async function loadReferralHistory() {
 </tr>`;
         }).join('');
 
-        // Scroll ke atas
         const scrollBody = document.querySelector('.hist-scroll-body');
         if (scrollBody) scrollBody.scrollTop = 0;
 
@@ -601,6 +586,7 @@ async function loadReferralHistory() {
 }
 
 // ── LOAD INBOX ────────────────────────────────────────────────────────────
+// Tabel inbox kolom: id, username, nominal, pesan, status, created_at
 async function loadInbox() {
     const container = document.getElementById('inbox-container');
 
@@ -609,47 +595,60 @@ async function loadInbox() {
         return;
     }
 
+    container.innerHTML = '<div class="inbox-empty"><i class="fas fa-spinner fa-spin" style="font-size:20px;margin-bottom:8px;display:block;"></i>Memuat pesan...</div>';
+
     try {
+        // Ambil semua pesan milik user (pending dan claimed), urutkan terbaru dulu
         const { data: messages, error } = await supabase
             .from('inbox')
-            .select('*')
+            .select('id, username, nominal, pesan, status, created_at')
             .eq('username', currentUsername)
-            .eq('status', 'pending')
             .order('created_at', { ascending: false });
 
         if (error) throw error;
 
         if (!messages || messages.length === 0) {
-            container.innerHTML = '<div class="inbox-empty"><i class="fas fa-inbox" style="font-size:24px;margin-bottom:10px;display:block;"></i>Tidak ada pesan baru</div>';
+            container.innerHTML = '<div class="inbox-empty"><i class="fas fa-inbox" style="font-size:24px;margin-bottom:10px;display:block;"></i>Tidak ada pesan</div>';
             return;
         }
 
-        container.innerHTML = messages.map(msg => `
-<div class="inbox-item" data-id="${msg.id}">
+        container.innerHTML = messages.map(msg => {
+            const isClaimed = msg.status === 'claimed';
+            const tgl = new Date(msg.created_at).toLocaleDateString('id-ID', {
+                day: '2-digit', month: 'short', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+
+            return `
+<div class="inbox-item ${isClaimed ? 'claimed' : ''}" id="inbox-item-${msg.id}">
     <div class="inbox-header">
-        <span class="inbox-from"><i class="fas fa-trophy"></i> BONUS</span>
-        <span class="inbox-date">${new Date(msg.created_at).toLocaleDateString('id-ID')}</span>
+        <span class="inbox-from"><i class="fas fa-trophy"></i> ADMIN BONUS</span>
+        <span class="inbox-date">${tgl}</span>
     </div>
-    <div class="inbox-msg">${msg.pesan || 'Selamat! Anda mendapatkan bonus.'}</div>
+    <div class="inbox-msg">${msg.pesan || 'Selamat! Anda mendapatkan bonus dari admin.'}</div>
     <div class="inbox-reward-amount">IDR ${formatRupiah(msg.nominal)}</div>
-    <button class="btn-claim-inbox" onclick="claimInboxBonus('${msg.id}', ${msg.nominal})">
-        KLAIM SEKARANG
-    </button>
-</div>`).join('');
+    ${isClaimed
+        ? `<div class="inbox-status-claimed"><i class="fas fa-circle-check"></i> SUDAH DIKLAIM</div>`
+        : `<button class="btn-claim-inbox" id="btn-claim-${msg.id}" onclick="claimInboxBonus('${msg.id}', ${msg.nominal})">
+               <i class="fas fa-hand-holding-usd"></i> KLAIM SEKARANG
+           </button>`
+    }
+</div>`;
+        }).join('');
 
     } catch (e) {
         console.error('loadInbox error:', e);
-        container.innerHTML = '<div class="inbox-empty">Gagal memuat pesan</div>';
+        container.innerHTML = '<div class="inbox-empty"><i class="fas fa-triangle-exclamation" style="font-size:20px;margin-bottom:8px;display:block;"></i>Gagal memuat pesan</div>';
     }
 }
 
 // ── CLAIM INBOX BONUS ─────────────────────────────────────────────────────
 async function claimInboxBonus(inboxId, amount) {
-    // Disable semua tombol klaim untuk hindari double-klik
-    document.querySelectorAll('.btn-claim-inbox').forEach(b => b.disabled = true);
+    const btn = document.getElementById('btn-claim-' + inboxId);
+    if (btn) btn.disabled = true;
 
     try {
-        // 1. Update status inbox → claimed
+        // 1. Tandai inbox sebagai claimed
         const { error: updInboxErr } = await supabase
             .from('inbox')
             .update({ status: 'claimed' })
@@ -658,36 +657,41 @@ async function claimInboxBonus(inboxId, amount) {
 
         if (updInboxErr) throw updInboxErr;
 
-        // 2. Tambah saldo & total_komisi di profiles
-        const newSaldo   = Number(userData.saldo)       + Number(amount);
-        const newKomisi  = Number(userData.totalKomisi) + Number(amount);
+        // 2. Tambahkan nominal ke saldo user di profiles
+        const newSaldo = Number(userData.saldo) + Number(amount);
 
         const { error: updProfErr } = await supabase
             .from('profiles')
-            .update({
-                saldo:        newSaldo,
-                total_komisi: newKomisi
-            })
+            .update({ saldo: newSaldo })
             .eq('username', currentUsername);
 
         if (updProfErr) throw updProfErr;
 
-        userData.saldo       = newSaldo;
-        userData.totalKomisi = newKomisi;
+        // 3. Update state lokal
+        userData.saldo = newSaldo;
         updateUI();
 
-        await loadInbox();
-        showModal('BERHASIL!', `✨ Bonus IDR ${formatRupiah(amount)} telah ditambahkan ke saldo Anda!`);
+        // 4. Update tampilan item inbox secara langsung (tanpa reload penuh)
+        const item = document.getElementById('inbox-item-' + inboxId);
+        if (item) {
+            item.classList.add('claimed');
+            const btnEl = document.getElementById('btn-claim-' + inboxId);
+            if (btnEl) {
+                btnEl.outerHTML = `<div class="inbox-status-claimed"><i class="fas fa-circle-check"></i> SUDAH DIKLAIM</div>`;
+            }
+        }
+
+        showModal('BERHASIL! 🎉', `✨ Bonus IDR ${formatRupiah(amount)} telah ditambahkan ke saldo Anda!\n\nSaldo baru: IDR ${formatRupiah(newSaldo)}`);
         showAlert(`🎉 Bonus IDR ${formatRupiah(amount)} berhasil diklaim!`);
 
     } catch (e) {
         console.error('claimInboxBonus error:', e);
-        showAlert('❌ Gagal mengklaim bonus!');
-        document.querySelectorAll('.btn-claim-inbox').forEach(b => b.disabled = false);
+        showAlert('❌ Gagal mengklaim bonus! Coba lagi.');
+        if (btn) btn.disabled = false;
     }
 }
 
-// ── CLAIM BONUS MINGGUAN ──────────────────────────────────────────────────
+// ── CLAIM BONUS REFERRAL ──────────────────────────────────────────────────
 async function claimBonus() {
     if (userData.bonusAvailable <= 0) {
         showAlert('⚠️ Tidak ada bonus yang tersedia saat ini!');
@@ -698,27 +702,21 @@ async function claimBonus() {
     if (claimBtn) claimBtn.disabled = true;
 
     try {
-        const amount     = userData.bonusAvailable;
-        const newSaldo   = Number(userData.saldo)       + amount;
-        const newKomisi  = Number(userData.totalKomisi) + amount;
+        const amount   = userData.bonusAvailable;
+        const newSaldo = Number(userData.saldo) + amount;
 
         const { error } = await supabase
             .from('profiles')
-            .update({
-                saldo:           newSaldo,
-                total_komisi:    newKomisi,
-                bonus_available: 0
-            })
+            .update({ saldo: newSaldo })
             .eq('username', currentUsername);
 
         if (error) throw error;
 
         userData.saldo          = newSaldo;
-        userData.totalKomisi    = newKomisi;
         userData.bonusAvailable = 0;
         updateUI();
 
-        showModal('BERHASIL!', `✨ Bonus IDR ${formatRupiah(amount)} telah ditambahkan ke saldo Anda!`);
+        showModal('BERHASIL! 🎉', `✨ Bonus referral IDR ${formatRupiah(amount)} telah ditambahkan!\n\nSaldo baru: IDR ${formatRupiah(newSaldo)}`);
         showAlert(`🎉 Bonus IDR ${formatRupiah(amount)} berhasil diklaim!`);
 
     } catch (e) {
