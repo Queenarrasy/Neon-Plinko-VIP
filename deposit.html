@@ -125,18 +125,24 @@
         .btn-main:disabled{opacity:.4;cursor:not-allowed;}
 
         .hist-section-title{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:900;color:var(--yellow);margin:20px 0 10px;}
-        .hist-wrap{background:rgba(0,0,35,.7);border:1px solid rgba(0,34,255,.25);border-radius:18px;overflow:hidden;margin-top:8px;max-height:280px;overflow-y:auto;}
-        .hist-scroll{width:100%;overflow-x:auto;}
-        table.ht{width:100%;border-collapse:collapse;min-width:360px;}
-        table.ht thead tr{background:rgba(0,0,15,.95);}
-        table.ht th{padding:10px 12px;font-size:9px;font-weight:900;color:var(--pink);border-bottom:1.5px solid rgba(255,0,119,.2);text-align:left;}
-        table.ht td{padding:10px 12px;font-size:12px;border-bottom:1px solid rgba(0,34,255,.08);font-weight:700;color:#e8e8e8;}
-        .td-date{font-size:9px;color:rgba(255,255,255,.5);}
-        .badge-status{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:9px;font-weight:900;}
+        .hist-wrap{background:rgba(0,0,35,.7);border:1px solid rgba(0,34,255,.25);border-radius:18px;overflow:hidden;margin-top:8px;max-height:320px;overflow-y:auto;overflow-x:hidden;}
+        /* Card-style history rows */
+        .h-row{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid rgba(0,34,255,.1);}
+        .h-row:last-child{border-bottom:none;}
+        .h-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;}
+        .h-icon.qris{background:rgba(255,0,119,.15);color:var(--pink);}
+        .h-icon.usdt{background:rgba(38,161,123,.15);color:#26a17b;}
+        .h-info{flex:1;min-width:0;}
+        .h-method{font-size:9px;font-weight:900;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;}
+        .h-nominal{font-size:13px;font-weight:900;color:#fff;line-height:1.2;}
+        .h-nominal span.unit{font-size:9px;color:rgba(255,255,255,.4);font-weight:700;}
+        .h-right{text-align:right;flex-shrink:0;}
+        .h-date{font-size:9px;color:rgba(255,255,255,.35);margin-bottom:4px;line-height:1.4;}
+        .badge-status{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:20px;font-size:8px;font-weight:900;}
         .badge-sukses{background:rgba(0,255,136,.12);border:1px solid rgba(0,255,136,.35);color:#00ff88;}
         .badge-proses{background:rgba(251,255,0,.1);border:1px solid rgba(251,255,0,.35);color:var(--yellow);}
         .badge-gagal{background:rgba(255,0,119,.1);border:1px solid rgba(255,0,119,.35);color:var(--pink);}
-        .empty-row td{text-align:center;padding:32px !important;opacity:.5;}
+        .h-empty{text-align:center;padding:28px 12px;opacity:.4;font-size:11px;}
 
         #modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(10px);}
         .modal-box{width:88%;max-width:320px;background:rgba(0,0,15,.99);border:1.5px solid var(--pink);border-top:2px solid var(--yellow);border-radius:22px;padding:26px;text-align:center;}
@@ -258,17 +264,8 @@
             <i class="fas fa-rotate-right"></i> Refresh
         </span>
     </div>
-    <div class="hist-wrap">
-        <div class="hist-scroll">
-            <table class="ht">
-                <thead>
-                    <tr><th>Metode</th><th>Nominal</th><th>Diterima</th><th>Status</th><th>Tanggal</th></tr>
-                </thead>
-                <tbody id="history-body">
-                    <tr class="empty-row"><td colspan="5"><i class="fas fa-spinner fa-spin"></i> Memuat...</td></tr>
-                </tbody>
-            </table>
-        </div>
+    <div class="hist-wrap" id="history-body">
+        <div class="h-empty"><i class="fas fa-spinner fa-spin"></i> Memuat...</div>
     </div>
 </div>
 
@@ -300,7 +297,6 @@ function getDB() {
 
 let curMethod = 'QRIS', KURS = 16800, FEE_USDT = 2, isSubmitting = false;
 let lastHistoryLength = 0;
-let refreshInterval = null;
 
 particlesJS("particles-js", {
     "particles": {
@@ -436,13 +432,11 @@ async function updateUserSaldo() {
 
 async function loadHistory() {
     const user = getUser();
-    if (!user) { 
-        const body = document.getElementById('history-body');
-        if(body) body.innerHTML = '<tr class="empty-row"><td colspan="5"><i class="fas fa-exclamation-triangle"></i><br>Silakan login terlebih dahulu</td></tr>';
-        return; 
-    }
     const body = document.getElementById('history-body');
-    if(body) body.innerHTML = '<tr class="empty-row"><td colspan="5"><i class="fas fa-spinner fa-spin"></i> Memuat...</td></tr>';
+    if (!user) {
+        if(body) body.innerHTML = '<div class="h-empty"><i class="fas fa-exclamation-triangle"></i><br>Silakan login terlebih dahulu</div>';
+        return;
+    }
     try {
         const db = getDB();
         const { data, error } = await db.from('deposits').select('id,amount,net_receive,method,status,created_at').eq('username', user).order('created_at', { ascending: false }).limit(30);
@@ -454,27 +448,58 @@ async function loadHistory() {
                 let st = (d.status || 'PROSES').toUpperCase();
                 let bc = 'badge-proses', ic = 'fa-clock';
                 if (st === 'SUKSES' || st === 'APPROVE' || st === 'BERHASIL') { bc = 'badge-sukses'; ic = 'fa-circle-check'; st = 'SUKSES'; }
-                else if (st === 'GAGAL') { bc = 'badge-gagal'; ic = 'fa-circle-xmark'; }
-                else st = 'PROSES';
+                else if (st === 'GAGAL') { bc = 'badge-gagal'; ic = 'fa-circle-xmark'; st = 'GAGAL'; }
+                else { st = 'PROSES'; }
+                const isUsdt = (d.method || '').toUpperCase() === 'USDT';
+                const nominalFmt = isUsdt
+                    ? `<span class="unit">$</span>${parseFloat(d.amount).toFixed(2)}`
+                    : parseFloat(d.amount).toLocaleString('id-ID');
+                const iconClass = isUsdt ? 'usdt' : 'qris';
+                const iconI = isUsdt ? 'fa-brands fa-ethereum' : 'fas fa-qrcode';
                 const dObj = new Date(d.created_at);
-                const tgl = dObj.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'2-digit' });
+                const tgl = dObj.toLocaleDateString('id-ID', { day:'2-digit', month:'short' });
                 const jam = dObj.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
-                const displayAmount = d.method === 'USDT' ? `$${d.amount}` : formatRupiah(d.amount);
-                return `<tr><td>${d.method || 'QRIS'}</td><td style="color:var(--yellow);">${displayAmount}</td><td>${formatRupiah(d.net_receive || d.amount)}</td><td><span class="badge-status ${bc}"><i class="fas ${ic}"></i> ${st}</span></td><td class="td-date">${tgl}<br>${jam}</td></tr>`;
+                return `<div class="h-row">
+  <div class="h-icon ${iconClass}"><i class="${iconI}"></i></div>
+  <div class="h-info">
+    <div class="h-method">${d.method || 'QRIS'}</div>
+    <div class="h-nominal">${nominalFmt}</div>
+  </div>
+  <div class="h-right">
+    <div class="h-date">${tgl}<br>${jam}</div>
+    <span class="badge-status ${bc}"><i class="fas ${ic}"></i> ${st}</span>
+  </div>
+</div>`;
             }).join('');
-        } else { 
-            if(body) body.innerHTML = '<tr class="empty-row"><td colspan="5"><i class="fas fa-inbox"></i><br>Belum ada transaksi</td></tr>'; 
+        } else {
+            if(body) body.innerHTML = '<div class="h-empty"><i class="fas fa-inbox"></i><br>Belum ada transaksi</div>';
         }
-    } catch(err) { 
-        if(body) body.innerHTML = '<tr class="empty-row"><td colspan="5"><i class="fas fa-triangle-exclamation"></i><br>Gagal memuat riwayat</td></tr>'; 
+    } catch(err) {
+        if(body) body.innerHTML = '<div class="h-empty"><i class="fas fa-triangle-exclamation"></i><br>Gagal memuat riwayat</div>';
     }
+}
+
+function setupRealtimeSubscription() {
+    const user = getUser();
+    if (!user) return;
+    const db = getDB();
+    db.channel('deposits-live')
+      .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'deposits',
+          filter: `username=eq.${user}`
+      }, () => {
+          loadHistory();
+          updateUserSaldo();
+      })
+      .subscribe();
 }
 
 window.onload = () => {
     loadHistory();
     updateUserSaldo();
-    if (refreshInterval) clearInterval(refreshInterval);
-    refreshInterval = setInterval(() => { loadHistory(); updateUserSaldo(); }, 10000);
+    setupRealtimeSubscription();
     updateNominalDisplay(0);
 };
 </script>
