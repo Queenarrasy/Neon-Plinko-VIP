@@ -5,11 +5,10 @@
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
     <title>REWARD — NEON PLINKO VIP</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     <style>
-        /* ── ROOT VARIABLES ── */
         :root {
             --pink:   #ff0077;
             --blue:   #0022ff;
@@ -24,10 +23,10 @@
             color: #fff;
             font-family: 'Outfit', sans-serif;
             min-height: 100vh;
-            padding-bottom: 90px;
+            padding-bottom: 100px;
+            overflow-x: hidden;
         }
 
-        /* ── PARTICLES BG ── */
         #particles-js {
             position: fixed; width: 100%; height: 100%;
             z-index: 0; pointer-events: none;
@@ -55,7 +54,6 @@
             border-bottom: 1.5px solid var(--pink);
             position: sticky; top: 0; z-index: 100;
             backdrop-filter: blur(20px);
-            box-shadow: 0 0 15px rgba(255,0,119,.15);
         }
         .logo {
             font-size: 14px; font-weight: 900; color: var(--pink);
@@ -63,122 +61,102 @@
             letter-spacing: 1px; text-transform: uppercase;
         }
         .saldo-badge {
-            background: rgba(0,0,0,.7);
-            border: 1.5px solid var(--yellow);
+            background: rgba(0,0,0,.7); border: 1.5px solid var(--yellow);
             padding: 5px 13px; border-radius: 50px;
             font-size: 11px; font-weight: 900; color: var(--yellow);
         }
 
-        /* ── CONTAINER ── */
         .container { padding: 18px; max-width: 500px; margin: auto; position: relative; z-index: 10; }
 
-        /* ── DEBUG PANEL ── */
-        #debug-panel {
-            background: rgba(255,150,0,.08);
-            border: 1.5px solid rgba(255,150,0,.4);
-            border-radius: 16px; padding: 14px; margin-bottom: 14px;
-            font-size: 10px; color: rgba(255,200,100,.85);
-            word-break: break-all; line-height: 1.8; display: none;
-        }
-        #debug-panel.show { display: block; }
-        #debug-panel .debug-title { font-size: 11px; font-weight: 900; color: #ffaa00; margin-bottom: 8px; letter-spacing: 1px; }
-        #debug-panel .debug-line { padding: 2px 0; border-bottom: 1px solid rgba(255,150,0,.1); }
-
-        /* ── MANUAL LOGIN PANEL ── */
+        /* ── IDENTITY SECTION (IF NOT LOGGED IN) ── */
         #manual-login-panel {
-            background: rgba(0,34,255,.08);
-            border: 1.5px solid rgba(0,34,255,.4);
-            border-radius: 16px; padding: 18px; margin-bottom: 14px; display: none;
+            background: rgba(0,34,255,.1);
+            border: 1.5px solid var(--blue);
+            border-radius: 20px; padding: 25px; margin-bottom: 20px;
+            text-align: center; display: none;
         }
-        #manual-login-panel.show { display: block; }
-        .ml-title {
-            font-size: 11px; font-weight: 900; color: var(--yellow);
-            text-transform: uppercase; letter-spacing: 1px;
-            margin-bottom: 12px; text-align: center;
-        }
-        .ml-subtitle {
-            font-size: 10px; color: rgba(255,255,255,.5);
-            text-align: center; margin-bottom: 12px; line-height: 1.5;
-        }
+        .ml-title { font-weight: 900; color: var(--yellow); margin-bottom: 10px; font-size: 14px; }
         .ml-input {
-            width: 100%; background: rgba(0,0,0,.6);
-            border: 1.5px solid rgba(0,34,255,.5);
-            border-radius: 12px; padding: 12px 16px;
-            color: #fff; font-size: 13px; font-weight: 700;
-            font-family: 'Outfit', sans-serif; outline: none; margin-bottom: 10px;
+            width: 100%; background: #000; border: 1px solid var(--pink);
+            padding: 12px; border-radius: 10px; color: #fff; text-align: center;
+            margin-bottom: 15px; outline: none; font-family: 'Outfit';
         }
 
-        /* ── USER INFO BAR ── */
+        /* ── USER INFO ── */
         .user-info-bar {
             background: rgba(0,255,136,.06);
             border: 1px solid rgba(0,255,136,.25);
-            border-radius: 12px; padding: 8px 14px; margin-bottom: 14px;
-            display: flex; align-items: center; justify-content: space-between; font-size: 10px;
+            border-radius: 12px; padding: 10px 15px; margin-bottom: 15px;
+            display: flex; align-items: center; justify-content: space-between; font-size: 11px;
         }
-        .user-info-bar .u-val   { color: #00ff88; font-weight: 900; }
-        .btn-logout {
-            background: rgba(255,0,119,.15); border: 1px solid rgba(255,0,119,.3);
-            color: var(--pink); border-radius: 20px; padding: 4px 10px;
-            font-size: 9px; font-weight: 900; cursor: pointer;
-        }
+        .u-val { color: #00ff88; font-weight: 900; }
 
-        /* ── STATS & CARDS ── */
+        /* ── BANNER ── */
+        .banner-section {
+            margin-bottom: 18px; border-radius: 20px; overflow: hidden;
+            border: 2px solid rgba(255,0,119,.4); background: #000;
+        }
+        .banner-prize { text-align: center; padding: 15px; background: linear-gradient(135deg, #0a0015, #1a0030); }
+        .banner-title { font-size: 10px; font-weight: 900; color: var(--yellow); letter-spacing: 2px; margin-bottom: 10px; }
+        
+        /* ── STATS ── */
         .stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 16px; }
         .stat-card {
-            background: rgba(0,0,35,.75);
-            border: 1px solid rgba(0,34,255,.35);
-            border-radius: 16px; padding: 12px 8px; text-align: center; backdrop-filter: blur(10px);
+            background: rgba(0,0,35,.75); border: 1px solid rgba(0,34,255,.35);
+            border-radius: 16px; padding: 12px 5px; text-align: center; backdrop-filter: blur(10px);
         }
-        .stat-card small { display: block; font-size: 8px; color: var(--yellow); margin-bottom: 6px; font-weight: 900; }
-        .stat-card span  { font-weight: 900; color: #fff; font-size: 1.2rem; }
+        .stat-card small { display: block; font-size: 8px; color: var(--yellow); margin-bottom: 5px; font-weight: 900; }
+        .stat-card span { font-weight: 900; font-size: 14px; }
 
-        .ref-code-card {
-            background: rgba(0,0,35,.75);
-            border: 1.5px solid rgba(251,255,0,.3);
-            border-radius: 20px; padding: 18px; margin-bottom: 16px;
-            text-align: center; backdrop-filter: blur(10px);
+        /* ── REF CARD ── */
+        .card {
+            background: rgba(0,0,35,.75); border: 1.5px solid rgba(251,255,0,.3);
+            border-radius: 20px; padding: 18px; margin-bottom: 16px; text-align: center;
         }
-        .ref-code-display {
-            background: rgba(0,0,0,.7); border: 2px dashed rgba(251,255,0,.5);
-            border-radius: 14px; padding: 16px; margin: 12px 0; cursor: pointer;
+        .ref-display {
+            background: #000; border: 2px dashed var(--yellow);
+            border-radius: 12px; padding: 15px; margin: 10px 0; cursor: pointer;
         }
-        #ref-code { font-size: 1.6rem; font-weight: 900; color: var(--yellow); letter-spacing: 6px; }
+        #ref-code { font-size: 1.6rem; font-weight: 900; color: var(--yellow); letter-spacing: 5px; }
 
+        /* ── BUTTONS ── */
         .btn-main {
             width: 100%; padding: 14px; border: none; border-radius: 50px;
-            color: #fff; font-weight: 900; font-size: 13px; cursor: pointer;
-            text-transform: uppercase; transition: .3s; font-family: 'Outfit', sans-serif;
+            color: #fff; font-weight: 900; font-size: 12px; cursor: pointer;
+            text-transform: uppercase; font-family: 'Outfit'; transition: .2s;
         }
-        .btn-pink   { background: linear-gradient(90deg,var(--pink),#b400dc); }
-        .btn-blue   { background: linear-gradient(90deg,var(--blue),#0044ff); }
-        .btn-yellow { background: linear-gradient(90deg,#b8a000,var(--yellow)); color: #000; }
-        .btn-green  { background: linear-gradient(90deg,#00aa44,#00ff88); color: #000; }
+        .btn-pink { background: linear-gradient(90deg, var(--pink), #b400dc); box-shadow: 0 0 10px rgba(255,0,119,0.3); }
+        .btn-blue { background: linear-gradient(90deg, var(--blue), #0044ff); }
+        .btn-main:active { transform: scale(0.96); }
+        .btn-main:disabled { filter: grayscale(1); opacity: 0.5; cursor: not-allowed; }
 
-        /* ── TABLE ── */
+        /* ── INBOX & HISTORY ── */
+        .section-label { font-size: 11px; font-weight: 900; color: var(--pink); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+        .inbox-item {
+            background: rgba(255,0,119,0.05); border: 1px solid rgba(255,0,119,0.3);
+            padding: 15px; border-radius: 15px; margin-bottom: 10px;
+        }
         .hist-outer {
-            background: rgba(0,0,25,.85); border: 1.5px solid rgba(0,34,255,.5);
+            background: rgba(0,0,25,.85); border: 1.5px solid rgba(0,34,255,0.4);
             border-radius: 18px; overflow: hidden;
         }
-        .hist-scroll-body { max-height: 250px; overflow-y: auto; }
-        table.ht { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        table.ht th { padding: 12px 6px; font-size: 8px; font-weight: 900; background: rgba(255,255,255,.05); color: var(--yellow); text-align: center; }
-        table.ht td { padding: 10px 4px; text-align: center; border-bottom: 1px solid rgba(255,255,255,.05); font-size: 10px; }
-        .h-empty { padding: 30px; opacity: 0.5; font-size: 11px; }
+        table { width: 100%; border-collapse: collapse; font-size: 10px; }
+        th { background: rgba(255,255,255,0.05); padding: 10px; color: var(--yellow); font-weight: 900; }
+        td { padding: 12px 8px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.05); }
 
         /* ── MODAL ── */
         #modal-overlay {
-            display: none; position: fixed; inset: 0;
-            background: rgba(0,0,0,.9); z-index: 9999;
-            align-items: center; justify-content: center; backdrop-filter: blur(10px);
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+            z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(8px);
         }
-        .modal-box { width: 88%; max-width: 320px; background: #000; border: 2px solid var(--pink); border-radius: 20px; padding: 25px; text-align: center; }
+        .modal-box { width: 85%; max-width: 320px; background: #000; border: 2px solid var(--pink); border-radius: 22px; padding: 25px; text-align: center; }
 
         /* ── NAV ── */
         .nav-bar {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 72px;
-            background: rgba(0,0,15,.99); display: flex; border-top: 1.5px solid var(--blue); z-index: 1000;
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 75px;
+            background: #000; display: flex; border-top: 1.5px solid var(--blue); z-index: 1000;
         }
-        .nav-item { flex: 1; color: rgba(255,255,255,.3); text-decoration: none; text-align: center; font-size: 9px; font-weight: 900; padding-top: 15px; }
+        .nav-item { flex: 1; color: rgba(255,255,255,0.3); text-decoration: none; text-align: center; font-size: 9px; font-weight: 900; padding-top: 15px; }
         .nav-item.active { color: var(--yellow); }
         .nav-item i { font-size: 20px; display: block; margin-bottom: 4px; }
     </style>
@@ -189,71 +167,83 @@
 <div id="particles-js"></div>
 
 <div class="header">
-    <a href="game.html" style="color:rgba(255,255,255,.6);font-size:20px;"><i class="fa-solid fa-chevron-left"></i></a>
+    <a href="game.html" style="color:#fff;"><i class="fa-solid fa-chevron-left"></i></a>
     <div class="logo">REWARD CENTER</div>
     <div class="saldo-badge">IDR <span id="display-saldo">0</span></div>
 </div>
 
 <div class="container">
-    <div class="user-info-bar" id="user-info-bar" style="display:none;">
-        <div>Login: <span class="u-val" id="user-info-name">—</span></div>
-        <button class="btn-logout" onclick="logoutUser()">Logout</button>
-    </div>
-
     <div id="manual-login-panel">
-        <div class="ml-title">LOGIN USERNAME</div>
-        <input type="text" class="ml-input" id="manual-username-input" placeholder="Masukkan username game anda">
-        <button class="btn-main btn-green" onclick="submitManualLogin()">MULAI AKSES</button>
+        <div class="ml-title"><i class="fas fa-shield-halved"></i> VERIFIKASI IDENTITAS</div>
+        <input type="text" id="manual-username-input" class="ml-input" placeholder="Masukkan Username Anda">
+        <button class="btn-main btn-pink" onclick="submitManualLogin()">AKSES DATA</button>
     </div>
 
-    <div id="debug-panel">
-        <div class="debug-title">DEBUG SYSTEM</div>
-        <div id="debug-lines"></div>
+    <div class="user-info-bar" id="user-info-bar" style="display:none;">
+        <div>PEMAIN: <span class="u-val" id="user-info-name">—</span></div>
+        <div style="color:rgba(255,255,255,0.4); font-size:9px;">STATUS: <span style="color:#00ff88;">VERIFIED</span></div>
+    </div>
+
+    <div class="banner-section">
+        <div class="banner-prize">
+            <div class="banner-title">🏆 TOP REFERRAL MONTHLY 🏆</div>
+            <div style="display:flex; justify-content:center; gap:10px; align-items:flex-end;">
+                <div style="background:rgba(255,255,255,0.1); padding:8px; border-radius:10px; font-size:10px; border:1px solid #ccc;">2ND: 50 USDT</div>
+                <div style="background:rgba(251,255,0,0.1); padding:12px; border-radius:12px; font-size:13px; font-weight:900; color:var(--yellow); border:1px solid var(--yellow);">1ST: 100 USDT</div>
+                <div style="background:rgba(205,127,50,0.1); padding:8px; border-radius:10px; font-size:10px; border:1px solid #cd7f32;">3RD: 25 USDT</div>
+            </div>
+        </div>
     </div>
 
     <div class="stats-row">
-        <div class="stat-card"><small>TOTAL UNDANGAN</small><span id="total-ref">0</span></div>
+        <div class="stat-card"><small>UNDANGAN</small><span id="total-ref">0</span></div>
         <div class="stat-card"><small>AKTIF</small><span id="active-ref">0</span></div>
         <div class="stat-card"><small>KOMISI (IDR)</small><span id="total-komisi">0</span></div>
     </div>
 
-    <div class="ref-code-card">
-        <div class="ref-code-title">KODE REFERRAL ANDA</div>
-        <div class="ref-code-display" onclick="copyRefCode()">
-            <div id="ref-code">LOAD...</div>
+    <div class="card">
+        <div style="font-size:10px; color:var(--yellow); font-weight:900;">KODE REFERRAL ANDA</div>
+        <div class="ref-display" onclick="copyRefCode()">
+            <div id="ref-code">---</div>
         </div>
-        <button class="btn-main btn-blue" onclick="shareWA()" style="margin-bottom:10px;"><i class="fab fa-whatsapp"></i> BAGIKAN WA</button>
-        <div id="ref-link" style="font-size:9px; color:#5599ff; word-break:break-all;"></div>
+        <button class="btn-main btn-blue" onclick="shareWA()"><i class="fab fa-whatsapp"></i> BAGIKAN SEKARANG</button>
     </div>
 
+    <div class="card" style="border-color:var(--pink);">
+        <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+            <span style="font-size:10px; font-weight:900;">BONUS TERSEDIA:</span>
+            <span style="color:var(--pink); font-weight:900;" id="bonus-available">IDR 0</span>
+        </div>
+        <button class="btn-main btn-pink" id="claim-btn" onclick="claimWeeklyBonus()" disabled>KLAIM KE SALDO</button>
+    </div>
+
+    <div class="section-label"><i class="fas fa-envelope"></i> KOTAK MASUK</div>
+    <div id="inbox-container">
+        <div style="text-align:center; padding:20px; opacity:0.3; font-size:11px;">Mencari pesan...</div>
+    </div>
+
+    <div class="section-label" style="margin-top:20px;"><i class="fas fa-users"></i> DAFTAR UNDANGAN</div>
     <div class="hist-outer">
-        <table class="ht">
+        <table>
             <thead>
                 <tr>
-                    <th>USER</th>
+                    <th>USERNAME</th>
                     <th>STATUS</th>
                     <th>KOMISI</th>
                 </tr>
             </thead>
             <tbody id="history-body">
-                <tr><td colspan="3"><div class="h-empty">Silakan Login...</div></td></tr>
+                <tr><td colspan="3" style="padding:30px; opacity:0.3;">Belum ada data</td></tr>
             </tbody>
         </table>
-    </div>
-
-    <div style="margin-top:20px;">
-        <h4 style="font-size:12px; color:var(--pink); margin-bottom:10px;">KOTAK MASUK</h4>
-        <div id="inbox-container">
-            <div class="h-empty">Tidak ada pesan.</div>
-        </div>
     </div>
 </div>
 
 <div id="modal-overlay">
     <div class="modal-box">
-        <h3 id="m-title" style="color:var(--yellow); margin-bottom:10px;">NOTIFIKASI</h3>
-        <p id="m-msg" style="font-size:13px; line-height:1.5;"></p>
-        <button class="btn-main btn-pink" onclick="closeModal()" style="margin-top:15px;">OK</button>
+        <h3 id="m-title"></h3>
+        <p id="m-msg" style="margin:15px 0; font-size:13px; color:#ccc;"></p>
+        <button class="btn-main btn-pink" onclick="closeModal()">MENGERTI</button>
     </div>
 </div>
 
@@ -265,35 +255,17 @@
 </div>
 
 <script>
-// ═══════════════════════════════════════════════════════════════
-// CONFIG & CLIENT
-// ═══════════════════════════════════════════════════════════════
+// ── KONFIGURASI SUPABASE ──
 const SUPABASE_URL = 'https://jcxgankdwfwfnbwlkkpz.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjeGdhbmtkd2Z3Zm5id2xra3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNDU0MjMsImV4cCI6MjA5MDgyMTQyM30.qBNQNZxeHLfG7U-HZDSkYg1Y4awPKcJ7J2XjnkiJ6PI';
 const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUsername = '';
-let userData = { saldo: 0, refCode: '', totalReferral: 0 };
+let userData = {};
 
-// ═══════════════════════════════════════════════════════════════
-// CORE LOGIC
-// ═══════════════════════════════════════════════════════════════
-
-function debugLog(msg, type='info') {
-    const lines = document.getElementById('debug-lines');
-    const color = type === 'error' ? '#ff4444' : '#00ff88';
-    lines.innerHTML += `<div class="debug-line" style="color:${color}">> ${msg}</div>`;
-    document.getElementById('debug-panel').classList.add('show');
-}
-
-function showAlert(msg) {
-    const el = document.getElementById('neon-alert');
-    el.innerText = msg; el.classList.add('show');
-    setTimeout(() => el.classList.remove('show'), 3000);
-}
-
-function getLocalUsername() {
-    const keys = ['neon_user', 'username', 'user_session', 'loggedUser'];
+// ── SISTEM LOGIN/SESI ──
+function getSessionUser() {
+    const keys = ['neon_user', 'username', 'user_session', 'loggedUser', 'playerName'];
     for (let k of keys) {
         let v = localStorage.getItem(k);
         if (v) return v.trim().toLowerCase();
@@ -302,78 +274,71 @@ function getLocalUsername() {
 }
 
 async function init() {
-    debugLog('System Booting...');
-    let user = getLocalUsername();
-    
-    // Cek param URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlUser = urlParams.get('user');
-    if (urlUser) user = urlUser.toLowerCase();
-
+    let user = getSessionUser();
     if (!user) {
-        debugLog('Session not found. Manual login required.', 'error');
         document.getElementById('manual-login-panel').style.display = 'block';
         return;
     }
-    
-    await initWithUsername(user);
+    await loadProfile(user);
 }
 
-async function initWithUsername(username) {
-    currentUsername = username;
-    localStorage.setItem('neon_user', username);
-    
+async function loadProfile(user) {
+    currentUsername = user;
+    localStorage.setItem('neon_user', user);
     document.getElementById('manual-login-panel').style.display = 'none';
     document.getElementById('user-info-bar').style.display = 'flex';
-    document.getElementById('user-info-name').innerText = username;
+    document.getElementById('user-info-name').innerText = user;
 
     try {
-        debugLog(`Connecting for ${username}...`);
+        let { data: prof, error } = await _sb.from('profiles').select('*').eq('username', user).maybeSingle();
         
-        let { data: prof, error } = await _sb.from('profiles').select('*').eq('username', username).maybeSingle();
-
-        if (error) throw error;
-
         if (!prof) {
-            debugLog('User not in DB. Creating profile...', 'info');
-            const code = 'VIP' + Math.random().toString(36).substring(2, 7).toUpperCase();
-            const { data: neu, error: err2 } = await _sb.from('profiles').insert({
-                username: username, referral_code: code, saldo: 0
+            const newCode = 'VIP' + Math.random().toString(36).substring(2, 8).toUpperCase();
+            const { data: neu } = await _sb.from('profiles').insert({
+                username: user, referral_code: newCode, saldo: 0
             }).select().single();
-            if (err2) throw err2;
             prof = neu;
         }
 
         userData = prof;
-        updateUI();
-        loadReferralHistory();
-        loadInbox();
-        debugLog('Sync Complete.', 'ok');
-
+        syncUI();
+        await syncReferrals();
+        await loadInbox();
     } catch (e) {
-        debugLog('Error: ' + e.message, 'error');
+        showAlert("Koneksi bermasalah. Coba lagi.");
     }
 }
 
-function updateUI() {
-    document.getElementById('display-saldo').innerText = new Intl.NumberFormat().format(userData.saldo);
-    document.getElementById('ref-code').innerText = userData.referral_code || '---';
-    document.getElementById('total-ref').innerText = userData.total_referral || 0;
-    document.getElementById('active-ref').innerText = userData.active_referral || 0;
-    document.getElementById('total-komisi').innerText = new Intl.NumberFormat().format(userData.total_komisi || 0);
+// ── LOGIKA REFERRAL ──
+async function syncReferrals() {
+    const { data: refs } = await _sb.from('profiles').select('username, total_deposit_current').eq('referred_by', userData.referral_code);
     
-    const link = window.location.origin + '/register.html?ref=' + userData.referral_code;
-    document.getElementById('ref-link').innerText = link;
+    if (refs) {
+        const activeCount = refs.filter(r => (r.total_deposit_current || 0) >= 20000).length;
+        const totalCount = refs.length;
+        const bonusCalc = activeCount * 5000;
+
+        // Update database jika ada perubahan
+        if (activeCount !== userData.active_referral || bonusCalc !== userData.bonus_available) {
+            await _sb.from('profiles').update({
+                total_referral: totalCount,
+                active_referral: activeCount,
+                bonus_available: bonusCalc
+            }).eq('username', currentUsername);
+            
+            userData.total_referral = totalCount;
+            userData.active_referral = activeCount;
+            userData.bonus_available = bonusCalc;
+        }
+        
+        renderHistory(refs);
+        syncUI();
+    }
 }
 
-async function loadReferralHistory() {
+function renderHistory(data) {
     const tbody = document.getElementById('history-body');
-    const { data, error } = await _sb.from('profiles').select('username, created_at, total_deposit_current').eq('referred_by', userData.referral_code);
-
-    if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3"><div class="h-empty">Belum ada undangan.</div></td></tr>';
-        return;
-    }
+    if (!data.length) return;
 
     tbody.innerHTML = data.map(r => {
         const isAktif = (r.total_deposit_current >= 20000);
@@ -385,53 +350,118 @@ async function loadReferralHistory() {
     }).join('');
 }
 
+// ── LOGIKA INBOX ──
 async function loadInbox() {
-    const box = document.getElementById('inbox-container');
     const { data } = await _sb.from('inbox').select('*').eq('username', currentUsername).eq('status', 'pending');
+    const container = document.getElementById('inbox-container');
 
-    if (!data || data.length === 0) return;
+    if (!data || data.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding:20px; opacity:0.3; font-size:11px;">Tidak ada pesan baru.</div>`;
+        return;
+    }
 
-    box.innerHTML = data.map(m => `
-        <div style="background:rgba(255,0,119,0.1); border:1px solid var(--pink); padding:10px; border-radius:10px; margin-bottom:10px;">
-            <div style="font-size:10px; color:var(--yellow);">${m.pesan}</div>
-            <div style="font-weight:900; margin:5px 0;">IDR ${new Intl.NumberFormat().format(m.nominal)}</div>
-            <button onclick="claimInbox('${m.id}', ${m.nominal})" class="btn-main btn-pink" style="padding:5px; font-size:10px;">KLAIM</button>
+    container.innerHTML = data.map(m => `
+        <div class="inbox-item">
+            <div style="font-size:9px; color:var(--yellow); font-weight:900; margin-bottom:5px;">HADIAH ADMIN</div>
+            <div style="font-size:11px; margin-bottom:8px;">${m.pesan}</div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:900; color:var(--pink);">IDR ${new Intl.NumberFormat().format(m.nominal)}</span>
+                <button onclick="claimInboxBonus('${m.id}', ${m.nominal})" class="btn-main btn-pink" style="width:auto; padding:5px 15px; font-size:9px;">KLAIM</button>
+            </div>
         </div>
     `).join('');
 }
 
-async function claimInbox(id, nominal) {
-    await _sb.from('inbox').update({ status: 'claimed' }).eq('id', id);
-    const newSaldo = userData.saldo + nominal;
-    await _sb.from('profiles').update({ saldo: newSaldo }).eq('username', currentUsername);
-    showAlert('Bonus diklaim!');
-    location.reload();
+// ── AKSI KLAIM ──
+async function claimWeeklyBonus() {
+    if (userData.bonus_available <= 0) return;
+    
+    const amount = userData.bonus_available;
+    const newSaldo = Number(userData.saldo) + amount;
+    
+    const { error } = await _sb.from('profiles').update({
+        saldo: newSaldo,
+        total_komisi: (userData.total_komisi || 0) + amount,
+        bonus_available: 0
+    }).eq('username', currentUsername);
+
+    if (!error) {
+        showModal("BERHASIL!", `Selamat! Komisi sebesar IDR ${new Intl.NumberFormat().format(amount)} telah masuk ke saldo.`);
+        userData.saldo = newSaldo;
+        userData.bonus_available = 0;
+        syncUI();
+    }
+}
+
+async function claimInboxBonus(id, nominal) {
+    const { error } = await _sb.from('inbox').update({ status: 'claimed' }).eq('id', id);
+    if (!error) {
+        const newSaldo = Number(userData.saldo) + nominal;
+        await _sb.from('profiles').update({ saldo: newSaldo }).eq('username', currentUsername);
+        userData.saldo = newSaldo;
+        showModal("HADIAH DIKLAIM!", "Bonus dari admin berhasil ditambahkan ke saldo utama.");
+        syncUI();
+        loadInbox();
+    }
+}
+
+// ── UI UTILS ──
+function syncUI() {
+    document.getElementById('display-saldo').innerText = new Intl.NumberFormat('id-ID').format(userData.saldo || 0);
+    document.getElementById('ref-code').innerText = userData.referral_code || '---';
+    document.getElementById('total-ref').innerText = userData.total_referral || 0;
+    document.getElementById('active-ref').innerText = userData.active_referral || 0;
+    document.getElementById('total-komisi').innerText = new Intl.NumberFormat('id-ID').format(userData.total_komisi || 0);
+    document.getElementById('bonus-available').innerText = 'IDR ' + new Intl.NumberFormat('id-ID').format(userData.bonus_available || 0);
+    
+    document.getElementById('claim-btn').disabled = (userData.bonus_available || 0) <= 0;
 }
 
 function submitManualLogin() {
-    const val = document.getElementById('manual-username-input').value;
-    if (val.length < 3) return showAlert('Username terlalu pendek');
-    initWithUsername(val.trim().toLowerCase());
-}
-
-function logoutUser() {
-    localStorage.clear();
-    location.reload();
+    const input = document.getElementById('manual-username-input').value.trim();
+    if (input.length < 3) return showAlert("Username tidak valid.");
+    loadProfile(input.toLowerCase());
 }
 
 function copyRefCode() {
     navigator.clipboard.writeText(userData.referral_code);
-    showAlert('Kode disalin!');
+    showAlert("Kode Referral Berhasil Disalin!");
 }
 
 function shareWA() {
-    const link = document.getElementById('ref-link').innerText;
-    window.open(`https://wa.me/?text=Main bareng di NEON PLINKO! Daftar sini: ${link}`);
+    const link = window.location.origin + "/register.html?ref=" + userData.referral_code;
+    window.open(`https://wa.me/?text=Daftar di NEON PLINKO VIP pakai kode saya: ${userData.referral_code} . Link: ${link}`);
+}
+
+function showAlert(msg) {
+    const el = document.getElementById('neon-alert');
+    el.innerText = msg; el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+function showModal(title, msg) {
+    document.getElementById('m-title').innerText = title;
+    document.getElementById('m-msg').innerText = msg;
+    document.getElementById('modal-overlay').style.display = 'flex';
 }
 
 function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
 
-// START
+// ── PARTICLES ──
+if (typeof particlesJS !== 'undefined') {
+    particlesJS('particles-js', {
+        particles: {
+            number: { value: 50 },
+            color: { value: ['#ff0077', '#0022ff'] },
+            shape: { type: 'circle' },
+            opacity: { value: 0.3 },
+            size: { value: 2 },
+            line_linked: { enable: true, distance: 100, color: '#0022ff', opacity: 0.1 },
+            move: { enable: true, speed: 1 }
+        }
+    });
+}
+
 init();
 </script>
 </body>
