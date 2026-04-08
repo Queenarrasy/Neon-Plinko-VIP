@@ -16,7 +16,7 @@
             --gy:0 0 8px rgba(251,255,0,.7),0 0 22px rgba(251,255,0,.25);
         }
         *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-        body{background:var(--bg);color:#fff;font-family:'Outfit',sans-serif;min-height:100vh;padding-bottom:90px;}
+        body{background:var(--bg);color:#fff;font-family:'Outfit',sans-serif;min-height:100vh;padding-bottom:90px;overflow-x:hidden;}
         #particles-js{position:fixed;width:100%;height:100%;z-index:0;background:radial-gradient(circle at 30% 50%,#000022 0%,#000 100%);}
 
         #neon-alert{position:fixed;top:-120px;left:50%;transform:translateX(-50%);width:88%;max-width:340px;background:rgba(0,0,15,.97);border:1.5px solid var(--pink);border-top:2px solid var(--yellow);color:#fff;padding:14px 20px;border-radius:14px;text-align:center;font-weight:900;z-index:9000;font-family:'Outfit',sans-serif;font-size:13px;letter-spacing:.5px;transition:.55s cubic-bezier(.175,.885,.32,1.275);box-shadow:0 0 16px rgba(255,0,119,.4);}
@@ -73,7 +73,6 @@
 <body>
 <div id="particles-js"></div>
 <div id="neon-alert">NOTIFICATION</div>
-<audio id="snd-click" src="https://cdn.pixabay.com/audio/2022/03/15/audio_c8b417f73c.mp3"></audio>
 
 <div class="header">
     <a href="game.html" class="btn-back" onclick="playSnd()"><i class="fa-solid fa-chevron-left"></i></a>
@@ -161,10 +160,9 @@
 </div>
 
 <script>
-const SUPA_URL="https://jcxgankdwfwfnbwlkkpz.supabase.co",SUPA_KEY="sb_publishable_CaQyWYa_F3LDYEo8BDWAlQ_d0SscfCL";
+const SUPA_URL="https://jcxgankdwfwfnbwlkkpz.supabase.co", SUPA_KEY="sb_publishable_CaQyWYa_F3LDYEo8BDWAlQ_d0SscfCL";
 const _db=supabase.createClient(SUPA_URL,SUPA_KEY);
 
-// Partikel lebih terang & hidup, tapi tidak mengganggu
 particlesJS("particles-js",{
     "particles":{
         "number":{"value":90},
@@ -174,95 +172,81 @@ particlesJS("particles-js",{
         "size":{"value":2.8,"random":true},
         "line_linked":{"enable":true,"distance":130,"color":"#0033ff","opacity":0.3,"width":0.7},
         "move":{"enable":true,"speed":2,"random":true,"out_mode":"out"}
-    },
-    "interactivity":{"events":{"onhover":{"enable":true,"mode":"repulse"},"onclick":{"enable":true,"mode":"push"}},"modes":{"repulse":{"distance":70},"push":{"particles_nb":3}}}
+    }
 });
 
-function playSnd(){const s=document.getElementById('snd-click');if(s){s.currentTime=0;s.play().catch(()=>{});}}
-function showNeonAlert(msg,ok=false){const a=document.getElementById('neon-alert');a.innerText=msg;a.className=ok?'show success':'show';setTimeout(()=>a.className='',3000);}
+function showNeonAlert(msg,ok=false){
+    const a=document.getElementById('neon-alert');
+    a.innerText=msg;
+    a.className=ok?'show success':'show';
+    setTimeout(()=>a.className='',3000);
+}
 
 function getUser(){
-    return localStorage.getItem('user_session')||localStorage.getItem('neon_user');
+    return localStorage.getItem('user_session') || localStorage.getItem('neon_user');
 }
 
 async function initProfile(){
-    const user=getUser();
-    if(!user){window.location.href='index.html';return;}
-    document.getElementById('display-username').innerText=user.toUpperCase();
+    const user = getUser();
+    if(!user){ window.location.href='index.html'; return; }
+    document.getElementById('display-username').innerText = user.toUpperCase();
 
-    try{
-        const {data:p, error:e1}=await _db.from('profiles').select('*').eq('username',user).single();
+    try {
+        // PERBAIKAN UTAMA: Menggunakan .maybeSingle() agar tidak error jika data kosong
+        const { data: p, error: e1 } = await _db
+            .from('profiles')
+            .select('*')
+            .eq('username', user)
+            .maybeSingle();
 
-        if(p){
-            // Nama lengkap — cek semua variasi nama kolom
-            const namaLengkap = p.nama_lengkap || p.full_name || p.name || '';
-            document.getElementById('profile-fullname').innerText = namaLengkap || 'Belum diatur';
+        if (e1) throw e1;
 
-            // Nomor HP — cek semua variasi nama kolom
-            const nomorHp = p.nomor_hp || p.nomor_telp || p.phone || p.phone_number || '';
-            document.getElementById('profile-phone').innerText = nomorHp || '—';
-
-            // Bank
-            const bankName = p.bank_name || p.bank || '';
-            document.getElementById('profile-bank').innerText = bankName || 'Belum diatur';
-
-            // Nomor Rekening
-            const rekening = p.rekening || p.account_number || p.no_rekening || '';
-            document.getElementById('profile-rek').innerText = rekening || 'Belum diatur';
-
-            // Kode Referral — cek semua variasi nama kolom
-            const refCode = p.referral_code || p.referral_kode || p.kode_referral || p.ref_code || '';
-            document.getElementById('profile-ref').innerText = refCode || 'Tidak ada';
-
-            // Diundang oleh
-            const refBy = p.referred_by || p.referral_from || p.ref_by || '';
-            document.getElementById('profile-referredby').innerText = refBy || 'DIRECT';
-
-            // Role
-            if(p.role) document.getElementById('profile-tier').innerText = p.role.toUpperCase();
-
-            // Saldo
-            if(p.saldo !== undefined && p.saldo !== null){
-                document.getElementById('display-saldo').innerText = "IDR "+Number(p.saldo).toLocaleString('id-ID');
-            }
+        if (p) {
+            document.getElementById('profile-fullname').innerText = p.full_name || 'Belum diatur';
+            document.getElementById('profile-phone').innerText = p.phone || '—';
+            document.getElementById('profile-bank').innerText = p.bank_name || '—';
+            document.getElementById('profile-rek').innerText = p.account_number || '—';
+            document.getElementById('profile-ref').innerText = p.referral_code || 'Tidak ada';
+            document.getElementById('profile-referredby').innerText = p.referred_by || 'DIRECT';
+            document.getElementById('profile-tier').innerText = (p.role || 'VIP MEMBER').toUpperCase();
+            document.getElementById('display-saldo').innerText = "IDR " + (p.saldo || 0).toLocaleString('id-ID');
         } else {
-            showNeonAlert('Error memuat profil'+(e1?' : '+e1.message:''));
+            // Jika user ada di session tapi belum ada di tabel profiles, buat baris baru otomatis
+            await _db.from('profiles').insert([{ username: user, referral_code: 'REF-' + Math.floor(Math.random()*9999) }]);
+            console.log("Profil baru dibuat untuk:", user);
         }
 
-        // Total Deposit
-        const{data:d}=await _db.from('deposits').select('net_receive,amount').eq('username',user).eq('status','SUKSES');
-        let sd=0;
-        if(d) d.forEach(x=>{ sd+=parseFloat(x.net_receive||x.amount||0); });
-        document.getElementById('total-depo').innerText="IDR "+sd.toLocaleString('id-ID');
+        // Stats Deposit
+        const { data: d } = await _db.from('deposits').select('amount').eq('username', user).eq('status', 'SUKSES');
+        let sd = 0; if (d) d.forEach(x => sd += parseFloat(x.amount || 0));
+        document.getElementById('total-depo').innerText = "IDR " + sd.toLocaleString('id-ID');
 
-        // Total Withdraw
-        const{data:w}=await _db.from('withdrawals').select('amount,nominal').eq('username',user).eq('status','SUKSES');
-        let sw=0;
-        if(w) w.forEach(x=>{ sw+=parseFloat(x.amount||x.nominal||0); });
-        document.getElementById('total-wd').innerText="IDR "+sw.toLocaleString('id-ID');
+        // Stats Withdraw
+        const { data: w } = await _db.from('withdrawals').select('amount').eq('username', user).eq('status', 'SUKSES');
+        let sw = 0; if (w) w.forEach(x => sw += parseFloat(x.amount || 0));
+        document.getElementById('total-wd').innerText = "IDR " + sw.toLocaleString('id-ID');
 
-    }catch(err){
-        console.error('initProfile error:',err);
-        showNeonAlert('Koneksi error: '+err.message);
+    } catch (err) {
+        console.error('initProfile error:', err);
+        showNeonAlert('Gagal memuat profil: ' + err.message);
     }
 }
 
 function copyRef(){
     const c=document.getElementById('profile-ref').innerText;
-    if(c&&c!=='—'&&c!=='Tidak ada'){
-        navigator.clipboard.writeText(c).catch(()=>{});
-        showNeonAlert("KODE REFERRAL DISALIN: "+c,true);
+    if(c && c!=='—' && c!=='Tidak ada'){
+        navigator.clipboard.writeText(c).then(() => showNeonAlert("KODE REFERRAL DISALIN", true));
     }
 }
-function handleLogout(){playSnd();document.getElementById('modal-overlay').style.display='flex';}
-function closeModal(){playSnd();document.getElementById('modal-overlay').style.display='none';}
+
+function handleLogout(){ document.getElementById('modal-overlay').style.display='flex'; }
+function closeModal(){ document.getElementById('modal-overlay').style.display='none'; }
 function prosesLogout(){
-    localStorage.removeItem('neon_user');
-    localStorage.removeItem('cached_saldo');
-    localStorage.removeItem('user_session');
+    localStorage.clear();
     window.location.href='index.html';
 }
-window.onload=initProfile;
+
+window.onload = initProfile;
 </script>
 </body>
 </html>
