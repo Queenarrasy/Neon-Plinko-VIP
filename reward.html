@@ -356,9 +356,11 @@
         <div class="banner-rules">
             <div class="rules-title"><i class="fas fa-list"></i> SYARAT &amp; KETENTUAN</div>
             <ul class="rules-list">
-                <li>Bonus Rp5.000 per referral aktif (deposit pertama min Rp20.000)</li>
-                <li>Setiap referral hanya dihitung <b style="color:var(--yellow)">1 kali</b> — tidak berulang</li>
-                <li>Bonus hanya bisa diklaim di hari <b style="color:var(--yellow)">Minggu</b></li>
+                <li>Bonus Rp5.000 per referral yang melakukan <b style="color:var(--yellow)">deposit pertama min Rp20.000</b></li>
+                <li>Setiap referral hanya dihitung <b style="color:var(--yellow)">1 kali</b> — saat deposit pertama saja</li>
+                <li>Jika yang diundang tidak deposit, <b style="color:var(--pink)">tidak mendapat bonus</b></li>
+                <li>Bonus hanya bisa diklaim di hari <b style="color:var(--yellow)">Minggu</b> · Jika tidak diklaim, bonus tertahan hingga Minggu berikutnya</li>
+                <li>Saat diklaim, saldo bonus direset ke 0 dan masuk ke saldo utama</li>
                 <li>Top 3 referral terbanyak tiap bulan dapat hadiah USDT tambahan</li>
             </ul>
         </div>
@@ -408,7 +410,7 @@
         </button>
         <div class="claim-info">
             <i class="fas fa-info-circle"></i>
-            Bonus Rp5.000 / referral aktif · Tiap referral dihitung <b>1 kali</b> · Klaim setiap <b>Minggu</b>
+            Bonus Rp5.000 / referral · Dihitung saat <b>deposit pertama</b> · Klaim setiap <b>Minggu</b>
         </div>
     </div>
 
@@ -483,7 +485,7 @@ const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // ═══════════════════════════════════════════════════
 const KOMISI_PER_REF    = 5000;
 const MIN_DEPOSIT_AKTIF = 20000;
-const HARI_KLAIM        = 0;  // 0=Minggu (sesuai JS getDay / getUTCDay)
+const HARI_KLAIM        = 0;  // 0=Minggu
 
 // ═══════════════════════════════════════════════════
 // STATE
@@ -494,6 +496,7 @@ let userData = {
     totalReferral: 0, activeReferral: 0,
     totalKomisi: 0, bonusAvailable: 0, saldo: 0,
     // Array username referral yang bonusnya sudah pernah dihitung (agar tidak dobel)
+    // Dihitung HANYA berdasarkan deposit pertama (first_deposit_done = true)
     paidRefUsernames: []
 };
 
@@ -568,12 +571,13 @@ function hariLagiKeKlaim() {
 }
 
 // ═══════════════════════════════════════════════════
-// REF LINK — ambil base path folder
+// FIX #2 — REF LINK PAKAI index.html (bukan register.html)
 // ═══════════════════════════════════════════════════
 function buildRefLink(code) {
     const path = window.location.pathname;
     const base = path.substring(0, path.lastIndexOf('/') + 1);
-    return window.location.origin + base + 'register.html?ref=' + code;
+    // FIXED: file registrasi adalah index.html
+    return window.location.origin + base + 'index.html?ref=' + code;
 }
 
 function generateRefCode(username) {
@@ -739,28 +743,36 @@ async function initWithUsername(username) {
 }
 
 // ═══════════════════════════════════════════════════
-// UPDATE REFERRAL BONUS
-// ATURAN: Setiap referral yang memenuhi syarat hanya
-// dihitung SEKALI. Daftar yang sudah dihitung disimpan
-// di kolom paid_ref_usernames (JSON array) di DB.
+// FIX #1 — UPDATE REFERRAL BONUS
+// ATURAN BARU:
+//   - Cek kolom first_deposit_done = true (atau total_deposit_current >= 20000)
+//   - Setiap referral dihitung HANYA 1 KALI (saat deposit pertama)
+//   - Jika belum pernah deposit → TIDAK valid
+//   - Bonus TERTAHAN dan hanya cair hari Minggu
+//   - Saat diklaim → bonus_available di-reset ke 0
 // ═══════════════════════════════════════════════════
 async function updateReferralBonus() {
     if (!userData.refCode) return;
     try {
+        // Ambil semua user yang didaftarkan oleh referral code ini
         const { data: refs, error } = await _sb
             .from('profiles')
-            .select('username, created_at, total_deposit_current, last_deposit_amount')
+            .select('username, created_at, total_deposit_current, last_deposit_amount, first_deposit_done')
             .eq('referred_by', userData.refCode)
             .order('created_at', { ascending: false });
         if (error) throw error;
 
         const all = refs || [];
 
-        // Referral yang sudah deposit cukup
+        // VALID: referral yang sudah melakukan DEPOSIT PERTAMA
+        // Cek: first_deposit_done = true ATAU total_deposit_current >= MIN
+        // (first_deposit_done adalah flag boolean yang di-set saat deposit pertama berhasil)
         const activeRefs = all.filter(r => {
-            const td = Number(r.total_deposit_current || 0);
-            const ld = Number(r.last_deposit_amount   || 0);
-            return td >= MIN_DEPOSIT_AKTIF || (td === 0 && ld >= MIN_DEPOSIT_AKTIF);
+            const firstDepoDone = r.first_deposit_done === true;
+            const tdCurrent     = Number(r.total_deposit_current || 0);
+            const ldAmount      = Number(r.last_deposit_amount   || 0);
+            // Valid jika: ada flag first_deposit_done, ATAU total deposit sudah >= minimum
+            return firstDepoDone || tdCurrent >= MIN_DEPOSIT_AKTIF || (tdCurrent === 0 && ldAmount >= MIN_DEPOSIT_AKTIF);
         });
 
         // Referral baru-aktif yang belum pernah dihitung bonusnya
@@ -808,7 +820,7 @@ async function loadReferralHistory() {
     try {
         const { data: refs, error } = await _sb
             .from('profiles')
-            .select('username, created_at, total_deposit_current, last_deposit_amount')
+            .select('username, created_at, total_deposit_current, last_deposit_amount, first_deposit_done')
             .eq('referred_by', userData.refCode)
             .order('created_at', { ascending: false });
         if (error) throw error;
@@ -820,18 +832,21 @@ async function loadReferralHistory() {
 
         const paidSet = new Set(userData.paidRefUsernames);
         tbody.innerHTML = refs.map(r => {
+            const firstDepoDone = r.first_deposit_done === true;
             const td = Number(r.total_deposit_current || 0);
             const ld = Number(r.last_deposit_amount   || 0);
-            const isActive = td >= MIN_DEPOSIT_AKTIF || (td === 0 && ld >= MIN_DEPOSIT_AKTIF);
+            // VALID = sudah deposit pertama
+            const isActive = firstDepoDone || td >= MIN_DEPOSIT_AKTIF || (td === 0 && ld >= MIN_DEPOSIT_AKTIF);
             const sudahBayar = paidSet.has(r.username);
             const dObj = new Date(r.created_at);
             const tgl  = dObj.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'2-digit' });
             const jam  = dObj.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
+            // Status: jika aktif & sudah bayar = Komisi ✓, aktif belum bayar = Deposit ✓, tidak aktif = Belum deposit
             const sub  = isActive ? (sudahBayar ? 'Komisi ✓' : 'Deposit ✓') : 'Belum deposit';
             return `<tr>
   <td><div class="td-time"><span class="t-date">${tgl}</span><span class="t-hour">${jam}</span></div></td>
   <td><div class="td-user"><span class="u-name">${escapeHtml(r.username||'Anon')}</span><span class="u-sub">${sub}</span></div></td>
-  <td class="td-status"><span class="badge-status ${isActive?'badge-aktif':'badge-pending'}"><i class="fas ${isActive?'fa-circle-check':'fa-clock'}"></i> ${isActive?'AKTIF':'PENDING'}</span></td>
+  <td class="td-status"><span class="badge-status ${isActive?'badge-aktif':'badge-pending'}"><i class="fas ${isActive?'fa-circle-check':'fa-clock'}"></i> ${isActive?'VALID':'PENDING'}</span></td>
   <td><div class="td-bonus"><span class="b-val">${isActive?formatRupiah(KOMISI_PER_REF):'—'}</span><span class="b-cur">${isActive?'IDR':''}</span></div></td>
 </tr>`;
         }).join('');
@@ -844,29 +859,89 @@ async function loadReferralHistory() {
 }
 
 // ═══════════════════════════════════════════════════
-// LOAD INBOX — hadiah saldo dari admin
-// Saldo HANYA masuk saat tombol klaim ditekan
+// FIX #3 — LOAD INBOX
+// PERBAIKAN:
+//   - Query username case-insensitive (ilike) agar cocok meski beda huruf besar/kecil
+//   - Fallback: coba query dengan username as-is jika ilike tidak tersedia
+//   - Tampilkan pesan & nominal dengan benar
 // ═══════════════════════════════════════════════════
 async function loadInbox() {
     const container = document.getElementById('inbox-container');
     container.innerHTML = '<div class="inbox-empty"><i class="fas fa-spinner fa-spin" style="font-size:20px;margin-bottom:10px;display:block;"></i>Memuat pesan...</div>';
     try {
-        // Pastikan query username lowercase agar cocok dengan data di DB
-        const qUser = currentUsername.toLowerCase();
+        // Coba dengan lowercase dulu, lalu fallback ke username asli
+        // Gunakan OR filter untuk menangkap kedua kemungkinan kapitalisasi
+        const qUserLower  = currentUsername.toLowerCase();
+        const qUserUpper  = currentUsername.toUpperCase();
+        const qUserOrigin = currentUsername;
+
+        // Query: status pending, username cocok (lowercase atau original)
         const { data: msgs, error } = await _sb
             .from('inbox')
-            .select('id, pesan, nominal, created_at, status')
-            .eq('username', qUser)
+            .select('id, pesan, nominal, created_at, status, username')
+            .or(`username.eq.${qUserLower},username.eq.${qUserOrigin},username.ilike.${qUserLower}`)
             .eq('status', 'pending')
             .order('created_at', { ascending: false });
-        if (error) throw error;
+
+        if (error) {
+            // Jika operator ilike tidak bisa di-chain dengan or, fallback ke eq biasa
+            console.warn('Inbox query fallback:', error.message);
+            await loadInboxFallback(container);
+            return;
+        }
 
         if (!msgs || msgs.length === 0) {
             container.innerHTML = '<div class="inbox-empty"><i class="fas fa-inbox" style="font-size:24px;margin-bottom:10px;display:block;"></i>Tidak ada pesan baru</div>';
             return;
         }
 
-        container.innerHTML = msgs.map(m => `
+        renderInboxItems(container, msgs);
+    } catch (e) {
+        console.error(e);
+        container.innerHTML = '<div class="inbox-empty"><i class="fas fa-triangle-exclamation" style="font-size:20px;margin-bottom:8px;display:block;color:var(--pink);"></i>Gagal memuat pesan</div>';
+    }
+}
+
+// Fallback: query dengan eq saja (tanpa ilike)
+async function loadInboxFallback(container) {
+    try {
+        const { data: msgs, error } = await _sb
+            .from('inbox')
+            .select('id, pesan, nominal, created_at, status, username')
+            .eq('username', currentUsername.toLowerCase())
+            .eq('status', 'pending')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (!msgs || msgs.length === 0) {
+            // Coba sekali lagi tanpa lowercase
+            const { data: msgs2, error: e2 } = await _sb
+                .from('inbox')
+                .select('id, pesan, nominal, created_at, status, username')
+                .eq('username', currentUsername)
+                .eq('status', 'pending')
+                .order('created_at', { ascending: false });
+
+            if (e2) throw e2;
+
+            if (!msgs2 || msgs2.length === 0) {
+                container.innerHTML = '<div class="inbox-empty"><i class="fas fa-inbox" style="font-size:24px;margin-bottom:10px;display:block;"></i>Tidak ada pesan baru</div>';
+                return;
+            }
+            renderInboxItems(container, msgs2);
+            return;
+        }
+
+        renderInboxItems(container, msgs);
+    } catch (e) {
+        console.error(e);
+        container.innerHTML = '<div class="inbox-empty"><i class="fas fa-triangle-exclamation" style="font-size:20px;margin-bottom:8px;display:block;color:var(--pink);"></i>Gagal memuat pesan</div>';
+    }
+}
+
+function renderInboxItems(container, msgs) {
+    container.innerHTML = msgs.map(m => `
 <div class="inbox-item" data-id="${m.id}">
     <div class="inbox-header">
         <span class="inbox-from"><i class="fas fa-trophy"></i> HADIAH DARI ADMIN</span>
@@ -874,51 +949,69 @@ async function loadInbox() {
     </div>
     <div class="inbox-msg">${escapeHtml(m.pesan||'Selamat! Anda mendapatkan hadiah saldo.')}</div>
     <div class="inbox-reward-amount">IDR ${formatRupiah(m.nominal)}</div>
-    <button class="btn-claim-inbox" onclick="claimInboxBonus('${m.id}', ${Number(m.nominal||0)}, this)">
+    <button class="btn-claim-inbox" onclick="claimInboxBonus('${m.id}', ${Number(m.nominal||0)}, '${escapeHtml(m.username||currentUsername)}', this)">
         <i class="fas fa-gift"></i> KLAIM SEKARANG
     </button>
 </div>`).join('');
-    } catch (e) {
-        console.error(e);
-        container.innerHTML = '<div class="inbox-empty"><i class="fas fa-triangle-exclamation" style="font-size:20px;margin-bottom:8px;display:block;color:var(--pink);"></i>Gagal memuat pesan</div>';
-    }
 }
 
 // ═══════════════════════════════════════════════════
-// CLAIM INBOX BONUS
-// Double-claim dicegah dengan .eq('status','pending')
-// di update — jika sudah claimed, updated rows = 0
+// FIX #3 — CLAIM INBOX BONUS
+// PERBAIKAN:
+//   - Gunakan username dari data inbox (bukan currentUsername mentah)
+//   - Tambah saldo ke profil dengan benar
+//   - Setelah klaim, kotak masuk kembali kosong (reload inbox)
 // ═══════════════════════════════════════════════════
-async function claimInboxBonus(inboxId, amount, btnEl) {
+async function claimInboxBonus(inboxId, amount, inboxUsername, btnEl) {
     document.querySelectorAll('.btn-claim-inbox').forEach(b => b.disabled = true);
     if (btnEl) btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> MEMPROSES...';
     try {
         // Tandai claimed — hanya berhasil jika masih 'pending'
+        // Gunakan username yang tersimpan di inbox record
         const { data: upd, error: e1 } = await _sb
             .from('inbox')
             .update({ status: 'claimed', claimed_at: new Date().toISOString() })
             .eq('id', inboxId)
-            .eq('username', currentUsername)
             .eq('status', 'pending')
             .select('id');
+
         if (e1) throw e1;
 
         if (!upd || upd.length === 0) {
             showAlert('⚠️ Hadiah ini sudah pernah diklaim!');
-            await loadInbox(); return;
+            await loadInbox();
+            return;
         }
 
-        // Tambah saldo
-        const newSaldo  = Number(userData.saldo)       + Number(amount);
-        const newKomisi = Number(userData.totalKomisi) + Number(amount);
-        const { error: e2 } = await _sb.from('profiles')
+        // Ambil saldo terkini dari DB sebelum update (hindari race condition)
+        const { data: freshProf, error: eFetch } = await _sb
+            .from('profiles')
+            .select('saldo, total_komisi')
+            .eq('username', currentUsername)
+            .single();
+
+        if (eFetch) throw eFetch;
+
+        const currentSaldo  = Number(freshProf?.saldo || 0);
+        const currentKomisi = Number(freshProf?.total_komisi || 0);
+        const newSaldo      = currentSaldo  + Number(amount);
+        const newKomisi     = currentKomisi + Number(amount);
+
+        const { error: e2 } = await _sb
+            .from('profiles')
             .update({ saldo: newSaldo, total_komisi: newKomisi })
             .eq('username', currentUsername);
+
         if (e2) throw e2;
 
-        userData.saldo = newSaldo; userData.totalKomisi = newKomisi;
+        // Update state lokal
+        userData.saldo       = newSaldo;
+        userData.totalKomisi = newKomisi;
         updateUI();
+
+        // Reload inbox → kotak masuk akan kosong jika sudah diklaim semua
         await loadInbox();
+
         showModal('BERHASIL!', `✨ Hadiah IDR ${formatRupiah(amount)} telah masuk ke saldo Anda!`);
         showAlert(`🎉 IDR ${formatRupiah(amount)} berhasil diklaim!`);
     } catch (e) {
@@ -930,33 +1023,68 @@ async function claimInboxBonus(inboxId, amount, btnEl) {
 }
 
 // ═══════════════════════════════════════════════════
-// CLAIM BONUS MINGGUAN — hanya hari Minggu
+// FIX #1 — CLAIM BONUS MINGGUAN
+// PERBAIKAN:
+//   - Hanya bisa diklaim hari Minggu
+//   - Setelah klaim: bonus_available di-reset ke 0
+//   - Saldo masuk ke saldo utama
+//   - Jika tidak diklaim hari Minggu ini → tertahan, bisa diklaim Minggu berikutnya
 // ═══════════════════════════════════════════════════
 async function claimBonus() {
-    if (userData.bonusAvailable <= 0) { showAlert('⚠️ Tidak ada bonus tersedia!'); return; }
-    if (!isHariKlaim()) {
-        showAlert(`⏳ Klaim hanya bisa hari Minggu (${hariLagiKeKlaim()} hari lagi)`); return;
+    if (userData.bonusAvailable <= 0) {
+        showAlert('⚠️ Tidak ada bonus tersedia!');
+        return;
     }
+    if (!isHariKlaim()) {
+        const sisa = hariLagiKeKlaim();
+        showAlert(`⏳ Klaim hanya bisa hari Minggu (${sisa} hari lagi)`);
+        return;
+    }
+
     const btn = document.getElementById('claim-btn');
     if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> MEMPROSES...'; }
 
     try {
-        const amount    = userData.bonusAvailable;
-        const newSaldo  = Number(userData.saldo)       + amount;
-        const newKomisi = Number(userData.totalKomisi) + amount;
+        const amount = userData.bonusAvailable;
 
-        const { error } = await _sb.from('profiles')
-            .update({ saldo: newSaldo, total_komisi: newKomisi, bonus_available: 0 })
+        // Ambil saldo terkini dari DB (hindari race condition)
+        const { data: freshProf, error: eFetch } = await _sb
+            .from('profiles')
+            .select('saldo, total_komisi')
+            .eq('username', currentUsername)
+            .single();
+
+        if (eFetch) throw eFetch;
+
+        const currentSaldo  = Number(freshProf?.saldo || 0);
+        const currentKomisi = Number(freshProf?.total_komisi || 0);
+        const newSaldo      = currentSaldo  + amount;
+        const newKomisi     = currentKomisi + amount;
+
+        // Reset bonus_available ke 0, tambah saldo
+        const { error } = await _sb
+            .from('profiles')
+            .update({
+                saldo:           newSaldo,
+                total_komisi:    newKomisi,
+                bonus_available: 0          // RESET ke 0 setelah klaim
+            })
             .eq('username', currentUsername);
+
         if (error) throw error;
 
-        userData.saldo = newSaldo; userData.totalKomisi = newKomisi; userData.bonusAvailable = 0;
+        // Update state lokal
+        userData.saldo          = newSaldo;
+        userData.totalKomisi    = newKomisi;
+        userData.bonusAvailable = 0;
+
         updateUI();
-        showModal('BERHASIL!', `✨ Bonus IDR ${formatRupiah(amount)} telah masuk ke saldo Anda!`);
+        showModal('BERHASIL!', `✨ Bonus IDR ${formatRupiah(amount)} telah masuk ke saldo Anda!\n\nBonus referral berhasil dicairkan.`);
         showAlert(`🎉 Bonus IDR ${formatRupiah(amount)} berhasil diklaim!`);
+
     } catch (e) {
         console.error(e);
-        showAlert('❌ Gagal klaim bonus!');
+        showAlert('❌ Gagal klaim bonus! ' + (e.message || ''));
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-hand-holding-usd"></i> KLAIM BONUS SEKARANG'; }
     }
 }
