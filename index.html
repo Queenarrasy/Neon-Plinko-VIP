@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>NEON PLINKO — LUXURY ACCESS</title>
+    <title>NEON PLINKO — ULTRA VIP</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     <style>
         :root {
-            --pink: #ff0077; --blue: #0022ff; --yellow: #fbff00; --bg: #000003;
-            --premium-shadow: 0 0 30px rgba(255, 0, 119, 0.4), 0 0 60px rgba(0, 34, 255, 0.2);
+            --pink: #ff0077; --blue: #0022ff; --yellow: #fbff00; --bg: #000005;
+            --neon-glow: 0 0 20px var(--pink), 0 0 40px var(--blue);
         }
         * { margin:0; padding:0; box-sizing:border-box; font-family:'Outfit',sans-serif; -webkit-tap-highlight-color:transparent; }
         body { background: var(--bg); color: #fff; overflow: hidden; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
@@ -21,87 +21,111 @@
         /* ── LUXURY SPLASH SCREEN ── */
         #splash-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at center, #000022 0%, #000 70%);
+            background: radial-gradient(circle at center, #000020 0%, #000 80%);
             z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1), visibility 1s;
+            transition: opacity 1s ease-in-out, visibility 1s;
         }
 
-        .splash-logo-container { position: relative; margin-bottom: 40px; }
+        .logo-container { position: relative; margin-bottom: 80px; text-align: center; }
         .splash-logo {
-            font-family: 'Cinzel Decorative', cursive; font-size: 55px;
-            background: linear-gradient(180deg, #fff 30%, var(--pink) 70%, var(--blue));
+            font-family: 'Cinzel Decorative', cursive; font-size: 50px;
+            background: linear-gradient(to bottom, #fff, var(--pink), var(--blue));
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 20px rgba(255,0,119,0.8));
-            animation: logoPulse Luxury 3s infinite ease-in-out;
+            filter: drop-shadow(0 0 15px var(--pink));
+            letter-spacing: 2px;
+            animation: logoFloat 3s infinite ease-in-out;
         }
+        @keyframes logoFloat { 0%, 100% { transform: translateY(0); filter: brightness(1) drop-shadow(0 0 15px var(--pink)); } 50% { transform: translateY(-10px); filter: brightness(1.3) drop-shadow(0 0 30px var(--blue)); } }
+
+        /* ── ASTRONAUT ROCKET ANIMATION ── */
+        .loading-wrapper { width: 300px; position: relative; padding-top: 60px; }
         
-        /* Garis scan mewah pada logo */
-        .splash-logo-container::after {
-            content: ''; position: absolute; top: 0; left: -10%; width: 120%; height: 100%;
-            background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.2), transparent);
-            transform: translateY(-100%); animation: scanLine 2.5s infinite;
+        .rocket-container {
+            position: absolute; bottom: 15px; left: 0;
+            width: 50px; height: 50px;
+            transition: left 0.1s linear;
+            transform: translateX(-50%);
+            z-index: 10;
         }
 
-        @keyframes scanLine { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
-        @keyframes logoPulseLuxury { 0%, 100% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.05); opacity: 1; } }
+        .rocket-container i {
+            font-size: 35px; color: #fff;
+            text-shadow: 0 0 15px var(--yellow);
+            transform: rotate(-45deg);
+            animation: rocketShake 0.1s infinite;
+        }
+
+        /* Api Roket */
+        .rocket-container::after {
+            content: ''; position: absolute; bottom: -5px; left: 5px;
+            width: 15px; height: 25px;
+            background: linear-gradient(to top, transparent, var(--yellow), var(--pink));
+            filter: blur(2px); border-radius: 50%;
+            animation: exhaust 0.2s infinite;
+            transform: rotate(135deg);
+        }
+
+        @keyframes rocketShake { 0%, 100% { transform: rotate(-45deg) translate(0,0); } 50% { transform: rotate(-45deg) translate(2px, 1px); } }
+        @keyframes exhaust { 0% { height: 20px; opacity: 0.8; } 50% { height: 35px; opacity: 1; } 100% { height: 20px; opacity: 0.8; } }
 
         .luxury-loader {
-            width: 250px; height: 2px; background: rgba(255,255,255,0.05);
-            position: relative; overflow: hidden; border-radius: 4px;
+            width: 100%; height: 8px; background: rgba(255,255,255,0.05);
+            border-radius: 20px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: inset 0 0 10px #000;
         }
         .luxury-bar {
-            width: 0%; height: 100%; background: linear-gradient(90deg, transparent, var(--pink), var(--blue), transparent);
-            box-shadow: 0 0 20px var(--pink); transition: width 0.1s;
+            width: 0%; height: 100%;
+            background: linear-gradient(90deg, var(--blue), var(--pink), var(--yellow));
+            box-shadow: 0 0 20px var(--pink);
+            transition: width 0.1s linear;
         }
-        .load-status { margin-top: 20px; font-size: 11px; letter-spacing: 6px; color: var(--yellow); font-weight: 800; text-shadow: 0 0 10px var(--yellow); }
+
+        .load-status { margin-top: 20px; font-size: 11px; letter-spacing: 5px; color: var(--yellow); font-weight: 900; text-align: center; text-transform: uppercase; }
 
         /* ── AUTH CARD PREMIUM ── */
         .auth-card {
             position: relative; z-index: 2; width: 90%; max-width: 420px;
-            background: rgba(0, 0, 10, 0.8); backdrop-filter: blur(30px);
-            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 40px;
-            padding: 50px 35px; box-shadow: var(--premium-shadow);
-            text-align: center; opacity: 0; transform: scale(0.9) translateY(30px);
-            transition: all 1.2s cubic-bezier(0.19, 1, 0.22, 1); pointer-events: none;
+            background: rgba(0, 0, 15, 0.85); backdrop-filter: blur(25px);
+            border: 2px solid rgba(255, 255, 255, 0.05); border-radius: 40px;
+            padding: 50px 35px; box-shadow: 0 0 50px rgba(255,0,119,0.2), 0 0 100px rgba(0,34,255,0.1);
+            text-align: center; opacity: 0; transform: scale(0.8);
+            transition: all 1s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none;
         }
-        .auth-card.active { opacity: 1; transform: scale(1) translateY(0); pointer-events: all; }
+        .auth-card.active { opacity: 1; transform: scale(1); pointer-events: all; }
 
-        /* LOGO LOGIN TANPA TULISAN BAWAH */
         .login-logo {
             font-family: 'Cinzel Decorative', cursive; font-size: 38px;
-            background: linear-gradient(to right, #fff, var(--pink), var(--blue), #fff);
-            background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            animation: shineText 4s linear infinite; margin-bottom: 40px;
+            background: linear-gradient(45deg, #fff, var(--pink), var(--blue));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 10px var(--pink)); margin-bottom: 40px;
         }
-        @keyframes shineText { to { background-position: 200% center; } }
 
-        .tab-nav { display: flex; gap: 15px; margin-bottom: 35px; padding: 5px; background: rgba(255,255,255,0.03); border-radius: 20px; }
+        .tab-nav { display: flex; gap: 10px; margin-bottom: 30px; background: rgba(255,255,255,0.05); padding: 5px; border-radius: 20px; }
         .tab-btn {
             flex: 1; padding: 14px; border: none; background: transparent; color: rgba(255,255,255,0.4);
             font-weight: 800; cursor: pointer; border-radius: 15px; transition: 0.4s; font-size: 12px; letter-spacing: 2px;
         }
-        .tab-btn.active { background: var(--pink); color: #fff; box-shadow: 0 5px 20px rgba(255,0,119,0.4); }
+        .tab-btn.active { background: var(--pink); color: #fff; box-shadow: 0 5px 20px rgba(255,0,119,0.5); }
 
         .input-group { position: relative; margin-bottom: 20px; }
-        .input-group i.icon-left { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: var(--pink); font-size: 18px; pointer-events: none; transition: 0.3s; }
-        .toggle-pass { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); color: var(--yellow); cursor: pointer; z-index: 5; }
+        .input-group i.icon-left { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: var(--pink); font-size: 18px; pointer-events: none; }
+        .toggle-pass { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); color: var(--yellow); cursor: pointer; z-index: 10; padding: 5px; }
 
         input, select {
-            width: 100%; padding: 16px 50px; background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; color: #fff;
+            width: 100%; padding: 16px 50px; background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; color: #fff;
             font-size: 14px; outline: none; transition: 0.4s;
         }
-        input:focus { border-color: var(--pink); background: rgba(255,255,255,0.08); box-shadow: 0 0 20px rgba(255,0,119,0.15); }
+        input:focus { border-color: var(--pink); background: rgba(255,255,255,0.07); box-shadow: 0 0 15px rgba(255,0,119,0.2); }
         input.no-eye { padding: 16px 20px 16px 50px; }
 
         .btn-main {
-            width: 100%; padding: 20px; border: none; border-radius: 20px;
+            width: 100%; padding: 18px; border: none; border-radius: 18px;
             background: linear-gradient(45deg, var(--pink), var(--blue)); color: #fff;
             font-weight: 900; font-size: 14px; letter-spacing: 3px; cursor: pointer;
-            transition: 0.4s; box-shadow: 0 10px 30px rgba(0,34,255,0.3); text-transform: uppercase;
+            transition: 0.4s; box-shadow: 0 10px 30px rgba(255,0,119,0.3); text-transform: uppercase;
         }
-        .btn-main:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(255,0,119,0.4); }
-        .btn-main:active { transform: scale(0.98); }
+        .btn-main:active { transform: scale(0.96); }
 
         .wa-btn {
             display: inline-flex; align-items: center; gap: 8px; background: rgba(37,211,102,0.1);
@@ -110,7 +134,7 @@
         }
 
         .neon-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 10000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
-        .modal-content { background: #000; border: 1px solid var(--pink); padding: 40px; border-radius: 35px; text-align: center; max-width: 350px; box-shadow: var(--premium-shadow); }
+        .modal-content { background: #000; border: 2px solid var(--pink); padding: 40px; border-radius: 35px; text-align: center; max-width: 350px; box-shadow: 0 0 50px var(--pink); }
     </style>
 </head>
 <body>
@@ -122,21 +146,28 @@
     <div id="particles-js"></div>
 
     <div id="splash-screen">
-        <div class="splash-logo-container">
-            <div class="splash-logo">NEON PLINKO</div>
+        <div class="logo-container">
+            <div class="splash-logo">NEON PLINKO VIP</div>
         </div>
-        <div class="luxury-loader">
-            <div class="luxury-bar" id="l-bar"></div>
+        
+        <div class="loading-wrapper">
+            <div class="rocket-container" id="rocket-box">
+                <i class="fas fa-user-astronaut"></i>
+            </div>
+            
+            <div class="luxury-loader">
+                <div class="luxury-bar" id="l-bar"></div>
+            </div>
+            <div class="load-status" id="l-status">PREPARING VIP ENCRYPTION...</div>
         </div>
-        <div class="load-status" id="l-status">SYSTEM BOOTING...</div>
     </div>
 
     <div class="auth-card" id="main-card">
-        <div class="login-logo">NEON PLINKO</div>
+        <div class="login-logo">NEON PLINKO VIP</div>
         
         <div class="tab-nav">
             <button class="tab-btn active" onclick="switchTab('login', this)">LOGIN</button>
-            <button class="tab-btn" onclick="switchTab('daftar', this)">REGISTER</button>
+            <button class="tab-btn" onclick="switchTab('daftar', this)">VIP REGISTER</button>
         </div>
 
         <div id="form-container"></div>
@@ -145,16 +176,16 @@
         
         <div id="forgot-section" style="display:none">
             <a href="https://wa.me/6289510249551?text=Halo%20Admin,%20saya%20lupa%20password" class="wa-btn" target="_blank">
-                <i class="fab fa-whatsapp"></i> RECOVER ACCOUNT
+                <i class="fab fa-whatsapp"></i> RECOVER ACCESS
             </a>
         </div>
     </div>
 
     <div class="neon-modal" id="neon-modal">
         <div class="modal-content">
-            <i class="fas fa-user-shield" style="font-size:50px;color:var(--yellow);margin-bottom:20px;"></i>
+            <i class="fas fa-shield-alt" style="font-size:50px;color:var(--yellow);margin-bottom:20px;"></i>
             <div id="modal-text" style="font-weight:800;line-height:1.6;margin-bottom:30px;"></div>
-            <button class="btn-main" onclick="closeModal()" style="padding:12px;">CLOSE</button>
+            <button class="btn-main" onclick="closeModal()" style="padding:12px;">UNDERSTOOD</button>
         </div>
     </div>
 
@@ -163,54 +194,58 @@
         const _supa = supabase.createClient(SUPA_URL, SUPA_KEY);
         let currentMode = 'login';
 
-        // ── LUXURY LOADING ENGINE ──
-        function startApp() {
+        // ── ASTRONAUT LOADING ENGINE ──
+        function runLoader() {
             const bar = document.getElementById('l-bar');
+            const rocket = document.getElementById('rocket-box');
             const status = document.getElementById('l-status');
             const splash = document.getElementById('splash-screen');
             const card = document.getElementById('main-card');
             
             let progress = 0;
-            const loader = setInterval(() => {
-                progress += Math.random() * 4;
+            const timer = setInterval(() => {
+                progress += Math.random() * 3;
                 if(progress > 100) progress = 100;
+                
+                // Update Bar & Rocket Position
                 bar.style.width = progress + '%';
+                rocket.style.left = progress + '%';
 
-                if(progress > 20) status.innerText = "ESTABLISHING ENCRYPTION...";
-                if(progress > 50) status.innerText = "HANDSHAKING WITH SERVER...";
-                if(progress > 85) status.innerText = "ACCESS GRANTED. WELCOME.";
+                if(progress > 30) status.innerText = "BYPASSING FIREWALL...";
+                if(progress > 60) status.innerText = "FETCHING SECURE DATA...";
+                if(progress > 90) status.innerText = "DECRYPTING ACCESS...";
 
                 if(progress === 100) {
-                    clearInterval(loader);
+                    clearInterval(timer);
                     setTimeout(() => {
                         try { document.getElementById('snd-intro').play(); } catch(e){}
                         splash.style.opacity = '0';
                         splash.style.visibility = 'hidden';
                         card.classList.add('active');
-                    }, 800);
+                    }, 600);
                 }
-            }, 800); // 80ms untuk loading yang smooth
+            }, 80);
         }
 
         const forms = {
             login: `
                 <div class="input-group">
-                    <i class="fas fa-user-astronaut icon-left"></i>
+                    <i class="fas fa-user icon-left"></i>
                     <input type="text" id="user" placeholder="USERNAME" class="no-eye">
                 </div>
                 <div class="input-group">
-                    <i class="fas fa-fingerprint icon-left"></i>
+                    <i class="fas fa-lock icon-left"></i>
                     <input type="password" id="pass" placeholder="PASSWORD">
                     <i class="fas fa-eye toggle-pass" onclick="togglePassword(this)"></i>
                 </div>`,
             daftar: `
                 <div class="input-group">
                     <i class="fas fa-user-plus icon-left"></i>
-                    <input type="text" id="user" placeholder="CREATE USERNAME" class="no-eye">
+                    <input type="text" id="user" placeholder="CHOOSE USERNAME" class="no-eye">
                 </div>
                 <div class="input-group">
                     <i class="fas fa-key icon-left"></i>
-                    <input type="password" id="pass" placeholder="PASSWORD (6+ CHARS)">
+                    <input type="password" id="pass" placeholder="PASSWORD (MIN 6)">
                     <i class="fas fa-eye toggle-pass" onclick="togglePassword(this)"></i>
                 </div>
                 <div class="input-group">
@@ -218,13 +253,13 @@
                     <input type="text" id="nama" placeholder="FULL NAME (REKENING)" class="no-eye">
                 </div>
                 <div class="input-group">
-                    <i class="fas fa-phone icon-left"></i>
-                    <input type="number" id="hp" placeholder="WHATSAPP NUMBER" class="no-eye">
+                    <i class="fas fa-phone-alt icon-left"></i>
+                    <input type="number" id="hp" placeholder="WHATSAPP NO" class="no-eye">
                 </div>
                 <div class="input-group">
-                    <i class="fas fa-wallet icon-left"></i>
-                    <select id="bank" onchange="checkBank()" class="no-eye" style="background:#0a0a0a; color: #fff;">
-                        <option value="">SELECT BANK / E-WALLET</option>
+                    <i class="fas fa-university icon-left"></i>
+                    <select id="bank" onchange="checkBank()" class="no-eye" style="background:#050510; color:#fff;">
+                        <option value="">SELECT BANK / WALLET</option>
                         <option value="DANA">DANA</option><option value="OVO">OVO</option><option value="GOPAY">GOPAY</option>
                         <option value="BCA">BCA</option><option value="BNI">BNI</option><option value="BRI">BRI</option>
                         <option value="MANDIRI">MANDIRI</option><option value="LAINNYA">OTHER...</option>
@@ -237,7 +272,7 @@
                 </div>
                 <div class="input-group">
                     <i class="fas fa-users icon-left"></i>
-                    <input type="text" id="ref" placeholder="REF CODE (OPTIONAL)" class="no-eye">
+                    <input type="text" id="ref" placeholder="REFERRAL CODE (OPTIONAL)" class="no-eye">
                 </div>`
         };
 
@@ -268,14 +303,14 @@
             const u = document.getElementById('user').value.toLowerCase().trim();
             const p = document.getElementById('pass').value.trim();
             const btn = document.getElementById('btn-action');
-            if(!u || !p) return showNeonModal("PLEASE COMPLETE ALL DATA!");
+            if(!u || !p) return showNeonModal("ALL FIELDS ARE REQUIRED!");
             
             btn.disabled = true; btn.innerText = "AUTHENTICATING...";
 
             if(currentMode === 'login'){
                 const {data, error} = await _supa.from('profiles').select('*').eq('username',u).eq('password',p).maybeSingle();
                 if(error || !data){
-                    showNeonModal("ACCESS DENIED! UNAUTHORIZED CREDENTIALS.");
+                    showNeonModal("ACCESS DENIED! WRONG CREDENTIALS.");
                     btn.disabled = false; btn.innerText = "INITIALIZE ACCESS";
                 } else {
                     try { document.getElementById('snd-ok').play(); } catch(e){}
@@ -283,7 +318,7 @@
                     setTimeout(() => location.href = 'game.html', 500);
                 }
             } else {
-                // Register logic (tetap berfungsi penuh)
+                // Register logic (tetap berfungsi penuh sesuai database kamu)
                 const nama = document.getElementById('nama').value.toUpperCase().trim();
                 const hp = document.getElementById('hp').value.trim();
                 const bankVal = document.getElementById('bank').value;
@@ -292,14 +327,14 @@
                 const ref = document.getElementById('ref').value.trim() || 'DIRECT';
                 const myRef = "VIP" + Math.random().toString(36).substring(2,7).toUpperCase();
 
-                if(!nama || !hp || !bank || !norek) { btn.disabled = false; return showNeonModal("LENGKAPI DATA PENDAFTARAN!"); }
+                if(!nama || !hp || !bank || !norek) { btn.disabled = false; return showNeonModal("COMPLETE YOUR DATA!"); }
 
                 const {error:insErr} = await _supa.from('profiles').insert([{
                     username:u, password:p, nama_lengkap:nama, nomor_hp:hp, bank_name:bank, rekening:norek, referred_by:ref, referral_code:myRef, saldo:0
                 }]);
 
                 if(insErr){ showNeonModal(insErr.message); btn.disabled = false; }
-                else { showNeonModal("✅ VIP ACCOUNT REGISTERED!"); setTimeout(()=>location.reload(), 2000); }
+                else { showNeonModal("✅ VIP ACCOUNT CREATED!"); setTimeout(()=>location.reload(), 2000); }
             }
         }
 
@@ -307,17 +342,17 @@
         function closeModal() { document.getElementById('neon-modal').style.display = 'none'; }
 
         window.onload = () => {
-            startApp();
+            runLoader();
             switchTab('login', document.querySelectorAll('.tab-btn')[0]);
             particlesJS("particles-js", {
                 "particles": {
-                    "number": { "value": 40 },
-                    "color": { "value": "#0022ff" },
+                    "number": { "value": 60 },
+                    "color": { "value": "#ff0077" },
                     "shape": { "type": "circle" },
-                    "opacity": { "value": 0.2 },
+                    "opacity": { "value": 0.4 },
                     "size": { "value": 2 },
-                    "line_linked": { "enable": true, "distance": 200, "color": "#ff0077", "opacity": 0.1, "width": 1 },
-                    "move": { "enable": true, "speed": 0.8 }
+                    "line_linked": { "enable": true, "distance": 150, "color": "#0022ff", "opacity": 0.2, "width": 1 },
+                    "move": { "enable": true, "speed": 1.5 }
                 }
             });
         };
