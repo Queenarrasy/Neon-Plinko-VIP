@@ -1,18 +1,9 @@
 /**
  * ============================================================
  * OMEGA V18 — NEON PLINKO VIP
- * CENTRAL ENGINE v3.3 — MULTI-DEVICE SESSION FIX
+ * CENTRAL ENGINE v3.5 — STABLE SESSION & DATABASE FIX
  * ============================================================
- * Supabase Project : jcxgankdwfwfnbwlkkpz
- * Tables           : profiles, deposits, withdrawals, inbox, system_config
- * ============================================================
- *
- * FITUR SESSION SATU DEVICE:
- * - Saat login di index.html → update session_token di DB
- *   ke token unik device ini (disimpan di localStorage)
- * - syncNeonData() membandingkan token localStorage dengan DB
- * - Jika berbeda (login dari device lain) → auto logout
- * - Ini memastikan hanya 1 device aktif per akun setiap saat
+ * Perbaikan: Deteksi Username Akurat & Penanganan Error JSON
  * ============================================================
  */
 
@@ -34,55 +25,24 @@ const NEON_CONFIG = {
 // ── 3. AUTH HELPERS ───────────────────────────────────────────
 
 /**
- * Ambil username dari localStorage.
- * Mencakup semua key yang digunakan di seluruh halaman,
- * termasuk key yang di-scan oleh reward.html.
+ * Ambil username dengan prioritas tinggi pada session aktif.
+ * Memastikan 'sapi22' terdeteksi dengan benar dan membersihkan data sampah.
  */
 function getUsername() {
-    // Cek key-key utama yang dipakai di semua halaman
-    const knownKeys = [
-        'neon_user',
-        'user_session',
-        'user_neon',
-        'username',
-        'neon_username',
-        'user',
-        'loggedUser',
-        'logged_user',
-        'currentUser',
-        'current_user',
-        'player',
-        'playerName',
-        'player_name',
-        'nama',
-        'name',
-        'userId',
-        'user_id',
-        'loginUser',
-        'login_user',
-        'session_user',
-        'sessionUser',
-        'auth_user',
-        'authUser'
-    ];
-
-    for (const key of knownKeys) {
+    // Key prioritas untuk memastikan user yang benar (sapi22) yang terbaca
+    const priorityKeys = ['neon_user', 'user_session', 'username'];
+    
+    for (const key of priorityKeys) {
         const val = localStorage.getItem(key);
         if (val && val.trim().length > 0) {
-            // Coba parse jika JSON
-            try {
-                const parsed = JSON.parse(val);
-                if (typeof parsed === 'string' && parsed.trim()) return parsed.trim();
-                if (typeof parsed === 'object' && parsed !== null) {
-                    const objVal = parsed.username || parsed.name || parsed.user || parsed.nama || parsed.id;
-                    if (objVal && typeof objVal === 'string') return objVal.trim();
-                }
-            } catch {
-                return val.trim();
+            let cleanVal = val.trim();
+            // Jika tersimpan sebagai string JSON, bersihkan tanda kutipnya
+            if (cleanVal.startsWith('"') && cleanVal.endsWith('"')) {
+                cleanVal = cleanVal.slice(1, -1);
             }
+            return cleanVal;
         }
     }
-
     return null;
 }
 
@@ -90,16 +50,12 @@ function isLoggedIn() {
     return !!getUsername();
 }
 
-/**
- * Ambil session token device ini dari localStorage.
- * Token dibuat saat login dan disimpan di localStorage.
- */
 function getLocalToken() {
     return localStorage.getItem('neon_session_token') || null;
 }
 
 /**
- * Logout: bersihkan semua storage dan redirect ke login
+ * Logout: Bersihkan semua data untuk mencegah akun tertukar (seperti temanbakwan)
  */
 function logout() {
     localStorage.clear();
@@ -123,90 +79,94 @@ let _syncRunning = false;
 async function syncNeonData() {
     if (_syncRunning) return;
     _syncRunning = true;
+    
     const user = getUsername();
     if (!user) { _syncRunning = false; return; }
 
     try {
+        // PERBAIKAN: Gunakan maybeSingle() untuk menghindari error "single JSON object"
+        // jika data tidak ditemukan atau ada konflik di database.
         const { data, error } = await _supabase
             .from('profiles')
-            .select('saldo, referral_code, username, panic_mode, session_token, last_session_id')
+            .select('*')
             .eq('username', user)
-            .single();
+            .maybeSingle();
 
-        if (!data || error) return;
+        if (error) {
+            console.error('[Sync Error]', error.message);
+            _syncRunning = false; 
+            return;
+        }
 
-        // ── CEK SESSION TOKEN (1 LOGIN PER DEVICE) ───────────
-        // Bandingkan token yang tersimpan di localStorage
-        // dengan token di DB. Jika beda → ada login baru
-        // dari device lain → paksa logout device ini.
+        // Jika data user (sapi22) belum ada di DB, stop sync agar tidak error
+        if (!data) {
+            _syncRunning = false;
+            return;
+        }
+
+        // ── CEK SESSION TOKEN (PROTEKSI MULTI-DEVICE) ───────────
         const localToken  = getLocalToken();
         const dbToken     = data.session_token || data.last_session_id || null;
 
-        // Hanya cek jika keduanya ada (skip jika token belum pernah diset)
         if (localToken && dbToken && localToken !== dbToken) {
-            // Token tidak cocok → device ini sudah di-logout oleh login baru
+            // Jika token di browser berbeda dengan di DB, artinya ada login di device lain
             localStorage.clear();
             window.location.href = 'index.html';
             return;
         }
 
-        // Cache saldo
+        // Simpan saldo ke cache untuk kebutuhan game tanpa delay
         localStorage.setItem('cached_saldo', data.saldo || 0);
 
-        // ── KUNCI REFERRAL PERMANEN ──────────────────────────
+        // ── KUNCI REFERRAL ───────────────────────────────────
         let currentRef = data.referral_code;
         if (!currentRef || currentRef.trim() === '') {
-            let tempRef = localStorage.getItem('temp_ref_lock');
-            if (!tempRef) {
-                tempRef = 'NEON' + Math.random().toString(36).substring(2, 7).toUpperCase();
-                localStorage.setItem('temp_ref_lock', tempRef);
-            }
-            await _supabase
-                .from('profiles')
-                .update({ referral_code: tempRef })
-                .eq('username', user);
+            let tempRef = 'NEON' + Math.random().toString(36).substring(2, 7).toUpperCase();
+            await _supabase.from('profiles').update({ referral_code: tempRef }).eq('username', user);
             currentRef = tempRef;
-        } else {
-            localStorage.removeItem('temp_ref_lock');
         }
 
-        // ── UPDATE ELEMEN UI ─────────────────────────────────
-        const saldoIDR = formatIDR(data.saldo);
+        // ── UPDATE SEMUA ELEMEN UI OTOMATIS ────────────────────
+        const saldoFormatted = formatIDR(data.saldo);
+        const upperUser = (data.username || '').toUpperCase();
 
         const uiMap = {
-            'saldo-text'       : saldoIDR,
-            'display-saldo'    : saldoIDR,
-            'display-saldo-wd' : saldoIDR,
-            'profile-saldo'    : saldoIDR,
-            'wd-saldo'         : saldoIDR,
-            'saldo-val'        : saldoIDR,
-            'display-username' : (data.username || '').toUpperCase(),
-            'header-username'  : (data.username || '').toUpperCase(),
+            'saldo-text'       : saldoFormatted,
+            'display-saldo'    : saldoFormatted,
+            'display-saldo-wd' : saldoFormatted,
+            'profile-saldo'    : saldoFormatted,
+            'wd-saldo'         : saldoFormatted,
+            'saldo-val'        : saldoFormatted,
+            'u-saldo'          : saldoFormatted,
+            'display-username' : upperUser,
+            'header-username'  : upperUser,
+            'u-name'           : upperUser,
             'ref-code'         : currentRef,
+            'u-ref'            : currentRef
         };
 
         for (const [id, value] of Object.entries(uiMap)) {
             const el = document.getElementById(id);
             if (el) {
                 if (el.tagName === 'INPUT') el.value = value;
-                else                        el.textContent = value;
+                else el.textContent = value;
             }
         }
 
-        // Saldo chip di game.html
+        // Update saldo di game (jika ada elemen saldo-chip)
         const chip = document.getElementById('saldo-chip');
         if (chip) {
-            chip.innerHTML = '<i class="fas fa-coins" style="margin-right:5px;font-size:10px;"></i>' + saldoIDR;
+            chip.innerHTML = '<i class="fas fa-coins" style="margin-right:5px;font-size:10px;"></i>' + saldoFormatted;
         }
 
-        // Panic bar
+        // Panic Mode Bar
         const panicBar = document.getElementById('panic-bar');
         if (panicBar) {
             panicBar.style.display = data.panic_mode ? 'block' : 'none';
         }
 
     } catch (err) {
-        console.warn('[syncNeonData]', err?.message || err);
+        console.warn('[syncNeonData Exception]', err);
     } finally {
         _syncRunning = false;
     }
@@ -215,48 +175,27 @@ async function syncNeonData() {
 // ── 6. PROTEKSI HALAMAN ───────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
-    const user        = getUsername();
+    const user = getUsername();
     const currentPage = window.location.pathname.split('/').pop() || 'index.html';
 
     const publicPages = ['index.html', 'login.html', 'register.html', ''];
+    const adminPages = ['master_panel.html', 'm.html', 'admin.html', 'panel.html'];
+    const selfAuthPages = ['reward.html', 'reward__3_.html'];
 
-    const adminPages = [
-        'master_panel.html',
-        'master_panel__2_.html',
-        'm.html',
-        'admin.html',
-        'panel.html'
-    ];
+    const isPublic = publicPages.includes(currentPage);
+    const isAdmin = adminPages.some(p => currentPage === p);
+    const isSelfAuth = selfAuthPages.some(p => currentPage === p);
 
-    // Halaman dengan sistem login mandiri — jangan di-redirect
-    const selfAuthPages = [
-        'reward.html',
-        'reward__3_.html'
-    ];
-
-    const isAdminPage    = adminPages.some(p => currentPage === p);
-    const isSelfAuthPage = selfAuthPages.some(p => currentPage === p);
-
-    // Halaman dengan auth mandiri menangani login sendiri,
-    // config.js tidak perlu memproteksi atau me-redirect mereka.
-    if (isSelfAuthPage) {
-        // Tetap jalankan syncNeonData jika user sudah login
-        // agar elemen seperti display-saldo di header ikut terupdate.
-        if (user) {
-            syncNeonData();
-            setInterval(syncNeonData, 8000);
-        }
-        return;
-    }
-
-    if (!publicPages.includes(currentPage) && !isAdminPage && !user) {
+    // Jika bukan halaman publik/admin/self-auth dan belum login -> lempar ke login
+    if (!isPublic && !isAdmin && !isSelfAuth && !user) {
         window.location.href = 'index.html';
         return;
     }
 
+    // Jika sudah login, jalankan sinkronisasi berkala (setiap 10 detik agar tidak berat)
     if (user) {
         syncNeonData();
-        setInterval(syncNeonData, 8000);
+        setInterval(syncNeonData, 10000);
     }
 });
 
@@ -268,7 +207,7 @@ async function getSystemConfig(key) {
             .from('system_config')
             .select('value')
             .eq('key', key)
-            .single();
+            .maybeSingle(); // Gunakan maybeSingle agar lebih aman
         return data?.value || null;
     } catch {
         return null;
@@ -281,7 +220,7 @@ async function setSystemConfig(key, value) {
             .from('system_config')
             .upsert({ key, value }, { onConflict: 'key' });
     } catch (err) {
-        console.error('[setSystemConfig]', err);
+        console.error('[setSystemConfig Error]', err);
     }
 }
 
