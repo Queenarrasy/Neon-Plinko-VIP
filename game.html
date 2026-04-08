@@ -833,10 +833,11 @@ function mainLoop(){
     BALLS.splice(bidx,1);
 
     var bet        = bl.bet;
-    // Ambil payout & multiplier dari nilai yang SUDAH dikunci saat spawn
-    var pay        = (typeof bl.lockedPay === 'number') ? bl.lockedPay : 0;
+    // Ambil lockedSlot yang sudah dikunci saat spawn
     var lockedSlot = (typeof bl.targetSlot === 'number') ? bl.targetSlot : 0;
-    var multiplier = MUL[lockedSlot];  // multiplier sesuai slot yang dikunci
+    var multiplier = MUL[lockedSlot];  // multiplier SESUAI kotak slot yang dikunci
+    // pay selalu dari lockedPay yang sudah dikunci konsisten dengan multiplier kotak
+    var pay        = (typeof bl.lockedPay === 'number') ? bl.lockedPay : Math.floor(bet * multiplier);
     var prof       = pay - bet;
 
     // Update saldo & SPNL
@@ -945,12 +946,14 @@ function computePayout(betAmount){
   }
   var effectiveSPNL = SPNL + pendingProfit;
 
-  // Kondisi paksa kalah (pay = 0)
+  // Kondisi paksa kalah: gunakan slot 0.3x, pay = bet * 0.3 (konsisten dengan kotak)
   var isMaxwinHit = (maxwinLim > 0) && (effectiveSPNL >= maxwinLim);
   if(isPanic || SESSION_EXPIRED || isMaxwinHit){
     var lossSlots = [5,6,7,8]; // slot 0.3x
     var ls = lossSlots[Math.floor(Math.random() * lossSlots.length)];
-    return { slot: ls, pay: 0, multiplier: 0 };
+    var lossMult = MUL[ls]; // 0.3
+    var lossPay  = Math.floor(betAmount * lossMult);
+    return { slot: ls, pay: lossPay, multiplier: lossMult };
   }
 
   // Kelompok slot (index sesuai MUL: [16,9,3,2,0.5,0.3,0.3,0.3,0.3,0.5,2,3,9,16])
@@ -1019,7 +1022,9 @@ function computePayout(betAmount){
     }
     if(!found){
       var zeroSlot = tinySlots[Math.floor(Math.random() * tinySlots.length)];
-      return { slot: zeroSlot, pay: 0, multiplier: 0 };
+      var zeroMult = MUL[zeroSlot]; // 0.3x
+      var zeroPay  = Math.floor(betAmount * zeroMult);
+      return { slot: zeroSlot, pay: zeroPay, multiplier: zeroMult };
     }
   }
 
