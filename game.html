@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>NEON PLINKO VIP - FIXED</title>
+<title>NEON PLINKO VIP - FIXED PAYOUT</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -135,7 +135,6 @@ table.ht tr:last-child td{border-bottom:none}
   background:#010012;margin-bottom:0}
 #cv{display:block;width:100%;height:auto}
 
-/* Score bar */
 .score-bar{
   display:flex;align-items:center;
   background:rgba(3,0,18,.88);
@@ -290,7 +289,6 @@ table.ht tr:last-child td{border-bottom:none}
 
 <div class="wrap">
   <div class="cbox"><canvas id="cv"></canvas></div>
-
   <div class="score-bar">
     <div class="sb-item">
       <span class="sb-lbl"><i class="fas fa-trophy" style="margin-right:3px"></i>LAST WIN</span>
@@ -301,7 +299,6 @@ table.ht tr:last-child td{border-bottom:none}
       <span class="sb-val pk" id="sb-mode">NORMAL</span>
     </div>
   </div>
-
   <div class="ctrl">
     <div class="mode-row">
       <button class="mb on-normal" id="mb-normal" onclick="toggleMode('normal')">
@@ -342,7 +339,7 @@ table.ht tr:last-child td{border-bottom:none}
 
 <script>
 /* ════════════════════════════════════════════════════════
-   STATE GLOBAL (FIXED)
+   STATE GLOBAL
 ════════════════════════════════════════════════════════ */
 var U=null, PROF={}, SAL=0, SPNL=0, HIST=[];
 var F_NORMAL=true, F_AUTO=false, F_TURBO=false;
@@ -369,7 +366,7 @@ var ROWS=12;
 var GR        = 0.14;
 var BOUNCE    = 0.42;
 var FRIC      = 0.992;
-var SUBSTEPS  = 6;    // balanced for smooth & fast
+var SUBSTEPS  = 6;
 var SPEED_CAP = 7.5;
 
 var PR,BR,RG,SLOT_H,SLOT_Y,PAD_TOP;
@@ -794,7 +791,7 @@ function physStep(b){
 }
 
 /* ════════════════════════════════════════════════════════
-   MAIN RENDER LOOP (FIXED LANDING & SALDO)
+   MAIN RENDER LOOP (FIXED LANDING & PAYOUT)
 ════════════════════════════════════════════════════════ */
 function mainLoop(){
   for(var pi=0;pi<pegPulse.length;pi++)
@@ -822,7 +819,7 @@ function mainLoop(){
   redrawFull();
   for(var bi2=0;bi2<BALLS.length;bi2++) drawBall(BALLS[bi2]);
 
-  // PROSES LANDING BOLA (FIXED)
+  // PROSES LANDING BOLA (PAYOUT SESUAI MULTIPLIER SLOT)
   for(var li=landed.length-1;li>=0;li--){
     var bidx=landed[li], bl=BALLS[bidx];
     BALLS.splice(bidx,1);
@@ -831,24 +828,25 @@ function mainLoop(){
     var pay  = (typeof bl.lockedPay === 'number') ? bl.lockedPay : 0;
     var prof = pay - bet;
 
-    // APPLY SALDO & SPNL
+    // UPDATE SALDO & SPNL
     SAL  += pay;
     SPNL += prof;
     updSaldo();
     setLastWin(prof);
 
-    // EFFECT & HISTORY
-    if(pay > 0){ snd('win'); } else { snd('lose'); }
+    // EFFECT SUARA
+    if(pay > bet){ snd('win'); } else if(pay < bet) { snd('lose'); } else { snd('drop'); }
     
+    // MULTIPLIER UNTUK HISTORY (dari lockedPay / bet)
     var multiplier = (bet > 0) ? (pay / bet) : 0;
     addHist(bet, multiplier, pay, prof);
 
-    // GLOW SLOT VISUAL
+    // GLOW VISUAL SLOT (berdasarkan posisi X bola)
     var slotIdx = Math.floor(bl.x / (cv.width / MUL.length));
     slotIdx = Math.max(0, Math.min(MUL.length-1, slotIdx));
     SLOTS_D[slotIdx].glow = 1.0;
 
-    // SAVE SALDO TO SUPABASE (debounce)
+    // SIMPAN SALDO KE SUPABASE (DEBOUNCE)
     clearTimeout(mainLoop._dbTid);
     (function(salSnap){
       mainLoop._dbTid=setTimeout(function(){
@@ -868,7 +866,7 @@ function mainLoop(){
 }
 
 /* ════════════════════════════════════════════════════════
-   SPAWN BALL (FIXED: langsung kurangi bet & hitung outcome)
+   SPAWN BALL (KURANGI BET, HITUNG PAYOUT SESUAI MULTIPLIER)
 ════════════════════════════════════════════════════════ */
 function spawnBall(){
   var bet=curBet();
@@ -881,14 +879,17 @@ function spawnBall(){
     alert2('Saldo tidak cukup!','warn');
     return;
   }
-  SAL-=bet;    // langsung kurangi saldo saat drop
+  // KURANGI SALDO SAAT DROP
+  SAL -= bet;
   updSaldo();
   snd('drop');
 
-  var out     = computeOutcome(bet);   // hitung hasil berdasarkan bet SAAT INI
-  var lPay    = out.isWin ? out.pay : 0;
-  var targetX = SLOTS_D[out.slot] ? SLOTS_D[out.slot].x + SLOTS_D[out.slot].w/2 : cv.width/2;
-  var spX     = cv.width/2 + (Math.random()-0.5)*PR*1.4;
+  // HITUNG OUTCOME (PAYOUT BERDASARKAN MULTIPLIER SLOT)
+  var out = computePayout(bet);
+  var lPay = out.pay;     // sudah pasti bet * multiplier slot (kecuali kondisi maxwin/panic)
+  var targetSlotIdx = out.slot;
+  var targetX = SLOTS_D[targetSlotIdx] ? SLOTS_D[targetSlotIdx].x + SLOTS_D[targetSlotIdx].w/2 : cv.width/2;
+  var spX = cv.width/2 + (Math.random()-0.5)*PR*1.4;
 
   BALLS.push({
     x          : spX,
@@ -898,21 +899,21 @@ function spawnBall(){
     tr         : [],
     bet        : bet,
     lockedPay  : lPay,
-    isWin      : out.isWin,
+    isWin      : (lPay > 0),
     targetX    : targetX,
-    targetSlot : out.slot,
+    targetSlot : targetSlotIdx,
     _lastY     : BR+3,
     _stuckCnt  : 0
   });
 }
 
 /* ════════════════════════════════════════════════════════
-   COMPUTE OUTCOME (BENAR & AKURAT)
-   - winrate dari admin (1-100)
-   - multiplier dipilih dari slot berdasarkan distribusi
-   - maxwin guard tetap dihormati (tanpa mematahkan logika)
+   COMPUTE PAYOUT (SEMUA SLOT MEMBAYAR SESUAI MULTIPLIER)
+   - Winrate admin mengontrol distribusi slot (besar/kecil)
+   - Tidak ada konsep "kalah = 0" kecuali panic atau maxwin tercapai
+   - Jika maxwin akan terlampaui, multiplier diturunkan ke level lebih kecil
 ════════════════════════════════════════════════════════ */
-function computeOutcome(betAmount){
+function computePayout(betAmount){
   var adminWR   = Math.max(1, Math.min(100, Number(PROF.winrate) || 30));
   var maxwinLim = Number(PROF.maxwin_limit) || 0;
   var isPanic   = PROF.panic_mode === true;
@@ -927,88 +928,97 @@ function computeOutcome(betAmount){
   }
   var effectiveSPNL = SPNL + pendingProfit;
 
-  // Kondisi paksa kalah (maxwin, panic, session expired)
+  // Kondisi paksa "kalah" (pay = 0) karena maxwin tercapai atau panic
   var isMaxwinHit = (maxwinLim > 0) && (effectiveSPNL >= maxwinLim);
   if(isPanic || SESSION_EXPIRED || isMaxwinHit){
-    var lossSlots = [5,6,7,8];   // slot dengan multiplier 0.3x (tapi pay = 0)
+    // Pilih slot acak (tapi bayar 0) agar visual tetap masuk akal
+    var lossSlots = [5,6,7,8]; // slot 0.3x (tapi pay = 0)
     var ls = lossSlots[Math.floor(Math.random() * lossSlots.length)];
-    return { slot: ls, pay: 0, isWin: false };
+    return { slot: ls, pay: 0, multiplier: 0 };
   }
 
-  // Cek apakah kemenangan dengan multiplier tertentu masih muat di cap
+  // Kelompok slot berdasarkan multiplier
+  // indeks sesuai MUL array: [16,9,3,2,0.5,0.3,0.3,0.3,0.3,0.5,2,3,9,16]
+  var jackpotSlots = [0,13];   // 16x
+  var bigSlots     = [1,12];   // 9x
+  var mediumSlots  = [2,11];   // 3x
+  var smallSlots   = [3,10];   // 2x
+  var microSlots   = [4,9];    // 0.5x
+  var tinySlots    = [5,6,7,8];// 0.3x
+
+  // Fungsi untuk mengecek apakah profit dari multiplier tertentu masih muat di cap
   function fitsCap(mult){
     if(maxwinLim <= 0) return true;
-    var proj = effectiveSPNL + (Math.floor(betAmount * mult) - betAmount);
-    return proj <= maxwinLim;
+    var projProfit = Math.floor(betAmount * mult) - betAmount;
+    return (effectiveSPNL + projProfit) <= maxwinLim;
   }
 
+  // Pilih kelompok slot berdasarkan winrate
   var roll = Math.random() * 100;
-  if(roll >= adminWR){
-    // KALAH: bayar 0
-    var lossSlots2 = [5,6,7,8];
-    var ls2 = lossSlots2[Math.floor(Math.random() * lossSlots2.length)];
-    return { slot: ls2, pay: 0, isWin: false };
-  }
-
-  // MENANG: pilih multiplier sesuai winrate
-  var r2 = Math.random() * 100;
-  var candidateSlots = [];
+  var chosenGroup = null;
   if(adminWR >= 80){
-    if(r2 < 30)      candidateSlots = [0,13];      // 16x
-    else if(r2 < 65) candidateSlots = [1,12];      // 9x
-    else             candidateSlots = [2,11];      // 3x
+    if(roll < 10) chosenGroup = jackpotSlots;
+    else if(roll < 30) chosenGroup = bigSlots;
+    else if(roll < 55) chosenGroup = mediumSlots;
+    else if(roll < 75) chosenGroup = smallSlots;
+    else if(roll < 90) chosenGroup = microSlots;
+    else chosenGroup = tinySlots;
   } else if(adminWR >= 50){
-    if(r2 < 10)      candidateSlots = [0,13];
-    else if(r2 < 30) candidateSlots = [1,12];
-    else if(r2 < 70) candidateSlots = [2,11];
-    else             candidateSlots = [3,10];      // 2x
+    if(roll < 5) chosenGroup = jackpotSlots;
+    else if(roll < 15) chosenGroup = bigSlots;
+    else if(roll < 35) chosenGroup = mediumSlots;
+    else if(roll < 60) chosenGroup = smallSlots;
+    else if(roll < 80) chosenGroup = microSlots;
+    else chosenGroup = tinySlots;
   } else {
-    if(r2 < 30)      candidateSlots = [2,11];
-    else             candidateSlots = [3,10];
+    if(roll < 3) chosenGroup = jackpotSlots;
+    else if(roll < 10) chosenGroup = bigSlots;
+    else if(roll < 25) chosenGroup = mediumSlots;
+    else if(roll < 50) chosenGroup = smallSlots;
+    else if(roll < 75) chosenGroup = microSlots;
+    else chosenGroup = tinySlots;
   }
 
-  // Pilih slot random dari kandidat
-  var chosenSlot = candidateSlots[Math.floor(Math.random() * candidateSlots.length)];
-  var chosenMult = MUL[chosenSlot];
-  var rawPay = Math.floor(betAmount * chosenMult);
+  // Pilih slot acak dari group
+  var slotIdx = chosenGroup[Math.floor(Math.random() * chosenGroup.length)];
+  var multiplier = MUL[slotIdx];
+  var rawPay = Math.floor(betAmount * multiplier);
 
-  // Jika melebihi maxwin, turunkan ke multiplier lebih kecil
-  if(!fitsCap(chosenMult)){
-    var fallbackMult = [3, 2];  // coba 3x, lalu 2x
-    var fallbackSlot = [2, 11, 3, 10];
+  // Jika melebihi maxwin limit, coba turunkan ke kelompok lebih kecil
+  if(!fitsCap(multiplier)){
+    var fallbackGroups = [tinySlots, microSlots, smallSlots, mediumSlots];
     var found = false;
-    for(var fi=0; fi<fallbackMult.length; fi++){
-      var testMult = fallbackMult[fi];
-      if(fitsCap(testMult)){
-        for(var si=0; si<fallbackSlot.length; si++){
-          if(MUL[fallbackSlot[si]] === testMult){
-            chosenSlot = fallbackSlot[si];
-            chosenMult = testMult;
-            rawPay = Math.floor(betAmount * chosenMult);
-            found = true;
-            break;
-          }
+    for(var fg=0; fg<fallbackGroups.length; fg++){
+      var group = fallbackGroups[fg];
+      for(var g=0; g<group.length; g++){
+        var trySlot = group[g];
+        var tryMult = MUL[trySlot];
+        if(fitsCap(tryMult)){
+          slotIdx = trySlot;
+          multiplier = tryMult;
+          rawPay = Math.floor(betAmount * multiplier);
+          found = true;
+          break;
         }
-        if(found) break;
       }
+      if(found) break;
     }
     if(!found){
-      // Tidak ada kemenangan yang muat → paksa kalah
-      var lossFinal = [5,6,7,8];
-      var lsF = lossFinal[Math.floor(Math.random() * lossFinal.length)];
-      return { slot: lsF, pay: 0, isWin: false };
+      // Tidak ada kemenangan yang muat -> paksa kalah (pay = 0)
+      var zeroSlot = tinySlots[Math.floor(Math.random() * tinySlots.length)];
+      return { slot: zeroSlot, pay: 0, multiplier: 0 };
     }
   }
 
-  return { slot: chosenSlot, pay: rawPay, isWin: true };
+  return { slot: slotIdx, pay: rawPay, multiplier: multiplier };
 }
 
 /* ════════════════════════════════════════════════════════
-   HISTORY
+   HISTORY (menampilkan multiplier sesuai pembayaran)
 ════════════════════════════════════════════════════════ */
-function addHist(bet,mult,pay,prof){
+function addHist(bet, mult, pay, prof){
   var now=new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  HIST.unshift({bet:bet,mult:mult,pay:pay,prof:prof,now:now});
+  HIST.unshift({bet:bet, mult:mult, pay:pay, prof:prof, now:now});
   if(HIST.length>50) HIST=HIST.slice(0,50);
   renderHist();
   if(!HIST_OPEN){
@@ -1025,12 +1035,12 @@ function renderHist(){
   }
   var h='';
   HIST.forEach(function(r){
-    var cls=r.prof>=0?'rw':'rl';
-    var col=r.prof>=0?'var(--yl)':'var(--pk)';
-    var mLabel=(r.mult%1===0)?r.mult+'x':r.mult.toFixed(1)+'x';
+    var cls = (r.prof >= 0) ? 'rw' : 'rl';
+    var col = (r.prof >= 0) ? 'var(--yl)' : 'var(--pk)';
+    var multLabel = (r.mult % 1 === 0) ? r.mult+'x' : r.mult.toFixed(1)+'x';
     h+='<tr class="'+cls+'">'
       +'<td>'+rp(r.bet)+'</td>'
-      +'<td style="font-weight:900">'+mLabel+'</td>'
+      +'<td style="font-weight:900">'+multLabel+'</td>'
       +'<td style="color:'+col+';font-weight:900">'+rp(r.pay)+'</td>'
       +'<td style="font-size:9px;opacity:.4">'+r.now+'</td>'
       +'</tr>';
@@ -1059,7 +1069,7 @@ function stopSessionTimer(){
 }
 
 /* ════════════════════════════════════════════════════════
-   LOAD PROFILE & REALTIME (tetap berjalan)
+   LOAD PROFILE & REALTIME
 ════════════════════════════════════════════════════════ */
 function loadProfile(){
   var user=(typeof getUsername==='function') ? getUsername() : localStorage.getItem('neon_user');
@@ -1092,36 +1102,17 @@ function loadProfile(){
             updSaldo();
           }
           if('winrate' in n || 'panic_mode' in n){
-            // Realtime: update otomatis untuk bola yang sedang melayang
+            // Update realtime untuk bola yang sedang melayang (re-roll payout)
             var newWR = Math.max(1, Math.min(100, Number(PROF.winrate)||30));
             var newPanic = PROF.panic_mode === true;
-            var lossVis = [5,6,7,8];
             for(var bi=0; bi<BALLS.length; bi++){
               var b2 = BALLS[bi];
-              if(b2.isWin){
-                var stillWin = (!newPanic) && (Math.random()*100 < newWR);
-                if(!stillWin){
-                  b2.isWin = false;
-                  b2.lockedPay = 0;
-                  var nsl = lossVis[Math.floor(Math.random()*lossVis.length)];
-                  b2.targetSlot = nsl;
-                  b2.targetX = SLOTS_D[nsl].x + SLOTS_D[nsl].w/2;
-                }
-              } else {
-                if(!newPanic && (Math.random()*100 < newWR)){
-                  var winVis = [3,10];
-                  var wsl = winVis[Math.floor(Math.random()*winVis.length)];
-                  var wPay = Math.floor(b2.bet * MUL[wsl]);
-                  var mwl = Number(PROF.maxwin_limit)||0;
-                  var projSP = SPNL + (wPay - b2.bet);
-                  if(mwl <=0 || projSP <= mwl){
-                    b2.isWin = true;
-                    b2.lockedPay = wPay;
-                    b2.targetSlot = wsl;
-                    b2.targetX = SLOTS_D[wsl].x + SLOTS_D[wsl].w/2;
-                  }
-                }
-              }
+              // Hitung ulang outcome untuk bola yang belum landing
+              var newOut = computePayout(b2.bet);
+              b2.lockedPay = newOut.pay;
+              b2.isWin = (newOut.pay > 0);
+              b2.targetSlot = newOut.slot;
+              b2.targetX = SLOTS_D[newOut.slot].x + SLOTS_D[newOut.slot].w/2;
             }
           }
           var newSM = Number(n.session_minutes||n.session_timer||0);
