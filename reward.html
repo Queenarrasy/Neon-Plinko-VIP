@@ -876,7 +876,7 @@ async function loadInbox() {
             .from('inbox')
             .select('id, pesan, nominal, created_at, status, username')
             .eq('username', currentUsername)
-            .eq('status', 'pending')
+            .in('status', ['UNCLAIMED', 'pending', 'unclaimed'])
             .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -911,7 +911,7 @@ function renderInboxItems(container, msgs) {
 // ═══════════════════════════════════════════════════
 // CLAIM INBOX BONUS — FIXED
 //   - Tidak pakai claimed_at (kolom opsional, bisa tidak ada)
-//   - Tandai status 'claimed' dengan filter id + status pending
+//   - Tandai status 'CLAIMED' dengan filter id + status UNCLAIMED/pending
 //   - Saldo ditambah ke profil, lalu reload inbox
 // ═══════════════════════════════════════════════════
 async function claimInboxBonus(inboxId, amount, inboxUsername, btnEl) {
@@ -919,25 +919,25 @@ async function claimInboxBonus(inboxId, amount, inboxUsername, btnEl) {
     if (btnEl) btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> MEMPROSES...';
     try {
         // Tandai claimed (tanpa claimed_at agar tidak gagal jika kolom tidak ada)
-        const updatePayload = { status: 'claimed' };
+        const updatePayload = { status: 'CLAIMED' };
         // Coba tambahkan claimed_at — jika kolom tidak ada, Supabase akan ignore atau error
         // Kita handle keduanya
         let upd, e1;
         try {
             const res = await _sb
                 .from('inbox')
-                .update({ status: 'claimed', claimed_at: new Date().toISOString() })
+                .update({ status: 'CLAIMED', claimed_at: new Date().toISOString() })
                 .eq('id', inboxId)
-                .eq('status', 'pending')
+                .in('status', ['UNCLAIMED', 'pending', 'unclaimed'])
                 .select('id');
             upd = res.data; e1 = res.error;
         } catch {
             // Jika kolom claimed_at tidak ada, coba tanpa kolom itu
             const res2 = await _sb
                 .from('inbox')
-                .update({ status: 'claimed' })
+                .update({ status: 'CLAIMED' })
                 .eq('id', inboxId)
-                .eq('status', 'pending')
+                .in('status', ['UNCLAIMED', 'pending', 'unclaimed'])
                 .select('id');
             upd = res2.data; e1 = res2.error;
         }
@@ -947,9 +947,9 @@ async function claimInboxBonus(inboxId, amount, inboxUsername, btnEl) {
             if (e1.message && e1.message.includes('claimed_at')) {
                 const res3 = await _sb
                     .from('inbox')
-                    .update({ status: 'claimed' })
+                    .update({ status: 'CLAIMED' })
                     .eq('id', inboxId)
-                    .eq('status', 'pending')
+                    .in('status', ['UNCLAIMED', 'pending', 'unclaimed'])
                     .select('id');
                 if (res3.error) throw res3.error;
                 upd = res3.data;
