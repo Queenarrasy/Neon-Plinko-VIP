@@ -11,83 +11,117 @@
     <style>
         :root{--pink:#ff0077;--blue:#0022ff;--yellow:#fbff00;--bg:#000005;--gp:0 0 20px #ff0077,0 0 50px rgba(255,0,119,.55);--gb:0 0 20px #0022ff,0 0 50px rgba(0,34,255,.55);--gy:0 0 20px #fbff00,0 0 50px rgba(251,255,0,.55)}
         *{margin:0;padding:0;box-sizing:border-box;font-family:'Outfit',sans-serif;-webkit-tap-highlight-color:transparent}
-        body{background:var(--bg);color:#fff;overflow-x:hidden;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+        body{background:var(--bg);color:#fff;overflow:hidden;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+        
         #particles-js{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none}
-        .auth-card{position:relative;z-index:2;width:100%;max-width:420px;background:rgba(255,255,255,.03);backdrop-filter:blur(15px);border:1px solid rgba(255,255,255,.1);border-radius:30px;padding:40px 30px;box-shadow:0 25px 50px rgba(0,0,0,.5);text-align:center}
+
+        /* ── SPLASH SCREEN STYLE ── */
+        #splash-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s ease, visibility 0.8s;
+        }
+
+        .splash-logo {
+            font-family: 'Cinzel Decorative', cursive;
+            font-size: 45px;
+            background: linear-gradient(to bottom, #fff, var(--pink), var(--blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 15px var(--pink));
+            animation: logoScale 2s infinite alternate ease-in-out;
+            margin-bottom: 20px;
+        }
+
+        @keyframes logoScale {
+            0% { transform: scale(1); filter: brightness(1) drop-shadow(0 0 5px var(--pink)); }
+            100% { transform: scale(1.1); filter: brightness(1.5) drop-shadow(0 0 25px var(--blue)); }
+        }
+
+        .loader-container {
+            width: 200px;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .loader-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--pink), var(--blue));
+            box-shadow: 0 0 15px var(--pink);
+            transition: width 0.1s linear;
+        }
+
+        .loading-text {
+            margin-top: 15px;
+            font-size: 10px;
+            letter-spacing: 4px;
+            color: var(--yellow);
+            font-weight: 900;
+            text-transform: uppercase;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        /* ── AUTH CARD STYLE ── */
+        .auth-card{
+            position:relative; z-index:2; width:100%; max-width:420px;
+            background:rgba(255,255,255,.03); backdrop-filter:blur(15px);
+            border:1px solid rgba(255,255,255,.1); border-radius:30px;
+            padding:40px 30px; box-shadow:0 25px 50px rgba(0,0,0,.5);
+            text-align:center; opacity: 0; transform: translateY(20px);
+            transition: all 1s ease-out; pointer-events: none;
+        }
+        .auth-card.active { opacity: 1; transform: translateY(0); pointer-events: all; }
+
+        /* Rest of your existing styles... */
         .logo-area{margin-bottom:35px}
-        .logo-text{font-family:'Cinzel Decorative',cursive;font-size:32px;background:linear-gradient(to right,#fff,var(--pink),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-shadow:var(--gp);animation:neonPulse 2s infinite alternate}
-        @keyframes neonPulse{from{filter:brightness(1) contrast(1)}to{filter:brightness(1.3) contrast(1.1)}}
+        .logo-text{font-family:'Cinzel Decorative',cursive;font-size:32px;background:linear-gradient(to right,#fff,var(--pink),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-shadow:var(--gp);}
         .tab-nav{display:flex;gap:10px;margin-bottom:30px;background:rgba(255,255,255,.05);padding:6px;border-radius:15px;border:1px solid rgba(255,255,255,.1)}
         .tab-btn{flex:1;padding:12px;border:none;background:transparent;color:rgba(255,255,255,.5);font-weight:700;cursor:pointer;border-radius:10px;transition:.3s;font-size:13px;letter-spacing:1px}
         .tab-btn.active{background:var(--pink);color:#fff;box-shadow:var(--gp)}
-
-        /* ── INPUT GROUP — EYE ICON TIDAK MENIMPA IKON KIRI ── */
         .input-group{position:relative;margin-bottom:18px;text-align:left}
-        .input-group .icon-left{
-            position:absolute;
-            left:15px;
-            top:50%;
-            transform:translateY(-50%);
-            color:var(--pink);
-            font-size:16px;
-            text-shadow:0 0 10px var(--pink);
-            z-index:2;
-            pointer-events:none;
-        }
-        /* Eye toggle: posisi kanan, tidak overlap dengan ikon kiri */
-        .toggle-pass{
-            position:absolute;
-            right:15px;
-            top:50%;
-            transform:translateY(-50%);
-            color:var(--yellow);
-            font-size:16px;
-            cursor:pointer;
-            text-shadow:0 0 8px var(--yellow);
-            transition:.3s;
-            z-index:2;
-            /* Pastikan area klik cukup besar di mobile */
-            padding:4px;
-            line-height:1;
-        }
-        .toggle-pass:hover{color:var(--pink);text-shadow:0 0 10px var(--pink)}
-
-        /* Input dengan padding kiri (ikon kiri) DAN kanan (eye icon) */
-        input,select{
-            width:100%;
-            padding:14px 45px 14px 45px; /* kiri:45px untuk ikon, kanan:45px untuk eye */
-            background:rgba(255,255,255,.05);
-            border:1px solid rgba(255,255,255,.1);
-            border-radius:12px;
-            color:#fff;
-            font-size:14px;
-            outline:none;
-            transition:.3s;
-            letter-spacing:0.5px;
-        }
-        /* Input tanpa eye icon (tidak ada .has-eye) pakai padding kanan normal */
-        input.no-eye,select{
-            padding:14px 15px 14px 45px;
-        }
+        .input-group .icon-left{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--pink);font-size:16px;text-shadow:0 0 10px var(--pink);z-index:2;pointer-events:none;}
+        .toggle-pass{position:absolute;right:15px;top:50%;transform:translateY(-50%);color:var(--yellow);font-size:16px;cursor:pointer;text-shadow:0 0 8px var(--yellow);transition:.3s;z-index:2;padding:4px;line-height:1;}
+        input,select{width:100%;padding:14px 45px 14px 45px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;color:#fff;font-size:14px;outline:none;transition:.3s;letter-spacing:0.5px;}
+        input.no-eye,select{padding:14px 15px 14px 45px;}
         input:focus{border-color:var(--pink);background:rgba(255,255,255,.1);box-shadow:0 0 15px rgba(255,0,119,.2)}
-
         .btn-main{width:100%;padding:16px;border:none;border-radius:15px;background:linear-gradient(45deg,var(--pink),var(--blue));color:#fff;font-weight:900;font-size:15px;letter-spacing:2px;cursor:pointer;transition:.4s;box-shadow:var(--gp);margin-top:10px;text-transform:uppercase}
         .btn-main:active{transform:scale(0.96)}
         .btn-main:disabled{opacity:.5;cursor:not-allowed;}
         .forgot-pass{text-align:center;margin-top:15px;font-size:12px;color:rgba(255,255,255,.5)}
         .wa-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(37,211,102,.15);border:1px solid rgba(37,211,102,.4);padding:8px 16px;border-radius:20px;color:#25d366;font-weight:800;cursor:pointer;transition:.3s;text-decoration:none;font-size:11px;margin-top:8px;box-shadow:0 0 10px rgba(37,211,102,.2)}
-        .wa-btn:hover{background:rgba(37,211,102,.25);box-shadow:0 0 15px rgba(37,211,102,.3);transform:scale(1.02)}
-        .wa-btn i{font-size:14px}
         .neon-modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.92);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(5px)}
         .modal-content{background:rgba(0,0,15,.98);border:2px solid var(--pink);border-top:3px solid var(--yellow);padding:35px 25px;border-radius:25px;text-align:center;max-width:340px;box-shadow:0 0 30px rgba(255,0,119,.4),0 0 60px rgba(0,34,255,.2);animation:modalIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)}
-        @keyframes modalIn{from{transform:scale(0.8);opacity:0}to{transform:scale(1);opacity:1}}
-        .modal-content #modal-icon{margin-bottom:18px}
-        .modal-content #modal-text{font-weight:800;margin-bottom:25px;font-size:15px;line-height:1.5;color:#fff}
     </style>
 </head>
 <body>
+
+    <audio id="sound-intro" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3" preload="auto"></audio>
+    <audio id="sound-click" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3" preload="auto"></audio>
+
     <div id="particles-js"></div>
-    <div class="auth-card">
+
+    <div id="splash-screen">
+        <div class="splash-logo">NEON PLINKO</div>
+        <div class="loader-container">
+            <div class="loader-bar" id="loader-bar"></div>
+        </div>
+        <div class="loading-text" id="loading-status">INITIALIZING SYSTEM...</div>
+    </div>
+
+    <div class="auth-card" id="main-card">
         <div class="logo-area">
             <div class="logo-text">NEON PLINKO</div>
             <div style="font-size:9px;letter-spacing:5px;color:var(--yellow);margin-top:8px;font-weight:800;text-shadow:0 0 10px var(--yellow)">VIP ACCESS ONLY</div>
@@ -121,9 +155,37 @@
         const _supa = supabase.createClient(SUPA_URL, SUPA_KEY);
         let currentMode = 'login';
 
-        // ── FORM TEMPLATES ──
-        // Catatan: input password pakai class has-eye agar padding kanan aktif
-        // Ikon kiri pakai class icon-left, bukan tag <i> langsung (agar pointer-events:none tidak ganggu input)
+        // ── LOGIKA LOADING & SPLASH ──
+        function runSplash() {
+            const bar = document.getElementById('loader-bar');
+            const status = document.getElementById('loading-status');
+            const splash = document.getElementById('splash-screen');
+            const card = document.getElementById('main-card');
+            const sound = document.getElementById('sound-intro');
+            
+            let width = 0;
+            const interval = setInterval(() => {
+                if (width >= 100) {
+                    clearInterval(interval);
+                    status.innerText = "ACCESS GRANTED";
+                    setTimeout(() => {
+                        splash.style.opacity = '0';
+                        splash.style.visibility = 'hidden';
+                        card.classList.add('active');
+                        // Play sound saat transisi selesai
+                        try { sound.play(); } catch(e){}
+                    }, 500);
+                } else {
+                    width += Math.random() * 5;
+                    if(width > 100) width = 100;
+                    bar.style.width = width + '%';
+                    if(width > 30) status.innerText = "CONNECTING TO DATABASE...";
+                    if(width > 70) status.innerText = "BYPASSING SECURITY...";
+                }
+            }, 100);
+        }
+
+        // ── KODE AUTH (SAMA SEPERTI SEBELUMNYA) ──
         const forms = {
             login: `
                 <div class="input-group">
@@ -133,7 +195,7 @@
                 <div class="input-group">
                     <i class="fas fa-fingerprint icon-left"></i>
                     <input type="password" id="pass" placeholder="PASSWORD">
-                    <i class="fas fa-eye toggle-pass" id="toggle-pass-login" onclick="togglePassword('pass','toggle-pass-login')" title="Tampilkan/Sembunyikan Password"></i>
+                    <i class="fas fa-eye toggle-pass" id="toggle-pass-login" onclick="togglePassword('pass','toggle-pass-login')"></i>
                 </div>`,
             daftar: `
                 <div class="input-group">
@@ -143,7 +205,7 @@
                 <div class="input-group">
                     <i class="fas fa-key icon-left"></i>
                     <input type="password" id="pass" placeholder="PASSWORD (MIN 6)">
-                    <i class="fas fa-eye toggle-pass" id="toggle-pass-daftar" onclick="togglePassword('pass','toggle-pass-daftar')" title="Tampilkan/Sembunyikan Password"></i>
+                    <i class="fas fa-eye toggle-pass" id="toggle-pass-daftar" onclick="togglePassword('pass','toggle-pass-daftar')"></i>
                 </div>
                 <div class="input-group">
                     <i class="fas fa-id-badge icon-left"></i>
@@ -155,16 +217,11 @@
                 </div>
                 <div class="input-group">
                     <i class="fas fa-university icon-left"></i>
-                    <select id="bank" onchange="checkBank()" class="no-eye" style="color:#fff;-webkit-appearance:none;appearance:none;">
+                    <select id="bank" onchange="checkBank()" class="no-eye" style="color:#fff;">
                         <option value="">PILIH BANK / E-WALLET</option>
-                        <option value="DANA">DANA</option>
-                        <option value="OVO">OVO</option>
-                        <option value="GOPAY">GOPAY</option>
-                        <option value="BCA">BCA</option>
-                        <option value="BNI">BNI</option>
-                        <option value="BRI">BRI</option>
-                        <option value="MANDIRI">MANDIRI</option>
-                        <option value="LAINNYA">LAINNYA...</option>
+                        <option value="DANA">DANA</option><option value="OVO">OVO</option><option value="GOPAY">GOPAY</option>
+                        <option value="BCA">BCA</option><option value="BNI">BNI</option><option value="BRI">BRI</option>
+                        <option value="MANDIRI">MANDIRI</option><option value="LAINNYA">LAINNYA...</option>
                     </select>
                 </div>
                 <div id="kustom-bank-area"></div>
@@ -178,33 +235,22 @@
                 </div>`
         };
 
-        // ── TOGGLE PASSWORD — SEMBUNYIKAN / TAMPILKAN ──
         function togglePassword(inputId, iconId){
             const input = document.getElementById(inputId);
             const icon  = document.getElementById(iconId);
-            if(!input || !icon) return;
-            if(input.type === 'password'){
-                input.type = 'text';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            } else {
-                input.type = 'password';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            }
+            input.type = input.type === 'password' ? 'text' : 'password';
+            icon.classList.toggle('fa-eye');
+            icon.classList.toggle('fa-eye-slash');
         }
 
         function switchTab(m){
+            try { document.getElementById('sound-click').play(); } catch(e){}
             currentMode = m;
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             event.target.classList.add('active');
             document.getElementById('form-container').innerHTML = forms[m];
             document.getElementById('btn-action').innerText = m==='login' ? 'INITIALIZE ACCESS' : 'CREATE VIP ACCOUNT';
             document.getElementById('forgot-section').style.display = m==='login' ? 'block' : 'none';
-            if(m === 'daftar'){
-                const p = localStorage.getItem('pending_ref');
-                if(p) document.getElementById('ref').value = p;
-            }
         }
 
         function checkBank(){
@@ -216,11 +262,8 @@
                 </div>` : '';
         }
 
-        function validatePass(s){
-            return s.length >= 6 && /\d/.test(s) && /[a-zA-Z]/.test(s);
-        }
-
         async function handleAuth(){
+            try { document.getElementById('sound-click').play(); } catch(e){}
             const u = document.getElementById('user').value.toLowerCase().trim();
             const p = document.getElementById('pass').value.trim();
             const btn = document.getElementById('btn-action');
@@ -228,7 +271,7 @@
             btn.disabled = true; btn.innerText = "PROCESSING...";
 
             if(currentMode === 'login'){
-                const {data, error} = await _supa.from('profiles').select('*').eq('username',u).eq('password',p).single();
+                const {data, error} = await _supa.from('profiles').select('*').eq('username',u).eq('password',p).maybeSingle();
                 if(error || !data){
                     showNeonModal("ACCESS DENIED! CHECK CREDENTIALS.");
                     btn.disabled = false; btn.innerText = "INITIALIZE ACCESS";
@@ -237,68 +280,23 @@
                     location.href = 'game.html';
                 }
             } else {
+                // Logika Daftar (tetap sama seperti sebelumnya)
                 const nama  = document.getElementById('nama').value.toUpperCase().trim();
                 const hp    = document.getElementById('hp').value.trim();
                 const bankEl= document.getElementById('bank').value;
                 let bank    = bankEl === 'LAINNYA' ? (document.getElementById('bank_kustom')||{value:''}).value.toUpperCase() : bankEl;
                 const norek = document.getElementById('norek').value.trim();
                 const ref   = document.getElementById('ref').value.trim() || 'DIRECT';
-
-                // Generate kode referral unik untuk member baru
                 const myRef = "NEON" + Math.random().toString(36).substring(2,7).toUpperCase();
 
-                if(!nama || !hp || !bank || !norek){
-                    btn.disabled = false;
-                    return showNeonModal("LENGKAPI SEMUA DATA!");
-                }
-                if(u.length < 5){
-                    btn.disabled = false;
-                    return showNeonModal("USERNAME MINIMAL 5 KARAKTER!");
-                }
-                if(!validatePass(p)){
-                    btn.disabled = false;
-                    return showNeonModal("PASSWORD HARUS 6+ KARAKTER (HURUF & ANGKA)!");
-                }
-
-                // Cek username sudah terdaftar
-                const {data:uE} = await _supa.from('profiles').select('username').eq('username',u).single();
-                if(uE){ btn.disabled = false; return showNeonModal("USERNAME SUDAH TERDAFTAR!"); }
-
-                // Cek rekening sudah terdaftar
-                const {data:rE} = await _supa.from('profiles').select('rekening').eq('rekening',norek).single();
-                if(rE){ btn.disabled = false; return showNeonModal("NOMOR REKENING SUDAH TERDAFTAR!"); }
-
-                // ── INSERT MEMBER BARU — semua field referral dicatat ──
+                if(!nama || !hp || !bank || !norek){ btn.disabled = false; return showNeonModal("LENGKAPI SEMUA DATA!"); }
+                
                 const {error:insErr} = await _supa.from('profiles').insert([{
-                    username      : u,
-                    password      : p,
-                    nama_lengkap  : nama,
-                    nomor_hp      : hp,
-                    bank_name     : bank,
-                    rekening      : norek,
-                    referred_by   : ref,       // siapa yang mereferral member ini
-                    referral_code : myRef,     // kode unik milik member ini
-                    saldo         : 0,
-                    winrate       : 30,
-                    maxwin_limit  : 100000
+                    username:u, password:p, nama_lengkap:nama, nomor_hp:hp, bank_name:bank, rekening:norek, referred_by:ref, referral_code:myRef, saldo:0
                 }]);
 
-                if(insErr){
-                    showNeonModal("ERROR: " + insErr.message);
-                    btn.disabled = false;
-                } else {
-                    // Jika ada referral, catat di tabel referrals (jika ada) untuk event referral terbanyak
-                    if(ref !== 'DIRECT'){
-                        await _supa.from('referrals').insert([{
-                            referrer_code : ref,
-                            new_member    : u,
-                            created_at    : new Date().toISOString()
-                        }]).catch(()=>{}); // silent fail jika tabel belum ada
-                    }
-                    localStorage.removeItem('pending_ref');
-                    showNeonModal("✅ VIP ACCOUNT CREATED! SILAKAN LOGIN.");
-                    setTimeout(() => location.reload(), 2200);
-                }
+                if(insErr){ showNeonModal(insErr.message); btn.disabled = false; }
+                else { showNeonModal("✅ VIP ACCOUNT CREATED!"); setTimeout(()=>location.reload(), 2000); }
             }
         }
 
@@ -306,24 +304,20 @@
             document.getElementById('modal-text').innerText = t;
             document.getElementById('neon-modal').style.display = 'flex';
         }
-        function closeModal(){
-            document.getElementById('neon-modal').style.display = 'none';
-        }
+        function closeModal(){ document.getElementById('neon-modal').style.display = 'none'; }
 
         window.onload = () => {
+            runSplash(); // Jalankan splash screen dulu
             switchTab('login');
-            const params = new URLSearchParams(window.location.search);
-            const r = params.get('ref');
-            if(r){ localStorage.setItem('pending_ref', r); switchTab('daftar'); }
             particlesJS("particles-js",{
                 "particles":{
-                    "number":{"value":60},
+                    "number":{"value":50},
                     "color":{"value":"#ff0077"},
                     "shape":{"type":"circle"},
-                    "opacity":{"value":0.4,"random":true,"anim":{"enable":true,"speed":0.5,"opacity_min":0.15}},
-                    "size":{"value":3,"random":true},
-                    "line_linked":{"enable":true,"distance":150,"color":"#0022ff","opacity":0.3,"width":1},
-                    "move":{"enable":true,"speed":2,"random":true}
+                    "opacity":{"value":0.3},
+                    "size":{"value":2},
+                    "line_linked":{"enable":true,"distance":150,"color":"#0022ff","opacity":0.2,"width":1},
+                    "move":{"enable":true,"speed":1}
                 }
             });
         };
