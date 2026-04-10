@@ -1022,31 +1022,53 @@ function updateCtrlSummary() {
     const maxwinHits = allData.p.filter(u=>{ const mx=Number(u.maxwin_limit||0); const sp=Number(u.saldo||0)-Number(u.initial_balance_session||0); return mx>0&&sp>=mx; }).length;
     const totalSaldo = allData.p.reduce((s,u)=>s+(u.saldo||0),0);
     const withSession= allData.p.filter(u=>Number(u.session_minutes||u.session_timer||0)>0).length;
+    const withMaxwin = allData.p.filter(u=>Number(u.maxwin_limit||0)>0).length;
 
-    el.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+    // Winrate mode label
+    const wrNum = parseFloat(avgWR)||0;
+    let wrMode = '', wrColor = '';
+    if(wrNum>=90){wrMode='💎 JACKPOT';wrColor='#ffdd00';}
+    else if(wrNum>=71){wrMode='🚀 MENANG BESAR';wrColor='#00ff88';}
+    else if(wrNum>=51){wrMode='🟢 MENANG KECIL';wrColor='#44ddff';}
+    else if(wrNum>=31){wrMode='⚖️ SEIMBANG';wrColor='#fbff00';}
+    else if(wrNum>=11){wrMode='🔴 KETAT';wrColor='#ff7744';}
+    else if(wrNum>=1){wrMode='💀 KURAS';wrColor='#ff4466';}
+
+    el.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
         <div style="background:rgba(0,0,0,.5);border:1px solid rgba(0,34,255,.18);border-radius:10px;padding:10px;text-align:center;">
             <div style="font-size:7px;opacity:.4;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Total Player</div>
             <div style="font-size:20px;font-weight:900;color:var(--yellow);">${allData.p.length}</div>
         </div>
         <div style="background:rgba(0,0,0,.5);border:1px solid rgba(0,34,255,.18);border-radius:10px;padding:10px;text-align:center;">
             <div style="font-size:7px;opacity:.4;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Avg Winrate</div>
-            <div style="font-size:20px;font-weight:900;color:var(--green);">${avgWR}%</div>
+            <div style="font-size:16px;font-weight:900;color:${wrColor||'var(--green)'};">${avgWR}%</div>
+            <div style="font-size:8px;color:${wrColor||'rgba(255,255,255,.3)'};margin-top:2px;">${wrMode}</div>
         </div>
-        <div style="background:rgba(0,0,0,.5);border:1px solid rgba(255,0,119,.18);border-radius:10px;padding:10px;text-align:center;">
+        <div style="background:rgba(0,0,0,.5);border:1px solid ${maxwinHits>0?'rgba(255,0,119,.35)':'rgba(0,34,255,.18)'};border-radius:10px;padding:10px;text-align:center;">
             <div style="font-size:7px;opacity:.4;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Maxwin Hit</div>
             <div style="font-size:20px;font-weight:900;color:${maxwinHits>0?'var(--pink)':'var(--green)'};">${maxwinHits}</div>
+            <div style="font-size:8px;opacity:.4;margin-top:2px;">${withMaxwin} aktif</div>
         </div>
         <div style="background:rgba(0,0,0,.5);border:1px solid rgba(251,255,0,.18);border-radius:10px;padding:10px;text-align:center;">
-            <div style="font-size:7px;opacity:.4;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Ada Timer Sesi</div>
+            <div style="font-size:7px;opacity:.4;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Timer Sesi</div>
             <div style="font-size:20px;font-weight:900;color:${withSession>0?'var(--yellow)':'rgba(255,255,255,.3)'};">${withSession}</div>
+            <div style="font-size:8px;opacity:.4;margin-top:2px;">player aktif</div>
         </div>
     </div>
-    <div style="font-size:9px;color:rgba(255,255,255,.32);line-height:1.8;">
-        Panic Mode: <b style="color:${isPanic?'var(--pink)':'var(--green)'}">${isPanic?'⚠ AKTIF':'✅ AMAN'}</b> &nbsp;|&nbsp;
-        Total Saldo: <b style="color:var(--yellow)">${(totalSaldo/1000000).toFixed(2)}JT</b> &nbsp;|&nbsp;
-        Maxwin Hit: <b style="color:${maxwinHits>0?'var(--pink)':'var(--green)'};">${maxwinHits} player</b> &nbsp;|&nbsp;
-        Timer Sesi: <b style="color:var(--yellow);">${withSession} player</b>
+    <div style="background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:10px;font-size:9px;line-height:2;color:rgba(255,255,255,.5);">
+        <span style="color:${isPanic?'var(--pink)':'var(--green)'};">● Panic: <b>${isPanic?'⚠ AKTIF':'✅ AMAN'}</b></span> &nbsp;·&nbsp;
+        Total Saldo: <b style="color:var(--yellow)">${(totalSaldo/1000000).toFixed(2)}JT</b> &nbsp;·&nbsp;
+        Maxwin Hit: <b style="color:${maxwinHits>0?'var(--pink)':'var(--green)'};">${maxwinHits}/${withMaxwin}</b>
+    </div>
+    <div style="margin-top:10px;background:rgba(251,255,0,.04);border:1px solid rgba(251,255,0,.12);border-radius:8px;padding:9px 11px;font-size:8px;line-height:1.9;color:rgba(255,255,255,.38);">
+        💡 <b style="color:var(--yellow);">Tips Pengaturan Natural:</b><br>
+        • Set <b style="color:#00ff88;">Winrate 80%</b> + <b style="color:var(--yellow);">Maxwin 50K</b> + <b style="color:#44ddff;">Session 5 menit</b> = pemain perlahan naik ke 50K dalam 5 menit<br>
+        • Turunkan WR ke <b style="color:#ff4466;">10%</b> kapan saja → saldo turun tanpa pemain sadar<br>
+        • Naikkan WR ke <b style="color:#ffdd00;">90%</b> → pemain merasa beruntung, mau top-up<br>
+        • <b style="color:var(--pink);">Panic Mode</b> = darurat, semua WR 1% instan
     </div>`;
+}
 }
 
 function updatePanicCtrlUI() {
@@ -1109,11 +1131,22 @@ async function applyGlobalWinrate() {
 async function applyGlobalMaxwin() {
     const mx=parseFloat(document.getElementById('global-mx-input')?.value)||0;
     const label=mx===0?'DIMATIKAN':`Rp ${mx.toLocaleString('id-ID')}`;
-    askConfirm(`Set MAXWIN LIMIT ${label}\nke SEMUA ${allData.p.length} player?\nSesi profit semua player direset ulang.`, async ()=>{
+    askConfirm(`Set MAXWIN LIMIT ${label}\nke SEMUA ${allData.p.length} player?\n\nSesi profit semua player direset ulang dari 0.\nPemain tidak akan menyadari perubahan ini.`, async ()=>{
         let ok=0,errCount=0;
         for(const u of allData.p){
-            const{error}=await _db.from('profiles').update({maxwin_limit:mx,initial_balance_session:Number(u.saldo||0),updated_at:new Date().toISOString()}).eq('username',u.username);
-            if(!error){u.maxwin_limit=mx;u.initial_balance_session=Number(u.saldo||0);ok++;}else errCount++;
+            // PENTING: initial_balance_session = saldo saat ini
+            // Ini membuat SPNL (profit sesi) mulai dari 0
+            // sehingga maxwin limit dihitung dari saldo sekarang
+            const{error}=await _db.from('profiles').update({
+                maxwin_limit: mx,
+                initial_balance_session: Number(u.saldo||0),
+                updated_at: new Date().toISOString()
+            }).eq('username',u.username);
+            if(!error){
+                u.maxwin_limit=mx;
+                u.initial_balance_session=Number(u.saldo||0);
+                ok++;
+            } else errCount++;
         }
         showAlert(errCount>0?`✓ ${ok} berhasil, ${errCount} gagal`:`✓ MAXWIN ${label} + SESI DIRESET → ${ok} PLAYER`,'ok');
         updateCtrlSummary();renderActiveView();
@@ -1123,13 +1156,24 @@ async function applyGlobalMaxwin() {
 async function applyGlobalSession() {
     const sm=parseInt(document.getElementById('global-sm-input')?.value)||0;
     const label=sm===0?'TIDAK TERBATAS':`${sm} menit`;
-    askConfirm(`Set SESSION TIMER ${label}\nke SEMUA ${allData.p.length} player?`, async ()=>{
+    askConfirm(`Set SESSION TIMER ${label}\nke SEMUA ${allData.p.length} player?\n\nTimer mulai saat pemain pertama kali drop bola.\nSesi profit direset agar timer mulai dari 0.`, async ()=>{
         let ok=0,errCount=0;
         for(const u of allData.p){
-            const{error}=await _db.from('profiles').update({session_minutes:sm,session_timer:sm,updated_at:new Date().toISOString()}).eq('username',u.username);
-            if(!error){u.session_minutes=sm;u.session_timer=sm;ok++;}else errCount++;
+            const{error}=await _db.from('profiles').update({
+                session_minutes: sm,
+                session_timer: sm,
+                // Reset sesi agar timer mulai fresh
+                initial_balance_session: Number(u.saldo||0),
+                updated_at: new Date().toISOString()
+            }).eq('username',u.username);
+            if(!error){
+                u.session_minutes=sm;
+                u.session_timer=sm;
+                u.initial_balance_session=Number(u.saldo||0);
+                ok++;
+            } else errCount++;
         }
-        showAlert(errCount>0?`✓ ${ok} berhasil, ${errCount} gagal`:`✓ SESSION ${label} DITERAPKAN`,'ok');
+        showAlert(errCount>0?`✓ ${ok} berhasil, ${errCount} gagal`:`✓ SESSION ${label} + SESI DIRESET → ${ok} PLAYER`,'ok');
         renderActiveView();
     });
 }
@@ -1431,12 +1475,26 @@ async function updateUser(username,k) {
     if(isNaN(wr)||wr<1||wr>100){showAlert('WINRATE HARUS ANGKA 1–100!');return;}
     const pd=allData.p.find(u=>u.username===username);
     const mxChanged=pd&&Number(pd.maxwin_limit||0)!==mx;
+    const smChanged=pd&&Number(pd.session_minutes||pd.session_timer||0)!==sm;
     const currentSaldo=Number(pd?.saldo||0);
-    const upd={winrate:wr,maxwin_limit:mx,session_minutes:sm,session_timer:sm,updated_at:new Date().toISOString()};
-    if(mxChanged) upd.initial_balance_session=currentSaldo;
+    const upd={
+        winrate: wr,
+        maxwin_limit: mx,
+        session_minutes: sm,
+        session_timer: sm,
+        updated_at: new Date().toISOString()
+    };
+    // Jika maxwin berubah, reset sesi profit dari saldo sekarang
+    // Ini memastikan SPNL = 0 dan maxwin dihitung ulang
+    if(mxChanged || smChanged){
+        upd.initial_balance_session = currentSaldo;
+    }
     const{error}=await _db.from('profiles').update(upd).eq('username',username);
     if(!error){
-        showAlert(`✓ ${username} — WR:${wr}%${mx>0?' MX:'+(mx/1000).toFixed(0)+'K':' MX:OFF'}${mxChanged?' · Sesi direset':''}`,'ok');
+        const mxLabel = mx>0 ? `MX:${(mx/1000).toFixed(0)}K` : 'MX:OFF';
+        const smLabel = sm>0 ? ` ⏱${sm}m` : '';
+        const resetLabel = (mxChanged||smChanged) ? ' · Sesi↺' : '';
+        showAlert(`✓ ${username} — WR:${wr}% ${mxLabel}${smLabel}${resetLabel}`,'ok');
         const idx=allData.p.findIndex(u=>u.username===username);
         if(idx>=0) allData.p[idx]={...allData.p[idx],...upd};
         renderPlayers();
