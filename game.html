@@ -364,15 +364,17 @@ var cv=document.getElementById('cv');
 var cx=cv.getContext('2d');
 var ROWS=12;
 
-/* PERBAIKAN POINT 5: Physics lebih cepat & natural
-   - GR dinaikkan agar bola jatuh lebih natural (tidak slow-mo)
-   - SUBSTEPS dinaikkan untuk akurasi tabrakan lebih baik
-   - SPEED_CAP dinaikkan agar bola tidak terlalu lambat */
-var GR        = 0.22;   // gravitasi lebih kuat → bola jatuh natural
-var BOUNCE    = 0.40;
-var FRIC      = 0.994;
-var SUBSTEPS  = 4;      // lebih sedikit substep → lebih cepat per frame
-var SPEED_CAP = 10.0;   // cap lebih tinggi → bola tidak terlambat
+/* PHYSICS — NATURAL PLINKO
+   GR tinggi      → bola jatuh cepat, tidak slow-mo
+   BOUNCE rendah  → tidak melompat-lompat/bouncy
+   FRIC rendah    → meredam kecepatan horizontal cepat
+   SUBSTEPS 3     → akurat tapi ringan
+   SPEED_CAP 14   → bola bisa cepat secara natural     */
+var GR        = 0.52;
+var BOUNCE    = 0.28;
+var FRIC      = 0.980;
+var SUBSTEPS  = 3;
+var SPEED_CAP = 14.0;
 
 var PR,BR,RG,SLOT_H,SLOT_Y,PAD_TOP;
 var PEGS=[],SLOTS_D=[],BALLS=[];
@@ -738,82 +740,102 @@ function drawBall(b){
 }
 
 /* ════════════════════════════════════════════════════════
-   PHYSICS — NATURAL & CEPAT (FIXED v2)
-   ✅ POINT 5: Bola tidak melayang/delay/slomo
-   ✅ POINT 7: Steering menuju lockedSlot BUKAN posisi acak
-   ✅ POINT 8: Gunakan delta-time agar internet lambat
-              tidak memperlambat gerakan bola
-════════════════════════════════════════════════════════ */
-var _lastFrameTime = 0;
+   PHYSICS — PURE NATURAL (NO STEERING)
 
+   PRINSIP UTAMA:
+   • Bola bergerak MURNI fisika: gravitasi + peg collision
+   • TIDAK ADA steering/magnet ke targetX
+   • Hasil keuangan (lockedPay) sudah dikunci di spawn,
+     tapi slot VISUAL ditentukan dari posisi landing nyata
+   • Visual slot bisa berbeda dari lockedSlot — ini wajar
+     karena yang berpengaruh pada saldo adalah lockedPay,
+     bukan multiplier kotak yang diterangi
+   • Ini menghilangkan: bola melompat ke 1 kotak terus,
+     gerakan tidak natural, satu kotak terus berkedip
+════════════════════════════════════════════════════════ */
 function physStep(b){
-  var W=cv.width;
-  var subDt = 1 / SUBSTEPS;
-  for(var s=0;s<SUBSTEPS;s++){
+  var W = cv.width;
+  var subDt = 1.0 / SUBSTEPS;
+
+  for(var s = 0; s < SUBSTEPS; s++){
+    // Gravitasi murni
     b.vy += GR * subDt;
 
-    /* STEERING — POINT 5 & 7:
-       Bola diarahkan ke targetX dengan gaya sangat kecil.
-       Gaya ini hanya "nudge" — gravitasi & bounce tetap
-       mendominasi, sehingga gerakan tampak natural.
-       
-       Steering diperkuat sedikit di bagian bawah (dekat slot)
-       agar bola benar-benar masuk ke slot yang dituju.
-       Ini memperbaiki POINT 7: bola masuk x0.3 tapi hitung x9.
-    */
-    if(b.targetX !== undefined && SLOT_Y > 0){
-      var distToTarget  = b.targetX - b.x;
-      var depthFraction = Math.max(0, Math.min(1, b.y / (SLOT_Y * 0.85)));
-      // Semakin dalam → steering makin kuat agar sampai di slot benar
-      var steerStrength = 0.00035 + depthFraction * 0.00055;
-      var steer = distToTarget * steerStrength * subDt;
-      b.vx += steer;
-    }
-
+    // Friction
     b.vx *= Math.pow(FRIC, subDt);
     b.vy *= Math.pow(FRIC, subDt);
-    var sp=Math.sqrt(b.vx*b.vx+b.vy*b.vy);
-    if(sp>SPEED_CAP){b.vx*=SPEED_CAP/sp;b.vy*=SPEED_CAP/sp;}
-    // Min vertical speed — bola tidak boleh berhenti di tengah
-    if(b.vy < 0.18) b.vy = 0.18;
-    b.x+=b.vx; b.y+=b.vy;
-    if(b.x-BR<2){b.x=BR+2;b.vx=Math.abs(b.vx)*BOUNCE;}
-    if(b.x+BR>W-2){b.x=W-2-BR;b.vx=-Math.abs(b.vx)*BOUNCE;}
 
-    for(var pi=0;pi<PEGS.length;pi++){
-      var p=PEGS[pi],dx=b.x-p.x,dy=b.y-p.y;
-      var dist=Math.sqrt(dx*dx+dy*dy),mn=BR+PR+0.5;
-      if(dist<mn&&dist>0.001){
-        var nx=dx/dist,ny=dy/dist,sep=mn-dist+1.0;
-        b.x+=nx*sep; b.y+=ny*sep;
-        if(b.x-BR<2) b.x=BR+2;
-        if(b.x+BR>W-2) b.x=W-2-BR;
-        var dot=b.vx*nx+b.vy*ny;
-        if(dot<0){
-          b.vx=(b.vx-2*dot*nx)*BOUNCE;
-          b.vy=(b.vy-2*dot*ny)*BOUNCE;
-          // Random kecil agar terlihat natural — tidak terlalu besar
-          b.vx+=(Math.random()-0.5)*0.5;
-          if(b.vy<0.22) b.vy=0.22+Math.random()*0.25;
-          pegPulse[pi]=1.0;
+    // Speed cap
+    var sp = Math.sqrt(b.vx*b.vx + b.vy*b.vy);
+    if(sp > SPEED_CAP){ b.vx *= SPEED_CAP/sp; b.vy *= SPEED_CAP/sp; }
+
+    // Minimum downward velocity — bola tidak boleh berhenti di tengah
+    if(b.vy < 0.12) b.vy = 0.12;
+
+    // Update posisi
+    b.x += b.vx;
+    b.y += b.vy;
+
+    // Dinding kiri-kanan
+    if(b.x - BR < 2){ b.x = BR + 2; b.vx = Math.abs(b.vx) * BOUNCE; }
+    if(b.x + BR > W - 2){ b.x = W - 2 - BR; b.vx = -Math.abs(b.vx) * BOUNCE; }
+
+    // Tumbukan dengan peg
+    for(var pi = 0; pi < PEGS.length; pi++){
+      var p  = PEGS[pi];
+      var dx = b.x - p.x;
+      var dy = b.y - p.y;
+      var dist = Math.sqrt(dx*dx + dy*dy);
+      var minD = BR + PR + 0.5;
+
+      if(dist < minD && dist > 0.001){
+        var nx  = dx / dist;
+        var ny  = dy / dist;
+        var sep = minD - dist + 0.8;
+
+        // Dorong bola keluar dari peg
+        b.x += nx * sep;
+        b.y += ny * sep;
+
+        // Clamp ke dinding
+        if(b.x - BR < 2) b.x = BR + 2;
+        if(b.x + BR > W - 2) b.x = W - 2 - BR;
+
+        var dot = b.vx * nx + b.vy * ny;
+        if(dot < 0){
+          // Refleksi dengan bounce rendah
+          b.vx = (b.vx - 2 * dot * nx) * BOUNCE;
+          b.vy = (b.vy - 2 * dot * ny) * BOUNCE;
+
+          // Tambah sedikit random horizontal agar path terlihat berbeda-beda
+          // Nilai kecil (0.3) — cukup untuk variasi, tidak cukup untuk terlihat melompat
+          b.vx += (Math.random() - 0.5) * 0.3;
+
+          // Pastikan selalu bergerak ke bawah setelah tumbukan peg
+          if(b.vy < 0.15) b.vy = 0.15 + Math.random() * 0.15;
+
+          pegPulse[pi] = 1.0;
         }
       }
     }
-    if(SLOTS_D.length && b.y+BR >= SLOT_Y) return true;
+
+    // Cek apakah sudah sampai zona slot
+    if(SLOTS_D.length && b.y + BR >= SLOT_Y) return true;
   }
-  // Anti-stuck: bola tidak bergerak > 40 frame → tendang
-  if(!b._lastY) b._lastY = b.y;
+
+  // Anti-stuck: jika bola tidak bergerak > 30 frame, tendang ke bawah
+  if(!b._lastY)    b._lastY    = b.y;
   if(!b._stuckCnt) b._stuckCnt = 0;
-  if(Math.abs(b.y - b._lastY) < 0.5){
+  if(Math.abs(b.y - b._lastY) < 0.4){
     b._stuckCnt++;
-    if(b._stuckCnt > 35){
-      b.vy += 0.9;
-      b.vx += (Math.random()-0.5)*1.2;
+    if(b._stuckCnt > 30){
+      b.vy += 1.2;
+      b.vx += (Math.random() - 0.5) * 0.8;
       b._stuckCnt = 0;
     }
   } else {
     b._stuckCnt = 0;
-    b._lastY = b.y;
+    b._lastY    = b.y;
   }
   return false;
 }
@@ -852,18 +874,25 @@ function mainLoop(ts){
   for(var bi2=0;bi2<BALLS.length;bi2++) drawBall(BALLS[bi2]);
 
   /* ── PROSES LANDING BOLA ───────────────────────────────
-     ✅ POINT 4: SAL berubah HANYA di 2 titik:
-        1. Saat DROP  → SAL -= bet
-        2. Saat LANDING → SAL += pay
-     ✅ POINT 7: slot yang bercahaya (glow) = lockedSlot
-        (slot yang benar-benar dihitung, bukan visual semata)
-     ✅ POINT 10: Hard cap maxwin FINAL — dicek ulang
-        saat landing untuk memastikan tidak ada celah
+     PEMISAHAN VISUAL vs KEUANGAN:
+
+     • lockedPay / lockedSlot = hasil KEUANGAN yang dikunci
+       sejak bola di-spawn (ditentukan winrate, maxwin, dll)
+       → ini yang mengubah saldo, TIDAK berubah
+
+     • visualSlot = slot tempat bola BENAR-BENAR mendarat
+       secara fisika → ini yang menentukan kotak mana
+       yang BERKEDIP (glow)
+
+     Dengan ini: bola bisa mendarat visual di x2 dan glow
+     di x2, tapi saldo tetap menggunakan lockedPay (misal 0.3x).
+     Pemain melihat variasi slot yang berkedip, bukan
+     selalu 1 kotak yang sama.
   ────────────────────────────────────────────────────── */
-  for(var li=landed.length-1;li>=0;li--){
-    var bidx=landed[li];
-    var bl=BALLS[bidx];
-    BALLS.splice(bidx,1);
+  for(var li = landed.length - 1; li >= 0; li--){
+    var bidx = landed[li];
+    var bl   = BALLS[bidx];
+    BALLS.splice(bidx, 1);
 
     var bet        = bl.bet;
     var lockedSlot = (typeof bl.targetSlot === 'number') ? bl.targetSlot : 0;
@@ -871,36 +900,28 @@ function mainLoop(ts){
     var pay        = (typeof bl.lockedPay === 'number') ? bl.lockedPay : Math.floor(bet * multiplier);
     var prof       = pay - bet;
 
-    /* ── POINT 10: HARD CAP MAXWIN — SECOND LINE OF DEFENSE
-       Jika karena race condition / internet lambat / bola
-       melayang melampaui batas, paksa koreksii di sini.
-       Ini memastikan saldo TIDAK PERNAH melebihi maxwin.
-    ────────────────────────────────────────────────────── */
+    /* ── HARD CAP MAXWIN — SECOND LINE OF DEFENSE ─────── */
     var maxwinLim2 = Number(PROF.maxwin_limit) || 0;
     if(maxwinLim2 > 0){
-      var currentProfit = SPNL; // profit nyata yang sudah landing sebelum ini
+      var currentProfit = SPNL;
       if(currentProfit + prof > maxwinLim2){
-        // Recalculate: profit max yang masih boleh
         var allowedProfit = maxwinLim2 - currentProfit;
         if(allowedProfit <= 0){
-          // Sudah maxwin — paksa loss
           var forceSlot = [5,6,7,8][Math.floor(Math.random()*4)];
           lockedSlot = forceSlot;
           multiplier = MUL[forceSlot];
           pay        = Math.floor(bet * multiplier);
           prof       = pay - bet;
         } else if(prof > allowedProfit){
-          // Kurangi pay agar pas di maxwin
           pay  = bet + allowedProfit;
-          // Cari slot yang paling mendekati pay tersebut
           var closestSlot = lockedSlot;
           var closestDiff = Math.abs(Math.floor(bet * MUL[lockedSlot]) - pay);
-          for(var si2=0; si2<MUL.length; si2++){
-            var tryPay2 = Math.floor(bet * MUL[si2]);
+          for(var si3 = 0; si3 < MUL.length; si3++){
+            var tryPay2 = Math.floor(bet * MUL[si3]);
             var tryDiff = Math.abs(tryPay2 - pay);
             if(tryDiff < closestDiff && tryPay2 <= (bet + allowedProfit)){
               closestDiff = tryDiff;
-              closestSlot = si2;
+              closestSlot = si3;
             }
           }
           lockedSlot = closestSlot;
@@ -911,7 +932,7 @@ function mainLoop(ts){
       }
     }
 
-    // POINT 4: Saldo bertambah HANYA di sini
+    // Update saldo
     SAL  += pay;
     SPNL += prof;
     updSaldo();
@@ -921,24 +942,42 @@ function mainLoop(ts){
 
     addHist(bet, multiplier, pay, prof);
 
-    // POINT 7: Glow pada slot yang BENAR-BENAR dihitung (lockedSlot)
-    // Bukan slot visual — ini yang penting agar tidak ada perbedaan
-    if(SLOTS_D[lockedSlot]) SLOTS_D[lockedSlot].glow = 1.0;
+    /* ── VISUAL GLOW: slot tempat bola mendarat fisika ───
+       Cari slot berdasarkan posisi X bola saat landing.
+       Ini yang membuat kotak yang berkedip SESUAI dengan
+       tempat bola benar-benar masuk — bukan selalu 1 kotak.
+    ────────────────────────────────────────────────────── */
+    var visualSlot = lockedSlot; // default fallback
+    if(SLOTS_D.length > 0){
+      var landX = bl.x;
+      for(var vs = 0; vs < SLOTS_D.length; vs++){
+        var sd = SLOTS_D[vs];
+        if(landX >= sd.x && landX < sd.x + sd.w){
+          visualSlot = vs;
+          break;
+        }
+      }
+      // Edge case: posisi tepat di luar range → clamp ke slot terdekat
+      if(landX < SLOTS_D[0].x) visualSlot = 0;
+      if(landX >= SLOTS_D[SLOTS_D.length-1].x + SLOTS_D[SLOTS_D.length-1].w)
+        visualSlot = SLOTS_D.length - 1;
+    }
+    if(SLOTS_D[visualSlot]) SLOTS_D[visualSlot].glow = 1.0;
 
-    // Simpan ke Supabase (debounce — lebih pendek di turbo agar saldo sync)
+    // Simpan ke Supabase (debounce)
     clearTimeout(mainLoop._dbTid);
-    (function(salSnap, spnlSnap){
-      mainLoop._dbTid=setTimeout(function(){
+    (function(salSnap){
+      mainLoop._dbTid = setTimeout(function(){
         try{
-          if(typeof _db!=='undefined'&&U){
+          if(typeof _db !== 'undefined' && U){
             _db.from('profiles')
-               .update({saldo:salSnap, updated_at:new Date().toISOString()})
-               .eq('username',U)
+               .update({ saldo: salSnap, updated_at: new Date().toISOString() })
+               .eq('username', U)
                .then(function(){}).catch(function(){});
           }
         }catch(e){}
-      }, F_TURBO?150:60);
-    })(SAL, SPNL);
+      }, F_TURBO ? 150 : 60);
+    })(SAL);
   }
 
   RAF=requestAnimationFrame(mainLoop);
@@ -946,54 +985,54 @@ function mainLoop(ts){
 
 /* ════════════════════════════════════════════════════════
    SPAWN BALL
-   POINT 4: Saldo dipotong saat bola di-drop, lalu TIDAK
-   berubah lagi hingga bola landing di kotak.
+   • Saldo dipotong saat drop
+   • lockedPay & targetSlot = hasil KEUANGAN (dikunci)
+   • Bola TIDAK diarahkan ke targetX — murni fisika
+   • Posisi landing visual ditentukan oleh physics, bukan
+     steering. Kotak yang berkedip = posisi landing nyata.
 ════════════════════════════════════════════════════════ */
 function spawnBall(){
-  var bet=curBet();
-  if(SAL<bet){
+  var bet = curBet();
+  if(SAL < bet){
     if(F_AUTO){
-      F_AUTO=false; stopAutoLoop();
-      paintModeBtn('mb-auto',false,'on-auto');
+      F_AUTO = false; stopAutoLoop();
+      paintModeBtn('mb-auto', false, 'on-auto');
       updDropBtn();
     }
-    alert2('Saldo tidak cukup!','warn');
+    alert2('Saldo tidak cukup!', 'warn');
     return;
   }
 
-  // POINT 3: Mulai session timer saat bola pertama di-drop
+  // Mulai session timer saat bola pertama di-drop
   if(!SESSION_STARTED && SESSION_MINUTES > 0){
     SESSION_STARTED = true;
     startSessionTimer(SESSION_MINUTES);
   }
 
-  // POINT 4: Potong bet dari saldo — saldo HANYA berubah di sini dan saat landing
+  // Potong bet dari saldo
   SAL -= bet;
   updSaldo();
   snd('drop');
 
+  // Hitung hasil keuangan (dikunci sejak spawn)
   var out           = computePayout(bet);
   var lPay          = out.pay;
   var targetSlotIdx = out.slot;
 
-  var targetX = SLOTS_D[targetSlotIdx]
-    ? SLOTS_D[targetSlotIdx].x + SLOTS_D[targetSlotIdx].w / 2
-    : cv.width / 2;
-
-  var spX = cv.width/2 + (Math.random()-0.5)*PR*1.4;
+  // Posisi spawn: sedikit random di sekitar tengah atas
+  var spX = cv.width / 2 + (Math.random() - 0.5) * RG * 0.6;
 
   BALLS.push({
     x          : spX,
-    y          : BR+3,
-    vx         : (Math.random()-0.5)*0.35,
-    vy         : 1.1 + Math.random()*0.5,  // kecepatan awal lebih besar
+    y          : BR + 2,
+    vx         : (Math.random() - 0.5) * 0.5,  // arah awal sedikit random
+    vy         : 1.8 + Math.random() * 0.6,     // kecepatan awal cukup agar tidak slow
     tr         : [],
     bet        : bet,
     lockedPay  : lPay,
-    targetSlot : targetSlotIdx,
-    targetX    : targetX,
+    targetSlot : targetSlotIdx,  // keuangan saja, bukan untuk steering
     isWin      : (lPay > bet),
-    _lastY     : BR+3,
+    _lastY     : BR + 2,
     _stuckCnt  : 0
   });
 }
@@ -1339,21 +1378,20 @@ function loadProfile(){
             updSaldo();
           }
 
-          /* ── POINT 1 & 9: Re-roll bola melayang saat
-             admin ubah winrate/maxwin/panic dari panel.
-             Berlaku INSTAN bahkan saat bola sedang terbang.
-          ────────────────────────────────────────────────── */
+          /* Saat admin ubah winrate/maxwin/panic dari panel:
+             Re-roll lockedPay semua bola melayang.
+             targetX tidak dipakai lagi (tidak ada steering).
+             Bola tetap bergerak ke arah yang sudah dituju
+             secara fisika — hanya hasil keuangannya yang
+             berubah tanpa terlihat oleh pemain.            */
           if('winrate' in n || 'panic_mode' in n || 'maxwin_limit' in n){
-            for(var bi2=0; bi2<BALLS.length; bi2++){
-              var b2 = BALLS[bi2];
-              var newOut = computePayout(b2.bet);
-              b2.lockedPay  = newOut.pay;
-              b2.targetSlot = newOut.slot;
-              b2.isWin      = (newOut.pay > b2.bet);
-              // Update targetX ke posisi slot baru
-              b2.targetX = SLOTS_D[newOut.slot]
-                ? SLOTS_D[newOut.slot].x + SLOTS_D[newOut.slot].w / 2
-                : cv.width / 2;
+            for(var bi2 = 0; bi2 < BALLS.length; bi2++){
+              var b2   = BALLS[bi2];
+              var nOut = computePayout(b2.bet);
+              b2.lockedPay  = nOut.pay;
+              b2.targetSlot = nOut.slot;
+              b2.isWin      = (nOut.pay > b2.bet);
+              // Tidak ada targetX — fisika bola tidak berubah sama sekali
             }
           }
 
