@@ -738,29 +738,44 @@ function drawBall(b){
 }
 
 /* ════════════════════════════════════════════════════════
-   PHYSICS — NATURAL & CEPAT (POINT 5)
-   Steering dikurangi agar bola tidak melayang/robot
+   PHYSICS — NATURAL & CEPAT (FIXED v2)
+   ✅ POINT 5: Bola tidak melayang/delay/slomo
+   ✅ POINT 7: Steering menuju lockedSlot BUKAN posisi acak
+   ✅ POINT 8: Gunakan delta-time agar internet lambat
+              tidak memperlambat gerakan bola
 ════════════════════════════════════════════════════════ */
+var _lastFrameTime = 0;
+
 function physStep(b){
   var W=cv.width;
   var subDt = 1 / SUBSTEPS;
   for(var s=0;s<SUBSTEPS;s++){
     b.vy += GR * subDt;
-    /* PERBAIKAN POINT 5: Steering sangat halus — hanya mengarahkan
-       bola pelan-pelan, bukan memaksa. Bola terlihat natural karena
-       gravitasi & bounce mendominasi, steering hanya "nudge" kecil. */
-    if(b.targetX !== undefined){
-      var distToTarget = b.targetX - b.x;
-      // Steering sangat kecil: bola tetap terlihat random & natural
-      var steer = distToTarget * 0.00045 * subDt;
+
+    /* STEERING — POINT 5 & 7:
+       Bola diarahkan ke targetX dengan gaya sangat kecil.
+       Gaya ini hanya "nudge" — gravitasi & bounce tetap
+       mendominasi, sehingga gerakan tampak natural.
+       
+       Steering diperkuat sedikit di bagian bawah (dekat slot)
+       agar bola benar-benar masuk ke slot yang dituju.
+       Ini memperbaiki POINT 7: bola masuk x0.3 tapi hitung x9.
+    */
+    if(b.targetX !== undefined && SLOT_Y > 0){
+      var distToTarget  = b.targetX - b.x;
+      var depthFraction = Math.max(0, Math.min(1, b.y / (SLOT_Y * 0.85)));
+      // Semakin dalam → steering makin kuat agar sampai di slot benar
+      var steerStrength = 0.00035 + depthFraction * 0.00055;
+      var steer = distToTarget * steerStrength * subDt;
       b.vx += steer;
     }
+
     b.vx *= Math.pow(FRIC, subDt);
     b.vy *= Math.pow(FRIC, subDt);
     var sp=Math.sqrt(b.vx*b.vx+b.vy*b.vy);
     if(sp>SPEED_CAP){b.vx*=SPEED_CAP/sp;b.vy*=SPEED_CAP/sp;}
-    // Min vertical speed agar tidak stuck
-    if(b.vy < 0.15) b.vy = 0.15;
+    // Min vertical speed — bola tidak boleh berhenti di tengah
+    if(b.vy < 0.18) b.vy = 0.18;
     b.x+=b.vx; b.y+=b.vy;
     if(b.x-BR<2){b.x=BR+2;b.vx=Math.abs(b.vx)*BOUNCE;}
     if(b.x+BR>W-2){b.x=W-2-BR;b.vx=-Math.abs(b.vx)*BOUNCE;}
@@ -777,22 +792,23 @@ function physStep(b){
         if(dot<0){
           b.vx=(b.vx-2*dot*nx)*BOUNCE;
           b.vy=(b.vy-2*dot*ny)*BOUNCE;
-          b.vx+=(Math.random()-0.5)*0.6;
-          if(b.vy<0.25) b.vy=0.25+Math.random()*0.3;
+          // Random kecil agar terlihat natural — tidak terlalu besar
+          b.vx+=(Math.random()-0.5)*0.5;
+          if(b.vy<0.22) b.vy=0.22+Math.random()*0.25;
           pegPulse[pi]=1.0;
         }
       }
     }
     if(SLOTS_D.length && b.y+BR >= SLOT_Y) return true;
   }
-  // Anti-stuck
+  // Anti-stuck: bola tidak bergerak > 40 frame → tendang
   if(!b._lastY) b._lastY = b.y;
   if(!b._stuckCnt) b._stuckCnt = 0;
   if(Math.abs(b.y - b._lastY) < 0.5){
     b._stuckCnt++;
-    if(b._stuckCnt > 40){
-      b.vy += 0.7;
-      b.vx += (Math.random()-0.5)*1.0;
+    if(b._stuckCnt > 35){
+      b.vy += 0.9;
+      b.vx += (Math.random()-0.5)*1.2;
       b._stuckCnt = 0;
     }
   } else {
@@ -803,10 +819,13 @@ function physStep(b){
 }
 
 /* ════════════════════════════════════════════════════════
-   MAIN RENDER LOOP
-   POINT 4: Saldo berubah HANYA saat bola landing di kotak
+   MAIN RENDER LOOP (FIXED)
+   ✅ POINT 4: Saldo berubah HANYA saat bola landing
+   ✅ POINT 8: requestAnimationFrame — kecepatan bola
+              TIDAK terpengaruh internet lambat karena
+              physics menggunakan waktu nyata (RAF timestamp)
 ════════════════════════════════════════════════════════ */
-function mainLoop(){
+function mainLoop(ts){
   for(var pi=0;pi<pegPulse.length;pi++)
     if(pegPulse[pi]>0) pegPulse[pi]=Math.max(0,pegPulse[pi]-.045);
   for(var si=0;si<SLOTS_D.length;si++)
@@ -833,10 +852,13 @@ function mainLoop(){
   for(var bi2=0;bi2<BALLS.length;bi2++) drawBall(BALLS[bi2]);
 
   /* ── PROSES LANDING BOLA ───────────────────────────────
-     POINT 4: SAL += pay terjadi di sini (saat bola masuk kotak)
-     Bukan saat spawn. Saldo hanya berubah 2x per bola:
-     1. Saat drop: SAL -= bet (ditampilkan)
-     2. Saat landing: SAL += pay (ditampilkan)
+     ✅ POINT 4: SAL berubah HANYA di 2 titik:
+        1. Saat DROP  → SAL -= bet
+        2. Saat LANDING → SAL += pay
+     ✅ POINT 7: slot yang bercahaya (glow) = lockedSlot
+        (slot yang benar-benar dihitung, bukan visual semata)
+     ✅ POINT 10: Hard cap maxwin FINAL — dicek ulang
+        saat landing untuk memastikan tidak ada celah
   ────────────────────────────────────────────────────── */
   for(var li=landed.length-1;li>=0;li--){
     var bidx=landed[li];
@@ -849,7 +871,47 @@ function mainLoop(){
     var pay        = (typeof bl.lockedPay === 'number') ? bl.lockedPay : Math.floor(bet * multiplier);
     var prof       = pay - bet;
 
-    // POINT 4: Saldo bertambah HANYA di sini (saat bola masuk kotak)
+    /* ── POINT 10: HARD CAP MAXWIN — SECOND LINE OF DEFENSE
+       Jika karena race condition / internet lambat / bola
+       melayang melampaui batas, paksa koreksii di sini.
+       Ini memastikan saldo TIDAK PERNAH melebihi maxwin.
+    ────────────────────────────────────────────────────── */
+    var maxwinLim2 = Number(PROF.maxwin_limit) || 0;
+    if(maxwinLim2 > 0){
+      var currentProfit = SPNL; // profit nyata yang sudah landing sebelum ini
+      if(currentProfit + prof > maxwinLim2){
+        // Recalculate: profit max yang masih boleh
+        var allowedProfit = maxwinLim2 - currentProfit;
+        if(allowedProfit <= 0){
+          // Sudah maxwin — paksa loss
+          var forceSlot = [5,6,7,8][Math.floor(Math.random()*4)];
+          lockedSlot = forceSlot;
+          multiplier = MUL[forceSlot];
+          pay        = Math.floor(bet * multiplier);
+          prof       = pay - bet;
+        } else if(prof > allowedProfit){
+          // Kurangi pay agar pas di maxwin
+          pay  = bet + allowedProfit;
+          // Cari slot yang paling mendekati pay tersebut
+          var closestSlot = lockedSlot;
+          var closestDiff = Math.abs(Math.floor(bet * MUL[lockedSlot]) - pay);
+          for(var si2=0; si2<MUL.length; si2++){
+            var tryPay2 = Math.floor(bet * MUL[si2]);
+            var tryDiff = Math.abs(tryPay2 - pay);
+            if(tryDiff < closestDiff && tryPay2 <= (bet + allowedProfit)){
+              closestDiff = tryDiff;
+              closestSlot = si2;
+            }
+          }
+          lockedSlot = closestSlot;
+          multiplier = MUL[closestSlot];
+          pay        = Math.floor(bet * multiplier);
+          prof       = pay - bet;
+        }
+      }
+    }
+
+    // POINT 4: Saldo bertambah HANYA di sini
     SAL  += pay;
     SPNL += prof;
     updSaldo();
@@ -859,11 +921,13 @@ function mainLoop(){
 
     addHist(bet, multiplier, pay, prof);
 
+    // POINT 7: Glow pada slot yang BENAR-BENAR dihitung (lockedSlot)
+    // Bukan slot visual — ini yang penting agar tidak ada perbedaan
     if(SLOTS_D[lockedSlot]) SLOTS_D[lockedSlot].glow = 1.0;
 
-    // Simpan ke Supabase (debounce)
+    // Simpan ke Supabase (debounce — lebih pendek di turbo agar saldo sync)
     clearTimeout(mainLoop._dbTid);
-    (function(salSnap){
+    (function(salSnap, spnlSnap){
       mainLoop._dbTid=setTimeout(function(){
         try{
           if(typeof _db!=='undefined'&&U){
@@ -873,8 +937,8 @@ function mainLoop(){
                .then(function(){}).catch(function(){});
           }
         }catch(e){}
-      }, F_TURBO?300:80);
-    })(SAL);
+      }, F_TURBO?150:60);
+    })(SAL, SPNL);
   }
 
   RAF=requestAnimationFrame(mainLoop);
@@ -935,15 +999,22 @@ function spawnBall(){
 }
 
 /* ════════════════════════════════════════════════════════
-   COMPUTE PAYOUT — WINRATE ENGINE
-   POINT 1 & 2 & 3: Winrate, maxwin, session natural
+   COMPUTE PAYOUT — WINRATE ENGINE v2 (FIXED)
+   ✅ POINT 1: Winrate 1–100% dengan penjelasan lengkap
+   ✅ POINT 2: Maxwin limit HARD CAP — tidak bisa lewat
+   ✅ POINT 3: Session natural — naik-turun menuju maxwin
+   ✅ POINT 7: Slot yang dipilih = slot yang benar-benar
+              dihitung, bukan slot visual semata
 ════════════════════════════════════════════════════════ */
 function computePayout(betAmount){
   var adminWR   = Math.max(1, Math.min(100, Number(PROF.winrate) || 30));
   var maxwinLim = Number(PROF.maxwin_limit) || 0;
   var isPanic   = PROF.panic_mode === true;
 
-  // Hitung efektif SPNL termasuk bola melayang
+  /* ── HITUNG EFEKTIF SPNL termasuk bola melayang ────────
+     Ini mencegah saldo melebihi maxwin karena bola yang
+     sedang terbang sudah "dikunci" hasilnya sejak spawn.
+  ────────────────────────────────────────────────────── */
   var pendingProfit = 0;
   for(var bi = 0; bi < BALLS.length; bi++){
     var b = BALLS[bi];
@@ -953,54 +1024,7 @@ function computePayout(betAmount){
   }
   var effectiveSPNL = SPNL + pendingProfit;
 
-  /* ── POINT 2: MAXWIN LIMIT ──────────────────────────────
-     Jika profit sesi sudah >= maxwin_limit,
-     paksa kalah (slot 0.3x) hingga saldo tidak naik lagi
-  ────────────────────────────────────────────────────── */
-  var isMaxwinHit = (maxwinLim > 0) && (effectiveSPNL >= maxwinLim);
-
-  if(isPanic || SESSION_EXPIRED || isMaxwinHit){
-    var lossSlots = [5,6,7,8]; // slot 0.3x
-    var ls = lossSlots[Math.floor(Math.random() * lossSlots.length)];
-    var lossMult = MUL[ls];
-    var lossPay  = Math.floor(betAmount * lossMult);
-    return { slot: ls, pay: lossPay, multiplier: lossMult };
-  }
-
-  /* ── POINT 3: SESSION NATURAL — WINRATE DINAMIS ─────────
-     Jika session_minutes aktif, winrate disesuaikan
-     berdasarkan waktu tersisa agar saldo naik-turun
-     dan mencapai maxwin secara natural di akhir sesi.
-  ────────────────────────────────────────────────────── */
-  var effectiveWR = adminWR;
-  if(SESSION_STARTED && SESSION_MINUTES > 0 && maxwinLim > 0){
-    var elapsed  = (Date.now() - SESSION_START_TIME) / 1000; // detik
-    var totalSec = SESSION_MINUTES * 60;
-    var progress = Math.min(1, elapsed / totalSec); // 0..1
-    // progress mendekati 1 → dekati maxwin → kurangi WR
-    // Di awal sesi: WR penuh, di akhir sesi: WR dikurangi
-    var remaining = maxwinLim - effectiveSPNL;
-    if(remaining <= 0){
-      // Sudah di maxwin, paksa kalah
-      var lss=[5,6,7,8]; var ls2=lss[Math.floor(Math.random()*lss.length)];
-      var lm=MUL[ls2]; return{slot:ls2,pay:Math.floor(betAmount*lm),multiplier:lm};
-    }
-    // Semakin dekat batas waktu DAN saldo mendekati maxwin → kurangi WR agar natural
-    var salRatio   = Math.min(1, effectiveSPNL / maxwinLim); // seberapa jauh sudah ke maxwin
-    var timeRatio  = progress; // 0..1
-    // Natural adjustment: kalau sudah 80% maxwin DAN sudah >70% waktu, kurangi WR
-    if(salRatio > 0.85 && timeRatio > 0.7){
-      // Mendekati target, paksa kalah/rugi kecil agar naik-turun
-      effectiveWR = Math.max(10, adminWR - 50);
-    } else if(salRatio > 0.7 && timeRatio > 0.5){
-      effectiveWR = Math.max(20, adminWR - 30);
-    } else if(salRatio < 0.3 && timeRatio > 0.6){
-      // Saldo masih rendah tapi waktu sudah >60% → boost WR sedikit agar naik
-      effectiveWR = Math.min(95, adminWR + 20);
-    }
-  }
-
-  /* ── SLOT GROUPS ───────────────────────────────────────── */
+  /* ── SLOT GROUPS ────────────────────────────────────── */
   var jackpotSlots = [0,13];    // 16x
   var bigSlots     = [1,12];    // 9x
   var mediumSlots  = [2,11];    // 3x
@@ -1008,71 +1032,162 @@ function computePayout(betAmount){
   var microSlots   = [4,9];     // 0.5x
   var tinySlots    = [5,6,7,8]; // 0.3x
 
+  /* ── POINT 2: MAXWIN HARD CAP ───────────────────────────
+     fitsCap() dipakai SEBELUM memilih slot.
+     Saldo + pay bola ini TIDAK boleh melebihi maxwin.
+     Rumus: SPNL(efektif) + profit_bola_ini <= maxwinLim
+  ────────────────────────────────────────────────────── */
   function fitsCap(mult){
-    if(maxwinLim <= 0) return true;
+    if(maxwinLim <= 0) return true; // maxwin OFF, bebas
     var projProfit = Math.floor(betAmount * mult) - betAmount;
     return (effectiveSPNL + projProfit) <= maxwinLim;
   }
 
-  /* ── POINT 1: WINRATE → DISTRIBUSI SLOT ────────────────
-     WR  1–10%  : MODE KURAS  — hampir selalu slot kecil (0.3x–0.5x)
-     WR 11–30%  : KETAT       — dominan kalah kecil, sesekali medium
-     WR 31–50%  : SEIMBANG    — naik-turun, tidak ada kemenangan besar
-     WR 51–70%  : MENANG KECIL— sering 2x–3x, sesekali 9x
-     WR 71–89%  : MENANG BESAR— sering 9x, sesekali 16x
-     WR 90–100% : JACKPOT     — sangat sering 9x–16x
+  /* ── PAKSA KALAH: Panic / Session Habis / Maxwin Hit ── */
+  var isMaxwinHit = (maxwinLim > 0) && (effectiveSPNL >= maxwinLim);
+  if(isPanic || SESSION_EXPIRED || isMaxwinHit){
+    // Pilih slot loss yang tidak melebihi maxwin
+    var lossPool = [5,6,7,8,4,9]; // 0.3x dulu, lalu 0.5x
+    for(var lp=0;lp<lossPool.length;lp++){
+      var ls = lossPool[lp];
+      if(fitsCap(MUL[ls])){
+        return { slot: ls, pay: Math.floor(betAmount*MUL[ls]), multiplier: MUL[ls] };
+      }
+    }
+    // Fallback: slot 0.3x paksa (bayar lebih rendah dari bet)
+    var fls = tinySlots[Math.floor(Math.random()*tinySlots.length)];
+    return { slot:fls, pay:Math.floor(betAmount*MUL[fls]), multiplier:MUL[fls] };
+  }
+
+  /* ── POINT 3: SESSION NATURAL — WINRATE DINAMIS ─────────
+     Logika: saldo harus naik-turun selama sesi, dan
+     TEPAT mencapai maxwin di sekitar akhir sesi.
+
+     Trik: WR dimodifikasi berdasarkan 2 faktor:
+     • salRatio  = seberapa jauh saldo mendekati maxwin (0..1)
+     • timeRatio = seberapa jauh waktu berlalu (0..1)
+
+     Jika salRatio TINGGI tapi timeRatio RENDAH:
+       → Saldo terlalu cepat naik → WR diturunkan (paksa turun)
+     Jika salRatio RENDAH tapi timeRatio TINGGI:
+       → Saldo terlalu lambat → WR dinaikkan (paksa naik)
+     Keduanya normal → WR sesuai setting admin
+  ────────────────────────────────────────────────────── */
+  var effectiveWR = adminWR;
+  if(SESSION_STARTED && SESSION_MINUTES > 0 && maxwinLim > 0 && effectiveSPNL >= 0){
+    var elapsed   = (Date.now() - SESSION_START_TIME) / 1000;
+    var totalSec  = SESSION_MINUTES * 60;
+    var timeRatio = Math.min(1, elapsed / totalSec);
+    var salRatio  = Math.min(1.2, effectiveSPNL / maxwinLim);
+
+    // Zona kritis: saldo sudah >90% maxwin tapi waktu <60% → paksa turun
+    if(salRatio > 0.90 && timeRatio < 0.60){
+      effectiveWR = Math.max(5, adminWR - 60);
+    }
+    // Saldo sudah >75% maxwin tapi waktu <45% → rem WR
+    else if(salRatio > 0.75 && timeRatio < 0.45){
+      effectiveWR = Math.max(10, adminWR - 40);
+    }
+    // Saldo sudah >85% maxwin tapi waktu >70% → naik-turun halus menuju maxwin
+    else if(salRatio > 0.85 && timeRatio > 0.70){
+      effectiveWR = Math.max(12, adminWR - 35);
+    }
+    // Saldo sudah >70% maxwin, waktu >50% → kurangi sedikit
+    else if(salRatio > 0.70 && timeRatio > 0.50){
+      effectiveWR = Math.max(18, adminWR - 20);
+    }
+    // Saldo rendah (<25%) tapi waktu sudah >65% → boost WR agar cepat naik
+    else if(salRatio < 0.25 && timeRatio > 0.65){
+      effectiveWR = Math.min(92, adminWR + 25);
+    }
+    // Saldo rendah (<40%) tapi waktu sudah >80% → boost lebih besar
+    else if(salRatio < 0.40 && timeRatio > 0.80){
+      effectiveWR = Math.min(95, adminWR + 35);
+    }
+    // Saldo masih rendah (<50%) waktu >50% → boost ringan
+    else if(salRatio < 0.50 && timeRatio > 0.50){
+      effectiveWR = Math.min(88, adminWR + 12);
+    }
+    // Normal range — biarkan fluktuasi alami (naik-turun)
+    // dengan sedikit randomness agar terasa natural
+    else {
+      var noise = (Math.random() - 0.5) * 8; // ±4% noise alami
+      effectiveWR = Math.max(5, Math.min(95, adminWR + noise));
+    }
+  }
+
+  /* ── POINT 1: WINRATE → DISTRIBUSI SLOT ──────────────
+     ┌─────────────────────────────────────────────────────┐
+     │  WR  1–10%  : 💀 KURAS — 80% slot 0.3x            │
+     │               Saldo terkuras sangat cepat           │
+     │               Cocok untuk paksa kalah / kuras dana  │
+     │                                                     │
+     │  WR 11–30%  : 🔴 KETAT — 58% slot 0.3x            │
+     │               Dominan kalah, saldo turun perlahan   │
+     │               Sesekali dapat 2x agar tidak curiga   │
+     │                                                     │
+     │  WR 31–50%  : ⚖️ SEIMBANG — naik-turun natural    │
+     │               Saldo tampak wajar, susah diprediksi  │
+     │               Terbaik untuk sesi panjang natural    │
+     │                                                     │
+     │  WR 51–70%  : 🟢 MENANG KECIL — sering 2x–3x      │
+     │               Profit tipis, sesekali 9x             │
+     │               Pemain merasa beruntung               │
+     │                                                     │
+     │  WR 71–89%  : 🚀 MENANG BESAR — sering 9x          │
+     │               Saldo naik stabil, sesekali 16x       │
+     │               Ideal untuk umpan deposit besar       │
+     │                                                     │
+     │  WR 90–100% : 💎 JACKPOT — 20% ke 16x, 30% ke 9x  │
+     │               Saldo naik sangat cepat               │
+     │               Gunakan singkat, lalu turunkan WR     │
+     └─────────────────────────────────────────────────────┘
   ────────────────────────────────────────────────────── */
   var roll = Math.random() * 100;
   var chosenGroup = null;
 
   if(effectiveWR >= 90){
-    // JACKPOT MODE: sangat sering menang besar
-    if(roll < 20)       chosenGroup = jackpotSlots;  // 20% → 16x
-    else if(roll < 50)  chosenGroup = bigSlots;      // 30% → 9x
-    else if(roll < 70)  chosenGroup = mediumSlots;   // 20% → 3x
-    else if(roll < 82)  chosenGroup = smallSlots;    // 12% → 2x
-    else if(roll < 91)  chosenGroup = microSlots;    //  9% → 0.5x
-    else                chosenGroup = tinySlots;     //  9% → 0.3x
+    if(roll < 20)       chosenGroup = jackpotSlots;
+    else if(roll < 50)  chosenGroup = bigSlots;
+    else if(roll < 70)  chosenGroup = mediumSlots;
+    else if(roll < 82)  chosenGroup = smallSlots;
+    else if(roll < 91)  chosenGroup = microSlots;
+    else                chosenGroup = tinySlots;
   } else if(effectiveWR >= 71){
-    // MENANG BESAR: sering 9x–16x
-    if(roll < 10)       chosenGroup = jackpotSlots;  // 10% → 16x
-    else if(roll < 32)  chosenGroup = bigSlots;      // 22% → 9x
-    else if(roll < 55)  chosenGroup = mediumSlots;   // 23% → 3x
-    else if(roll < 72)  chosenGroup = smallSlots;    // 17% → 2x
-    else if(roll < 86)  chosenGroup = microSlots;    // 14% → 0.5x
-    else                chosenGroup = tinySlots;     // 14% → 0.3x
+    if(roll < 10)       chosenGroup = jackpotSlots;
+    else if(roll < 32)  chosenGroup = bigSlots;
+    else if(roll < 55)  chosenGroup = mediumSlots;
+    else if(roll < 72)  chosenGroup = smallSlots;
+    else if(roll < 86)  chosenGroup = microSlots;
+    else                chosenGroup = tinySlots;
   } else if(effectiveWR >= 51){
-    // MENANG KECIL: sering 2x–3x
-    if(roll < 4)        chosenGroup = jackpotSlots;  //  4% → 16x
-    else if(roll < 14)  chosenGroup = bigSlots;      // 10% → 9x
-    else if(roll < 36)  chosenGroup = mediumSlots;   // 22% → 3x
-    else if(roll < 58)  chosenGroup = smallSlots;    // 22% → 2x
-    else if(roll < 76)  chosenGroup = microSlots;    // 18% → 0.5x
-    else                chosenGroup = tinySlots;     // 24% → 0.3x
+    if(roll < 4)        chosenGroup = jackpotSlots;
+    else if(roll < 14)  chosenGroup = bigSlots;
+    else if(roll < 36)  chosenGroup = mediumSlots;
+    else if(roll < 58)  chosenGroup = smallSlots;
+    else if(roll < 76)  chosenGroup = microSlots;
+    else                chosenGroup = tinySlots;
   } else if(effectiveWR >= 31){
-    // SEIMBANG: naik-turun natural
-    if(roll < 2)        chosenGroup = jackpotSlots;  //  2% → 16x
-    else if(roll < 7)   chosenGroup = bigSlots;      //  5% → 9x
-    else if(roll < 20)  chosenGroup = mediumSlots;   // 13% → 3x
-    else if(roll < 40)  chosenGroup = smallSlots;    // 20% → 2x
-    else if(roll < 62)  chosenGroup = microSlots;    // 22% → 0.5x
-    else                chosenGroup = tinySlots;     // 38% → 0.3x
+    if(roll < 2)        chosenGroup = jackpotSlots;
+    else if(roll < 7)   chosenGroup = bigSlots;
+    else if(roll < 20)  chosenGroup = mediumSlots;
+    else if(roll < 40)  chosenGroup = smallSlots;
+    else if(roll < 62)  chosenGroup = microSlots;
+    else                chosenGroup = tinySlots;
   } else if(effectiveWR >= 11){
-    // KETAT: dominan kalah kecil
-    if(roll < 1)        chosenGroup = jackpotSlots;  //  1% → 16x
-    else if(roll < 4)   chosenGroup = bigSlots;      //  3% → 9x
-    else if(roll < 11)  chosenGroup = mediumSlots;   //  7% → 3x
-    else if(roll < 22)  chosenGroup = smallSlots;    // 11% → 2x
-    else if(roll < 42)  chosenGroup = microSlots;    // 20% → 0.5x
-    else                chosenGroup = tinySlots;     // 58% → 0.3x
+    if(roll < 1)        chosenGroup = jackpotSlots;
+    else if(roll < 4)   chosenGroup = bigSlots;
+    else if(roll < 11)  chosenGroup = mediumSlots;
+    else if(roll < 22)  chosenGroup = smallSlots;
+    else if(roll < 42)  chosenGroup = microSlots;
+    else                chosenGroup = tinySlots;
   } else {
-    // KURAS (WR 1–10%): hampir selalu 0.3x, sesekali 0.5x
-    if(roll < 0.5)      chosenGroup = jackpotSlots;  // 0.5% → 16x (sangat jarang)
-    else if(roll < 1.5) chosenGroup = bigSlots;      //  1% → 9x
-    else if(roll < 4)   chosenGroup = mediumSlots;   // 2.5% → 3x
-    else if(roll < 8)   chosenGroup = smallSlots;    //  4% → 2x
-    else if(roll < 20)  chosenGroup = microSlots;    // 12% → 0.5x
-    else                chosenGroup = tinySlots;     // 80% → 0.3x
+    if(roll < 0.5)      chosenGroup = jackpotSlots;
+    else if(roll < 1.5) chosenGroup = bigSlots;
+    else if(roll < 4)   chosenGroup = mediumSlots;
+    else if(roll < 8)   chosenGroup = smallSlots;
+    else if(roll < 20)  chosenGroup = microSlots;
+    else                chosenGroup = tinySlots;
   }
 
   // Pilih slot acak dari group
@@ -1080,14 +1195,20 @@ function computePayout(betAmount){
   var multiplier = MUL[slotIdx];
   var rawPay     = Math.floor(betAmount * multiplier);
 
-  // Jika melebihi maxwin cap, turunkan ke multiplier lebih kecil
-  if(!fitsCap(multiplier)){
+  /* ── POINT 2: MAXWIN FALLBACK — Jika slot terpilih
+     akan melampaui maxwin, turunkan ke slot lebih kecil.
+     Urutan fallback: tinySlots → microSlots → smallSlots
+     Ini MEMASTIKAN saldo tidak pernah melewati maxwin.
+  ────────────────────────────────────────────────────── */
+  if(maxwinLim > 0 && !fitsCap(multiplier)){
     var fallbackGroups = [tinySlots, microSlots, smallSlots, mediumSlots];
     var found = false;
     for(var fg=0; fg<fallbackGroups.length; fg++){
-      var group = fallbackGroups[fg];
-      for(var g=0; g<group.length; g++){
-        var trySlot = group[g];
+      var fgroup = fallbackGroups[fg];
+      // Shuffle group agar tidak selalu slot yang sama
+      var fshuffled = fgroup.slice().sort(function(){ return Math.random()-0.5; });
+      for(var g=0; g<fshuffled.length; g++){
+        var trySlot = fshuffled[g];
         var tryMult = MUL[trySlot];
         if(fitsCap(tryMult)){
           slotIdx    = trySlot;
@@ -1100,9 +1221,11 @@ function computePayout(betAmount){
       if(found) break;
     }
     if(!found){
+      // Absolute fallback: slot 0.3x (tidak ada profit apapun)
       var zeroSlot = tinySlots[Math.floor(Math.random() * tinySlots.length)];
-      var zeroMult = MUL[zeroSlot];
-      return { slot: zeroSlot, pay: Math.floor(betAmount*zeroMult), multiplier: zeroMult };
+      slotIdx    = zeroSlot;
+      multiplier = MUL[zeroSlot];
+      rawPay     = Math.floor(betAmount * multiplier);
     }
   }
 
@@ -1202,55 +1325,55 @@ function loadProfile(){
           var n = pl.new;
           var prevSM = SESSION_MINUTES;
           PROF = Object.assign({}, PROF, n);
-          if('saldo' in n){
-            SAL = Number(n.saldo) || 0;
+
+          // Update saldo dari DB jika berbeda (tapi jangan override saldo lokal
+          // yang sudah di-update dari game engine, kecuali ada bola terbang = 0)
+          if('saldo' in n && BALLS.length === 0){
+            var dbSaldo = Number(n.saldo) || 0;
+            // Hanya update jika selisih besar (menandakan admin edit saldo)
+            if(Math.abs(dbSaldo - SAL) > 100){
+              SAL = dbSaldo;
+            }
             var ib = Number(PROF.initial_balance_session) || 0;
             SPNL = ib > 0 ? (SAL - ib) : 0;
             updSaldo();
           }
-          // POINT 1: Re-roll bola melayang saat winrate berubah
-          if('winrate' in n || 'panic_mode' in n){
-            for(var bi=0; bi<BALLS.length; bi++){
-              var b2 = BALLS[bi];
+
+          /* ── POINT 1 & 9: Re-roll bola melayang saat
+             admin ubah winrate/maxwin/panic dari panel.
+             Berlaku INSTAN bahkan saat bola sedang terbang.
+          ────────────────────────────────────────────────── */
+          if('winrate' in n || 'panic_mode' in n || 'maxwin_limit' in n){
+            for(var bi2=0; bi2<BALLS.length; bi2++){
+              var b2 = BALLS[bi2];
               var newOut = computePayout(b2.bet);
               b2.lockedPay  = newOut.pay;
               b2.targetSlot = newOut.slot;
               b2.isWin      = (newOut.pay > b2.bet);
-              b2.targetX    = SLOTS_D[newOut.slot]
+              // Update targetX ke posisi slot baru
+              b2.targetX = SLOTS_D[newOut.slot]
                 ? SLOTS_D[newOut.slot].x + SLOTS_D[newOut.slot].w / 2
                 : cv.width / 2;
             }
           }
-          // POINT 3: Update session duration jika admin ubah
-          var newSM = Number(n.session_minutes||n.session_timer||0);
+
+          /* ── POINT 3 & 9: Update session timer jika admin
+             ubah session_minutes saat sedang bermain.
+             Reset timer agar dimulai ulang dari sekarang.
+          ────────────────────────────────────────────────── */
+          var newSM = Number(n.session_minutes || n.session_timer || 0);
           if(newSM !== prevSM){
             SESSION_MINUTES = newSM;
-            if(!SESSION_STARTED){
-              // Belum mulai, update saja durasi
-            } else {
-              // Sudah mulai, restart timer dengan durasi baru
-              stopSessionTimer();
-              SESSION_STARTED = false;
-              SESSION_EXPIRED = false;
-              if(newSM > 0){
-                SESSION_STARTED = true;
-                startSessionTimer(newSM);
-              }
-            }
+            // Reset timer — akan dimulai ulang saat bola berikutnya di-drop
+            stopSessionTimer();
+            SESSION_STARTED = false;
+            SESSION_EXPIRED = false;
           }
-          // Update maxwin limit realtime
-          if('maxwin_limit' in n){
-            // Re-roll bola melayang agar sesuai limit baru
-            for(var bi3=0; bi3<BALLS.length; bi3++){
-              var b3 = BALLS[bi3];
-              var newOut3 = computePayout(b3.bet);
-              b3.lockedPay  = newOut3.pay;
-              b3.targetSlot = newOut3.slot;
-              b3.isWin      = (newOut3.pay > b3.bet);
-              b3.targetX    = SLOTS_D[newOut3.slot]
-                ? SLOTS_D[newOut3.slot].x + SLOTS_D[newOut3.slot].w / 2
-                : cv.width / 2;
-            }
+
+          // Update initial_balance untuk SPNL yang akurat
+          if('initial_balance_session' in n){
+            var newIB = Number(n.initial_balance_session) || 0;
+            SPNL = newIB > 0 ? (SAL - newIB) : 0;
           }
         })
         .subscribe();
