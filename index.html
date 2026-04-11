@@ -134,7 +134,7 @@
             <div class="luxury-loader">
                 <div class="luxury-bar" id="l-bar"></div>
             </div>
-            <div class="load-status" id="l-status">DAFTAR/LOGIN</div>
+            <div class="load-status" id="l-status">INITIALIZING...</div>
         </div>
     </div>
 
@@ -142,8 +142,8 @@
         <div class="login-logo">NEON PLINKO VIP</div>
         
         <div class="tab-nav">
-            <button class="tab-btn active" onclick="switchTab('login', this)">LOGIN</button>
-            <button class="tab-btn" onclick="switchTab('daftar', this)">REGISTER</button>
+            <button class="tab-btn active" id="tab-login" onclick="switchTab('login', this)">LOGIN</button>
+            <button class="tab-btn" id="tab-daftar" onclick="switchTab('daftar', this)">REGISTER</button>
         </div>
 
         <div id="form-container"></div>
@@ -169,6 +169,7 @@
         const _supa = supabase.createClient(SUPA_URL, SUPA_KEY);
         let currentMode = 'login';
 
+        // ── ANIMASI SPLASH HANYA SEKALI PER SESI ──
         function runLoader() {
             const bar = document.getElementById('l-bar');
             const rocket = document.getElementById('rocket-box');
@@ -198,9 +199,21 @@
                         splash.style.opacity = '0';
                         splash.style.visibility = 'hidden';
                         card.classList.add('active');
+                        // Tandai bahwa splash sudah ditampilkan di sesi ini
+                        sessionStorage.setItem('splashDone', '1');
                     }, 800);
                 }
             }, 50);
+        }
+
+        function skipSplash() {
+            // Langsung tampilkan card tanpa animasi loader
+            const splash = document.getElementById('splash-screen');
+            const card = document.getElementById('main-card');
+            splash.style.opacity = '0';
+            splash.style.visibility = 'hidden';
+            splash.style.transition = 'none';
+            card.classList.add('active');
         }
 
         const forms = {
@@ -216,6 +229,20 @@
             document.getElementById('form-container').innerHTML = forms[m];
             document.getElementById('btn-action').innerText = m==='login' ? 'DAFTAR/LOGIN' : 'CREATE VIP ACCOUNT';
             document.getElementById('forgot-section').style.display = m==='login' ? 'block' : 'none';
+
+            // Jika mode daftar & ada ?ref di URL, isi otomatis kode referral
+            if(m === 'daftar') {
+                const urlRef = new URLSearchParams(window.location.search).get('ref');
+                if(urlRef) {
+                    const refInput = document.getElementById('ref');
+                    if(refInput) {
+                        refInput.value = urlRef.toUpperCase();
+                        refInput.readOnly = true;
+                        refInput.style.color = 'var(--yellow)';
+                        refInput.style.borderColor = 'rgba(251,255,0,0.5)';
+                    }
+                }
+            }
         }
 
         function togglePassword(btn) {
@@ -270,12 +297,64 @@
         function closeModal() { document.getElementById('neon-modal').style.display = 'none'; }
 
         window.onload = () => {
-            runLoader();
-            switchTab('login', document.querySelectorAll('.tab-btn')[0]);
-            
+            // ── CEK APAKAH SPLASH SUDAH PERNAH DITAMPILKAN DI SESI INI ──
+            const splashDone = sessionStorage.getItem('splashDone');
+
+            // Cek apakah ada ?ref= di URL (link undangan referral)
+            const urlParams = new URLSearchParams(window.location.search);
+            const refCode = urlParams.get('ref');
+
+            if(splashDone) {
+                // Sudah pernah lihat splash → langsung tampilkan card
+                skipSplash();
+            } else {
+                // Pertama kali → jalankan animasi splash
+                runLoader();
+            }
+
+            // Inisialisasi particles
             particlesJS("particles-js", { "particles": { "number": { "value": 40 }, "color": { "value": "#ff0077" }, "opacity": { "value": 0.2 }, "size": { "value": 2 }, "line_linked": { "enable": true, "distance": 150, "color": "#0022ff", "opacity": 0.1 }, "move": { "enable": true, "speed": 1 } } });
             
-            particlesJS("particles-splash", { "particles": { "number": { "value": 100 }, "color": { "value": "#fff" }, "opacity": { "value": 0.4 }, "size": { "value": 1.2 }, "move": { "enable": true, "speed": 0.8, "direction": "top" } } });
+            if(!splashDone) {
+                particlesJS("particles-splash", { "particles": { "number": { "value": 100 }, "color": { "value": "#fff" }, "opacity": { "value": 0.4 }, "size": { "value": 1.2 }, "move": { "enable": true, "speed": 0.8, "direction": "top" } } });
+            }
+
+            // Jika ada ?ref= di URL → otomatis buka tab REGISTER & isi kode referral
+            if(refCode) {
+                const daftarBtn = document.getElementById('tab-daftar');
+                // Tunggu card aktif dulu (setelah splash atau langsung)
+                const openRegister = () => {
+                    switchTab('daftar', daftarBtn);
+                    // Set kode referral setelah form render
+                    setTimeout(() => {
+                        const refInput = document.getElementById('ref');
+                        if(refInput) {
+                            refInput.value = refCode.toUpperCase();
+                            refInput.readOnly = true;
+                            refInput.style.color = 'var(--yellow)';
+                            refInput.style.borderColor = 'rgba(251,255,0,0.5)';
+                        }
+                    }, 100);
+                };
+
+                if(splashDone) {
+                    // Langsung buka
+                    setTimeout(openRegister, 300);
+                } else {
+                    // Tunggu setelah splash selesai (~5 detik estimasi)
+                    // Monitor sampai card aktif
+                    const checkCard = setInterval(() => {
+                        const card = document.getElementById('main-card');
+                        if(card.classList.contains('active')) {
+                            clearInterval(checkCard);
+                            setTimeout(openRegister, 200);
+                        }
+                    }, 200);
+                }
+            } else {
+                // Tidak ada ref → default tab login
+                switchTab('login', document.getElementById('tab-login'));
+            }
         };
     </script>
 </body>
