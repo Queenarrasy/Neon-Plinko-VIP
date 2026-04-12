@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000005">
     <title>NEON PLINKO — ULTRA VIP</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -11,9 +15,14 @@
     <style>
         :root {
             --pink: #ff0077; --blue: #0022ff; --yellow: #fbff00; --bg: #000005;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-left: env(safe-area-inset-left, 0px);
+            --safe-right: env(safe-area-inset-right, 0px);
         }
         * { margin:0; padding:0; box-sizing:border-box; font-family:'Outfit',sans-serif; -webkit-tap-highlight-color:transparent; }
-        body { background: var(--bg); color: #fff; overflow: hidden; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        html { height: 100%; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+        body { background: var(--bg); color: #fff; overflow: hidden; min-height: 100vh; min-height: -webkit-fill-available; display: flex; align-items: center; justify-content: center; }
 
         #particles-js, #particles-splash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
 
@@ -27,11 +36,11 @@
 
         .logo-container { position: relative; margin-bottom: 100px; text-align: center; z-index: 10001; }
         .splash-logo {
-            font-family: 'Cinzel Decorative', cursive; font-size: 45px;
+            font-family: 'Cinzel Decorative', cursive; font-size: clamp(24px, 6vw, 45px);
             background: linear-gradient(to bottom, #fff 30%, var(--pink), var(--blue));
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             filter: drop-shadow(0 0 20px var(--pink));
-            letter-spacing: 4px;
+            letter-spacing: clamp(1px, 1vw, 4px);
             animation: logoFloat 4s infinite ease-in-out;
         }
         @keyframes logoFloat { 0%, 100% { transform: translateY(0) scale(1); filter: brightness(1); } 50% { transform: translateY(-15px) scale(1.05); filter: brightness(1.2); } }
@@ -82,15 +91,17 @@
         /* ── AUTH CARD ── */
         .auth-card {
             position: relative; z-index: 2; width: 92%; max-width: 400px;
-            background: rgba(0, 0, 10, 0.8); backdrop-filter: blur(30px);
+            background: rgba(0, 0, 10, 0.8); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
             border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 40px;
-            padding: 45px 30px; box-shadow: 0 0 30px rgba(255,0,119,0.2);
+            padding: clamp(25px, 5vw, 45px) clamp(18px, 4vw, 30px); box-shadow: 0 0 30px rgba(255,0,119,0.2);
             text-align: center; opacity: 0; transform: translateY(30px);
             transition: all 1.2s cubic-bezier(0.19, 1, 0.22, 1); pointer-events: none;
+            max-height: calc(100vh - var(--safe-top) - var(--safe-bottom) - 20px);
+            overflow-y: auto; -webkit-overflow-scrolling: touch;
         }
         .auth-card.active { opacity: 1; transform: translateY(0); pointer-events: all; }
 
-        .login-logo { font-family: 'Cinzel Decorative', cursive; font-size: 32px; background: linear-gradient(45deg, #fff, var(--pink), var(--blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 35px; filter: drop-shadow(0 0 10px var(--pink)); }
+        .login-logo { font-family: 'Cinzel Decorative', cursive; font-size: clamp(20px, 5vw, 32px); background: linear-gradient(45deg, #fff, var(--pink), var(--blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 35px; filter: drop-shadow(0 0 10px var(--pink)); }
 
         .tab-nav { display: flex; gap: 8px; margin-bottom: 25px; background: rgba(255,255,255,0.03); padding: 6px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); }
         .tab-btn { flex: 1; padding: 12px; border: none; background: transparent; color: rgba(255,255,255,0.3); font-weight: 800; cursor: pointer; border-radius: 15px; transition: 0.4s; font-size: 11px; letter-spacing: 1.5px; }
@@ -100,16 +111,33 @@
         .input-group i.icon-left { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: var(--pink); font-size: 16px; opacity: 0.8; }
         .toggle-pass { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); color: var(--yellow); cursor: pointer; z-index: 10; padding: 5px; opacity: 0.7; }
 
-        input, select { width: 100%; padding: 15px 50px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 15px; color: #fff; outline: none; transition: 0.3s; font-size: 14px; }
+        input, select { width: 100%; padding: 15px 50px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 15px; color: #fff; outline: none; transition: 0.3s; font-size: 16px; -webkit-appearance: none; appearance: none; }
         input:focus { border-color: var(--pink); background: rgba(255,255,255,0.05); }
 
-        .btn-main { width: 100%; padding: 16px; border: none; border-radius: 16px; background: linear-gradient(45deg, var(--pink), var(--blue)); color: #fff; font-weight: 900; font-size: 13px; letter-spacing: 3px; cursor: pointer; transition: 0.4s; box-shadow: 0 8px 25px rgba(255,0,119,0.3); text-transform: uppercase; margin-top: 10px; }
+        .btn-main { width: 100%; padding: 16px; border: none; border-radius: 16px; background: linear-gradient(45deg, var(--pink), var(--blue)); color: #fff; font-weight: 900; font-size: 13px; letter-spacing: 3px; cursor: pointer; transition: 0.4s; box-shadow: 0 8px 25px rgba(255,0,119,0.3); text-transform: uppercase; margin-top: 10px; -webkit-tap-highlight-color: transparent; }
         .btn-main:active { transform: scale(0.97); }
 
         .wa-btn { display: inline-flex; align-items: center; gap: 8px; background: rgba(37,211,102,0.05); border: 1px solid rgba(37,211,102,0.2); padding: 10px 20px; border-radius: 50px; color: #25d366; font-weight: 700; text-decoration: none; font-size: 10px; margin-top: 25px; }
 
-        .neon-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
-        .modal-content { background: #000; border: 1px solid var(--pink); padding: 40px; border-radius: 30px; text-align: center; max-width: 320px; box-shadow: 0 0 40px var(--pink); }
+        .neon-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 20px; }
+        .modal-content { background: #000; border: 1px solid var(--pink); padding: clamp(20px, 5vw, 40px); border-radius: 30px; text-align: center; width: 100%; max-width: 320px; box-shadow: 0 0 40px var(--pink); }
+        /* ── RESPONSIVE MEDIA QUERIES ── */
+        @media screen and (max-width:360px){
+            .auth-card { padding: 20px 15px; border-radius:28px; }
+            .login-logo { font-size:18px; margin-bottom:20px; }
+            .tab-btn { font-size:10px; padding:10px; }
+            input, select { padding:13px 44px; }
+            .btn-main { padding:14px; font-size:12px; }
+        }
+        @media screen and (max-height:640px){
+            .auth-card { padding:18px 15px; }
+            .login-logo { margin-bottom:15px; }
+            .input-group { margin-bottom:12px; }
+        }
+        @media screen and (max-height:500px) and (orientation:landscape){
+            body { align-items:flex-start; padding:10px 0; overflow:auto; }
+            .auth-card { margin:10px auto; max-height:none; }
+        }
     </style>
 </head>
 <body>
