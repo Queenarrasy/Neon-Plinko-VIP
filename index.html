@@ -12,6 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script src="lang.js"></script>
     <style>
         :root {
             --pink: #ff0077; --blue: #0022ff; --yellow: #fbff00; --bg: #000005;
@@ -121,6 +122,25 @@
 
         .neon-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 20px; }
         .modal-content { background: #000; border: 1px solid var(--pink); padding: clamp(20px, 5vw, 40px); border-radius: 30px; text-align: center; width: 100%; max-width: 320px; box-shadow: 0 0 40px var(--pink); }
+
+        /* ── LANGUAGE SWITCHER ── */
+        .lang-switcher { display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 20px; }
+        .lang-flag-btn {
+            display: flex; align-items: center; gap: 6px;
+            background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.1);
+            padding: 7px 14px; border-radius: 50px; cursor: pointer;
+            font-size: 11px; font-weight: 800; color: rgba(255,255,255,0.45);
+            transition: 0.3s; letter-spacing: 1px; -webkit-tap-highlight-color: transparent;
+        }
+        .lang-flag-btn .flag-emoji { font-size: 18px; line-height: 1; }
+        .lang-flag-btn:active { transform: scale(0.95); }
+        .lang-flag-btn.lang-active {
+            border-color: var(--pink); color: #fff;
+            background: rgba(255,0,119,0.1);
+            box-shadow: 0 0 10px rgba(255,0,119,0.3);
+        }
+        .lang-divider { width: 1px; height: 20px; background: rgba(255,255,255,0.1); }
+
         /* ── RESPONSIVE MEDIA QUERIES ── */
         @media screen and (max-width:360px){
             .auth-card { padding: 20px 15px; border-radius:28px; }
@@ -162,24 +182,35 @@
             <div class="luxury-loader">
                 <div class="luxury-bar" id="l-bar"></div>
             </div>
-            <div class="load-status" id="l-status">INITIALIZING...</div>
+            <div class="load-status" id="l-status" data-lang="load_init">INITIALIZING...</div>
         </div>
     </div>
 
     <div class="auth-card" id="main-card">
         <div class="login-logo">NEON PLINKO VIP</div>
+
+        <!-- ── LANGUAGE SWITCHER ── -->
+        <div class="lang-switcher">
+            <button class="lang-flag-btn lang-active" data-lang-code="id" onclick="setLang('id')">
+                <span class="flag-emoji">🇮🇩</span> INDONESIA
+            </button>
+            <div class="lang-divider"></div>
+            <button class="lang-flag-btn" data-lang-code="en" onclick="setLang('en')">
+                <span class="flag-emoji">🇬🇧</span> ENGLISH
+            </button>
+        </div>
         
         <div class="tab-nav">
-            <button class="tab-btn active" id="tab-login" onclick="switchTab('login', this)">LOGIN</button>
-            <button class="tab-btn" id="tab-daftar" onclick="switchTab('daftar', this)">REGISTER</button>
+            <button class="tab-btn active" id="tab-login" onclick="switchTab('login', this)" data-lang="tab_login">LOGIN</button>
+            <button class="tab-btn" id="tab-daftar" onclick="switchTab('daftar', this)" data-lang="tab_daftar">DAFTAR</button>
         </div>
 
         <div id="form-container"></div>
-        <button class="btn-main" id="btn-action" onclick="handleAuth()">DAFTAR/LOGIN</button>
+        <button class="btn-main" id="btn-action" onclick="handleAuth()" data-lang="btn_auth">DAFTAR/LOGIN</button>
         
         <div id="forgot-section" style="display:none">
             <a href="https://wa.me/6289510249551?text=Halo%20Admin" class="wa-btn" target="_blank">
-                <i class="fab fa-whatsapp"></i> HUBUNGI ADMIN
+                <i class="fab fa-whatsapp"></i> <span data-lang="btn_contact">HUBUNGI ADMIN</span>
             </a>
         </div>
     </div>
@@ -188,7 +219,7 @@
         <div class="modal-content">
             <i class="fas fa-shield-halved" style="font-size:40px;color:var(--yellow);margin-bottom:20px;"></i>
             <div id="modal-text" style="font-size:14px; font-weight:700;line-height:1.6;margin-bottom:25px; letter-spacing:1px;"></div>
-            <button class="btn-main" onclick="closeModal()" style="padding:10px;">CONTINUE</button>
+            <button class="btn-main" onclick="closeModal()" style="padding:10px;" data-lang="btn_continue">CONTINUE</button>
         </div>
     </div>
 
@@ -215,9 +246,9 @@
                 bar.style.width = progress + '%';
                 rocket.style.left = progress + '%';
 
-                if(progress > 30) status.innerText = "BY AR.GAMING..";
-                if(progress > 70) status.innerText = "LOADING..";
-                if(progress > 95) status.innerText = "DONE";
+                if(progress > 30) status.innerText = t('load_by');
+                if(progress > 70) status.innerText = t('load_loading');
+                if(progress > 95) status.innerText = t('load_done');
 
                 if(progress === 100) {
                     clearInterval(timer);
@@ -244,18 +275,25 @@
             card.classList.add('active');
         }
 
-        const forms = {
-            login: `<div class="input-group"><i class="fas fa-user icon-left"></i><input type="text" id="user" placeholder="USERNAME" style="padding-left:50px;"></div><div class="input-group"><i class="fas fa-lock icon-left"></i><input type="password" id="pass" placeholder="PASSWORD" style="padding-left:50px;"><i class="fas fa-eye toggle-pass" onclick="togglePassword(this)"></i></div>`,
-            daftar: `<div class="input-group"><i class="fas fa-user-plus icon-left"></i><input type="text" id="user" placeholder="USERNAME" style="padding-left:50px;"></div><div class="input-group"><i class="fas fa-key icon-left"></i><input type="password" id="pass" placeholder="PASSWORD (MIN 6)" style="padding-left:50px;"><i class="fas fa-eye toggle-pass" onclick="togglePassword(this)"></i></div><div class="input-group"><i class="fas fa-id-card icon-left"></i><input type="text" id="nama" placeholder="NAMA LENGKAP" style="padding-left:50px;"></div><div class="input-group"><i class="fas fa-phone-alt icon-left"></i><input type="number" id="hp" placeholder="WHATSAPP" style="padding-left:50px;"></div><div class="input-group"><i class="fas fa-university icon-left"></i><select id="bank" onchange="checkBank()" style="padding-left:50px; background:#050510; color:#fff;"><option value="">PILIH BANK / WALLET</option><option value="DANA">DANA</option><option value="OVO">OVO</option><option value="GOPAY">GOPAY</option><option value="BCA">BCA</option><option value="BNI">BNI</option><option value="BRI">BRI</option><option value="MANDIRI">MANDIRI</option><option value="LAINNYA">LAINNYA...</option></select></div><div id="kustom-bank-area"></div><div class="input-group"><i class="fas fa-credit-card icon-left"></i><input type="number" id="norek" placeholder="NOMOR REKENING" style="padding-left:50px;"></div><div class="input-group"><i class="fas fa-users icon-left"></i><input type="text" id="ref" placeholder="KODE REFERAL (OPSIONAL)" style="padding-left:50px;"></div>`
-        };
+        function buildForms() {
+            return {
+                login: `<div class="input-group"><i class="fas fa-user icon-left"></i><input type="text" id="user" placeholder="${t('ph_username')}" style="padding-left:50px;"></div><div class="input-group"><i class="fas fa-lock icon-left"></i><input type="password" id="pass" placeholder="${t('ph_password')}" style="padding-left:50px;"><i class="fas fa-eye toggle-pass" onclick="togglePassword(this)"></i></div>`,
+                daftar: `<div class="input-group"><i class="fas fa-user-plus icon-left"></i><input type="text" id="user" placeholder="${t('ph_username')}" style="padding-left:50px;"></div><div class="input-group"><i class="fas fa-key icon-left"></i><input type="password" id="pass" placeholder="${t('ph_pass_min')}" style="padding-left:50px;"><i class="fas fa-eye toggle-pass" onclick="togglePassword(this)"></i></div><div class="input-group"><i class="fas fa-id-card icon-left"></i><input type="text" id="nama" placeholder="${t('ph_nama')}" style="padding-left:50px;"></div><div class="input-group"><i class="fas fa-phone-alt icon-left"></i><input type="number" id="hp" placeholder="${t('ph_whatsapp')}" style="padding-left:50px;"></div><div class="input-group"><i class="fas fa-university icon-left"></i><select id="bank" onchange="checkBank()" style="padding-left:50px; background:#050510; color:#fff;"><option value="">${t('ph_bank_pick')}</option><option value="DANA">DANA</option><option value="OVO">OVO</option><option value="GOPAY">GOPAY</option><option value="BCA">BCA</option><option value="BNI">BNI</option><option value="BRI">BRI</option><option value="MANDIRI">MANDIRI</option><option value="LAINNYA">${t('lbl_bank_lain')}</option></select></div><div id="kustom-bank-area"></div><div class="input-group"><i class="fas fa-credit-card icon-left"></i><input type="number" id="norek" placeholder="${t('ph_norek')}" style="padding-left:50px;"></div><div class="input-group"><i class="fas fa-users icon-left"></i><input type="text" id="ref" placeholder="${t('ph_ref')}" style="padding-left:50px;"></div>`
+            };
+        }
+        // Keep original forms for backwards compat — will be rebuilt on switchTab
+        const forms = { login: '', daftar: '' };
 
         function switchTab(m, btn) {
             try { document.getElementById('snd-click').play(); } catch(e){}
             currentMode = m;
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            document.getElementById('form-container').innerHTML = forms[m];
-            document.getElementById('btn-action').innerText = m==='login' ? 'DAFTAR/LOGIN' : 'CREATE VIP ACCOUNT';
+            const builtForms = buildForms();
+            document.getElementById('form-container').innerHTML = builtForms[m];
+            const btnAction = document.getElementById('btn-action');
+            btnAction.innerText = m==='login' ? t('btn_auth') : t('btn_create');
+            btnAction.setAttribute('data-lang', m==='login' ? 'btn_auth' : 'btn_create');
             document.getElementById('forgot-section').style.display = m==='login' ? 'block' : 'none';
 
             // Jika mode daftar & ada ?ref di URL, isi otomatis kode referral
@@ -281,7 +319,7 @@
 
         function checkBank(){
             const v = document.getElementById('bank').value;
-            document.getElementById('kustom-bank-area').innerHTML = v==='LAINNYA' ? `<div class="input-group"><i class="fas fa-pen icon-left"></i><input type="text" id="bank_kustom" placeholder="NAMA BANK" style="padding-left:50px;"></div>` : '';
+            document.getElementById('kustom-bank-area').innerHTML = v==='LAINNYA' ? `<div class="input-group"><i class="fas fa-pen icon-left"></i><input type="text" id="bank_kustom" placeholder="${t('ph_nama')}" style="padding-left:50px;"></div>` : '';
         }
 
         async function handleAuth() {
@@ -289,14 +327,14 @@
             const u = document.getElementById('user').value.toLowerCase().trim();
             const p = document.getElementById('pass').value.trim();
             const btn = document.getElementById('btn-action');
-            if(!u || !p) return showNeonModal("HARAP ISI SEMUA KOLOM!");
+            if(!u || !p) return showNeonModal(t('err_fill_all'));
             btn.disabled = true; btn.innerText = "AUTHENTICATING...";
 
             if(currentMode === 'login'){
                 const {data, error} = await _supa.from('profiles').select('*').eq('username',u).eq('password',p).maybeSingle();
                 if(error || !data){
-                    showNeonModal("AKSES DITOLAK! USERNAME/PASSWORD SALAH.");
-                    btn.disabled = false; btn.innerText = "DAFTAR/LOGIN";
+                    showNeonModal(t('err_access'));
+                    btn.disabled = false; btn.innerText = t('btn_auth');
                 } else {
                     try { document.getElementById('snd-success').play(); } catch(e){}
                     localStorage.setItem('neon_user', u);
@@ -310,12 +348,12 @@
                 const norek = document.getElementById('norek').value.trim();
                 const ref = document.getElementById('ref').value.trim() || 'DIRECT';
                 const myRef = "VIP" + Math.random().toString(36).substring(2,7).toUpperCase();
-                if(!nama || !hp || !bank || !norek) { btn.disabled = false; return showNeonModal("DATA TIDAK LENGKAP!"); }
+                if(!nama || !hp || !bank || !norek) { btn.disabled = false; return showNeonModal(t('err_incomplete')); }
                 const {error:insErr} = await _supa.from('profiles').insert([{ username:u, password:p, nama_lengkap:nama, nomor_hp:hp, bank_name:bank, rekening:norek, referred_by:ref, referral_code:myRef, saldo:0 }]);
                 if(insErr){ showNeonModal(insErr.message); btn.disabled = false; }
                 else { 
                     try { document.getElementById('snd-success').play(); } catch(e){}
-                    showNeonModal("✅ VIP ACCOUNT CREATED!"); 
+                    showNeonModal(t('ok_created')); 
                     setTimeout(()=>location.reload(), 2000); 
                 }
             }
@@ -325,6 +363,9 @@
         function closeModal() { document.getElementById('neon-modal').style.display = 'none'; }
 
         window.onload = () => {
+            // Apply saved language on load
+            applyLang();
+            updateLangFlags();
             // ── CEK APAKAH SPLASH SUDAH PERNAH DITAMPILKAN DI SESI INI ──
             const splashDone = sessionStorage.getItem('splashDone');
 
