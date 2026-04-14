@@ -13,6 +13,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
 <script src="config.js"></script>
+<script src="lang.js"></script>
 <style>
 :root{--pk:#ff0077;--bl:#0033ff;--yl:#fbff00;--bg:#02000e;
   --gp:0 0 10px #ff0077,0 0 28px rgba(255,0,119,.35);
@@ -182,7 +183,7 @@ table.ht tr:last-child td{border-bottom:none}
 <div class="hdr">
   <div class="logo"><span>NEON</span><span>PLINKO</span><span>VIP</span></div>
   <div class="hdr-saldo">
-    <span class="hdr-sal-lbl">SALDO AKTIF</span>
+    <span class="hdr-sal-lbl" data-lang="lbl_saldo">SALDO AKTIF</span>
     <span class="hdr-sal-val" id="hdr-sal">IDR 0</span>
   </div>
   <button class="hist-btn" id="hist-icon-btn" onclick="toggleHistDrawer()" title="Riwayat Permainan">
@@ -191,13 +192,13 @@ table.ht tr:last-child td{border-bottom:none}
 </div>
 <div id="hist-drawer">
   <div class="hd-header">
-    <span class="hd-title"><i class="fas fa-clock-rotate-left" style="margin-right:6px"></i>Riwayat Permainan</span>
+    <span class="hd-title"><i class="fas fa-clock-rotate-left" style="margin-right:6px"></i><span data-lang="lbl_history">Riwayat Permainan</span></span>
     <button class="hd-close" onclick="toggleHistDrawer()"><i class="fas fa-xmark"></i></button>
   </div>
   <div class="hd-scroll">
     <table class="ht">
-      <thead><tr><th>BET</th><th>MULT</th><th>HASIL</th><th>JAM</th></tr></thead>
-      <tbody id="hb"><tr class="re"><td colspan="4">Belum ada permainan</td></tr></tbody>
+      <thead><tr><th data-lang="lbl_bet">BET</th><th data-lang="lbl_multiplier">MULT</th><th data-lang="lbl_result">HASIL</th><th>JAM</th></tr></thead>
+      <tbody id="hb"><tr class="re"><td colspan="4" data-lang="lbl_history">Belum ada permainan</td></tr></tbody>
     </table>
   </div>
 </div>
@@ -205,7 +206,7 @@ table.ht tr:last-child td{border-bottom:none}
   <div class="cbox"><canvas id="cv"></canvas></div>
   <div class="score-bar">
     <div class="sb-item">
-      <span class="sb-lbl"><i class="fas fa-trophy" style="margin-right:3px"></i>LAST WIN</span>
+      <span class="sb-lbl"><i class="fas fa-trophy" style="margin-right:3px"></i><span data-lang="lbl_win">LAST WIN</span></span>
       <span class="sb-val yl" id="sb-win">—</span>
     </div>
     <div class="sb-item">
@@ -216,7 +217,7 @@ table.ht tr:last-child td{border-bottom:none}
   <div class="ctrl">
     <div class="mode-row">
       <button class="mb on-normal" id="mb-normal" onclick="toggleMode('normal')"><i class="fas fa-hand-pointer"></i>NORMAL</button>
-      <button class="mb" id="mb-auto" onclick="toggleMode('auto')"><i class="fas fa-play-circle"></i>AUTO</button>
+      <button class="mb" id="mb-auto" onclick="toggleMode('auto')"><i class="fas fa-play-circle"></i><span data-lang="btn_auto">AUTO</span></button>
       <button class="mb" id="mb-turbo" onclick="toggleMode('turbo')"><i class="fas fa-bolt"></i>TURBO</button>
     </div>
     <div class="brow">
@@ -225,21 +226,21 @@ table.ht tr:last-child td{border-bottom:none}
       <button class="bstep" id="btn-p" onclick="stepBet(+1)">+</button>
     </div>
     <button class="dbtn" id="db" onclick="handleAction()">
-      <i class="fas fa-circle-dot"></i>&nbsp;&nbsp;DROP BALL
+      <i class="fas fa-circle-dot"></i>&nbsp;&nbsp;<span data-lang="btn_drop">DROP BALL</span>
     </button>
   </div>
 </div>
 <div id="mdo">
   <div class="mdb"><h3 id="mt2">INFO</h3><p id="mm"></p>
-    <button class="mbtn" onclick="closeMd()">MENGERTI</button>
+    <button class="mbtn" onclick="closeMd()" data-lang="btn_continue">MENGERTI</button>
   </div>
 </div>
 <div class="nav">
-  <a href="game.html"     class="ni ac"><i class="fas fa-gamepad"></i>PLAY</a>
-  <a href="deposit.html"  class="ni"><i class="fas fa-wallet"></i>DEPO</a>
-  <a href="withdraw.html" class="ni"><i class="fas fa-money-bill-transfer"></i>WD</a>
-  <a href="reward.html"   class="ni"><i class="fas fa-gift"></i>REWARD</a>
-  <a href="profil.html"   class="ni"><i class="fas fa-user-shield"></i>PROFIL</a>
+  <a href="game.html" class="ni ac"><i class="fas fa-gamepad"></i><span data-lang="nav_play">PLAY</span></a>
+  <a href="deposit.html" class="ni"><i class="fas fa-wallet"></i><span data-lang="nav_depo">DEPO</span></a>
+  <a href="withdraw.html" class="ni"><i class="fas fa-money-bill-transfer"></i><span data-lang="nav_wd">WD</span></a>
+  <a href="reward.html" class="ni"><i class="fas fa-gift"></i><span data-lang="nav_reward">REWARD</span></a>
+  <a href="profil.html" class="ni"><i class="fas fa-user-shield"></i><span data-lang="nav_profil">PROFIL</span></a>
 </div>
 <script>
 /* ═══════════════════════════════════════════════════════
@@ -355,8 +356,8 @@ function toggleMode(m){
 function paintModeBtn(id,active,cls){var el=document.getElementById(id);if(!el)return;el.className='mb'+(active?' '+cls:'');}
 function updDropBtn(){
   var btn=document.getElementById('db');
-  if(F_AUTO){btn.className='dbtn stopping';btn.innerHTML='<i class="fas fa-stop-circle"></i>&nbsp;&nbsp;STOP AUTO';}
-  else{btn.className='dbtn';btn.innerHTML='<i class="fas fa-circle-dot"></i>&nbsp;&nbsp;DROP BALL';}
+  if(F_AUTO){btn.className='dbtn stopping';btn.innerHTML='<i class="fas fa-stop-circle"></i>&nbsp;&nbsp;'+t('btn_stop');}
+  else{btn.className='dbtn';btn.innerHTML='<i class="fas fa-circle-dot"></i>&nbsp;&nbsp;'+t('btn_drop');}
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1030,7 +1031,7 @@ function addHist(bet,mult,pay,prof){
 }
 function renderHist(){
   var b=document.getElementById('hb');
-  if(!HIST.length){b.innerHTML='<tr class="re"><td colspan="4">Belum ada permainan</td></tr>';return;}
+  if(!HIST.length){b.innerHTML='<tr class="re"><td colspan="4">'+t('lbl_history')+'</td></tr>';return;}
   var h='';
   HIST.forEach(function(r){
     var cls=(r.prof>=0)?'rw':'rl',col=(r.prof>=0)?'var(--yl)':'var(--pk)';
