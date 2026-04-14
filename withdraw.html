@@ -13,6 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     <script src="config.js"></script>
+    <script src="lang.js"></script>
     <style>
         :root{--pink:#ff0077;--blue:#0022ff;--yellow:#fbff00;--bg:#000005;
             --safe-top:env(safe-area-inset-top,0px);
@@ -141,21 +142,21 @@
 
 <div class="header">
     <a href="game.html" onclick="playSnd('click')" style="color:rgba(255,255,255,.6);font-size:20px;"><i class="fa-solid fa-chevron-left"></i></a>
-    <div class="logo"><i class="fas fa-money-bill-transfer"></i> WITHDRAW CENTER</div>
+    <div class="logo"><i class="fas fa-money-bill-transfer"></i> <span data-lang="page_wd">WITHDRAW</span> CENTER</div>
     <div style="width:40px;"></div>
 </div>
 
 <div class="container">
     <div class="saldo-card">
-        <div class="saldo-label"><i class="fas fa-coins"></i> SALDO DAPAT DITARIK</div>
+        <div class="saldo-label"><i class="fas fa-coins"></i> <span data-lang="lbl_saldo_now">SALDO DAPAT DITARIK</span></div>
         <div class="saldo-val" id="display-saldo-wd">IDR 0</div>
         <div class="saldo-pending" id="pending-info" style="display:none;"></div>
     </div>
 
     <div class="form-box">
-        <label><i class="fas fa-bank"></i> Tujuan Pencairan (E-Wallet / Bank)</label>
+        <label><i class="fas fa-bank"></i> <span data-lang="lbl_wd_to">Tujuan Pencairan (E-Wallet / Bank)</span></label>
         <input type="text" id="wd-rek-info" readonly placeholder="Mencari data rekening...">
-        <label><i class="fas fa-sack-dollar"></i> Nominal Penarikan (Min 50.000)</label>
+        <label><i class="fas fa-sack-dollar"></i> <span data-lang="lbl_wd_amount">Nominal Penarikan (Min 50.000)</span></label>
         <input type="number" id="input-amount-wd" class="amount-input" placeholder="0">
         <div class="amt-grid">
             <button class="amt-btn" onclick="setWdAmt(50000)">50K</button>
@@ -166,13 +167,13 @@
             <button class="amt-btn" style="border-color:var(--yellow);color:var(--yellow);" onclick="setMaxWd()">MAX</button>
         </div>
         <button class="btn-main" id="btn-wd-submit" onclick="prosesWithdraw()">
-            <i class="fas fa-paper-plane"></i> KONFIRMASI PENARIKAN
+            <i class="fas fa-paper-plane"></i> <span data-lang="btn_wd">KONFIRMASI PENARIKAN</span>
         </button>
     </div>
 
     <!-- Riwayat Penarikan -->
     <div class="hist-section-title">
-        <i class="fas fa-clock-rotate-left"></i> Riwayat Penarikan
+        <i class="fas fa-clock-rotate-left"></i> <span data-lang="lbl_history">Riwayat Penarikan</span>
         <span style="margin-left:auto;font-size:9px;cursor:pointer;color:var(--pink);opacity:.8;" onclick="playSnd('click');loadWdHistory()">
             <i class="fas fa-rotate-right"></i> Refresh
         </span>
@@ -204,16 +205,16 @@
     <div class="modal-box">
         <h3 id="m-title">NOTIFIKASI</h3>
         <p id="m-msg"></p>
-        <button class="btn-main" onclick="closeModal()" style="margin-top:18px;">MENGERTI</button>
+        <button class="btn-main" onclick="closeModal()" style="margin-top:18px;" data-lang="btn_continue">MENGERTI</button>
     </div>
 </div>
 
 <div class="nav-bar">
-    <a href="game.html"     class="nav-item" onclick="playSnd('click')"><i class="fas fa-gamepad"></i>PLAY</a>
-    <a href="deposit.html"  class="nav-item" onclick="playSnd('click')"><i class="fas fa-wallet"></i>DEPO</a>
-    <a href="withdraw.html" class="nav-item active"><i class="fas fa-money-bill-transfer"></i>WD</a>
-    <a href="reward.html"   class="nav-item" onclick="playSnd('click')"><i class="fas fa-gift"></i>REWARD</a>
-    <a href="profil.html"   class="nav-item" onclick="playSnd('click')"><i class="fas fa-user-shield"></i>PROFIL</a>
+    <a href="game.html" class="nav-item" onclick="playSnd('click')"><i class="fas fa-gamepad"></i><span data-lang="nav_play">PLAY</span></a>
+    <a href="deposit.html" class="nav-item" onclick="playSnd('click')"><i class="fas fa-wallet"></i><span data-lang="nav_depo">DEPO</span></a>
+    <a href="withdraw.html" class="nav-item active"><i class="fas fa-money-bill-transfer"></i><span data-lang="nav_wd">WD</span></a>
+    <a href="reward.html" class="nav-item" onclick="playSnd('click')"><i class="fas fa-gift"></i><span data-lang="nav_reward">REWARD</span></a>
+    <a href="profil.html" class="nav-item" onclick="playSnd('click')"><i class="fas fa-user-shield"></i><span data-lang="nav_profil">PROFIL</span></a>
 </div>
 
 <script>
@@ -246,7 +247,7 @@ function closeModal() {
     isSubmitting = false;
     const btn = document.getElementById('btn-wd-submit');
     btn.disabled = false;
-    btn.innerHTML = '<i class="fas fa-paper-plane"></i> KONFIRMASI PENARIKAN';
+    btn.innerHTML = '<i class="fas fa-paper-plane"></i> ' + t('btn_wd');
 }
 
 async function loadWdData() {
@@ -300,7 +301,7 @@ async function prosesWithdraw() {
         if (amt > availableFresh) {
             playSnd('error');
             showModal("SALDO TIDAK CUKUP", "Saldo tersedia: Rp " + availableFresh.toLocaleString('id-ID') + "\n\nMungkin ada WD lain yang sedang diproses.");
-            isSubmitting = false; btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> KONFIRMASI PENARIKAN';
+            isSubmitting = false; btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> ' + t('btn_wd');
             return;
         }
         const saldoBaru = saldoTerkini - amt;
@@ -320,7 +321,7 @@ async function prosesWithdraw() {
     } catch(err) {
         playSnd('error');
         showModal("ERROR", "Terjadi kesalahan: " + err.message);
-        isSubmitting = false; btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> KONFIRMASI PENARIKAN';
+        isSubmitting = false; btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> ' + t('btn_wd');
     }
 }
 
