@@ -233,10 +233,11 @@
             margin-bottom:20px;
         }
         .qp-img{
-            width:180px;
-            height:180px;
+            width:250px;
+            height:250px;
             margin:10px auto;
             display:block;
+            object-fit: contain;
         }
         .qp-qr-footer{
             font-size:8px;
@@ -409,7 +410,7 @@
             <div class="qp-nominal-note" data-lang="qp_nominal_note">⚡ Masukkan nominal yang sama persis di aplikasimu</div>
         </div>
         <div class="qp-qr-card">
-            <img class="qp-img" src="https://via.placeholder.com/250?text=GENERATING+QR..." alt="QRIS">
+            <img class="qp-img" id="qris-image-display" src="" alt="QRIS Loading...">
             <div class="qp-qr-footer">QRIS · Scan & Bayar</div>
         </div>
         <div class="qp-steps">
@@ -434,7 +435,7 @@ function getDB() { if (!_db) _db = supabase.createClient(SUPA_URL, SUPA_KEY); re
 
 let curMethod = 'QRIS', KURS = 16800, FEE_USDT = 2, isSubmitting = false;
 let _pendingQrisAmount = 0;
-let _currentOrderId = ""; // Untuk menyimpan order_id dari Midtrans
+let _currentOrderId = ""; // Untuk melacak transaksi Midtrans
 let realtimeChannel = null;
 
 particlesJS("particles-js", {
@@ -497,7 +498,7 @@ function submitDeposit() {
 
     if (curMethod === 'QRIS') {
         playSnd('click');
-        openQrisPage(amount); // Sekarang ini memicu pengambilan QRIS asli
+        openQrisPage(amount);
         return;
     }
 
@@ -523,52 +524,47 @@ function submitDeposit() {
     })();
 }
 
+// FUNGSI BARU: MENDAPATKAN QRIS ASLI DARI BACKEND VERCEL
 async function openQrisPage(amount) {
-    if (isSubmitting) return;
     const user = getUser();
-    _pendingQrisAmount = amount;
-    
-    // Tampilkan animasi loading pada tombol konfirmasi utama
     const btnMain = document.getElementById('btn-konfirmasi');
     const originalBtnText = btnMain.innerHTML;
+
+    // Loading State
     btnMain.disabled = true;
     btnMain.innerHTML = '<i class="fas fa-spinner fa-spin"></i> GENERATING QRIS...';
-    
+
     try {
-        // AMBIL QRIS DARI VERCEL SERVERLESS FUNCTION
         const response = await fetch('/api/get_qris', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ amount: amount, username: user })
         });
 
+        if (!response.ok) throw new Error("Gagal terhubung ke API (Status " + response.status + ")");
+        
         const data = await response.json();
 
         if (data.qr_url) {
-            _currentOrderId = data.order_id; // Simpan order ID
+            _pendingQrisAmount = amount;
+            _currentOrderId = data.order_id;
             
-            // Update UI Halaman QRIS
-            const nominalText = formatRupiah(amount);
-            document.getElementById('qp-nominal-display').textContent = nominalText;
-            document.getElementById('qp-step-nominal').textContent = nominalText;
-            
-            // Masukkan gambar QR asli dari Midtrans
-            document.querySelector('.qp-img').src = data.qr_url;
+            // Masukkan data ke UI QRIS Page
+            document.getElementById('qris-image-display').src = data.qr_url;
+            document.getElementById('qp-nominal-display').textContent = formatRupiah(amount);
+            document.getElementById('qp-step-nominal').textContent = formatRupiah(amount);
             
             const doneBtn = document.getElementById('qp-done-btn');
-            if (doneBtn) { 
-                doneBtn.disabled = false; 
-                doneBtn.innerHTML = '<i class="fas fa-circle-check"></i>&nbsp; SUDAH BAYAR'; 
-            }
+            if (doneBtn) { doneBtn.disabled = false; doneBtn.innerHTML = '<i class="fas fa-circle-check"></i>&nbsp; SUDAH BAYAR'; }
             
             document.getElementById('qris-page').style.display = 'block';
             document.body.style.overflow = 'hidden';
         } else {
-            throw new Error(data.error || "Gagal mendapatkan QRIS");
+            throw new Error(data.error || "Gagal membuat QRIS");
         }
     } catch (err) {
         playSnd('error');
-        showModal("ERROR", "Koneksi Gagal: " + err.message);
+        showModal("ERROR", err.message);
     } finally {
         btnMain.disabled = false;
         btnMain.innerHTML = originalBtnText;
@@ -586,36 +582,33 @@ async function confirmPaymentDone() {
     const user = getUser();
     const amount = _pendingQrisAmount;
     if (!user || amount < 20000) return;
-    
     isSubmitting = true;
     const doneBtn = document.getElementById('qp-done-btn');
     if (doneBtn) { doneBtn.disabled = true; doneBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> MEMPROSES...`; }
-    
     try {
         const db = getDB();
-        // Simpan ke database dengan Order ID agar admin mudah memvalidasi
+        // Simpan ke riwayat deposit Supabase dengan order_id Midtrans
         const { error } = await db.from('deposits').insert([{ 
             username: user, 
             amount: amount, 
             method: 'QRIS', 
             net_receive: amount, 
             status: 'PROSES',
-            order_id: _currentOrderId 
+            id: _currentOrderId // Opsional: gunakan order_id dari midtrans sebagai ID baris
         }]);
         
         if (error) throw error;
-        
         playSnd('success');
         closeQrisPage();
         document.getElementById('amount-val').value = "";
         calculate();
-        showNeonAlert("DEPOSIT TERKIRIM — MENUNGGU KONFIRMASI ADMIN", true);
-        showModal("BERHASIL", `Deposit ${formatRupiah(amount)} berhasil dikirim!\n\nSaldo akan masuk setelah admin konfirmasi pembayaran.\n\n⏱ Estimasi: 1-5 menit`);
+        showNeonAlert("PEMBAYARAN DITERIMA — MENUNGGU VERIFIKASI", true);
+        showModal("BERHASIL", `Permintaan deposit ${formatRupiah(amount)} dikirim!\n\nSaldo akan otomatis bertambah setelah sistem memverifikasi pembayaran Anda.\n\n⏱ Estimasi: 1-5 menit`);
         await loadHistory();
         await updateUserSaldo();
     } catch(err) {
         playSnd('error');
-        showModal("ERROR", "Gagal mengirim deposit:\n" + err.message);
+        showModal("ERROR", "Gagal menyimpan riwayat:\n" + err.message);
         if (doneBtn) { doneBtn.disabled = false; doneBtn.innerHTML = `<i class="fas fa-circle-check"></i>&nbsp; SUDAH BAYAR`; }
     } finally { isSubmitting = false; }
 }
