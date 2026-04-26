@@ -278,7 +278,7 @@
         function buildForms() {
             return {
                 login: `<div class="input-group"><i class="fas fa-user icon-left"></i><input type="text" id="user" placeholder="${t('ph_username')}" style="padding-left:50px;"></div><div class="input-group"><i class="fas fa-lock icon-left"></i><input type="password" id="pass" placeholder="${t('ph_password')}" style="padding-left:50px;"><i class="fas fa-eye toggle-pass" onclick="togglePassword(this)"></i></div>`,
-                daftar: `<div class="input-group"><i class="fas fa-user-plus icon-left"></i><input type="text" id="user" placeholder="${t('ph_username')}" style="padding-left:50px;"></div><div class="input-group"><i class="fas fa-key icon-left"></i><input type="password" id="pass" placeholder="${t('ph_pass_min')}" style="padding-left:50px;"><i class="fas fa-eye toggle-pass" onclick="togglePassword(this)"></i></div><div class="input-group"><i class="fas fa-id-card icon-left"></i><input type="text" id="nama" placeholder="${t('ph_nama')}" style="padding-left:50px;"></div><div class="input-group"><i class="fas fa-phone-alt icon-left"></i><input type="number" id="hp" placeholder="${t('ph_whatsapp')}" style="padding-left:50px;"></div><div class="input-group"><i class="fas fa-university icon-left"></i><select id="bank" onchange="checkBank()" style="padding-left:50px; background:#050510; color:#fff;"><option value="">${t('ph_bank_pick')}</option><option value="DANA">DANA</option><option value="OVO">OVO</option><option value="GOPAY">GOPAY</option><option value="BCA">BCA</option><option value="BNI">BNI</option><option value="BRI">BRI</option><option value="MANDIRI">MANDIRI</option><option value="LAINNYA">${t('lbl_bank_lain')}</option></select></div><div id="kustom-bank-area"></div><div class="input-group"><i class="fas fa-credit-card icon-left"></i><input type="number" id="norek" placeholder="${t('ph_norek')}" style="padding-left:50px;"></div><div class="input-group"><i class="fas fa-users icon-left"></i><input type="text" id="ref" placeholder="${t('ph_ref')}" style="padding-left:50px;"></div>`
+                daftar: `<div class="input-group"><i class="fas fa-user-plus icon-left"></i><input type="text" id="user" placeholder="${t('ph_username')}" style="padding-left:50px;"></div><div class="input-group"><i class="fas fa-key icon-left"></i><input type="password" id="pass" placeholder="${t('ph_pass_min')}" style="padding-left:50px;"><i class="fas fa-eye toggle-pass" onclick="togglePassword(this)"></i></div><div class="input-group"><i class="fas fa-id-card icon-left"></i><input type="text" id="nama" placeholder="${t('ph_nama')}" style="padding-left:50px;"></div><div class="input-group"><i class="fas fa-phone-alt icon-left"></i><input type="number" id="hp" placeholder="${t('ph_whatsapp')}" style="padding-left:50px;"></div><div class="input-group"><i class="fas fa-university icon-left"></i><select id="bank" onchange="checkBank(); setTimeout(liveValidateRekening,50);" style="padding-left:50px; background:#050510; color:#fff;"><option value="">${t('ph_bank_pick')}</option><option value="DANA">DANA</option><option value="OVO">OVO</option><option value="GOPAY">GOPAY</option><option value="BCA">BCA</option><option value="BNI">BNI</option><option value="BRI">BRI</option><option value="MANDIRI">MANDIRI</option><option value="LAINNYA">${t('lbl_bank_lain')}</option></select></div><div id="kustom-bank-area"></div><div class="input-group"><i class="fas fa-credit-card icon-left"></i><input type="number" id="norek" placeholder="${t('ph_norek')}" style="padding-left:50px;" oninput="liveValidateRekening()" onchange="liveValidateRekening()"></div><div class="input-group"><i class="fas fa-users icon-left"></i><input type="text" id="ref" placeholder="${t('ph_ref')}" style="padding-left:50px;"></div>`
             };
         }
         // Keep original forms for backwards compat — will be rebuilt on switchTab
@@ -317,9 +317,75 @@
             btn.classList.toggle('fa-eye'); btn.classList.toggle('fa-eye-slash');
         }
 
+        // ── ATURAN VALIDASI NOMOR REKENING PER BANK ──
+        const bankRules = {
+            'DANA':    { type: 'ewallet', min: 10, max: 13, label: 'DANA (nomor HP 10–13 digit)' },
+            'OVO':     { type: 'ewallet', min: 10, max: 13, label: 'OVO (nomor HP 10–13 digit)' },
+            'GOPAY':   { type: 'ewallet', min: 10, max: 13, label: 'GOPAY (nomor HP 10–13 digit)' },
+            'BCA':     { type: 'bank',    min: 10, max: 10, label: 'BCA (10 digit)' },
+            'BNI':     { type: 'bank',    min: 10, max: 16, label: 'BNI (10–16 digit)' },
+            'BRI':     { type: 'bank',    min: 15, max: 15, label: 'BRI (15 digit)' },
+            'MANDIRI': { type: 'bank',    min: 13, max: 13, label: 'Mandiri (13 digit)' },
+        };
+
+        function validateRekening(bank, norek) {
+            const rule = bankRules[bank];
+            if (!rule) return { valid: true }; // bank kustom, skip validasi ketat
+            const digits = norek.replace(/\D/g, '');
+            if (digits.length < rule.min || digits.length > rule.max) {
+                const msg = rule.min === rule.max
+                    ? `Nomor rekening ${rule.label} harus tepat ${rule.min} digit. Anda memasukkan ${digits.length} digit.`
+                    : `Nomor rekening ${rule.label} harus ${rule.min}–${rule.max} digit. Anda memasukkan ${digits.length} digit.`;
+                return { valid: false, msg };
+            }
+            return { valid: true };
+        }
+
         function checkBank(){
             const v = document.getElementById('bank').value;
+            // Tampilkan hint format nomor rekening
+            const norekInput = document.getElementById('norek');
+            if(norekInput) {
+                const rule = bankRules[v];
+                if(rule) {
+                    norekInput.setAttribute('placeholder', rule.min === rule.max
+                        ? `Nomor Rekening (${rule.min} digit)`
+                        : `Nomor Rekening (${rule.min}–${rule.max} digit)`);
+                } else {
+                    norekInput.setAttribute('placeholder', t('ph_norek'));
+                }
+                // Reset warna border saat ganti bank
+                norekInput.style.borderColor = '';
+                const hint = document.getElementById('norek-hint');
+                if(hint) hint.remove();
+            }
             document.getElementById('kustom-bank-area').innerHTML = v==='LAINNYA' ? `<div class="input-group"><i class="fas fa-pen icon-left"></i><input type="text" id="bank_kustom" placeholder="${t('ph_nama')}" style="padding-left:50px;"></div>` : '';
+        }
+
+        function liveValidateRekening() {
+            const bankVal = document.getElementById('bank');
+            const norekInput = document.getElementById('norek');
+            if(!bankVal || !norekInput) return;
+            const bank = bankVal.value;
+            const norek = norekInput.value.trim();
+            let hint = document.getElementById('norek-hint');
+            if(!hint) {
+                hint = document.createElement('div');
+                hint.id = 'norek-hint';
+                hint.style.cssText = 'font-size:11px;font-weight:700;letter-spacing:1px;margin-top:-10px;margin-bottom:10px;padding:0 5px;transition:0.3s;';
+                norekInput.parentElement.insertAdjacentElement('afterend', hint);
+            }
+            if(!bank || bank === 'LAINNYA' || !norek) { hint.textContent = ''; norekInput.style.borderColor = ''; return; }
+            const result = validateRekening(bank, norek);
+            if(!result.valid) {
+                hint.textContent = '⚠ ' + result.msg;
+                hint.style.color = '#ff4466';
+                norekInput.style.borderColor = '#ff4466';
+            } else {
+                hint.textContent = '✓ Format nomor rekening valid';
+                hint.style.color = '#25d366';
+                norekInput.style.borderColor = '#25d366';
+            }
         }
 
         async function handleAuth() {
@@ -349,6 +415,9 @@
                 const ref = document.getElementById('ref').value.trim() || 'DIRECT';
                 const myRef = "VIP" + Math.random().toString(36).substring(2,7).toUpperCase();
                 if(!nama || !hp || !bank || !norek) { btn.disabled = false; return showNeonModal(t('err_incomplete')); }
+                // ── VALIDASI FORMAT NOMOR REKENING ──
+                const rekenCheck = validateRekening(bankVal === 'LAINNYA' ? 'LAINNYA' : bankVal, norek);
+                if(!rekenCheck.valid) { btn.disabled = false; btn.innerText = t('btn_create'); return showNeonModal(rekenCheck.msg); }
                 const {error:insErr} = await _supa.from('profiles').insert([{ username:u, password:p, nama_lengkap:nama, nomor_hp:hp, bank_name:bank, rekening:norek, referred_by:ref, referral_code:myRef, saldo:0 }]);
                 if(insErr){ showNeonModal(insErr.message); btn.disabled = false; }
                 else { 
