@@ -224,7 +224,7 @@
     </div>
 
     <script>
-        const SUPA_URL="https://jcxgankdwfwfnbwlkkpz.supabase.co", SUPA_KEY="sb_publishable_CaQyWYa_F3LDYEo8BDWAlQ_d0SscfCL";
+        const SUPA_URL="https://jcxgankdwfwfnbwlkkpz.supabase.co", SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjeGdhbmtkd2Z3Zm5id2xra3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNDU0MjMsImV4cCI6MjA5MDgyMTQyM30.qBNQNZxeHLfG7U-HZDSkYg1Y4awPKcJ7J2XjnkiJ6PI";
         const _supa = supabase.createClient(SUPA_URL, SUPA_KEY);
         let currentMode = 'login';
 
@@ -369,33 +369,38 @@
                 const logRow = {
                     username,
                     event_type: eventType,
-                    ip_address: ipInfo.ip,
+                    ip_address: ipInfo.ip || null,
                     device_id: deviceId,
                     user_agent: navigator.userAgent,
                     screen_res: screen.width + 'x' + screen.height,
                     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
                     language: navigator.language,
-                    platform: navigator.platform,
-                    ip_country: ipInfo.country,
-                    ip_city: ipInfo.city,
-                    ip_isp: ipInfo.isp
+                    platform: navigator.platform || navigator.userAgentData?.platform || 'web',
+                    ip_country: ipInfo.country || null,
+                    ip_city: ipInfo.city || null,
+                    ip_isp: ipInfo.isp || null
                 };
-                // Insert ke ip_logs
-                await _supa.from('ip_logs').insert([logRow]);
+                // Insert ke ip_logs — log error jika gagal (jangan silent)
+                const { error: logErr } = await _supa.from('ip_logs').insert([logRow]);
+                if(logErr) console.error('[ip_logs insert error]', logErr.message, logErr.code, logErr.details);
+                
                 // Update profil user dengan IP terakhir
-                await _supa.from('profiles').update({
-                    last_ip: ipInfo.ip,
+                const { error: profErr } = await _supa.from('profiles').update({
+                    last_ip: ipInfo.ip || null,
                     last_device_id: deviceId,
                     last_user_agent: navigator.userAgent,
                     last_seen: new Date().toISOString(),
-                    ip_country: ipInfo.country,
-                    ip_city: ipInfo.city,
-                    ip_isp: ipInfo.isp
+                    ip_country: ipInfo.country || null,
+                    ip_city: ipInfo.city || null,
+                    ip_isp: ipInfo.isp || null
                 }).eq('username', username);
+                if(profErr) console.error('[profiles update IP error]', profErr.message);
+
                 // Simpan device id di localStorage untuk sesi game
                 localStorage.setItem('neon_device_id', deviceId);
-                localStorage.setItem('neon_last_ip', ipInfo.ip);
-            } catch(e) { console.warn('IP log failed:', e); }
+                localStorage.setItem('neon_last_ip', ipInfo.ip || '');
+                console.log('[IP Log OK]', eventType, 'IP:', ipInfo.ip, 'Device:', deviceId);
+            } catch(e) { console.error('[logIPEvent exception]', e); }
         }
 
         async function checkIPBlock(username) {
@@ -435,11 +440,11 @@
                         btn.disabled = false; btn.innerText = t('btn_auth');
                         return;
                     }
-                    // Log event login (async, tidak blokir)
-                    logIPEvent(u, 'LOGIN');
+                    // Log event login — await agar IP/device tersimpan sebelum redirect
                     try { document.getElementById('snd-success').play(); } catch(e){}
                     localStorage.setItem('neon_user', u);
-                    setTimeout(() => location.href = 'game.html', 500);
+                    await logIPEvent(u, 'LOGIN');
+                    setTimeout(() => location.href = 'game.html', 300);
                 }
             } else {
                 const nama = document.getElementById('nama').value.toUpperCase().trim();
