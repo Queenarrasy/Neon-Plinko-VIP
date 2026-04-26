@@ -564,42 +564,9 @@ async function openQrisPage(amount) {
         
         const data = await response.json();
 
-        // 4. Tampilkan QR Code langsung di halaman
-        if (data.qr_string) {
-            // Generate QR via Google Charts API - paling reliable, tidak butuh library
-            const qrImgEl = document.getElementById('qris-image-display');
-            const qrUrl = 'https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=M|1&chl=' + encodeURIComponent(data.qr_string);
-            qrImgEl.src = qrUrl;
-            qrImgEl.style.display = 'block';
-            qrImgEl.style.width = '100%';
-            qrImgEl.style.maxWidth = '260px';
-            qrImgEl.style.margin = '0 auto';
-            qrImgEl.onerror = function() {
-                // Fallback: tampilkan QR dari api.qrserver.com jika Google gagal
-                this.src = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(data.qr_string);
-            };
-
-            // Tampilkan nominal
-            const nominalFormatted = 'Rp ' + parseInt(data.total || amount).toLocaleString('id-ID');
-            document.getElementById('qp-nominal-display').textContent = nominalFormatted;
-            document.getElementById('qp-step-nominal').textContent = nominalFormatted;
-
-            // Hitung timer expired
-            if (data.expired) {
-                const expDate = new Date(data.expired);
-                const now = new Date();
-                const diffMin = Math.floor((expDate - now) / 60000);
-                const timerEl = document.querySelector('.qp-timer');
-                if (timerEl && diffMin > 0) {
-                    timerEl.innerHTML = '<i class="fas fa-clock"></i> Selesaikan pembayaran dalam <b style="color:var(--yellow)">' + diffMin + ' menit</b>';
-                }
-            }
-
-            // Tampilkan halaman QR
-            btnMain.disabled = false;
-            btnMain.innerHTML = originalBtnText;
-            document.getElementById('qris-page').style.display = 'flex';
-            document.body.style.overflow = 'hidden';
+        // 4. Redirect ke halaman pembayaran iPaymu (paling simpel & pasti tampil)
+        if (data.qr_template) {
+            window.location.href = data.qr_template;
         } else {
             throw new Error(data.message || data.error || "Gagal membuat link pembayaran");
         }
