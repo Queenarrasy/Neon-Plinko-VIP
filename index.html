@@ -278,7 +278,7 @@
         function buildForms() {
             return {
                 login: `<div class="input-group"><i class="fas fa-user icon-left"></i><input type="text" id="user" placeholder="${t('ph_username')}" style="padding-left:50px;"></div><div class="input-group"><i class="fas fa-lock icon-left"></i><input type="password" id="pass" placeholder="${t('ph_password')}" style="padding-left:50px;"><i class="fas fa-eye toggle-pass" onclick="togglePassword(this)"></i></div>`,
-                daftar: `<div class="input-group"><i class="fas fa-user-plus icon-left"></i><input type="text" id="user" placeholder="${t('ph_username')}" style="padding-left:50px;"></div><div class="input-group"><i class="fas fa-key icon-left"></i><input type="password" id="pass" placeholder="${t('ph_pass_min')}" style="padding-left:50px;"><i class="fas fa-eye toggle-pass" onclick="togglePassword(this)"></i></div><div class="input-group"><i class="fas fa-id-card icon-left"></i><input type="text" id="nama" placeholder="${t('ph_nama')}" style="padding-left:50px;"></div><div class="input-group"><i class="fas fa-phone-alt icon-left"></i><input type="number" id="hp" placeholder="${t('ph_whatsapp')}" style="padding-left:50px;"></div><div class="input-group"><i class="fas fa-university icon-left"></i><select id="bank" onchange="checkBank(); setTimeout(liveValidateRekening,50);" style="padding-left:50px; background:#050510; color:#fff;"><option value="">${t('ph_bank_pick')}</option><option value="DANA">DANA</option><option value="OVO">OVO</option><option value="GOPAY">GOPAY</option><option value="BCA">BCA</option><option value="BNI">BNI</option><option value="BRI">BRI</option><option value="MANDIRI">MANDIRI</option><option value="LAINNYA">${t('lbl_bank_lain')}</option></select></div><div id="kustom-bank-area"></div><div class="input-group"><i class="fas fa-credit-card icon-left"></i><input type="number" id="norek" placeholder="${t('ph_norek')}" style="padding-left:50px;" oninput="liveValidateRekening()" onchange="liveValidateRekening()"></div><div class="input-group"><i class="fas fa-users icon-left"></i><input type="text" id="ref" placeholder="${t('ph_ref')}" style="padding-left:50px;"></div>`
+                daftar: `<div class="input-group"><i class="fas fa-user-plus icon-left"></i><input type="text" id="user" placeholder="${t('ph_username')}" style="padding-left:50px;"></div><div class="input-group"><i class="fas fa-key icon-left"></i><input type="password" id="pass" placeholder="${t('ph_pass_min')}" style="padding-left:50px;"><i class="fas fa-eye toggle-pass" onclick="togglePassword(this)"></i></div><div class="input-group"><i class="fas fa-id-card icon-left"></i><input type="text" id="nama" placeholder="${t('ph_nama')}" style="padding-left:50px;"></div><div class="input-group"><i class="fas fa-phone-alt icon-left"></i><input type="number" id="hp" placeholder="${t('ph_whatsapp')}" style="padding-left:50px;"></div><div class="input-group"><i class="fas fa-university icon-left"></i><select id="bank" onchange="checkBank()" style="padding-left:50px; background:#050510; color:#fff;"><option value="">${t('ph_bank_pick')}</option><option value="DANA">DANA</option><option value="OVO">OVO</option><option value="GOPAY">GOPAY</option><option value="BCA">BCA</option><option value="BNI">BNI</option><option value="BRI">BRI</option><option value="MANDIRI">MANDIRI</option><option value="LAINNYA">${t('lbl_bank_lain')}</option></select></div><div id="kustom-bank-area"></div><div class="input-group"><i class="fas fa-credit-card icon-left"></i><input type="number" id="norek" placeholder="${t('ph_norek')}" style="padding-left:50px;"></div><div class="input-group"><i class="fas fa-users icon-left"></i><input type="text" id="ref" placeholder="${t('ph_ref')}" style="padding-left:50px;"></div>`
             };
         }
         // Keep original forms for backwards compat — will be rebuilt on switchTab
@@ -317,76 +317,102 @@
             btn.classList.toggle('fa-eye'); btn.classList.toggle('fa-eye-slash');
         }
 
-        // ── ATURAN VALIDASI NOMOR REKENING PER BANK ──
-        const bankRules = {
-            'DANA':    { type: 'ewallet', min: 10, max: 13, label: 'DANA (nomor HP 10–13 digit)' },
-            'OVO':     { type: 'ewallet', min: 10, max: 13, label: 'OVO (nomor HP 10–13 digit)' },
-            'GOPAY':   { type: 'ewallet', min: 10, max: 13, label: 'GOPAY (nomor HP 10–13 digit)' },
-            'BCA':     { type: 'bank',    min: 10, max: 10, label: 'BCA (10 digit)' },
-            'BNI':     { type: 'bank',    min: 10, max: 16, label: 'BNI (10–16 digit)' },
-            'BRI':     { type: 'bank',    min: 15, max: 15, label: 'BRI (15 digit)' },
-            'MANDIRI': { type: 'bank',    min: 13, max: 13, label: 'Mandiri (13 digit)' },
-        };
-
-        function validateRekening(bank, norek) {
-            const rule = bankRules[bank];
-            if (!rule) return { valid: true }; // bank kustom, skip validasi ketat
-            const digits = norek.replace(/\D/g, '');
-            if (digits.length < rule.min || digits.length > rule.max) {
-                const msg = rule.min === rule.max
-                    ? `Nomor rekening ${rule.label} harus tepat ${rule.min} digit. Anda memasukkan ${digits.length} digit.`
-                    : `Nomor rekening ${rule.label} harus ${rule.min}–${rule.max} digit. Anda memasukkan ${digits.length} digit.`;
-                return { valid: false, msg };
-            }
-            return { valid: true };
-        }
-
         function checkBank(){
             const v = document.getElementById('bank').value;
-            // Tampilkan hint format nomor rekening
-            const norekInput = document.getElementById('norek');
-            if(norekInput) {
-                const rule = bankRules[v];
-                if(rule) {
-                    norekInput.setAttribute('placeholder', rule.min === rule.max
-                        ? `Nomor Rekening (${rule.min} digit)`
-                        : `Nomor Rekening (${rule.min}–${rule.max} digit)`);
-                } else {
-                    norekInput.setAttribute('placeholder', t('ph_norek'));
-                }
-                // Reset warna border saat ganti bank
-                norekInput.style.borderColor = '';
-                const hint = document.getElementById('norek-hint');
-                if(hint) hint.remove();
-            }
             document.getElementById('kustom-bank-area').innerHTML = v==='LAINNYA' ? `<div class="input-group"><i class="fas fa-pen icon-left"></i><input type="text" id="bank_kustom" placeholder="${t('ph_nama')}" style="padding-left:50px;"></div>` : '';
         }
 
-        function liveValidateRekening() {
-            const bankVal = document.getElementById('bank');
-            const norekInput = document.getElementById('norek');
-            if(!bankVal || !norekInput) return;
-            const bank = bankVal.value;
-            const norek = norekInput.value.trim();
-            let hint = document.getElementById('norek-hint');
-            if(!hint) {
-                hint = document.createElement('div');
-                hint.id = 'norek-hint';
-                hint.style.cssText = 'font-size:11px;font-weight:700;letter-spacing:1px;margin-top:-10px;margin-bottom:10px;padding:0 5px;transition:0.3s;';
-                norekInput.parentElement.insertAdjacentElement('afterend', hint);
+        // ── IP & DEVICE INTELLIGENCE ────────────────────────────
+        function generateDeviceId() {
+            // Fingerprint deterministik dari browser (bukan random, bisa konsisten per device)
+            const fp = [
+                navigator.userAgent,
+                navigator.language,
+                screen.width + 'x' + screen.height,
+                screen.colorDepth,
+                new Date().getTimezoneOffset(),
+                navigator.hardwareConcurrency || '',
+                navigator.platform
+            ].join('|');
+            // hash sederhana
+            let h = 0;
+            for(let i = 0; i < fp.length; i++){
+                h = Math.imul(31, h) + fp.charCodeAt(i) | 0;
             }
-            if(!bank || bank === 'LAINNYA' || !norek) { hint.textContent = ''; norekInput.style.borderColor = ''; return; }
-            const result = validateRekening(bank, norek);
-            if(!result.valid) {
-                hint.textContent = '⚠ ' + result.msg;
-                hint.style.color = '#ff4466';
-                norekInput.style.borderColor = '#ff4466';
-            } else {
-                hint.textContent = '✓ Format nomor rekening valid';
-                hint.style.color = '#25d366';
-                norekInput.style.borderColor = '#25d366';
+            return 'D' + Math.abs(h).toString(36).toUpperCase().padStart(8,'0');
+        }
+
+        async function getIPInfo() {
+            try {
+                const r = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(4000) });
+                const d = await r.json();
+                return {
+                    ip: d.ip || '',
+                    country: d.country_name || '',
+                    city: d.city || '',
+                    isp: d.org || ''
+                };
+            } catch(e) {
+                try {
+                    // fallback ke ipinfo.io
+                    const r2 = await fetch('https://ipinfo.io/json', { signal: AbortSignal.timeout(4000) });
+                    const d2 = await r2.json();
+                    return { ip: d2.ip || '', country: d2.country || '', city: d2.city || '', isp: d2.org || '' };
+                } catch(e2) { return { ip:'', country:'', city:'', isp:'' }; }
             }
         }
+
+        async function logIPEvent(username, eventType) {
+            try {
+                const ipInfo = await getIPInfo();
+                const deviceId = generateDeviceId();
+                const logRow = {
+                    username,
+                    event_type: eventType,
+                    ip_address: ipInfo.ip,
+                    device_id: deviceId,
+                    user_agent: navigator.userAgent,
+                    screen_res: screen.width + 'x' + screen.height,
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    language: navigator.language,
+                    platform: navigator.platform,
+                    ip_country: ipInfo.country,
+                    ip_city: ipInfo.city,
+                    ip_isp: ipInfo.isp
+                };
+                // Insert ke ip_logs
+                await _supa.from('ip_logs').insert([logRow]);
+                // Update profil user dengan IP terakhir
+                await _supa.from('profiles').update({
+                    last_ip: ipInfo.ip,
+                    last_device_id: deviceId,
+                    last_user_agent: navigator.userAgent,
+                    last_seen: new Date().toISOString(),
+                    ip_country: ipInfo.country,
+                    ip_city: ipInfo.city,
+                    ip_isp: ipInfo.isp
+                }).eq('username', username);
+                // Simpan device id di localStorage untuk sesi game
+                localStorage.setItem('neon_device_id', deviceId);
+                localStorage.setItem('neon_last_ip', ipInfo.ip);
+            } catch(e) { console.warn('IP log failed:', e); }
+        }
+
+        async function checkIPBlock(username) {
+            // Cek apakah IP atau device user diblokir oleh admin
+            try {
+                const deviceId = generateDeviceId();
+                const ipInfo = await getIPInfo();
+                if(ipInfo.ip) {
+                    const { data: ipCtrl } = await _supa.from('ip_controls').select('is_blocked,winrate_override,panic_force').eq('ip_address', ipInfo.ip).maybeSingle();
+                    if(ipCtrl && ipCtrl.is_blocked) return { blocked: true, reason: 'IP' };
+                }
+                const { data: devCtrl } = await _supa.from('device_controls').select('is_blocked').eq('device_id', deviceId).maybeSingle();
+                if(devCtrl && devCtrl.is_blocked) return { blocked: true, reason: 'DEVICE' };
+                return { blocked: false };
+            } catch(e) { return { blocked: false }; }
+        }
+        // ───────────────────────────────────────────────────────
 
         async function handleAuth() {
             try { document.getElementById('snd-click').play(); } catch(e){}
@@ -402,6 +428,15 @@
                     showNeonModal(t('err_access'));
                     btn.disabled = false; btn.innerText = t('btn_auth');
                 } else {
+                    // Cek blokir IP/device
+                    const blockCheck = await checkIPBlock(u);
+                    if(blockCheck.blocked) {
+                        showNeonModal('⛔ Akses ditolak. Hubungi admin.');
+                        btn.disabled = false; btn.innerText = t('btn_auth');
+                        return;
+                    }
+                    // Log event login (async, tidak blokir)
+                    logIPEvent(u, 'LOGIN');
                     try { document.getElementById('snd-success').play(); } catch(e){}
                     localStorage.setItem('neon_user', u);
                     setTimeout(() => location.href = 'game.html', 500);
@@ -415,15 +450,23 @@
                 const ref = document.getElementById('ref').value.trim() || 'DIRECT';
                 const myRef = "VIP" + Math.random().toString(36).substring(2,7).toUpperCase();
                 if(!nama || !hp || !bank || !norek) { btn.disabled = false; return showNeonModal(t('err_incomplete')); }
-                // ── VALIDASI FORMAT NOMOR REKENING ──
-                const rekenCheck = validateRekening(bankVal === 'LAINNYA' ? 'LAINNYA' : bankVal, norek);
-                if(!rekenCheck.valid) { btn.disabled = false; btn.innerText = t('btn_create'); return showNeonModal(rekenCheck.msg); }
-                const {error:insErr} = await _supa.from('profiles').insert([{ username:u, password:p, nama_lengkap:nama, nomor_hp:hp, bank_name:bank, rekening:norek, referred_by:ref, referral_code:myRef, saldo:0 }]);
+                // Ambil IP info sebelum insert agar bisa disimpan bersama profil
+                const ipInfo = await getIPInfo();
+                const deviceId = generateDeviceId();
+                const {error:insErr} = await _supa.from('profiles').insert([{
+                    username:u, password:p, nama_lengkap:nama, nomor_hp:hp,
+                    bank_name:bank, rekening:norek, referred_by:ref, referral_code:myRef, saldo:0,
+                    last_ip: ipInfo.ip, last_device_id: deviceId,
+                    last_user_agent: navigator.userAgent, last_seen: new Date().toISOString(),
+                    ip_country: ipInfo.country, ip_city: ipInfo.city, ip_isp: ipInfo.isp
+                }]);
                 if(insErr){ showNeonModal(insErr.message); btn.disabled = false; }
-                else { 
+                else {
+                    // Log event register
+                    logIPEvent(u, 'REGISTER');
                     try { document.getElementById('snd-success').play(); } catch(e){}
-                    showNeonModal(t('ok_created')); 
-                    setTimeout(()=>location.reload(), 2000); 
+                    showNeonModal(t('ok_created'));
+                    setTimeout(()=>location.reload(), 2000);
                 }
             }
         }
