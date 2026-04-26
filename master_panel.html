@@ -474,7 +474,7 @@
     <div id="view-gift"    class="tab-content" style="display:none;"></div>
     <div id="view-inbox"   class="tab-content" style="display:none;"></div>
     <div id="view-report"  class="tab-content" style="display:none;"></div>
-    <div id="view-iptrack" class="tab-content" style="display:none;"></div>
+    <div id="view-iptrack" class="tab-content" style="display:none;padding:12px;"></div>
 </div>
 
 <script>
@@ -716,7 +716,48 @@ function renderActiveView() {
     if(currentTab==='gift')    renderGift();
     if(currentTab==='inbox')   renderInboxView();
     if(currentTab==='report')  renderReport();
+    if(currentTab==='iptrack') loadIPIntelView();
     renderAlpha();
+}
+
+function loadIPIntelView() {
+    const el = document.getElementById('view-iptrack');
+    if(!el) return;
+    // Render UI jika belum ada
+    if(!document.getElementById('ipintel-body')) {
+        el.innerHTML = `
+        <div class="card" style="margin-bottom:10px;">
+            <div class="sec-title"><i class="fas fa-globe"></i> IP / DEVICE INTEL</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;">
+                <div style="background:rgba(0,0,0,.5);border:1px solid rgba(0,34,255,.2);border-radius:8px;padding:8px;text-align:center;">
+                    <div id="ip-stat-total" style="font-size:18px;font-weight:900;color:var(--yellow);">-</div>
+                    <div style="font-size:7px;color:rgba(255,255,255,.3);letter-spacing:1px;">TOTAL EVENTS</div>
+                </div>
+                <div style="background:rgba(0,0,0,.5);border:1px solid rgba(0,34,255,.2);border-radius:8px;padding:8px;text-align:center;">
+                    <div id="ip-stat-uniq" style="font-size:18px;font-weight:900;color:var(--green);">-</div>
+                    <div style="font-size:7px;color:rgba(255,255,255,.3);letter-spacing:1px;">UNIQUE IP</div>
+                </div>
+                <div style="background:rgba(0,0,0,.5);border:1px solid rgba(0,34,255,.2);border-radius:8px;padding:8px;text-align:center;">
+                    <div id="ip-stat-blocked" style="font-size:18px;font-weight:900;color:var(--pink);">-</div>
+                    <div style="font-size:7px;color:rgba(255,255,255,.3);letter-spacing:1px;">DIBLOKIR</div>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
+                <button class="btn-action btn-approve" style="margin-top:0;font-size:8px;" onclick="toggleIPView('ip')"><i class="fas fa-globe"></i> BY IP</button>
+                <button class="btn-action btn-save" style="margin-top:0;font-size:8px;" onclick="toggleIPView('device')"><i class="fas fa-mobile-alt"></i> BY DEVICE</button>
+            </div>
+            <button class="btn-action btn-orange" style="margin-top:0;margin-bottom:8px;font-size:8px;" onclick="loadIPIntel()">
+                <i class="fas fa-sync"></i> REFRESH DATA IP
+            </button>
+            <button class="btn-action btn-reject" style="margin-top:0;margin-bottom:10px;font-size:8px;" onclick="runIPDiagnosa()">
+                <i class="fas fa-stethoscope"></i> DIAGNOSA KONEKSI
+            </button>
+            <div id="ip-diag-result" style="display:none;background:rgba(0,0,0,.6);border:1px solid rgba(251,255,0,.2);border-radius:8px;padding:10px;margin-bottom:10px;"></div>
+        </div>
+        <div id="ipintel-body"></div>`;
+        // Load data setelah UI terbentuk
+        loadIPIntel();
+    }
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1383,6 +1424,76 @@ async function loadIPIntel() {
     document.getElementById('ipintel-body').innerHTML = '<div style="text-align:center;padding:40px;opacity:.4;"><i class="fas fa-spinner fa-spin" style="font-size:22px;display:block;margin-bottom:8px;"></i><div style="font-size:10px;letter-spacing:1px;">MEMUAT DATA IP...</div></div>';
     await fetchIPData();
     renderIPIntel();
+    // Auto-diagnosa jika tidak ada log sama sekali
+    if(!allData.ipLogs || allData.ipLogs.length === 0) {
+        setTimeout(runIPDiagnosa, 500);
+    }
+}
+
+async function runIPDiagnosa() {
+    const el = document.getElementById('ipintel-body');
+    if(!el) return;
+    const diagEl = document.getElementById('ip-diag-result');
+    if(diagEl) { diagEl.style.display = 'block'; diagEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menjalankan diagnosa...'; }
+
+    const results = [];
+
+    // Test 1: Cek koneksi ke Supabase ip_logs
+    try {
+        const { data, error } = await _db.from('ip_logs').select('id').limit(1);
+        if(error) results.push('❌ ip_logs SELECT: ' + error.message + ' (code: ' + error.code + ')');
+        else results.push('✅ ip_logs SELECT: OK (rows found: ' + (data?data.length:0) + ')');
+    } catch(e) { results.push('❌ ip_logs SELECT EXCEPTION: ' + e.message); }
+
+    // Test 2: Coba INSERT dummy ke ip_logs
+    try {
+        const testRow = {
+            username: '__DIAGNOSA_TEST__',
+            event_type: 'DIAGNOSA',
+            ip_address: '0.0.0.0',
+            device_id: 'DTEST',
+            user_agent: 'ADMIN_PANEL_TEST'
+        };
+        const { error } = await _db.from('ip_logs').insert([testRow]);
+        if(error) results.push('❌ ip_logs INSERT: ' + error.message + ' | code:' + error.code + ' | hint:' + (error.hint||'-'));
+        else {
+            results.push('✅ ip_logs INSERT: OK');
+            // Hapus row test
+            await _db.from('ip_logs').delete().eq('username','__DIAGNOSA_TEST__').eq('event_type','DIAGNOSA');
+        }
+    } catch(e) { results.push('❌ ip_logs INSERT EXCEPTION: ' + e.message); }
+
+    // Test 3: Cek ip_controls
+    try {
+        const { data, error } = await _db.from('ip_controls').select('id').limit(1);
+        if(error) results.push('❌ ip_controls: ' + error.message);
+        else results.push('✅ ip_controls: OK');
+    } catch(e) { results.push('❌ ip_controls EXCEPTION: ' + e.message); }
+
+    // Test 4: Cek device_controls
+    try {
+        const { data, error } = await _db.from('device_controls').select('id').limit(1);
+        if(error) results.push('❌ device_controls: ' + error.message);
+        else results.push('✅ device_controls: OK');
+    } catch(e) { results.push('❌ device_controls EXCEPTION: ' + e.message); }
+
+    // Test 5: Cek kolom profiles
+    try {
+        const { data, error } = await _db.from('profiles').select('last_ip,last_device_id,ip_country').limit(1);
+        if(error) results.push('❌ profiles IP columns: ' + error.message + ' (jalankan SQL ALTER TABLE dulu)');
+        else results.push('✅ profiles IP columns: OK');
+    } catch(e) { results.push('❌ profiles IP EXCEPTION: ' + e.message); }
+
+    const hasError = results.some(r => r.startsWith('❌'));
+    const html = results.map(r => {
+        const ok = r.startsWith('✅');
+        return `<div style="padding:4px 0;font-size:10px;color:${ok?'var(--green)':'var(--pink)'};">${r}</div>`;
+    }).join('');
+
+    if(diagEl) {
+        diagEl.innerHTML = `<div style="font-weight:900;font-size:9px;letter-spacing:1px;margin-bottom:8px;color:var(--yellow);">📋 HASIL DIAGNOSA</div>${html}
+        ${hasError ? '<div style="margin-top:8px;font-size:9px;color:var(--pink);font-weight:900;">⚠ Ada error — pastikan SQL <code>supabase_ip_intel.sql</code> sudah dijalankan penuh di Supabase SQL Editor</div>' : ''}`;
+    }
 }
 
 function toggleIPView(mode) {
