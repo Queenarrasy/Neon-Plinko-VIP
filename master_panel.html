@@ -176,6 +176,18 @@
         .si-green .si-dot{background:var(--green);box-shadow:0 0 6px rgba(0,255,136,.8);}
         .si-red .si-dot{background:var(--pink);animation:panicPulse 1s infinite;}
 
+        .ip-live-card{border-radius:14px;background:rgba(0,0,30,.88);margin-bottom:10px;overflow:hidden;transition:box-shadow .3s;}
+        .ip-live-card:hover{box-shadow:0 0 14px rgba(0,34,255,.18);}
+        .ip-live-header{padding:12px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none;-webkit-user-select:none;}
+        .ip-live-header:active{background:rgba(0,34,255,.06);}
+        .ip-live-arrow{transition:transform .3s;}
+        .ip-live-arrow.open{transform:rotate(180deg);}
+        .ip-live-body{display:none;border-top:1px solid rgba(0,34,255,.18);}
+        .ip-live-body.open{display:block;}
+        .ip-badge-multi{font-size:7px;color:var(--pink);font-weight:900;background:rgba(255,0,119,.1);border:1px solid rgba(255,0,119,.25);border-radius:50px;padding:2px 7px;display:inline-block;}
+        .ip-badge-block{font-size:7px;color:#fff;background:rgba(255,0,119,.7);border-radius:50px;padding:2px 7px;display:inline-block;font-weight:900;}
+        #live-groups{padding-bottom:10px;}
+
         #saldo-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:9997;align-items:center;justify-content:center;backdrop-filter:blur(12px);}
         .saldo-modal-box{background:rgba(0,0,15,.99);border:1.5px solid var(--yellow);border-top:2px solid var(--pink);border-radius:22px;padding:26px;width:88%;max-width:330px;text-align:center;box-shadow:0 0 24px rgba(251,255,0,.15);animation:zoomIn .3s ease;}
         .saldo-modal-user{font-size:20px;font-weight:900;color:var(--yellow);text-shadow:var(--gy);margin-bottom:4px;letter-spacing:1px;}
@@ -462,12 +474,11 @@
                 <span id="live-clock" style="font-size:9px;color:rgba(255,255,255,.3);">--:--:--</span>
             </div>
         </div>
-        <div class="card" style="padding:0;overflow:hidden;border-radius:14px;">
-            <table class="monitor-table">
-                <thead><tr><th><i class="fas fa-user"></i> PLAYER</th><th>WR</th><th>MAXWIN</th><th><i class="fas fa-hourglass-half"></i> SESI</th><th>SALDO</th><th>PNL</th></tr></thead>
-                <tbody id="live-body"><tr><td colspan="6" style="text-align:center;padding:30px;opacity:.4;font-size:11px;">Memuat data...</td></tr></tbody>
-            </table>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 10px 0;padding:6px 10px;background:rgba(0,0,0,.4);border-radius:10px;border:1px solid rgba(0,34,255,.15);">
+            <span style="font-size:8px;color:rgba(255,255,255,.35);letter-spacing:1px;text-transform:uppercase;">Dikelompokkan per IP • Klik untuk expand</span>
+            <button onclick="expandAllIPCards()" style="background:rgba(0,34,255,.15);border:1px solid rgba(0,34,255,.3);color:rgba(255,255,255,.5);font-size:8px;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:'Outfit',sans-serif;font-weight:900;letter-spacing:1px;touch-action:manipulation;">EXPAND ALL</button>
         </div>
+        <div id="live-groups"></div>
     </div>
 
     <div id="view-cashier" class="tab-content" style="display:none;"></div>
@@ -498,6 +509,13 @@ function unlockPanel() {
 (function(){
     if(sessionStorage.getItem('omega_admin_auth') === 'ok') {
         document.getElementById('gate-overlay').style.display = 'none';
+        // FIX: Panggil init() agar clock & realtime berjalan saat sudah login
+        if(document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+        return;
     }
     document.getElementById('gate-pw').focus();
 })();
@@ -526,7 +544,9 @@ particlesJS("particles-js",{
     "interactivity":{"events":{"onhover":{"enable":false},"onclick":{"enable":true,"mode":"push"}},"modes":{"push":{"particles_nb":2}}}
 });
 
+let _clockInterval = null;
 function startClock() {
+    if(_clockInterval) clearInterval(_clockInterval);
     function tick() {
         const now = new Date().toLocaleTimeString('id-ID');
         const hc = document.getElementById('header-clock');
@@ -534,7 +554,8 @@ function startClock() {
         if(hc) hc.innerText = now;
         if(lc) lc.innerText = now;
     }
-    tick(); setInterval(tick, 1000);
+    tick();
+    _clockInterval = setInterval(tick, 1000);
 }
 
 async function fetchProfiles() {
@@ -637,15 +658,48 @@ function patchLiveRow(u) {
     const changed = live !== prev;
     prevSaldo[u.username]   = live;
     prevWinrate[u.username] = wr;
+
     if(row) {
+        // Patch baris yang sudah ada
         const cells = row.querySelectorAll('td');
+        if(cells[0]) cells[0].innerHTML = `<b style="color:var(--yellow);text-shadow:var(--gy);font-size:12px;">${full.username}${full.panic_mode?' ⚠':''}</b><div style="font-size:8px;opacity:.3;margin-top:1px;">${full.bank_name||'—'}</div>`;
         if(cells[1]) { const wrc = wr>=60?'wr-high':wr>=30?'wr-mid':'wr-low'; cells[1].innerHTML=`<span class="wr-badge ${wrc}">${wr}%</span>`; }
         if(cells[2]) cells[2].innerHTML = buildMxCell(mx, diff);
         if(cells[3]) cells[3].innerHTML = buildSmCell(Number(full.session_minutes||full.session_timer||0));
         if(cells[4]) cells[4].innerText = live.toLocaleString('id-ID');
         if(cells[5]) { cells[5].className=diff>0?'status-up':(diff<0?'status-down':'status-zero'); cells[5].innerText=(diff>=0?'+':'')+diff.toLocaleString('id-ID'); }
         if(changed) { row.className=live>prev?'flash-up':'flash-down'; setTimeout(()=>{ if(row) row.className=''; },800); }
-    } else { renderLive(); }
+
+        // Update total saldo pada IP card header
+        const ipCard = row.closest('.ip-live-card');
+        if(ipCard) {
+            const ipKey = ipCard.dataset.ipkey;
+            if(ipKey) updateIPCardSummary(ipKey);
+        }
+    } else {
+        // Row belum ada — IP mungkin baru → re-render seluruh live
+        renderLive();
+    }
+}
+
+// Update ringkasan saldo di header IP card setelah patch
+function updateIPCardSummary(ipKey) {
+    const tbody = document.getElementById('iplive-' + ipKey);
+    if(!tbody) return;
+    const rows = tbody.querySelectorAll('tr');
+    let total = 0;
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if(cells[4]) {
+            const val = parseInt((cells[4].innerText || '0').replace(/\./g,'').replace(/,/g,'')) || 0;
+            total += val;
+        }
+    });
+    const card = document.querySelector(`[data-ipkey="${ipKey}"]`);
+    if(card) {
+        const summaryEl = card.querySelector('[data-total-saldo]');
+        if(summaryEl) summaryEl.innerText = total.toLocaleString('id-ID');
+    }
 }
 
 function buildMxCell(mx, spnl) {
@@ -978,26 +1032,157 @@ async function saveSystemConfig() {
 }
 
 // ══════════════════════════════════════════════════════════════
-//  3. LIVE MONITOR
+//  3. LIVE MONITOR — IP GROUPED
 // ══════════════════════════════════════════════════════════════
+
+// Helper: ambil IP terakhir dari ipLogs untuk tiap username
+function getUserIPMap() {
+    const map = {};
+    // ipLogs sudah urut created_at desc, jadi yang pertama = terbaru
+    for(const log of allData.ipLogs) {
+        if(log.username && !map[log.username]) {
+            map[log.username] = {
+                ip: log.ip_address || 'UNKNOWN',
+                country: log.ip_country || '',
+                city: log.ip_city || '',
+                isp: log.ip_isp || ''
+            };
+        }
+    }
+    return map;
+}
+
+function buildLiveRowHtml(u) {
+    const k = safeKey(u.username);
+    const live = Number(u.saldo || 0);
+    const start = Number(u.initial_balance_session || 0);
+    const diff = live - start;
+    const dc = diff > 0 ? 'status-up' : (diff < 0 ? 'status-down' : 'status-zero');
+    const wr = u.winrate ?? '?';
+    const mx = Number(u.maxwin_limit || 0);
+    const sm = Number(u.session_minutes || u.session_timer || 0);
+    const isPanic = u.panic_mode;
+    prevSaldo[u.username] = live;
+    return `<tr id="lr-${k}"><td><b style="color:var(--yellow);text-shadow:var(--gy);font-size:12px;">${u.username}${isPanic ? ' ⚠' : ''}</b><div style="font-size:8px;opacity:.3;margin-top:1px;">${u.bank_name || '—'}</div></td><td><span class="wr-badge ${wr >= 60 ? 'wr-high' : wr >= 30 ? 'wr-mid' : 'wr-low'}">${wr}%</span></td><td>${buildMxCell(mx, diff)}</td><td>${buildSmCell(sm)}</td><td style="font-weight:900;">${live.toLocaleString('id-ID')}</td><td class="${dc}">${diff >= 0 ? '+' : ''}${diff.toLocaleString('id-ID')}</td></tr>`;
+}
+
 function renderLive() {
-    const sorted=[...allData.p].sort((a,b)=>(b.saldo||0)-(a.saldo||0));
-    const body=document.getElementById('live-body');
+    const container = document.getElementById('live-groups');
+    if(!container) return;
+
+    // Build user → IP map
+    const userIPMap = getUserIPMap();
+
+    // Group players by IP
+    const ipGroups = {}; // ip -> { ip, users:[], info:{} }
+    for(const u of allData.p) {
+        const info = userIPMap[u.username] || { ip: 'UNKNOWN', country: '', city: '', isp: '' };
+        const ip = info.ip;
+        if(!ipGroups[ip]) ipGroups[ip] = { ip, players: [], country: info.country, city: info.city, isp: info.isp };
+        ipGroups[ip].players.push(u);
+    }
+
+    // Sort: multi-user first, then by player count desc
+    const sorted = Object.values(ipGroups).sort((a, b) => {
+        const aMulti = a.players.length > 1 ? 1 : 0;
+        const bMulti = b.players.length > 1 ? 1 : 0;
+        if(bMulti !== aMulti) return bMulti - aMulti;
+        return b.players.length - a.players.length;
+    });
+
+    if(!sorted.length) {
+        container.innerHTML = '<div style="text-align:center;padding:40px;opacity:.3;font-size:12px;"><i class="fas fa-satellite-dish" style="font-size:28px;display:block;margin-bottom:10px;"></i>Belum ada data</div>';
+        return;
+    }
+
+    // Preserve expand state
+    const openStates = {};
+    container.querySelectorAll('.ip-live-card').forEach(card => {
+        const body = card.querySelector('.ip-live-body');
+        if(body && body.classList.contains('open')) {
+            openStates[card.dataset.ipkey] = true;
+        }
+    });
+
+    let html = '';
+    for(const g of sorted) {
+        const ipKey = safeKey(g.ip);
+        const ctrl = allData.ipControls.find(c => c.ip_address === g.ip);
+        const isBlocked = ctrl?.is_blocked;
+        const wrOverride = ctrl?.winrate_override;
+        const isPanicForce = ctrl?.panic_force;
+        const multiUser = g.players.length > 1;
+        const totalSaldo = g.players.reduce((s, u) => s + (u.saldo || 0), 0);
+        const borderColor = isBlocked ? 'rgba(255,0,119,.65)' : multiUser ? 'rgba(251,255,0,.45)' : 'rgba(0,34,255,.32)';
+        const isOpen = openStates[ipKey] || false;
+
+        // Rows for this IP's players
+        const rowsHtml = g.players
+            .sort((a, b) => (b.saldo || 0) - (a.saldo || 0))
+            .map(u => buildLiveRowHtml(u))
+            .join('');
+
+        // Info chips
+        let chips = '';
+        if(isBlocked) chips += '<span class="ip-badge-block">⛔ DIBLOKIR</span> ';
+        if(multiUser) chips += '<span class="ip-badge-multi">⚠ MULTI-AKUN</span> ';
+        if(isPanicForce) chips += '<span style="font-size:7px;color:var(--pink);font-weight:900;background:rgba(255,0,119,.15);border:1px solid rgba(255,0,119,.3);border-radius:50px;padding:2px 7px;display:inline-block;">💀 PANIC PAKSA</span> ';
+        if(wrOverride) chips += `<span style="font-size:7px;color:var(--yellow);font-weight:900;background:rgba(251,255,0,.1);border:1px solid rgba(251,255,0,.25);border-radius:50px;padding:2px 7px;display:inline-block;">WR: ${wrOverride}%</span>`;
+
+        const locationStr = [g.country, g.city].filter(Boolean).join(' · ');
+
+        html += `<div class="ip-live-card" data-ipkey="${ipKey}" style="border:1.5px solid ${borderColor};">
+            <div class="ip-live-header" onclick="toggleIPLiveCard('${ipKey}')">
+                <div style="flex:1;min-width:0;">
+                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                        <span style="font-size:13px;font-weight:900;color:var(--yellow);font-family:monospace;letter-spacing:1px;">${g.ip === 'UNKNOWN' ? '— UNKNOWN IP —' : g.ip}</span>
+                        <span style="font-size:10px;font-weight:900;color:${multiUser ? 'var(--pink)' : 'var(--green)'};">${g.players.length} user</span>
+                    </div>
+                    ${locationStr ? `<div style="font-size:8px;color:rgba(255,255,255,.3);margin-top:2px;">${locationStr}${g.isp ? ' · ' + g.isp : ''}</div>` : ''}
+                    <div style="margin-top:4px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+                        <span style="font-size:8px;color:rgba(255,255,255,.35);">Total saldo:</span>
+                        <span style="font-size:9px;font-weight:900;color:var(--yellow);">${totalSaldo.toLocaleString('id-ID')}</span>
+                        ${chips}
+                    </div>
+                    <div style="font-size:8px;color:rgba(255,255,255,.28);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                        ${g.players.map(u => `<span style="color:rgba(255,255,255,.5);">${u.username}</span>`).join(' · ')}
+                    </div>
+                </div>
+                <div style="flex-shrink:0;margin-left:10px;display:flex;align-items:center;gap:8px;">
+                    <i class="fas fa-chevron-down ip-live-arrow${isOpen ? ' open' : ''}" id="iparrow-${ipKey}"></i>
+                </div>
+            </div>
+            <div class="ip-live-body${isOpen ? ' open' : ''}" id="ipbody-${ipKey}">
+                <table class="monitor-table">
+                    <thead><tr>
+                        <th><i class="fas fa-user"></i> PLAYER</th>
+                        <th>WR</th>
+                        <th>MAXWIN</th>
+                        <th><i class="fas fa-hourglass-half"></i> SESI</th>
+                        <th>SALDO</th>
+                        <th>PNL</th>
+                    </tr></thead>
+                    <tbody id="iplive-${ipKey}">${rowsHtml}</tbody>
+                </table>
+            </div>
+        </div>`;
+    }
+
+    container.innerHTML = html;
+}
+
+function toggleIPLiveCard(ipKey) {
+    const body = document.getElementById('ipbody-' + ipKey);
+    const arrow = document.getElementById('iparrow-' + ipKey);
     if(!body) return;
-    if(!sorted.length){ body.innerHTML='<tr><td colspan="6" style="text-align:center;padding:25px;opacity:.4;font-size:11px;">Belum ada data</td></tr>'; return; }
-    body.innerHTML=sorted.map(u=>{
-        const k=safeKey(u.username);
-        const live=Number(u.saldo||0);
-        const start=Number(u.initial_balance_session||0);
-        const diff=live-start;
-        const dc=diff>0?'status-up':(diff<0?'status-down':'status-zero');
-        const wr=u.winrate??'?';
-        const mx=Number(u.maxwin_limit||0);
-        const sm=Number(u.session_minutes||u.session_timer||0);
-        const isPanic=u.panic_mode;
-        prevSaldo[u.username]=live;
-        return `<tr id="lr-${k}"><td><b style="color:var(--yellow);text-shadow:var(--gy);font-size:12px;">${u.username}${isPanic?' ⚠':''}</b><div style="font-size:8px;opacity:.3;margin-top:1px;">${u.bank_name||'—'}</div></td><td><span class="wr-badge ${wr>=60?'wr-high':wr>=30?'wr-mid':'wr-low'}">${wr}%</span></td><td>${buildMxCell(mx,diff)}</td><td>${buildSmCell(sm)}</td><td style="font-weight:900;">${live.toLocaleString('id-ID')}</td><td class="${dc}">${diff>=0?'+':''}${diff.toLocaleString('id-ID')}</td></tr>`;
-    }).join('');
+    const isOpen = body.classList.contains('open');
+    body.classList.toggle('open', !isOpen);
+    if(arrow) arrow.classList.toggle('open', !isOpen);
+}
+
+function expandAllIPCards() {
+    document.querySelectorAll('.ip-live-body').forEach(body => body.classList.add('open'));
+    document.querySelectorAll('.ip-live-arrow').forEach(arrow => arrow.classList.add('open'));
 }
 
 // ══════════════════════════════════════════════════════════════
