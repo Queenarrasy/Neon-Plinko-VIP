@@ -1,6 +1,5 @@
-const crypto = require('crypto');
+import crypto from 'crypto';
 
-// Wajib di Vercel agar req.body terbaca
 export const config = {
     api: {
         bodyParser: {
@@ -9,11 +8,10 @@ export const config = {
     },
 };
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
 
     try {
-        // Debug: log semua yang masuk
         console.log('req.body:', JSON.stringify(req.body));
         console.log('ENV VA:', process.env.IPAYMU_VA ? 'ADA' : 'KOSONG');
         console.log('ENV KEY:', process.env.IPAYMU_KEY ? 'ADA' : 'KOSONG');
@@ -23,18 +21,15 @@ module.exports = async function handler(req, res) {
         const va = process.env.IPAYMU_VA;
         const apiKey = process.env.IPAYMU_KEY;
 
-        // Validasi env tersedia
         if (!va || !apiKey) {
             return res.status(500).json({ message: 'IPAYMU_VA / IPAYMU_KEY belum diset di Vercel Environment Variables' });
         }
 
-        // Validasi amount
         const parsedAmount = parseInt(amount);
         if (!parsedAmount || parsedAmount < 1000) {
             return res.status(400).json({ message: 'Amount minimal Rp 1.000', received: amount });
         }
 
-        // Pastikan order_id HANYA berisi angka
         let finalOrderId;
         if (order_id) {
             finalOrderId = order_id.toString().replace(/\D/g, '');
@@ -53,7 +48,6 @@ module.exports = async function handler(req, res) {
             paymentMethod: 'qris'
         };
 
-        // Signature iPaymu V2
         const jsonBody = JSON.stringify(body);
         const bodyHash = crypto.createHash('sha256').update(jsonBody).digest('hex');
         const stringToSign = `POST:${va}:${bodyHash}:${apiKey}`;
@@ -62,7 +56,6 @@ module.exports = async function handler(req, res) {
 
         console.log('Mengirim ke iPaymu sandbox...');
 
-        // SANDBOX MODE
         const ipaymuRes = await fetch('https://sandbox.ipaymu.com/api/v2/payment/direct', {
             method: 'POST',
             headers: {
@@ -94,4 +87,4 @@ module.exports = async function handler(req, res) {
         console.error('STACK:', error.stack);
         return res.status(500).json({ message: error.message });
     }
-};
+}
