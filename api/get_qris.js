@@ -1,10 +1,24 @@
-import crypto from 'crypto';
+const crypto = require('crypto');
 
-export default async function handler(req, res) {
+// Wajib di Vercel agar req.body terbaca
+export const config = {
+    api: {
+        bodyParser: {
+            sizeLimit: '1mb',
+        },
+    },
+};
+
+module.exports = async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
 
     try {
-        const { amount, username, order_id } = req.body;
+        // Debug: log semua yang masuk
+        console.log('req.body:', JSON.stringify(req.body));
+        console.log('ENV VA:', process.env.IPAYMU_VA ? 'ADA' : 'KOSONG');
+        console.log('ENV KEY:', process.env.IPAYMU_KEY ? 'ADA' : 'KOSONG');
+
+        const { amount, username, order_id } = req.body || {};
 
         const va = process.env.IPAYMU_VA;
         const apiKey = process.env.IPAYMU_KEY;
@@ -17,10 +31,10 @@ export default async function handler(req, res) {
         // Validasi amount
         const parsedAmount = parseInt(amount);
         if (!parsedAmount || parsedAmount < 1000) {
-            return res.status(400).json({ message: 'Amount minimal Rp 1.000' });
+            return res.status(400).json({ message: 'Amount minimal Rp 1.000', received: amount });
         }
 
-        // Pastikan order_id HANYA berisi angka (kompatibel BIGINT Supabase)
+        // Pastikan order_id HANYA berisi angka
         let finalOrderId;
         if (order_id) {
             finalOrderId = order_id.toString().replace(/\D/g, '');
@@ -40,19 +54,16 @@ export default async function handler(req, res) {
         };
 
         // Signature iPaymu V2
-        // Penting: jsonBody harus SAMA PERSIS antara yang di-hash dan yang dikirim
         const jsonBody = JSON.stringify(body);
         const bodyHash = crypto.createHash('sha256').update(jsonBody).digest('hex');
         const stringToSign = `POST:${va}:${bodyHash}:${apiKey}`;
         const signature = crypto.createHmac('sha256', apiKey).update(stringToSign).digest('hex');
         const timestamp = Date.now().toString();
 
-        // SANDBOX MODE
-        // Setelah verifikasi Live selesai, ganti URL ke:
-        // https://my.ipaymu.com/api/v2/payment/direct
-        const IPAYMU_URL = 'https://sandbox.ipaymu.com/api/v2/payment/direct';
+        console.log('Mengirim ke iPaymu sandbox...');
 
-        const ipaymuRes = await fetch(IPAYMU_URL, {
+        // SANDBOX MODE
+        const ipaymuRes = await fetch('https://sandbox.ipaymu.com/api/v2/payment/direct', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -72,7 +83,6 @@ export default async function handler(req, res) {
                 order_id: finalOrderId
             });
         } else {
-            // Kirim detail error dari iPaymu agar mudah di-debug
             return res.status(400).json({
                 message: data.Message || 'Gagal dari iPaymu',
                 detail: data
@@ -80,7 +90,8 @@ export default async function handler(req, res) {
         }
 
     } catch (error) {
-        console.error('Error get_qris:', error.message);
+        console.error('CATCH ERROR:', error.message);
+        console.error('STACK:', error.stack);
         return res.status(500).json({ message: error.message });
     }
-}
+};
