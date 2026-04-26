@@ -1,53 +1,44 @@
-// api/get_qris.js
+const axios = require('axios');
+const crypto = require('crypto');
+
 export default async function handler(req, res) {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
-    }
+    if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
 
     const { amount, username } = req.body;
-    const serverKey = process.env.MIDTRANS_SERVER_KEY; // Mengambil dari Vercel Env
+    const va = process.env.IPAYMU_VA;
+    const apiKey = process.env.IPAYMU_KEY;
 
-    // Buat Order ID unik
-    const orderId = `DEP-${username.substring(0,3).toUpperCase()}-${Date.now()}`;
-
-    // Payload untuk Midtrans
-    const payload = {
-        payment_type: 'qris',
-        transaction_details: {
-            order_id: orderId,
-            gross_amount: parseInt(amount)
-        },
-        customer_details: {
-            first_name: username
-        }
+    const body = {
+        name: username,
+        email: 'user@email.com',
+        amount: amount,
+        referenceId: 'DEP-' + Date.now(),
+        notifyUrl: `https://${req.headers.host}/api/ipaymu-callback`,
+        returnUrl: `https://${req.headers.host}/deposit.html`,
+        cancelUrl: `https://${req.headers.host}/deposit.html`,
+        paymentMethod: 'qris'
     };
 
-    // Encode Server Key ke Base64
-    const auth = Buffer.from(serverKey + ':').toString('base64');
+    const jsonBody = JSON.stringify(body);
+    const signature = crypto.createHmac('sha256', apiKey)
+        .update(crypto.createHash('sha256').update(jsonBody).digest('hex'))
+        .digest('hex');
 
     try {
-        const response = await fetch('https://api.midtrans.com/v2/charge', {
-            method: 'POST',
+        const response = await axios.post('https://my.ipaymu.com/api/v2/payment/direct', body, {
             headers: {
-                'Accept': 'application/json',
                 'Content-Type': 'application/json',
-                'Authorization': `Basic ${auth}`
-            },
-            body: JSON.stringify(payload)
+                'va': va,
+                'signature': signature
+            }
         });
 
-        const data = await response.json();
-
-        if (data.actions && data.actions.length > 0) {
-            // Berhasil mendapatkan QRIS
-            res.status(200).json({ 
-                qr_url: data.actions[0].url, 
-                order_id: orderId 
-            });
+        if (response.data.Status === 200) {
+            res.status(200).json({ token: response.data.Data.Url });
         } else {
-            res.status(400).json({ error: 'Midtrans Error', details: data });
+            res.status(400).json({ message: response.data.Message });
         }
     } catch (error) {
-        res.status(500).json({ error: 'Server Error', message: error.message });
+        res.status(500).json({ message: error.message });
     }
 }
