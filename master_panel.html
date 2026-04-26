@@ -353,6 +353,7 @@
     <div class="tab-link" onclick="switchTab('gift',this)"><i class="fas fa-gift"></i>GIFT</div>
     <div class="tab-link" onclick="switchTab('inbox',this)"><i class="fas fa-inbox"></i>INBOX<span id="inbox-count" class="pending-badge" style="display:none;">0</span></div>
     <div class="tab-link" onclick="switchTab('report',this)"><i class="fas fa-chart-pie"></i>REPORT</div>
+    <div class="tab-link" onclick="switchTab('iptrack',this)"><i class="fas fa-globe"></i>IP/DEV</div>
 </div>
 
 <div id="alpha-nav" class="alpha-bar"></div>
@@ -473,6 +474,7 @@
     <div id="view-gift"    class="tab-content" style="display:none;"></div>
     <div id="view-inbox"   class="tab-content" style="display:none;"></div>
     <div id="view-report"  class="tab-content" style="display:none;"></div>
+    <div id="view-iptrack" class="tab-content" style="display:none;"></div>
 </div>
 
 <script>
@@ -566,7 +568,7 @@ async function fetchInbox() {
     if(r.data) allData.inbox = r.data;
 }
 async function fetchAll() {
-    await Promise.all([fetchProfiles(), fetchDeposits(), fetchWithdrawals(), fetchInbox()]);
+    await Promise.all([fetchProfiles(), fetchDeposits(), fetchWithdrawals(), fetchInbox(), fetchIPData()]);
 }
 
 async function init() {
@@ -762,6 +764,7 @@ function renderPlayers() {
                         ${smBadge}
                     </div>
                     <div style="font-size:8px;opacity:.38;margin-top:2px;">${u.nama_lengkap||''} · ${u.bank_name||''}</div>
+                    ${getPlayerIPInfo(u.username)}
                     ${mxProgress}
                 </div>
                 <div style="text-align:right;flex-shrink:0;margin-left:10px;">
@@ -1347,9 +1350,236 @@ function switchTab(t,el) {
     renderActiveView();
 }
 
-if(sessionStorage.getItem('omega_admin_auth')==='ok'){
-    document.addEventListener('DOMContentLoaded',()=>{ init(); });
+// ══════════════════════════════════════════════════════════════
+//  IP INTEL — TRACKING, GROUPING & KONTROL
+// ══════════════════════════════════════════════════════════════
+
+async function fetchIPData() {
+    const [logsRes, ipCtrlRes, devCtrlRes] = await Promise.all([
+        _db.from('ip_logs').select('*').order('created_at',{ascending:false}).limit(2000),
+        _db.from('ip_controls').select('*').limit(500),
+        _db.from('device_controls').select('*').limit(500)
+    ]);
+    if(logsRes.data)    allData.ipLogs       = logsRes.data;
+    if(ipCtrlRes.data)  allData.ipControls   = ipCtrlRes.data;
+    if(devCtrlRes.data) allData.devControls  = devCtrlRes.data;
 }
+
+async function loadIPIntel() {
+    document.getElementById('ipintel-body').innerHTML = '<div style="text-align:center;padding:40px;opacity:.4;"><i class="fas fa-spinner fa-spin" style="font-size:22px;display:block;margin-bottom:8px;"></i><div style="font-size:10px;letter-spacing:1px;">MEMUAT DATA IP...</div></div>';
+    await fetchIPData();
+    renderIPIntel();
+}
+
+function toggleIPView(mode) {
+    ipViewMode = mode;
+    renderIPIntel();
+}
+
+function renderIPIntel() {
+    const el = document.getElementById('ipintel-body');
+    if(!el) return;
+    const logs = allData.ipLogs || [];
+    if(!logs.length) {
+        el.innerHTML = '<div style="text-align:center;padding:40px;opacity:.3;font-size:12px;"><i class="fas fa-ghost" style="font-size:28px;display:block;margin-bottom:10px;"></i>Belum ada data IP. Pastikan SQL sudah dijalankan.</div>';
+        return;
+    }
+    // Update stats
+    const uniqIPs = [...new Set(logs.map(l=>l.ip_address).filter(Boolean))];
+    const blockedCount = allData.ipControls.filter(c=>c.is_blocked).length + allData.devControls.filter(c=>c.is_blocked).length;
+    const s = id => document.getElementById(id);
+    if(s('ip-stat-total')) s('ip-stat-total').innerText = logs.length;
+    if(s('ip-stat-uniq'))  s('ip-stat-uniq').innerText  = uniqIPs.length;
+    if(s('ip-stat-blocked')) s('ip-stat-blocked').innerText = blockedCount;
+
+    if(ipViewMode === 'ip') renderIPGroupByIP(el, logs);
+    else renderIPGroupByDevice(el, logs);
+}
+
+function renderIPGroupByIP(el, logs) {
+    // Group by IP
+    const groups = {};
+    for(const log of logs) {
+        const ip = log.ip_address || 'UNKNOWN';
+        if(!groups[ip]) groups[ip] = { ip, users: new Set(), events: [], country: log.ip_country||'', city: log.ip_city||'', isp: log.ip_isp||'' };
+        groups[ip].users.add(log.username);
+        groups[ip].events.push(log);
+    }
+    const sorted = Object.values(groups).sort((a,b)=>b.users.size-a.users.size||b.events.length-a.events.length);
+    let html = `<div style="font-size:8px;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">📡 ${sorted.length} UNIQUE IP — diurutkan dari paling banyak user</div>`;
+    for(const g of sorted) {
+        const ctrl = allData.ipControls.find(c=>c.ip_address===g.ip);
+        const isBlocked = ctrl?.is_blocked;
+        const wrOverride = ctrl?.winrate_override;
+        const isPanicForce = ctrl?.panic_force;
+        const usersArr = [...g.users];
+        const lastLog = g.events[0];
+        const lastTime = lastLog ? new Date(lastLog.created_at).toLocaleString('id-ID') : '';
+        const multiUser = g.users.size > 1;
+        const borderColor = isBlocked ? 'rgba(255,0,119,.6)' : multiUser ? 'rgba(251,255,0,.4)' : 'rgba(0,34,255,.3)';
+        html += `<div class="card" style="border-color:${borderColor};margin-bottom:10px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+                <div>
+                    <div style="font-size:13px;font-weight:900;color:var(--yellow);font-family:monospace;letter-spacing:1px;">${g.ip}</div>
+                    <div style="font-size:8px;color:rgba(255,255,255,.35);margin-top:2px;">${g.country}${g.city?' · '+g.city:''} ${g.isp?'· '+g.isp:''}</div>
+                    <div style="font-size:8px;color:rgba(255,255,255,.25);margin-top:1px;">Last seen: ${lastTime}</div>
+                </div>
+                <div style="text-align:right;flex-shrink:0;margin-left:10px;">
+                    <div style="font-size:9px;font-weight:900;color:${multiUser?'var(--pink)':'var(--green)'};">${g.users.size} USER</div>
+                    <div style="font-size:8px;color:rgba(255,255,255,.3);">${g.events.length} events</div>
+                    ${isBlocked?'<div style="font-size:8px;color:var(--pink);font-weight:900;">⛔ DIBLOKIR</div>':''}
+                    ${wrOverride!=null?`<div style="font-size:8px;color:var(--yellow);font-weight:900;">WR: ${wrOverride}%</div>`:''}
+                    ${isPanicForce?'<div style="font-size:8px;color:var(--pink);font-weight:900;">💀 PANIC PAKSA</div>':''}
+                </div>
+            </div>
+            ${multiUser?`<div style="background:rgba(255,0,119,.08);border:1px solid rgba(255,0,119,.2);border-radius:6px;padding:6px 10px;margin-bottom:8px;font-size:8px;color:var(--pink);font-weight:900;">⚠ MULTI-AKUN: ${usersArr.join(', ')}</div>`:''}
+            <div style="font-size:8px;color:rgba(255,255,255,.4);margin-bottom:6px;">Users: <span style="color:var(--yellow);">${usersArr.join(' · ')}</span></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:6px;">
+                <input type="number" id="ip-wr-${CSS.escape(g.ip)}" placeholder="WR Override (1-100)" min="1" max="100" value="${wrOverride||''}"
+                    style="background:rgba(0,0,0,.7);border:1px solid rgba(0,34,255,.3);border-radius:6px;color:var(--yellow);font-size:12px;font-weight:900;padding:8px;text-align:center;outline:none;font-family:'Outfit',sans-serif;width:100%;">
+                <input type="text" id="ip-note-${CSS.escape(g.ip)}" placeholder="Catatan (opsional)" value="${ctrl?.note||''}"
+                    style="background:rgba(0,0,0,.7);border:1px solid rgba(0,34,255,.3);border-radius:6px;color:#fff;font-size:11px;padding:8px;outline:none;font-family:'Outfit',sans-serif;width:100%;">
+            </div>
+            <div class="btn-flex3">
+                <button class="btn-action btn-save" style="margin-top:0;font-size:8px;" onclick="applyIPControl('${g.ip}',false)"><i class="fas fa-sliders"></i> SET WR</button>
+                <button class="btn-action ${isBlocked?'btn-green':'btn-red'}" style="margin-top:0;font-size:8px;" onclick="toggleIPBlock('${g.ip}',${!isBlocked})">
+                    <i class="fas fa-${isBlocked?'lock-open':'ban'}"></i> ${isBlocked?'BUKA':'BLOKIR'}
+                </button>
+                <button class="btn-action ${isPanicForce?'btn-orange':'btn-reject'}" style="margin-top:0;font-size:8px;" onclick="toggleIPPanic('${g.ip}',${!isPanicForce})">
+                    <i class="fas fa-skull"></i> PANIC ${isPanicForce?'OFF':'ON'}
+                </button>
+            </div>
+        </div>`;
+    }
+    el.innerHTML = html;
+}
+
+function renderIPGroupByDevice(el, logs) {
+    const groups = {};
+    for(const log of logs) {
+        const dev = log.device_id || 'UNKNOWN';
+        if(!groups[dev]) groups[dev] = { dev, users: new Set(), events: [], platform: log.platform||'', ua: log.user_agent||'' };
+        groups[dev].users.add(log.username);
+        groups[dev].events.push(log);
+    }
+    const sorted = Object.values(groups).sort((a,b)=>b.users.size-a.users.size||b.events.length-a.events.length);
+    let html = `<div style="font-size:8px;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">📱 ${sorted.length} UNIQUE DEVICE</div>`;
+    for(const g of sorted) {
+        const ctrl = allData.devControls.find(c=>c.device_id===g.dev);
+        const isBlocked = ctrl?.is_blocked;
+        const wrOverride = ctrl?.winrate_override;
+        const usersArr = [...g.users];
+        const multiUser = g.users.size > 1;
+        const lastLog = g.events[0];
+        const lastTime = lastLog ? new Date(lastLog.created_at).toLocaleString('id-ID') : '';
+        html += `<div class="card" style="border-color:${isBlocked?'rgba(255,0,119,.6)':multiUser?'rgba(251,255,0,.4)':'rgba(0,34,255,.3)'};margin-bottom:10px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+                <div>
+                    <div style="font-size:11px;font-weight:900;color:var(--pink);font-family:monospace;">${g.dev}</div>
+                    <div style="font-size:8px;color:rgba(255,255,255,.3);margin-top:2px;">${g.platform}</div>
+                    <div style="font-size:8px;color:rgba(255,255,255,.25);margin-top:1px;">Last: ${lastTime}</div>
+                </div>
+                <div style="text-align:right;flex-shrink:0;margin-left:8px;">
+                    <div style="font-size:9px;font-weight:900;color:${multiUser?'var(--pink)':'var(--green)'};">${g.users.size} USER</div>
+                    <div style="font-size:8px;color:rgba(255,255,255,.3);">${g.events.length} events</div>
+                    ${isBlocked?'<div style="font-size:8px;color:var(--pink);font-weight:900;">⛔ BLOKIR</div>':''}
+                    ${wrOverride!=null?`<div style="font-size:8px;color:var(--yellow);font-weight:900;">WR: ${wrOverride}%</div>`:''}
+                </div>
+            </div>
+            ${multiUser?`<div style="background:rgba(255,0,119,.08);border:1px solid rgba(255,0,119,.2);border-radius:6px;padding:6px 10px;margin-bottom:8px;font-size:8px;color:var(--pink);font-weight:900;">⚠ MULTI-AKUN: ${usersArr.join(', ')}</div>`:''}
+            <div style="font-size:8px;color:rgba(255,255,255,.4);margin-bottom:6px;">Users: <span style="color:var(--yellow);">${usersArr.join(' · ')}</span></div>
+            <div class="btn-flex">
+                <button class="btn-action ${isBlocked?'btn-green':'btn-red'}" style="margin-top:0;font-size:8px;" onclick="toggleDeviceBlock('${g.dev}',${!isBlocked})">
+                    <i class="fas fa-${isBlocked?'lock-open':'ban'}"></i> ${isBlocked?'BUKA DEVICE':'BLOKIR DEVICE'}
+                </button>
+                <button class="btn-action btn-save" style="margin-top:0;font-size:8px;" onclick="applyDeviceWR('${g.dev}',${wrOverride||''})">
+                    <i class="fas fa-sliders"></i> SET WR DEVICE
+                </button>
+            </div>
+        </div>`;
+    }
+    el.innerHTML = html;
+}
+
+async function applyIPControl(ip, isBlocked) {
+    const wrEl = document.querySelector(`[id="ip-wr-${CSS.escape(ip)}"]`);
+    const noteEl = document.querySelector(`[id="ip-note-${CSS.escape(ip)}"]`);
+    const wr = parseInt(wrEl?.value) || null;
+    const note = noteEl?.value || '';
+    const existing = allData.ipControls.find(c=>c.ip_address===ip);
+    const payload = { ip_address:ip, winrate_override:wr, note, updated_at:new Date().toISOString() };
+    let err;
+    if(existing) {
+        ({error:err} = await _db.from('ip_controls').update(payload).eq('ip_address',ip));
+    } else {
+        ({error:err} = await _db.from('ip_controls').insert([payload]));
+    }
+    if(err) showAlert('Gagal: '+err.message);
+    else { showAlert(wr?`✓ IP ${ip} → WR ${wr}%`:`✓ WR override dihapus`,'ok'); await fetchIPData(); renderIPIntel(); }
+}
+
+async function toggleIPBlock(ip, block) {
+    const existing = allData.ipControls.find(c=>c.ip_address===ip);
+    let err;
+    const payload = { ip_address:ip, is_blocked:block, updated_at:new Date().toISOString() };
+    if(existing) ({error:err} = await _db.from('ip_controls').update({is_blocked:block,updated_at:new Date().toISOString()}).eq('ip_address',ip));
+    else ({error:err} = await _db.from('ip_controls').insert([payload]));
+    if(err) showAlert('Gagal: '+err.message);
+    else { showAlert(block?`⛔ IP ${ip} DIBLOKIR`:`✅ IP ${ip} dibuka`,'ok'); await fetchIPData(); renderIPIntel(); }
+}
+
+async function toggleIPPanic(ip, panic) {
+    const existing = allData.ipControls.find(c=>c.ip_address===ip);
+    let err;
+    const payload = { ip_address:ip, panic_force:panic, updated_at:new Date().toISOString() };
+    if(existing) ({error:err} = await _db.from('ip_controls').update({panic_force:panic,updated_at:new Date().toISOString()}).eq('ip_address',ip));
+    else ({error:err} = await _db.from('ip_controls').insert([payload]));
+    if(err) showAlert('Gagal: '+err.message);
+    else { showAlert(panic?`💀 PANIC paksa ON untuk IP ${ip}`:`✅ PANIC force dinonaktifkan`,'ok'); await fetchIPData(); renderIPIntel(); }
+}
+
+async function toggleDeviceBlock(devId, block) {
+    const existing = allData.devControls.find(c=>c.device_id===devId);
+    let err;
+    const payload = { device_id:devId, is_blocked:block, updated_at:new Date().toISOString() };
+    if(existing) ({error:err} = await _db.from('device_controls').update({is_blocked:block,updated_at:new Date().toISOString()}).eq('device_id',devId));
+    else ({error:err} = await _db.from('device_controls').insert([payload]));
+    if(err) showAlert('Gagal: '+err.message);
+    else { showAlert(block?`⛔ Device DIBLOKIR`:`✅ Device dibuka`,'ok'); await fetchIPData(); renderIPIntel(); }
+}
+
+async function applyDeviceWR(devId, currentWr) {
+    const wr = parseInt(prompt('Set WR Override untuk device ini (1-100), kosongkan untuk hapus:', currentWr||''));
+    const wrVal = isNaN(wr) ? null : Math.min(100,Math.max(1,wr));
+    const existing = allData.devControls.find(c=>c.device_id===devId);
+    let err;
+    const payload = { device_id:devId, winrate_override:wrVal, updated_at:new Date().toISOString() };
+    if(existing) ({error:err} = await _db.from('device_controls').update(payload).eq('device_id',devId));
+    else ({error:err} = await _db.from('device_controls').insert([payload]));
+    if(err) showAlert('Gagal: '+err.message);
+    else { showAlert(wrVal?`✓ Device WR → ${wrVal}%`:`✓ WR override dihapus`,'ok'); await fetchIPData(); renderIPIntel(); }
+}
+
+// ── Tampilkan IP di kartu player ──────────────────────────────
+// (diinjeksi ke renderPlayers agar tiap kartu player terlihat IP-nya)
+function getPlayerIPInfo(username) {
+    const logs = allData.ipLogs.filter(l=>l.username===username);
+    if(!logs.length) return '';
+    const last = logs[0];
+    const ip = last.ip_address || '?';
+    const ctrl = allData.ipControls.find(c=>c.ip_address===ip);
+    const sameIPUsers = allData.ipLogs.filter(l=>l.ip_address===ip);
+    const uniqUsers = [...new Set(sameIPUsers.map(l=>l.username))].filter(u=>u!==username);
+    let badge = `<span style="font-size:7px;color:rgba(255,255,255,.3);font-family:monospace;">IP: <span style="color:${ctrl?.is_blocked?'var(--pink)':'var(--yellow)'};">${ip}</span>`;
+    if(last.ip_country) badge += ` · ${last.ip_country}`;
+    if(ctrl?.is_blocked) badge += ' ⛔';
+    if(ctrl?.winrate_override) badge += ` [WR:${ctrl.winrate_override}%]`;
+    badge += '</span>';
+    if(uniqUsers.length) badge += `<span style="font-size:7px;color:var(--pink);font-weight:900;margin-left:5px;">⚠ SHARED IP: ${uniqUsers.join(', ')}</span>`;
+    return `<div style="margin-top:3px;">${badge}</div>`;
+}
+
+
 
 setInterval(async()=>{
     if(sessionStorage.getItem('omega_admin_auth')!=='ok') return;
