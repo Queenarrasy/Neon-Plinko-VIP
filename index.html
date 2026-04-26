@@ -322,19 +322,24 @@
             document.getElementById('kustom-bank-area').innerHTML = v==='LAINNYA' ? `<div class="input-group"><i class="fas fa-pen icon-left"></i><input type="text" id="bank_kustom" placeholder="${t('ph_nama')}" style="padding-left:50px;"></div>` : '';
         }
 
-        // ── IP & DEVICE INTELLIGENCE ────────────────────────────
+        // ══════════════════════════════════════════════════════
+        // IP & DEVICE INTELLIGENCE — ROBUST MULTI-PROVIDER v2
+        // ══════════════════════════════════════════════════════
+
+        // Cache IP agar tidak fetch berkali-kali dalam satu sesi
+        let _cachedIPInfo = null;
+
         function generateDeviceId() {
-            // Fingerprint deterministik dari browser (bukan random, bisa konsisten per device)
+            // Fingerprint deterministik — konsisten per device/browser
             const fp = [
                 navigator.userAgent,
                 navigator.language,
                 screen.width + 'x' + screen.height,
                 screen.colorDepth,
                 new Date().getTimezoneOffset(),
-                navigator.hardwareConcurrency || '',
-                navigator.platform
-            ].join('|');
-            // hash sederhana
+                navigator.hardwareConcurrency || '0',
+                navigator.platform || navigator.userAgentData?.platform || 'web'
+            ].join('||');
             let h = 0;
             for(let i = 0; i < fp.length; i++){
                 h = Math.imul(31, h) + fp.charCodeAt(i) | 0;
@@ -342,82 +347,152 @@
             return 'D' + Math.abs(h).toString(36).toUpperCase().padStart(8,'0');
         }
 
-        async function getIPInfo() {
+        async function _fetchFromProvider(url, timeout, mapper) {
+            const ctrl = new AbortController();
+            const tid = setTimeout(() => ctrl.abort(), timeout);
             try {
-                const r = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(4000) });
+                const r = await fetch(url, { signal: ctrl.signal });
+                if(!r.ok) throw new Error('HTTP ' + r.status);
                 const d = await r.json();
-                return {
-                    ip: d.ip || '',
-                    country: d.country_name || '',
-                    city: d.city || '',
-                    isp: d.org || ''
-                };
+                clearTimeout(tid);
+                return mapper(d);
             } catch(e) {
-                try {
-                    // fallback ke ipinfo.io
-                    const r2 = await fetch('https://ipinfo.io/json', { signal: AbortSignal.timeout(4000) });
-                    const d2 = await r2.json();
-                    return { ip: d2.ip || '', country: d2.country || '', city: d2.city || '', isp: d2.org || '' };
-                } catch(e2) { return { ip:'', country:'', city:'', isp:'' }; }
+                clearTimeout(tid);
+                throw e;
             }
+        }
+
+        async function getIPInfo() {
+            // Kembalikan cache jika sudah ada (hindari rate-limit)
+            if(_cachedIPInfo && _cachedIPInfo.ip) return _cachedIPInfo;
+
+            const providers = [
+                {
+                    // Provider 1: ipwho.is — gratis, tidak perlu API key, reliable di ID
+                    url: 'https://ipwho.is/',
+                    timeout: 5000,
+                    map: d => ({ ip: d.ip||'', country: d.country||'', city: d.city||'', isp: d.connection?.isp||d.connection?.org||'' })
+                },
+                {
+                    // Provider 2: ip-api.com — gratis, bagus untuk Asia
+                    url: 'http://ip-api.com/json/?fields=status,query,country,city,isp',
+                    timeout: 5000,
+                    map: d => ({ ip: d.query||'', country: d.country||'', city: d.city||'', isp: d.isp||'' })
+                },
+                {
+                    // Provider 3: ipapi.co — fallback
+                    url: 'https://ipapi.co/json/',
+                    timeout: 6000,
+                    map: d => ({ ip: d.ip||'', country: d.country_name||'', city: d.city||'', isp: d.org||'' })
+                },
+                {
+                    // Provider 4: ipinfo.io — final fallback
+                    url: 'https://ipinfo.io/json',
+                    timeout: 6000,
+                    map: d => ({ ip: d.ip||'', country: d.country||'', city: d.city||'', isp: d.org||'' })
+                }
+            ];
+
+            for(const p of providers) {
+                try {
+                    const info = await _fetchFromProvider(p.url, p.timeout, p.map);
+                    if(info && info.ip) {
+                        console.log('[getIPInfo OK]', p.url, info.ip);
+                        _cachedIPInfo = info;
+                        return info;
+                    }
+                } catch(e) {
+                    console.warn('[getIPInfo failed]', p.url, e.message);
+                }
+            }
+            // Semua provider gagal — return kosong tapi jangan crash
+            console.error('[getIPInfo] SEMUA PROVIDER GAGAL');
+            return { ip: '', country: '', city: '', isp: '' };
         }
 
         async function logIPEvent(username, eventType) {
             try {
-                const ipInfo = await getIPInfo();
-                const deviceId = generateDeviceId();
-                const logRow = {
-                    username,
-                    event_type: eventType,
-                    ip_address: ipInfo.ip || null,
-                    device_id: deviceId,
-                    user_agent: navigator.userAgent,
-                    screen_res: screen.width + 'x' + screen.height,
-                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                    language: navigator.language,
-                    platform: navigator.platform || navigator.userAgentData?.platform || 'web',
-                    ip_country: ipInfo.country || null,
-                    ip_city: ipInfo.city || null,
-                    ip_isp: ipInfo.isp || null
-                };
-                // Insert ke ip_logs — log error jika gagal (jangan silent)
-                const { error: logErr } = await _supa.from('ip_logs').insert([logRow]);
-                if(logErr) console.error('[ip_logs insert error]', logErr.message, logErr.code, logErr.details);
-                
-                // Update profil user dengan IP terakhir
-                const { error: profErr } = await _supa.from('profiles').update({
-                    last_ip: ipInfo.ip || null,
-                    last_device_id: deviceId,
-                    last_user_agent: navigator.userAgent,
-                    last_seen: new Date().toISOString(),
-                    ip_country: ipInfo.country || null,
-                    ip_city: ipInfo.city || null,
-                    ip_isp: ipInfo.isp || null
-                }).eq('username', username);
-                if(profErr) console.error('[profiles update IP error]', profErr.message);
+                // Fetch IP & device ID secara paralel
+                const [ipInfo, deviceId] = await Promise.all([
+                    getIPInfo(),
+                    Promise.resolve(generateDeviceId())
+                ]);
 
-                // Simpan device id di localStorage untuk sesi game
+                const logRow = {
+                    username        : username,
+                    event_type      : eventType,
+                    ip_address      : ipInfo.ip      || null,
+                    device_id       : deviceId,
+                    user_agent      : navigator.userAgent,
+                    screen_res      : screen.width + 'x' + screen.height,
+                    timezone        : Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    language        : navigator.language,
+                    platform        : navigator.platform || navigator.userAgentData?.platform || 'web',
+                    ip_country      : ipInfo.country || null,
+                    ip_city         : ipInfo.city    || null,
+                    ip_isp          : ipInfo.isp     || null
+                };
+
+                console.log('[logIPEvent] Inserting:', logRow);
+
+                // Insert ke ip_logs
+                const { error: logErr } = await _supa.from('ip_logs').insert([logRow]);
+                if(logErr) {
+                    console.error('[ip_logs INSERT FAILED]', logErr.message, '| code:', logErr.code, '| hint:', logErr.hint, '| details:', logErr.details);
+                } else {
+                    console.log('[ip_logs INSERT OK]', eventType, ipInfo.ip);
+                }
+
+                // Update profil user dengan data IP terkini
+                const { error: profErr } = await _supa.from('profiles').update({
+                    last_ip          : ipInfo.ip      || null,
+                    last_device_id   : deviceId,
+                    last_user_agent  : navigator.userAgent,
+                    last_seen        : new Date().toISOString(),
+                    ip_country       : ipInfo.country || null,
+                    ip_city          : ipInfo.city    || null,
+                    ip_isp           : ipInfo.isp     || null
+                }).eq('username', username);
+                if(profErr) console.error('[profiles UPDATE IP FAILED]', profErr.message);
+
+                // Simpan ke localStorage untuk referensi game
                 localStorage.setItem('neon_device_id', deviceId);
-                localStorage.setItem('neon_last_ip', ipInfo.ip || '');
-                console.log('[IP Log OK]', eventType, 'IP:', ipInfo.ip, 'Device:', deviceId);
-            } catch(e) { console.error('[logIPEvent exception]', e); }
+                if(ipInfo.ip) localStorage.setItem('neon_last_ip', ipInfo.ip);
+
+            } catch(e) {
+                console.error('[logIPEvent EXCEPTION]', e);
+            }
         }
 
         async function checkIPBlock(username) {
-            // Cek apakah IP atau device user diblokir oleh admin
             try {
+                // Gunakan cache — jangan fetch IP lagi kalau sudah ada
+                const ipInfo  = await getIPInfo();
                 const deviceId = generateDeviceId();
-                const ipInfo = await getIPInfo();
+
                 if(ipInfo.ip) {
-                    const { data: ipCtrl } = await _supa.from('ip_controls').select('is_blocked,winrate_override,panic_force').eq('ip_address', ipInfo.ip).maybeSingle();
-                    if(ipCtrl && ipCtrl.is_blocked) return { blocked: true, reason: 'IP' };
+                    const { data: ipCtrl } = await _supa
+                        .from('ip_controls')
+                        .select('is_blocked,winrate_override,panic_force')
+                        .eq('ip_address', ipInfo.ip)
+                        .maybeSingle();
+                    if(ipCtrl?.is_blocked) return { blocked: true, reason: 'IP', ip: ipInfo.ip };
                 }
-                const { data: devCtrl } = await _supa.from('device_controls').select('is_blocked').eq('device_id', deviceId).maybeSingle();
-                if(devCtrl && devCtrl.is_blocked) return { blocked: true, reason: 'DEVICE' };
+
+                const { data: devCtrl } = await _supa
+                    .from('device_controls')
+                    .select('is_blocked,winrate_override')
+                    .eq('device_id', deviceId)
+                    .maybeSingle();
+                if(devCtrl?.is_blocked) return { blocked: true, reason: 'DEVICE', device: deviceId };
+
+                return { blocked: false, ip: ipInfo.ip, device: deviceId };
+            } catch(e) {
+                console.warn('[checkIPBlock error]', e);
                 return { blocked: false };
-            } catch(e) { return { blocked: false }; }
+            }
         }
-        // ───────────────────────────────────────────────────────
+        // ──────────────────────────────────────────────────────
 
         async function handleAuth() {
             try { document.getElementById('snd-click').play(); } catch(e){}
@@ -426,6 +501,8 @@
             const btn = document.getElementById('btn-action');
             if(!u || !p) return showNeonModal(t('err_fill_all'));
             btn.disabled = true; btn.innerText = "AUTHENTICATING...";
+            // Reset cache IP agar selalu fresh saat login/daftar
+            _cachedIPInfo = null;
 
             if(currentMode === 'login'){
                 const {data, error} = await _supa.from('profiles').select('*').eq('username',u).eq('password',p).maybeSingle();
@@ -467,8 +544,8 @@
                 }]);
                 if(insErr){ showNeonModal(insErr.message); btn.disabled = false; }
                 else {
-                    // Log event register
-                    logIPEvent(u, 'REGISTER');
+                    // Log event register — await agar data IP tersimpan
+                    await logIPEvent(u, 'REGISTER');
                     try { document.getElementById('snd-success').play(); } catch(e){}
                     showNeonModal(t('ok_created'));
                     setTimeout(()=>location.reload(), 2000);
