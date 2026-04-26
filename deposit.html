@@ -537,13 +537,13 @@ async function openQrisPage(amount) {
     btnMain.innerHTML = '<i class="fas fa-spinner fa-spin"></i> MENGALIHKAN KE IPAYMU...';
 
     try {
-        // 1. Buat ID Unik untuk transaksi ini
-        const orderId = 'DEP-' + Date.now();
+        // 1. Buat ID Unik untuk transaksi ini (murni angka agar kompatibel dengan kolom BIGINT Supabase)
+        const orderId = Date.now().toString();
 
         // 2. Simpan "PROSES" ke Database terlebih dahulu agar Callback bisa bekerja
         const db = getDB();
         const { error: dbError } = await db.from('deposits').insert([{ 
-            id: orderId,
+            id: parseInt(orderId),
             username: user, 
             amount: amount, 
             method: 'QRIS', 
