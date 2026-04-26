@@ -54,8 +54,8 @@ export default async function handler(req, res) {
         const signature = crypto.createHmac('sha256', apiKey).update(stringToSign).digest('hex');
         const timestamp = Date.now().toString();
 
-        console.log('Mengirim ke iPaymu sandbox...');
-
+        // SANDBOX MODE
+        // Ganti ke https://my.ipaymu.com/api/v2/payment/direct setelah verifikasi Live selesai
         const ipaymuRes = await fetch('https://sandbox.ipaymu.com/api/v2/payment/direct', {
             method: 'POST',
             headers: {
@@ -72,7 +72,16 @@ export default async function handler(req, res) {
 
         if (data.Status === 200) {
             return res.status(200).json({
-                token: data.Data.Url,
+                // QrImage  = URL gambar QR code (untuk ditampilkan sebagai <img>)
+                // QrString = raw string QRIS (untuk di-generate manual jika perlu)
+                // QrTemplate = halaman pembayaran iPaymu (bisa dibuka langsung)
+                qr_image: data.Data.QrImage,
+                qr_string: data.Data.QrString,
+                qr_template: data.Data.QrTemplate,
+                expired: data.Data.Expired,
+                total: data.Data.Total,
+                fee: data.Data.Fee,
+                transaction_id: data.Data.TransactionId,
                 order_id: finalOrderId
             });
         } else {
@@ -84,7 +93,6 @@ export default async function handler(req, res) {
 
     } catch (error) {
         console.error('CATCH ERROR:', error.message);
-        console.error('STACK:', error.stack);
         return res.status(500).json({ message: error.message });
     }
 }
