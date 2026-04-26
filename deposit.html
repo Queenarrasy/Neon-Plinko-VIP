@@ -564,9 +564,30 @@ async function openQrisPage(amount) {
         
         const data = await response.json();
 
-        // 4. Redirect ke halaman iPaymu
-        if (data.token) {
-            window.location.href = data.token;
+        // 4. Tampilkan QR Code langsung di halaman
+        if (data.qr_image) {
+            // Set gambar QR
+            document.getElementById('qris-image-display').src = data.qr_image;
+            // Tampilkan nominal
+            const nominalFormatted = 'Rp ' + parseInt(data.total || amount).toLocaleString('id-ID');
+            document.getElementById('qp-nominal-display').textContent = nominalFormatted;
+            document.getElementById('qp-step-nominal').textContent = nominalFormatted;
+            // Set expired timer jika ada
+            if (data.expired) {
+                const expDate = new Date(data.expired);
+                const now = new Date();
+                const diffMs = expDate - now;
+                const diffMin = Math.floor(diffMs / 60000);
+                const timerEl = document.querySelector('.qp-timer');
+                if (timerEl && diffMin > 0) {
+                    timerEl.innerHTML = '<i class="fas fa-clock"></i> Selesaikan pembayaran dalam <b style="color:var(--yellow)">' + diffMin + ' menit</b>';
+                }
+            }
+            // Tampilkan halaman QR
+            btnMain.disabled = false;
+            btnMain.innerHTML = originalBtnText;
+            document.getElementById('qris-page').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
         } else {
             throw new Error(data.message || data.error || "Gagal membuat link pembayaran");
         }
