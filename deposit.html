@@ -165,7 +165,7 @@
         .nav-item.active{color:var(--yellow);}
         .nav-item i{font-size:clamp(16px,5vw,20px);display:block;margin-bottom:3px;}
 
-        /* QRIS PAGE OVERLAY */
+        /* QRIS PAGE OVERLAY - Disembunyikan karena iPaymu memanggil halamannya sendiri */
         #qris-page{
             display:none;
             position:fixed;
@@ -435,7 +435,7 @@ function getDB() { if (!_db) _db = supabase.createClient(SUPA_URL, SUPA_KEY); re
 
 let curMethod = 'QRIS', KURS = 16800, FEE_USDT = 2, isSubmitting = false;
 let _pendingQrisAmount = 0;
-let _currentOrderId = ""; // Untuk melacak transaksi Midtrans
+let _currentOrderId = ""; 
 let realtimeChannel = null;
 
 particlesJS("particles-js", {
@@ -498,7 +498,7 @@ function submitDeposit() {
 
     if (curMethod === 'QRIS') {
         playSnd('click');
-        openQrisPage(amount);
+        openQrisPage(amount); // Memanggil sistem iPaymu Baru
         return;
     }
 
@@ -524,7 +524,9 @@ function submitDeposit() {
     })();
 }
 
-// FUNGSI BARU: MENDAPATKAN QRIS ASLI DARI BACKEND VERCEL
+// ==========================================
+// FUNGSI BARU: REDIRECT KE IPAYMU OTOMATIS
+// ==========================================
 async function openQrisPage(amount) {
     const user = getUser();
     const btnMain = document.getElementById('btn-konfirmasi');
@@ -532,86 +534,57 @@ async function openQrisPage(amount) {
 
     // Loading State
     btnMain.disabled = true;
-    btnMain.innerHTML = '<i class="fas fa-spinner fa-spin"></i> GENERATING QRIS...';
+    btnMain.innerHTML = '<i class="fas fa-spinner fa-spin"></i> MENGALIHKAN KE IPAYMU...';
 
     try {
+        // 1. Buat ID Unik untuk transaksi ini
+        const orderId = 'DEP-' + Date.now();
+
+        // 2. Simpan "PROSES" ke Database terlebih dahulu agar Callback bisa bekerja
+        const db = getDB();
+        const { error: dbError } = await db.from('deposits').insert([{ 
+            id: orderId,
+            username: user, 
+            amount: amount, 
+            method: 'QRIS', 
+            net_receive: amount, 
+            status: 'PROSES'
+        }]);
+        
+        if (dbError) throw dbError;
+
+        // 3. Request Link ke Vercel
         const response = await fetch('/api/get_qris', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ amount: amount, username: user })
+            body: JSON.stringify({ amount: amount, username: user, order_id: orderId })
         });
 
         if (!response.ok) throw new Error("Gagal terhubung ke API (Status " + response.status + ")");
         
         const data = await response.json();
 
-        if (data.qr_url) {
-            _pendingQrisAmount = amount;
-            _currentOrderId = data.order_id;
-            
-            // Masukkan data ke UI QRIS Page
-            document.getElementById('qris-image-display').src = data.qr_url;
-            document.getElementById('qp-nominal-display').textContent = formatRupiah(amount);
-            document.getElementById('qp-step-nominal').textContent = formatRupiah(amount);
-            
-            const doneBtn = document.getElementById('qp-done-btn');
-            if (doneBtn) { doneBtn.disabled = false; doneBtn.innerHTML = '<i class="fas fa-circle-check"></i>&nbsp; SUDAH BAYAR'; }
-            
-            document.getElementById('qris-page').style.display = 'block';
-            document.body.style.overflow = 'hidden';
+        // 4. Redirect ke halaman iPaymu
+        if (data.token) {
+            window.location.href = data.token;
         } else {
-            throw new Error(data.error || "Gagal membuat QRIS");
+            throw new Error(data.message || data.error || "Gagal membuat link pembayaran");
         }
     } catch (err) {
         playSnd('error');
         showModal("ERROR", err.message);
-    } finally {
         btnMain.disabled = false;
         btnMain.innerHTML = originalBtnText;
     }
 }
 
+// Fungsi Lama (Dibiarkan agar tidak error jika ada sisa panggilan lain)
 function closeQrisPage() {
     playSnd('click');
     document.getElementById('qris-page').style.display = 'none';
     document.body.style.overflow = '';
 }
-
-async function confirmPaymentDone() {
-    if (isSubmitting) return;
-    const user = getUser();
-    const amount = _pendingQrisAmount;
-    if (!user || amount < 20000) return;
-    isSubmitting = true;
-    const doneBtn = document.getElementById('qp-done-btn');
-    if (doneBtn) { doneBtn.disabled = true; doneBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> MEMPROSES...`; }
-    try {
-        const db = getDB();
-        // Simpan ke riwayat deposit Supabase dengan order_id Midtrans
-        const { error } = await db.from('deposits').insert([{ 
-            username: user, 
-            amount: amount, 
-            method: 'QRIS', 
-            net_receive: amount, 
-            status: 'PROSES',
-            id: _currentOrderId // Opsional: gunakan order_id dari midtrans sebagai ID baris
-        }]);
-        
-        if (error) throw error;
-        playSnd('success');
-        closeQrisPage();
-        document.getElementById('amount-val').value = "";
-        calculate();
-        showNeonAlert("PEMBAYARAN DITERIMA — MENUNGGU VERIFIKASI", true);
-        showModal("BERHASIL", `Permintaan deposit ${formatRupiah(amount)} dikirim!\n\nSaldo akan otomatis bertambah setelah sistem memverifikasi pembayaran Anda.\n\n⏱ Estimasi: 1-5 menit`);
-        await loadHistory();
-        await updateUserSaldo();
-    } catch(err) {
-        playSnd('error');
-        showModal("ERROR", "Gagal menyimpan riwayat:\n" + err.message);
-        if (doneBtn) { doneBtn.disabled = false; doneBtn.innerHTML = `<i class="fas fa-circle-check"></i>&nbsp; SUDAH BAYAR`; }
-    } finally { isSubmitting = false; }
-}
+async function confirmPaymentDone() {}
 
 async function updateUserSaldo() {
     const user = getUser();
