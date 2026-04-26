@@ -15,11 +15,22 @@ export default async function handler(req, res) {
         console.log('req.body:', JSON.stringify(req.body));
         console.log('ENV VA:', process.env.IPAYMU_VA ? 'ADA' : 'KOSONG');
         console.log('ENV KEY:', process.env.IPAYMU_KEY ? 'ADA' : 'KOSONG');
+        console.log('MODE:', process.env.IPAYMU_MODE || 'sandbox');
 
         const { amount, username, order_id } = req.body || {};
 
         const va = process.env.IPAYMU_VA;
         const apiKey = process.env.IPAYMU_KEY;
+
+        // Otomatis pilih URL berdasarkan ENV IPAYMU_MODE
+        // Saat ini: sandbox. Setelah verifikasi Live selesai:
+        // Tambahkan ENV IPAYMU_MODE=live di Vercel → otomatis pindah ke Live
+        const isLive = process.env.IPAYMU_MODE === 'live';
+        const IPAYMU_URL = isLive
+            ? 'https://my.ipaymu.com/api/v2/payment/direct'
+            : 'https://sandbox.ipaymu.com/api/v2/payment/direct';
+
+        console.log('URL iPaymu:', IPAYMU_URL);
 
         if (!va || !apiKey) {
             return res.status(500).json({ message: 'IPAYMU_VA / IPAYMU_KEY belum diset di Vercel Environment Variables' });
@@ -30,6 +41,7 @@ export default async function handler(req, res) {
             return res.status(400).json({ message: 'Amount minimal Rp 1.000', received: amount });
         }
 
+        // Pastikan order_id hanya angka (kompatibel BIGINT Supabase)
         let finalOrderId;
         if (order_id) {
             finalOrderId = order_id.toString().replace(/\D/g, '');
@@ -48,15 +60,14 @@ export default async function handler(req, res) {
             paymentMethod: 'qris'
         };
 
+        // Signature iPaymu V2
         const jsonBody = JSON.stringify(body);
         const bodyHash = crypto.createHash('sha256').update(jsonBody).digest('hex');
         const stringToSign = `POST:${va}:${bodyHash}:${apiKey}`;
         const signature = crypto.createHmac('sha256', apiKey).update(stringToSign).digest('hex');
         const timestamp = Date.now().toString();
 
-        // SANDBOX MODE
-        // Ganti ke https://my.ipaymu.com/api/v2/payment/direct setelah verifikasi Live selesai
-        const ipaymuRes = await fetch('https://sandbox.ipaymu.com/api/v2/payment/direct', {
+        const ipaymuRes = await fetch(IPAYMU_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -72,9 +83,6 @@ export default async function handler(req, res) {
 
         if (data.Status === 200) {
             return res.status(200).json({
-                // QrImage  = URL gambar QR code (untuk ditampilkan sebagai <img>)
-                // QrString = raw string QRIS (untuk di-generate manual jika perlu)
-                // QrTemplate = halaman pembayaran iPaymu (bisa dibuka langsung)
                 qr_image: data.Data.QrImage,
                 qr_string: data.Data.QrString,
                 qr_template: data.Data.QrTemplate,
