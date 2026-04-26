@@ -5,6 +5,8 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
 
     const { amount, username } = req.body;
+    
+    // Mengambil Key dari Vercel Environment Variables
     const va = process.env.IPAYMU_VA;
     const apiKey = process.env.IPAYMU_KEY;
 
@@ -13,13 +15,15 @@ export default async function handler(req, res) {
         email: 'user@email.com',
         amount: amount,
         referenceId: 'DEP-' + Date.now(),
-        notifyUrl: `https://${req.headers.host}/api/ipaymu-callback`,
-        returnUrl: `https://${req.headers.host}/deposit.html`,
-        cancelUrl: `https://${req.headers.host}/deposit.html`,
+        // INI PENGGANTI NOTIFY URL MANUAL
+        notifyUrl: `https://neon-plinko-vip.vercel.app/api/ipaymu-callback`,
+        returnUrl: `https://neon-plinko-vip.vercel.app/deposit.html`,
+        cancelUrl: `https://neon-plinko-vip.vercel.app/deposit.html`,
         paymentMethod: 'qris'
     };
 
     const jsonBody = JSON.stringify(body);
+    // Membuat Signature Keamanan iPaymu
     const signature = crypto.createHmac('sha256', apiKey)
         .update(crypto.createHash('sha256').update(jsonBody).digest('hex'))
         .digest('hex');
@@ -34,6 +38,7 @@ export default async function handler(req, res) {
         });
 
         if (response.data.Status === 200) {
+            // Mengirim link pembayaran ke HP user
             res.status(200).json({ token: response.data.Data.Url });
         } else {
             res.status(400).json({ message: response.data.Message });
