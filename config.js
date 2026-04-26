@@ -196,6 +196,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (user) {
         syncNeonData();
         setInterval(syncNeonData, 10000);
+        // Update IP/device ke database saat halaman game/profil dibuka
+        if (!isPublic && !isAdmin) {
+            updateIPOnSession();
+        }
     }
 });
 
@@ -222,6 +226,59 @@ async function setSystemConfig(key, value) {
     } catch (err) {
         console.error('[setSystemConfig Error]', err);
     }
+}
+
+// ── 8. IP UPDATE SAAT GAME ───────────────────────────────────
+// Dipanggil sekali saat game.html load — update IP terkini ke db
+
+async function updateIPOnSession() {
+    const user = getUsername();
+    if(!user) return;
+    try {
+        // Ambil IP via ipapi.co dengan timeout
+        let ipInfo = { ip: null, country: null, city: null, isp: null };
+        try {
+            const r = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(5000) });
+            const d = await r.json();
+            ipInfo = { ip: d.ip||null, country: d.country_name||null, city: d.city||null, isp: d.org||null };
+        } catch(e1) {
+            try {
+                const r2 = await fetch('https://ipinfo.io/json', { signal: AbortSignal.timeout(5000) });
+                const d2 = await r2.json();
+                ipInfo = { ip: d2.ip||null, country: d2.country||null, city: d2.city||null, isp: d2.org||null };
+            } catch(e2) { /* fallback gagal — tetap jalan tanpa IP */ }
+        }
+        // Fingerprint device
+        const fp = [navigator.userAgent,navigator.language,screen.width+'x'+screen.height,screen.colorDepth,new Date().getTimezoneOffset(),navigator.hardwareConcurrency||'',navigator.platform||''].join('|');
+        let h=0; for(let i=0;i<fp.length;i++){h=Math.imul(31,h)+fp.charCodeAt(i)|0;}
+        const deviceId = 'D'+Math.abs(h).toString(36).toUpperCase().padStart(8,'0');
+
+        // Simpan ke localStorage
+        localStorage.setItem('neon_device_id', deviceId);
+        if(ipInfo.ip) localStorage.setItem('neon_last_ip', ipInfo.ip);
+
+        // Log event SESSION ke ip_logs
+        const logRow = {
+            username: user, event_type: 'SESSION',
+            ip_address: ipInfo.ip, device_id: deviceId,
+            user_agent: navigator.userAgent,
+            screen_res: screen.width+'x'+screen.height,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            language: navigator.language,
+            platform: navigator.platform||navigator.userAgentData?.platform||'web',
+            ip_country: ipInfo.country, ip_city: ipInfo.city, ip_isp: ipInfo.isp
+        };
+        await _supabase.from('ip_logs').insert([logRow]);
+
+        // Update kolom IP di profiles
+        await _supabase.from('profiles').update({
+            last_ip: ipInfo.ip, last_device_id: deviceId,
+            last_user_agent: navigator.userAgent,
+            last_seen: new Date().toISOString(),
+            ip_country: ipInfo.country, ip_city: ipInfo.city, ip_isp: ipInfo.isp
+        }).eq('username', user);
+
+    } catch(e) { console.warn('[updateIPOnSession]', e); }
 }
 
 // ── 8. NEON ALERT GLOBAL ─────────────────────────────────────
