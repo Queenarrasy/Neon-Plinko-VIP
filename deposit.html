@@ -565,24 +565,46 @@ async function openQrisPage(amount) {
         const data = await response.json();
 
         // 4. Tampilkan QR Code langsung di halaman
-        if (data.qr_image) {
-            // Set gambar QR
-            document.getElementById('qris-image-display').src = data.qr_image;
+        if (data.qr_string) {
+            // Generate QR code dari qr_string menggunakan QRCode.js
+            const qrImgEl = document.getElementById('qris-image-display');
+            qrImgEl.style.display = 'none'; // sembunyikan img biasa
+
+            // Buat canvas untuk QR
+            let qrCanvas = document.getElementById('qris-canvas');
+            if (!qrCanvas) {
+                qrCanvas = document.createElement('canvas');
+                qrCanvas.id = 'qris-canvas';
+                qrCanvas.style.cssText = 'width:100%;max-width:260px;height:auto;display:block;margin:0 auto;border-radius:8px;';
+                qrImgEl.parentNode.insertBefore(qrCanvas, qrImgEl);
+            }
+
+            // Load QRCode library lalu generate
+            if (typeof QRCode === 'undefined') {
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+                script.onload = () => generateQR(qrCanvas, data.qr_string);
+                document.head.appendChild(script);
+            } else {
+                generateQR(qrCanvas, data.qr_string);
+            }
+
             // Tampilkan nominal
             const nominalFormatted = 'Rp ' + parseInt(data.total || amount).toLocaleString('id-ID');
             document.getElementById('qp-nominal-display').textContent = nominalFormatted;
             document.getElementById('qp-step-nominal').textContent = nominalFormatted;
-            // Set expired timer jika ada
+
+            // Hitung timer expired
             if (data.expired) {
                 const expDate = new Date(data.expired);
                 const now = new Date();
-                const diffMs = expDate - now;
-                const diffMin = Math.floor(diffMs / 60000);
+                const diffMin = Math.floor((expDate - now) / 60000);
                 const timerEl = document.querySelector('.qp-timer');
                 if (timerEl && diffMin > 0) {
                     timerEl.innerHTML = '<i class="fas fa-clock"></i> Selesaikan pembayaran dalam <b style="color:var(--yellow)">' + diffMin + ' menit</b>';
                 }
             }
+
             // Tampilkan halaman QR
             btnMain.disabled = false;
             btnMain.innerHTML = originalBtnText;
@@ -597,6 +619,18 @@ async function openQrisPage(amount) {
         btnMain.disabled = false;
         btnMain.innerHTML = originalBtnText;
     }
+}
+
+function generateQR(canvas, text) {
+    canvas.innerHTML = '';
+    new QRCode(canvas, {
+        text: text,
+        width: 260,
+        height: 260,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+    });
 }
 
 // Fungsi Lama (Dibiarkan agar tidak error jika ada sisa panggilan lain)
